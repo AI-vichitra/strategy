@@ -1,0 +1,374 @@
+/* ── ConnectorModal ───────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 12, 40, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: overlayIn 0.2s ease;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(139, 92, 246, 0.06);
+  padding: 32px;
+  animation: modalIn 0.25s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Close ───────────────────────────────── */
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.closeBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ── Header ──────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.logoBox {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #f0ecf9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.logoImg {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.logoFallback {
+  font-size: 20px;
+  font-weight: 700;
+  color: #8b5cf6;
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+.connectorName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0 0 2px;
+}
+.connectorDesc {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* ── Status Badge ────────────────────────── */
+.statusBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badgeDefault {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.badgeConnected {
+  background: #d1fae5;
+  color: #059669;
+}
+.badgeError {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── Divider ─────────────────────────────── */
+.divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin-bottom: 24px;
+}
+
+/* ── Body ────────────────────────────────── */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Form Fields ─────────────────────────── */
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.inputRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e1b4b;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus {
+  border-color: #d4a843;
+  box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.1);
+}
+.input::placeholder {
+  color: #c4c9d2;
+}
+
+.toggleBtn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.toggleBtn:hover {
+  color: #6b7280;
+}
+
+/* ── Actions ─────────────────────────────── */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.cancelBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.primaryBtn {
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #8B5CF6, #d4a843);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+  transition: all 0.2s;
+}
+.primaryBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+}
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.testBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8b5cf6;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.testBtn:hover {
+  border-color: #c4b5fd;
+  background: #faf8ff;
+}
+
+.disconnectBtn {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #dc2626;
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.disconnectBtn:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+/* ── Connected State ─────────────────────── */
+.connectedState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  text-align: center;
+}
+.connectedIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.connectedText {
+  font-size: 15px;
+  color: #374151;
+  margin: 0;
+}
+
+/* ── OAuth Info ──────────────────────────── */
+.oauthInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 8px 0;
+}
+.oauthIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #ede9fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.oauthText {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+  max-width: 380px;
+  margin: 0;
+}
+.oauthNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #d97706;
+  background: #fffbeb;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #fef3c7;
+}
+
+/* ── Database Grid ───────────────────────── */
+.dbGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+}
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+/* ── Test Result ─────────────────────────── */
+.testResult {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 10px;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.testSuccess {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+.testError {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}

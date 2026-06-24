@@ -1,0 +1,314 @@
+.wrapper {
+  width: 100%;
+  max-width: 860px;
+  background-color: #ffffff;
+  border: 1px solid #e8e4f3;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 24px rgba(198, 186, 222, 0.15);
+}
+
+.input {
+  width: 100%;
+  border: none;
+  resize: none;
+  outline: none;
+  font-size: 15px;
+  color: #111827;
+  min-height: 80px;
+  padding: 8px;
+  background: transparent;
+  font-family: inherit;
+}
+.input::placeholder { color: #9ca3af; }
+
+.bottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.leftActions { display: flex; align-items: center; gap: 8px; }
+.rightActions { display: flex; align-items: center; gap: 12px; }
+
+.iconBtn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.iconBtn:hover { background-color: #f8f7ff; color: #1e1b4b; }
+
+.contextBtn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none;
+  font-size: 13px; color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+.contextBtn:hover, .contextBtnActive {
+  color: #1e1b4b;
+}
+
+.incognitoBtn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none;
+  font-size: 13px; color: #6b7280;
+  cursor: pointer;
+}
+.incognitoBtn:hover { color: #1e1b4b; }
+
+/* Toggle switch */
+.toggleWrapper { position: relative; display: flex; align-items: center; }
+.toggleCheckbox { opacity: 0; position: absolute; }
+.toggleLabel {
+  width: 34px; height: 20px;
+  background-color: #e8e4f3;
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.toggleLabel::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.toggleCheckbox:checked + .toggleLabel { background-color: #8b5cf6; }
+.toggleCheckbox:checked + .toggleLabel::after { transform: translateX(14px); }
+
+.submitBtn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6, #d4a843);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.submitBtn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4); }
+
+/* Light lavender-to-green banner — eye friendly */
+.banner {
+  background: linear-gradient(90deg, #f8f7ff, #e8e4f3);
+  color: #1e1b4b;
+  padding: 10px 16px;
+  font-size: 13px;
+  text-align: center;
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
+  margin: -12px -12px 12px -12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-bottom: 1px solid #e8e4f3;
+}
+.revertLink {
+  color: #8b5cf6;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font-size: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+.revertLink:hover { color: #7c3aed; }
+
+/* --- New Styles for Upload & User Context --- */
+
+.uploadContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.uploadMenu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e8e4f3;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.15), 0 8px 10px -6px rgba(139, 92, 246, 0.15);
+  padding: 4px;
+  min-width: 220px;
+  z-index: 100;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.uploadMenuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  border-radius: 6px;
+  text-align: left;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.uploadMenuItem:hover {
+  background-color: #f8f7ff;
+  color: #8b5cf6;
+}
+
+.uploadMenuText {
+  font-weight: 500;
+}
+
+.uploadMenuShortcut {
+  font-size: 11px;
+  color: #9ca3af;
+  background-color: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: normal;
+}
+
+.activeIconBtn {
+  background-color: #f8f7ff !important;
+  color: #8b5cf6 !important;
+}
+
+.contextBox {
+  background-color: #faf9ff;
+  border: 1px dashed #d4a843;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.contextBoxHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.contextBoxTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b5cf6;
+  letter-spacing: 0.05em;
+}
+
+.contextBoxClose {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.contextBoxClose:hover {
+  color: #ef4444;
+}
+
+.contextInput {
+  width: 100%;
+  border: none;
+  resize: none;
+  outline: none;
+  font-size: 14px;
+  color: #1f2937;
+  background: transparent;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.contextInput::placeholder {
+  color: #9ca3af;
+}
+
+.fileChipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 2px 4px;
+}
+
+.fileChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #6d28d9;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.fileChip svg {
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
+.fileChipName {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileChipRemove {
+  border: none;
+  background: none;
+  color: #a78bfa;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.fileChipRemove:hover {
+  background-color: #c4b5fd;
+  color: #4c1d95;
+}
+

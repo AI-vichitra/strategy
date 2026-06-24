@@ -1,0 +1,357 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInputWrapper {
+  display: flex;
+  align-items: center;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  width: 220px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.searchInputWrapper:focus-within {
+  border-color: #8b5cf6;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.searchIcon {
+  color: #9ca3af;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: #111827;
+  width: 100%;
+}
+
+.searchDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  width: 280px;
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 150;
+  padding: 4px;
+}
+
+.dropdownItem {
+  display: flex;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.dropdownItem:hover {
+  background-color: #f5f3ff;
+}
+
+.dropdownItemContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdownItemTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.dropdownItemCategory {
+  font-size: 11px;
+  color: #8b5cf6;
+  font-weight: 500;
+}
+
+.tabsContainer {
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.tabsScroll {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabsScroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Primary tabs ─────────────────────────────────────── */
+.tab {
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.tab:hover {
+  color: #111827;
+}
+
+.tab:hover .tabCount {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.activeTab {
+  color: #111827;
+  border-bottom-color: #111827;
+}
+
+.activeTab .tabCount {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tabLabel {
+  /* inherits from .tab */
+}
+
+/* ── Glassmorphism count badge (primary tabs) ─────────── */
+.tabCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  padding: 1px 6px;
+  border-radius: 20px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  line-height: 1.7;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Grid ─────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 180px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.iconGroup {
+  display: inline-flex;
+  border: 1px solid #e8e4f3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.miniIcon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e8e4f3;
+}
+
+.miniIcon:last-child {
+  border-right: none;
+}
+
+.miniIconImg {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+.fallbackText {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b5cf6;
+}
+
+.plusOne {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f8f5fb;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+}
+
+/* ── Branding & Marketing sub-tabs ─────────────────────── */
+.subTabsContainer {
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+  margin-top: -10px;
+}
+
+.subTabsScroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.subTabsScroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Match primary tab font exactly */
+.subTab {
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+
+.subTab:hover {
+  color: #374151;
+}
+
+.subTab:hover .subTabCount {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.activeSubTab {
+  color: #111827;
+  font-weight: 600;
+  border-bottom-color: #111827;
+}
+
+.activeSubTab .subTabCount {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Glassmorphism count badge (sub-tabs) ─────────────── */
+.subTabCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  padding: 1px 6px;
+  border-radius: 20px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  line-height: 1.7;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
