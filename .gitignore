@@ -1,7 +1,12 @@
 /add_comp.py
 /add_questions.py
 /add_questions_2.py
-/backend
 /clean_css.py
 /update_css.py
 /update_templates.py
+
+# Python environment and cache
+backend/venv/
+**/__pycache__/
+*.pyc
+backend/.env

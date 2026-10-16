@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KWALITYWALLS - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>KWALITYWALLS</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.kwalitywalls.com" target="_blank" class="meta-url">https://www.kwalitywalls.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Kwality Wall's is a leading Indian ice cream brand, founded in 1956, with a mission to bring joy through ice cream and a vision to be the most loved ice cream brand globally. It uses competitive pricing and a wide distribution network.. Kwality Wall's is an Indian multinational ice cream company. It is majority owned by The Magnum Ice Cream Company, which acquired it from Indian consumer goods company Hindustan Unilever in 2025. It is a major producer and distributor of frozen dessert products in India, Bangladesh, Bhutan, Brunei, Myanmar, Nepal, Sri Lanka, Thailand, Singapore and Malaysia. In Pakistan and Bangladesh, it is known simply as "Wall's".  ## History  [edit] [...] Indian food company  |  |  | This article needs more citations. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed. Find sources: "Kwality Wall's" – news · newspapers · books · scholar · JSTOR (September 2020) (Learn how and when to remove this message) |  Kwality Wall's  | Type | Public Subsidiary | | Traded as | NSE: KWIL BSE: 544622 | | Industry | Food | | Founded | 1956; 70 years ago (1956) | | Headquarters | Mumbai, Maharashtra, India | | Products | Ice creams, Ice Lollies and Sorbets. | | Owner |  The Magnum Ice Cream Company (61.9%) | | Parent |  Hindustan Unilever Limited (1995–2025)  The Magnum Ice Cream Company (2025–present) | | Website | kwalitywalls.in | [...] Kwality, the original Indian company, was founded in 1956, and was the first in the region to import machinery for the mass production and sale of ice cream on a commercial scale. In 1995, in view of the growth potential of the frozen confections market, Kwality entered into an agreement with Hindustan Unilever, and has since been known by its current umbrella name. Its name was created out of two previously separate independent companies that Unilever took over: Kwality of India and Wall's "Wall's (ice cream)") of United Kingdom that constituted larger ice cream business for Unilever.<br/><br/><strong>Product & Service Portfolio:</strong> Kwality Wall's offers a range of ice creams, ice lollies, and sorbets. The company is majority owned by The Magnum Ice Cream Company. It is a major producer of frozen desserts in several countries.. icon  Kwality Wall's  |  |  |  --- | |  | | | Type | Public Subsidiary | | Traded as | NSE: KWIL BSE: 544622 | | Industry | Food | | Founded | 1956; 70 years ago (1956) | | Headquarters | Mumbai, Maharashtra, India | | Products | Ice creams, Ice Lollies and Sorbets. | | Owner |  The Magnum Ice Cream Company (61.9%) | | Parent |  Hindustan Unilever Limited (1995–2025)  The Magnum Ice Cream Company (2025–present) | | Website | kwalitywalls.in | [...] Kwality Wall's is an Indian multinational ice cream company. It is majority owned by The Magnum Ice Cream Company, which acquired it from Indian consumer goods company Hindustan Unilever in 2025. It is a major producer and distributor of frozen dessert products in India, Bangladesh, Bhutan, Brunei, Myanmar, Nepal, Sri Lanka, Thailand, Singapore and Malaysia. In Pakistan and Bangladesh, it is known simply as "Wall's".  ## History [...] |  v  t  e  The Magnum Ice Cream Company | | |  ---  | Products |  Ben & Jerry's  Calippo  Cornetto "Cornetto (frozen dessert)")  Grom "Grom (company)")  Magnum "Magnum (ice cream)")  Nogger  Solero "Solero (ice cream)")  Talenti  Twister "Twister (ice cream)")  Viennetta  Yasso "Yasso (frozen yogurt)") | Heartbrand logo |. | Products |  Ben & Jerry's  Calippo  Cornetto "Cornetto (frozen dessert)")  Grom "Grom (company)")  Magnum "Magnum (ice cream)")  Nogger  Solero "Solero (ice cream)")  Talenti  Twister "Twister (ice cream)")  Viennetta  Yasso "Yasso (frozen yogurt)") | | Regional brands |  Frigo "Frigo (ice cream)")  GB Glace  Glidat Strauss  HB  HB Wall's  Holanda?action=edit&redlink=1 "Holanda (brand) (page does not exist)")  Inmarko  Kibon  Kwality Wall's  Miko "Miko (ice cream)")  Ola  Selecta "Selecta (dairy products)")1  Wall's "Wall's (ice cream)")   |  |  |  --- | | Good Humor-Breyers |  Breyers  Dickie Dee  Good Humor  Klondike   + Choco Taco  Popsicle "Popsicle (brand)") | | Streets "Streets (ice cream)") |  Bubble O' Bill  Golden Gaytime  Paddle Pop  Weis "Weis (ice cream)") | | [...] Indian food company  |  |  | This article needs more citations. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed. Find sources: "Kwality Wall's" – news · newspapers · books · scholar · JSTOR (September 2020) (Learn how and when to remove this message) |  Kwality Wall's  | Type | Public Subsidiary | | Traded as | NSE: KWIL BSE: 544622 | | Industry | Food | | Founded | 1956; 70 years ago (1956) | | Headquarters | Mumbai, Maharashtra, India | | Products | Ice creams, Ice Lollies and Sorbets.<br/><br/><strong>Recent Developments & News:</strong> Kwality Walls, now part of The Magnum Ice Cream Company, completed a majority acquisition in 2026 and announced a shift to milk-based ice cream by 2027. The company listed on BSE and NSE in 2025. Kwality Walls is expanding its manufacturing and distribution infrastructure.. Mumbai, 31st March 2026 – Kwality Wall’s (India) Limited (KWIL), now part of The Magnum Ice Cream Company (TMICC), today announced the appointment of Mr. Abhijit Bhattacharya and Mr. Tahir Toloy Tanridagli to its Board of Directors. These appointments have been made following the acquisition of controlling stake in KWIL by The Magnum Ice Cream Company HoldCo 1 Netherlands B.V (TMICC HoldCo) to support KWIL as it advances into its next phase of growth.  The Magnum Ice Cream Company completes majority acquisition of Kwality Wall’s (India) Limited [...] Skip to:  Lorem ipsum dolor sit amet, consectetur adipiscing elit.  Go to the page  The Magnum Ice Cream Company logo Laughing person in green top holding a popsicle in a car with friends in background.  News  # Get the latest scoop  We are proud to announce our successful listing on BSE and NSE, marking a significant step in our growth story. This achievement brings us closer to our vision of scaling new heights with trust and innovation.  A Historic New Chapter Begins — Now Listed on the BSE & NSE  ## Our latest news stories  Announcement of Results for the Quarter ended June 30th, 2026  Kwality Wall’s (India) Limited reports 16.6% growth in the quarter driven by 14.9% organic volume growth  Fraud Alert & Public Advisory [...] Amsterdam, 30 March 2026 | The Magnum Ice Cream Company (TMICC), the world’s largest ice cream company, today announced that it has completed the acquisiCon of 61.9% of the equity shares of Kwality Wall’s (India) Limited (KWIL) under the terms of the Share Purchase Agreement with Unilever dated June 25, 2025.  Kwality Wall’s (India) Limited Lists on BSE and NSE  Mumbai, 23 November 2025: Kwality Wall’s (India) Ltd. (KWIL), a leading ice cream and frozen desserts company in India, today announced the constitution of its Board of Directors, ahead of its demerger from Hindustan Unilever Limited (HUL). A total of seven appointments has been made, including one Non-Executive Director, two Executive Directors and four Independent Directors.  Kwality Wall’s (India) Limited Lists on BSE and NSE. 1 2 "HUL–Kwality Wall's Split Explained: Listing Timeline, Valuation, and What It Means for Investors". Retrieved 14 December 2025. 2.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Kwality Walls faces competition from Amul, Mother Dairy, and regional brands like Vadilal. It also competes with international brands like Unilever's Magnum. The market is highly fragmented with numerous local and national players.. | 4th | Logo for Gyan Dairy  Gyan Dairy 2007, Lucknow  (India), Unfunded | Brand of milk and other food products  - | 62/100 | | 5th | Logo for Heritage Foods  Heritage Foods 1992, Hyderabad  (India), Public | Indian private sector dairy enterprise  Premji Invest, Businesspartners.co.ke | 61/100 | | 6th | Logo for Hangyo  Hangyo 2002, Mangaluru  (India), Series A | Brand of ice creams | $35.5M | Faering Capital, Capvent  & 33 others | 61/100 | | 7th | Logo for Havmor Ice Cream  Havmor Ice Cream 1944, Ahmedabad  (India), Acquired | Ice-cream restaurant chain  - | 60/100 | | 8th | Logo for Milky Mist Dairy Food  Milky Mist Dairy Food 1985, Erode  (India), Series C | Brand of dairy products | $40.2M | Anicut Capital, Modi Fiduciary  & 15 others | 59/100 | [...] | 9th | Logo for NIC Ice Creams  NIC Ice Creams 1984, Pune  (India), Series C | Natural ice cream brand | $31M | Jungle Ventures, JM Financial Private Equity ... & 3 others | 57/100 | | 10th | Logo for Milk Mantra  Milk Mantra 2009, Bhubaneswar  (India), Acquired | Brand of multi-category dairy products | $32.7M | Aavishkaar Capital, Eight Roads Ventures ... & 40 others | 57/100 | | 18th | Logo for Kwality Walls  Kwality Walls 1956, Mumbai  (India), Public | Manufacturer of ice cream and frozen desserts  - | 48/100 | [...] | Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |  ---  ---  --- | | 1st | Logo for Dodla Dairy  Dodla Dairy 1995, Hyderabad  (India), Public | Manufacturer & brand of multi-category dairy products | $84M | BR CPF Holdings Mauritius, IFC  & 13 others | 72/100 | | 2nd | Logo for FRUBON  FRUBON 2004, Jaipur  (India), Series B | Manufacturer of a diverse range of dairy and bakery products including ice cream, milk, paneer, and bakery items | $10.5M | Satvijay Investment And Consultant, Pushma Investment ... & 26 others | 67/100 | | 3rd | Logo for Parag Milk Foods  Parag Milk Foods 1992, Pune  (India), Public | Manufacturer of dairy products | $45.5M | IDFC First Bank, Motilal Oswal Private Equity ... Home  Courses  Concepts  SWOT  Marketing Mix Strategy  PESTLE  Five Forces  Business Lists  Competitors  1. Kwality Walls SWOT Analysis  # Kwality Walls SWOT Analysis  Here is a detailed SWOT analysis of Kwality Walls covering strengths, weaknesses, opportunities and threats.  Published by MBA Skool Team in Food & Beverages category Read time: [...] Related Content   Ford SWOT Analysis  Apple SWOT Analysis  Barclays SWOT Analysis  Sony SWOT Analysis  Amazon SWOT Analysis  Walmart SWOT Analysis  Nestle SWOT Analysis  Pepsi SWOT Analysis  McDonald's SWOT Analysis  All Business Sections   Courses  Business Concepts  SWOT Analysis  Marketing Mix & Strategy  PESTLE Analysis  Five Forces Analysis  Competitors  Top Brand Lists  Articles  GD Topics  Write for Us  Write & Contribute Business Content   Submit Content   Home  About Us  Contact Us  Terms  Privacy Policy  Contribute Content  Colleges  Media  Quizzes  Articles  GD Topics  Web Stories  Follow us on FB PageTwitter Page  2011-2025 | MBASkool.com [...] 1. Better and newer flavors  Above we covered the opportunities in Kwality Walls SWOT Analysis. The opportunities for any brand can include prospects of future growth.  Read more about Kwality Walls   Kwality Walls Marketing Mix & Strategy  ## Kwality Walls Threats  1. Threat from existing ice-cream brands 2.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Kwality_Wall%27s" target="_blank">Kwality Wall&#x27;s - Wikipedia</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Kwality_Wall%27s</div>
+                    <div class="result-content">Kwality Wall&#x27;s is an Indian multinational ice cream company. It is majority owned by The Magnum Ice Cream Company, which acquired it from Indian consumer goods company Hindustan Unilever in 2025. It is a major producer and distributor of frozen dessert products in India, Bangladesh, Bhutan, Brunei, Myanmar, Nepal, Sri Lanka, Thailand, Singapore and Malaysia. In Pakistan and Bangladesh, it is known simply as &quot;Wall&#x27;s&quot;.
+
+ History
+
+[edit] [...] Indian food company
+
+|  |
+
+| This article needs more citations. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed. Find sources: &quot;Kwality Wall&#x27;s&quot; – news · newspapers · books · scholar · JSTOR (September 2020) (Learn how and when to remove this message) |
+
+Kwality Wall&#x27;s
+
+| Type | Public Subsidiary |
+| Traded as | NSE: KWIL BSE: 544622 |
+| Industry | Food |
+| Founded | 1956; 70 years ago (1956) |
+| Headquarters | Mumbai, Maharashtra, India |
+| Products | Ice creams, Ice Lollies and Sorbets. |
+| Owner |  The Magnum Ice Cream Company (61.9%) |
+| Parent |  Hindustan Unilever Limited (1995–2025)  The Magnum Ice Cream Company (2025–present) |
+| Website | kwalitywalls.in | [...] Kwality, the original Indian company, was founded in 1956, and was the first in the region to import machinery for the mass production and sale of ice cream on a commercial scale. In 1995, in view of the growth potential of the frozen confections market, Kwality entered into an agreement with Hindustan Unilever, and has since been known by its current umbrella name. Its name was created out of two previously separate independent companies that Unilever took over: Kwality of India and Wall&#x27;s &quot;Wall&#x27;s (ice cream)&quot;) of United Kingdom that constituted larger ice cream business for Unilever. At the same time, other brands acquired by Hindustan Unilever, such as Gaylord-Milkfood, were phased out in favour of promoting the Kwality Wall&#x27;s brand. This arrangement allows for local production and</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/76650243/20098-Kwality-Walls" target="_blank">Kwality Wall&#x27;s Marketing Strategy Overview | PDF | Unilever | Advertising</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/76650243/20098-Kwality-Walls</div>
+                    <div class="result-content">Scribd
+
+ Kwality Wall&#x27;s Marketing Strategy Overview
+
+Kwality Wall&#x27;s Marketing Strategy Overview
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Kwality Wall&#x27;s Marketing Strategy Overview [...]  Kwality Wall&#x27;s Marketing Strategy Overview
+
+Kwality Wall&#x27;s is Unilever&#x27;s master brand for ice cream in India, commanding over 50% market share. It offers a range of products from novelty items to take-home packs. Kwality Wall&#x27;s targets all age groups and occasions of consumption through its portfolio and uses market segmentation based on income, age, and occasion. It positions its house brand as a snack and uses print ads, while Feast targets teenagers with attitude through TV ads promoting novelty. Cornetto aims to create emotional bonds through togetherness imagery in TV ads, and Dairy Classic targets mothers through print reinforcing family values.
+
+ Kwality Wall&#x27;s Marketing Strategy Overview
+
+Kwality Wall&#x27;s Marketing Strategy Overview
+
+ Uploaded by [...] Kwality Wall&#x27;s Marketing Strategy Overview
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/legal-entities/india/kwality-walls-india-limited/__P4b18h4nfB6aJGD4NGtomDcwghdtNmXBJerCBHCjVso" target="_blank">KWALITY WALL&#x27;S (INDIA) LIMITED - 2026 Company Profile - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/legal-entities/india/kwality-walls-india-limited/__P4b18h4nfB6aJGD4NGtomDcwghdtNmXBJerCBHCjVso</div>
+                    <div class="result-content">| 9th | Logo for NIC Ice Creams  NIC Ice Creams 1984, Pune  (India), Series C | Natural ice cream brand | $31M | Jungle Ventures, JM Financial Private Equity ... &amp; 3 others | 57/100 |
+| 10th | Logo for Milk Mantra  Milk Mantra 2009, Bhubaneswar  (India), Acquired | Brand of multi-category dairy products | $32.7M | Aavishkaar Capital, Neev Fund  &amp; 40 others | 57/100 |
+| 20th | Logo for Kwality Walls  Kwality Walls 1956, Mumbai  (India), Public | Manufacturer of ice cream and frozen desserts  - | 48/100 | [...]  About KWALITY WALL&#x27;S (INDIA) LIMITED
+
+KWALITY WALL&#x27;S (INDIA) LIMITED is a Public Limited Company and was incorporated on Jan 10, 2025 in India. It is registered at Registrar of Companies, ROC Mumbai I. Its registered address is Unilever House, B. D., Sawant Marg, Chakala, International Airport, Mumbai, Mumbai, Maharashtra, India, 400099.  Its corporate identification number is (CIN) L10505MH2025PLC437886 and its current status is Active. Its industry classification as per MCA is manufacture of ice-cream, kulfi etc. It had a team size of 554 employees as on Mar 01, 2026. [...]  Recent Filings
+
+Below are the most recent filings submitted by the company:
+
+| Document Name | Category | Filing Date |
+ --- 
+| Form MSME | Other eForm Documents | Apr 30, 2026 |
+| Optional attachment(s)- if any | Other eForm Documents | Apr 30, 2026 |
+| Form PAS-3 | Other eForm Documents | Jan 05, 2026 |
+| List of Allottees | Other eForm Documents | Jan 05, 2026 |
+| Optional attachment(s)- if any | Other eForm Documents | Jan 05, 2026 |
+| Optional attachment(s)- if any | Other eForm Documents | Jan 05, 2026 |
+| Optional attachment(s)- if any | Other eForm Documents | Jan 05, 2026 |
+| Optional attachment(s)- if any | Other eForm Documents | Jan 05, 2026 |
+| INC-34 e-AOA | Incorporation | Dec 23, 2025 |
+| Form MGT-14 | Other eForm Documents | Dec 23, 2025 |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/461226059/Ice-cream-review" target="_blank">Place in The Marketing Mix of Kwality Walls | PDF | Pricing | Business Economics</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/461226059/Ice-cream-review</div>
+                    <div class="result-content">About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play [...] Scribd
+
+ Place in The Marketing Mix of Kwality Walls
+
+Place in The Marketing Mix of Kwality Walls
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Place in The Marketing Mix of Kwality Walls
+
+The document discusses the marketing mix strategies of Kwality Walls ice cream brand in India. It covers their approaches to product, price, place and promotion including distribution channels, competitive pricing, exclusive parlors and brand ambassadors in advertisements.
+
+ Place in The Marketing Mix of Kwality Walls
+
+Place in The Marketing Mix of Kwality Walls
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/kwality-wall-s" target="_blank">Kwality Wall&#x27;s (India) Limited - Life tastes better with ice cream</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/kwality-wall-s</div>
+                    <div class="result-content">Kwality Wall&#x27;s (India) Limited
+Life tastes better with ice cream
+Food and Beverage Services • Mumbai , Maharashtra • 14,213 followers • 201-500 employees
+
+ Overview
+The heart of what we do! We are Kwality Wall&#x27;s (India) Limited! We believe ice cream is the ultimate pleasure of food, transforming simple moments into lifelong memories. All our efforts are focused on delivering this promise: Life tastes better with ice cream. We combine rich heritage with modern innovation to craft iconic brands that bring joy and refreshment to millions.
+
+ Website
+
+ Crunchbase
+N/A
+ LinkedIn
+N/A
+
+ Industry
+Food and Beverage Services [...] consumers, and our commitment to innovation as we continue to shape the future of the ice cream category. As part of The Magnum Ice Cream Company , we remain focused on creating products that consumers love, expanding our reach, and building on the rich legacy of Kwality Wall&#x27;s in India. The future is exciting, and we&#x27;re ready to make life taste better with ice cream. LifeTastesBetterWithIceCream KwalityWalls [Likes: 496, Comments: 4]; Kwality Wall&#x27;s (India) Limited (1w): Behind every scoop is a story. This World Milk Day, we&#x27;re celebrating an ingredient that has shaped generations of joy, indulgence and everyday moments. From the farmers who power India&#x27;s dairy ecosystem to the consumers who make ice cream a part of their celebrations, cravings and everyday joys, milk continues to be [...]  Posts</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Kwality_Wall's" target="_blank">Kwality Wall&#x27;s - Wikipedia</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Kwality_Wall's</div>
+                    <div class="result-content">icon
+
+Kwality Wall&#x27;s
+
+|  |  |
+ --- |
+|  | |
+| Type | Public Subsidiary |
+| Traded as | NSE: KWIL BSE: 544622 |
+| Industry | Food |
+| Founded | 1956; 70 years ago (1956) |
+| Headquarters | Mumbai, Maharashtra, India |
+| Products | Ice creams, Ice Lollies and Sorbets. |
+| Owner |  The Magnum Ice Cream Company (61.9%) |
+| Parent |  Hindustan Unilever Limited (1995–2025)  The Magnum Ice Cream Company (2025–present) |
+| Website | kwalitywalls.in | [...] Kwality Wall&#x27;s is an Indian multinational ice cream company. It is majority owned by The Magnum Ice Cream Company, which acquired it from Indian consumer goods company Hindustan Unilever in 2025. It is a major producer and distributor of frozen dessert products in India, Bangladesh, Bhutan, Brunei, Myanmar, Nepal, Sri Lanka, Thailand, Singapore and Malaysia. In Pakistan and Bangladesh, it is known simply as &quot;Wall&#x27;s&quot;.
+
+ History [...] |  v  t  e  The Magnum Ice Cream Company | | |
+ --- 
+| Products |  Ben &amp; Jerry&#x27;s  Calippo  Cornetto &quot;Cornetto (frozen dessert)&quot;)  Grom &quot;Grom (company)&quot;)  Magnum &quot;Magnum (ice cream)&quot;)  Nogger  Solero &quot;Solero (ice cream)&quot;)  Talenti  Twister &quot;Twister (ice cream)&quot;)  Viennetta  Yasso &quot;Yasso (frozen yogurt)&quot;) | Heartbrand logo |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Kwality_Wall%27s" target="_blank">Kwality Wall&#x27;s</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Kwality_Wall%27s</div>
+                    <div class="result-content">| Products |  Ben &amp; Jerry&#x27;s  Calippo  Cornetto &quot;Cornetto (frozen dessert)&quot;)  Grom &quot;Grom (company)&quot;)  Magnum &quot;Magnum (ice cream)&quot;)  Nogger  Solero &quot;Solero (ice cream)&quot;)  Talenti  Twister &quot;Twister (ice cream)&quot;)  Viennetta  Yasso &quot;Yasso (frozen yogurt)&quot;) |
+| Regional brands |  Frigo &quot;Frigo (ice cream)&quot;)  GB Glace  Glidat Strauss  HB  HB Wall&#x27;s  Holanda?action=edit&amp;redlink=1 &quot;Holanda (brand) (page does not exist)&quot;)  Inmarko  Kibon  Kwality Wall&#x27;s  Miko &quot;Miko (ice cream)&quot;)  Ola  Selecta &quot;Selecta (dairy products)&quot;)1  Wall&#x27;s &quot;Wall&#x27;s (ice cream)&quot;)   |  |  |  --- | | Good Humor-Breyers |  Breyers  Dickie Dee  Good Humor  Klondike   + Choco Taco  Popsicle &quot;Popsicle (brand)&quot;) | | Streets &quot;Streets (ice cream)&quot;) |  Bubble O&#x27; Bill  Golden Gaytime  Paddle Pop  Weis &quot;Weis (ice cream)&quot;) | | [...] Indian food company
+
+|  |
+
+| This article needs more citations. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed. Find sources: &quot;Kwality Wall&#x27;s&quot; – news · newspapers · books · scholar · JSTOR (September 2020) (Learn how and when to remove this message) |
+
+Kwality Wall&#x27;s
+
+| Type | Public Subsidiary |
+| Traded as | NSE: KWIL BSE: 544622 |
+| Industry | Food |
+| Founded | 1956; 70 years ago (1956) |
+| Headquarters | Mumbai, Maharashtra, India |
+| Products | Ice creams, Ice Lollies and Sorbets. |
+| Owner |  The Magnum Ice Cream Company (61.9%) |
+| Parent |  Hindustan Unilever Limited (1995–2025)  The Magnum Ice Cream Company (2025–present) |
+| Website | kwalitywalls.in | [...] Kwality Wall&#x27;s is an Indian multinational ice cream company. It is majority owned by The Magnum Ice Cream Company, which acquired it from Indian consumer goods company Hindustan Unilever in 2025. It is a major producer and distributor of frozen dessert products in India, Bangladesh, Bhutan, Brunei, Myanmar, Nepal, Sri Lanka, Thailand, Singapore and Malaysia. In Pakistan and Bangladesh, it is known simply as &quot;Wall&#x27;s&quot;.
+
+ History
+
+[edit]</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.smashbrand.com/articles/fmcg-categories" target="_blank">A Complete List of FMCG Categories With Descriptions.</a></h3>
+                    <div class="result-url">https://www.smashbrand.com/articles/fmcg-categories</div>
+                    <div class="result-content">Sports Equipment: Sports equipment comes in a wide variety, with some falling under FMCG and others not. For instance, gym equipment such as dumbbells and bench presses is not commonly purchased. While gym chalk, on the other hand, is consumed regularly.
+ Gym Gear: Athletes rely on essential gym gear, including bottles, shoes, gloves, and apparel. Workout clothing, such as activewear and sports-specific apparel, is crucial, offering comfort, flexibility, and moisture-wicking properties.
+ Fitness supplements: Supplements support fitness goals, improve performance, and enhance overall well-being. These include protein powders, pre-workout formulas, post-workout recovery drinks, energy and protein bars, multivitamins, and sports drinks.
+
+ Beauty and cosmetics. [...] Cleaning Products: Soaps, shampoos, and surface-safe cleaners remove dirt, grime, and road debris—essentials for maintaining a polished exterior.
+ Polishes &amp; Waxes: Designed to restore and protect, polishes correct surface imperfections while waxes lock in shine and shield paintwork from the elements.
+ Detailing Products: Targeted solutions for wheels, chrome, and trim. These are about elevating finish and visual impact, not just function.
+ Protective Coatings: Ceramic and paint sealants create long-lasting barriers against UV radiation, acid rain, and contaminants, minimizing long-term damage and the need for maintenance.
+ Maintenance Essentials: Engine oils, lubricants, coolants, and additives keep vehicles running smoothly and efficiently. [...] Cigarettes: Cigarettes are a different product, comprising rolled tobacco enclosed in a paper tube with a filter. They are extensively consumed tobacco products primarily intended for smoking.
+ Cigars: Cigars differ from cigarettes in size, shape, and manufacturing process. Cigars are typically larger and hand-rolled with whole tobacco leaves.
+ Chewing Tobacco: Chewing tobacco, also known as smokeless tobacco, is used orally rather than smoked. It consists of loose tobacco leaves, finely ground tobacco, or compressed tobacco in various forms.
+
+ Alcoholic beverages.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/461226059/Ice-cream-review" target="_blank">Place in The Marketing Mix of Kwality Walls | PDF | Pricing | Business Economics</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/461226059/Ice-cream-review</div>
+                    <div class="result-content">About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play [...] Scribd
+
+ Place in The Marketing Mix of Kwality Walls
+
+Place in The Marketing Mix of Kwality Walls
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Place in The Marketing Mix of Kwality Walls
+
+The document discusses the marketing mix strategies of Kwality Walls ice cream brand in India. It covers their approaches to product, price, place and promotion including distribution channels, competitive pricing, exclusive parlors and brand ambassadors in advertisements.
+
+ Place in The Marketing Mix of Kwality Walls
+
+Place in The Marketing Mix of Kwality Walls
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/kwality-walls/__w50aJMa_rH19mNjE86S58O0kvh1tisvxIAANPc3nqmU" target="_blank">Kwality Walls - 2026 Company Profile, Team &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/kwality-walls/__w50aJMa_rH19mNjE86S58O0kvh1tisvxIAANPc3nqmU</div>
+                    <div class="result-content">| 4th | Logo for Gyan Dairy  Gyan Dairy 2007, Lucknow  (India), Unfunded | Brand of milk and other food products  - | 62/100 |
+| 5th | Logo for Heritage Foods  Heritage Foods 1992, Hyderabad  (India), Public | Indian private sector dairy enterprise  Premji Invest, Businesspartners.co.ke | 61/100 |
+| 6th | Logo for Hangyo  Hangyo 2002, Mangaluru  (India), Series A | Brand of ice creams | $35.5M | Faering Capital, Capvent  &amp; 33 others | 61/100 |
+| 7th | Logo for Havmor Ice Cream  Havmor Ice Cream 1944, Ahmedabad  (India), Acquired | Ice-cream restaurant chain  - | 60/100 |
+| 8th | Logo for Milky Mist Dairy Food  Milky Mist Dairy Food 1985, Erode  (India), Series C | Brand of dairy products | $40.2M | Anicut Capital, Modi Fiduciary  &amp; 15 others | 59/100 | [...] | 9th | Logo for NIC Ice Creams  NIC Ice Creams 1984, Pune  (India), Series C | Natural ice cream brand | $31M | Jungle Ventures, JM Financial Private Equity ... &amp; 3 others | 57/100 |
+| 10th | Logo for Milk Mantra  Milk Mantra 2009, Bhubaneswar  (India), Acquired | Brand of multi-category dairy products | $32.7M | Aavishkaar Capital, Eight Roads Ventures ... &amp; 40 others | 57/100 |
+| 18th | Logo for Kwality Walls  Kwality Walls 1956, Mumbai  (India), Public | Manufacturer of ice cream and frozen desserts  - | 48/100 | [...] JavaScript is disabled in your browser. enable it to enjoy the full features of Tracxn.
+
+Tracxn.com
+Android
+Apple
+Chrome Web Store
+Firefox Extension
+tracxn ai suite
+
+AI-powered market intelligence across companies, investors, and sectors.
+
+Logo for Kwality Walls
+
+ Kwality Walls - Company Profile
+
+lock
+lock
+lock
+lock
+lock
+
+ Kwality Walls - About the company
+
+ Company Details
+
+X
+
+ Legal entities associated with Kwality Walls</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.kwalitywallsindia.com/news.html" target="_blank">News | Kwality Walls (India) Limited</a></h3>
+                    <div class="result-url">https://www.kwalitywallsindia.com/news.html</div>
+                    <div class="result-content">Mumbai, 31st March 2026 – Kwality Wall’s (India) Limited (KWIL), now part of The Magnum Ice Cream Company (TMICC), today announced the appointment of Mr. Abhijit Bhattacharya and Mr. Tahir Toloy Tanridagli to its Board of Directors. These appointments have been made following the acquisition of controlling stake in KWIL by The Magnum Ice Cream Company HoldCo 1 Netherlands B.V (TMICC HoldCo) to support KWIL as it advances into its next phase of growth.
+
+The Magnum Ice Cream Company completes majority acquisition of Kwality Wall’s (India) Limited [...] Skip to:
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+Go to the page
+
+The Magnum Ice Cream Company logo
+Laughing person in green top holding a popsicle in a car with friends in background.
+
+News
+
+ Get the latest scoop
+
+We are proud to announce our successful listing on BSE and NSE, marking a significant step in our growth story.  
+ This achievement brings us closer to our vision of scaling new heights with trust and innovation.
+
+A Historic New Chapter Begins — Now Listed on the BSE &amp; NSE
+
+ Our latest news stories
+
+Announcement of Results for the Quarter ended June 30th, 2026
+
+Kwality Wall’s (India) Limited reports 16.6% growth in the quarter driven by 14.9% organic volume growth
+
+Fraud Alert &amp; Public Advisory [...] Amsterdam, 30 March 2026 | The Magnum Ice Cream Company (TMICC), the world’s largest ice cream company, today announced that it has completed the acquisiCon of 61.9% of the equity shares of Kwality Wall’s (India) Limited (KWIL) under the terms of the Share Purchase Agreement with Unilever dated June 25, 2025.
+
+Kwality Wall’s (India) Limited Lists on BSE and NSE
+
+Mumbai, 23 November 2025: Kwality Wall’s (India) Ltd. (KWIL), a leading ice cream and frozen desserts company in India, today announced the constitution of its Board of Directors, ahead of its demerger from Hindustan Unilever Limited (HUL). A total of seven appointments has been made, including one Non-Executive Director, two Executive Directors and four Independent Directors.
+
+Kwality Wall’s (India) Limited Lists on BSE and NSE</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Kwality_Wall%27s" target="_blank">Kwality Wall&#x27;s</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Kwality_Wall%27s</div>
+                    <div class="result-content">1. 1 2 &quot;HUL–Kwality Wall&#x27;s Split Explained: Listing Timeline, Valuation, and What It Means for Investors&quot;. Outlook Business. 5 December 2025. Retrieved 14 December 2025.
+2. ↑ &quot;Kwality Wall&#x27;s hits Rs 1000 crore mark&quot;. www.telegraphindia.com. Retrieved 12 October 2022.
+3. ↑ &quot;India&#x27;s Most Trusted Brands 2014&quot;. Trust Research Advisory. Archived from the original on 2 May 2015.
+4. ↑ Southey, Flora (2 July 2025). &quot;Unilever makes major step towards ice cream demerger&quot;. FoodNavigator.com. Retrieved 14 December 2025.
+5. ↑ &quot;Kwality Wall&#x27;s Transitions to Milk-Based Ice Cream in India by 2027&quot;. dairynews.today. Retrieved 12 July 2026.
+6. ↑ &quot;Kwality Wall&#x27;s Transitions to Milk-Based Ice Cream in India by 2027&quot;. dairynews.today. Retrieved 12 July 2026. [...] In August 2013, Kwality Wall&#x27;s extended to Bangladesh, Bhutan, Brunei and Nepal.
+
+As part of larger restructuring Unilever divested all of its ice cream business worldwide and created The Magnum Ice Cream Company. As part of regional process, Hindustan Unilever also divested its ice cream business to create Kwality Walls India Limited.
+
+In 2026 Kwality Wall&#x27;s announced they are changing all their Frozen desserts products to real Ice cream.
+
+Under this new structure, Kwality Wall&#x27;s portfolio is splitting into two clear, distinct categories: Real Milk Ice Cream for creamy products, and entirely separate categories for Ice Lollies and Sorbets. 
+
+All milk based Kwality Walls Frozen desserts are being converted to real ice cream by 2027.
+
+ Logo
+
+[edit] [...] Indian food company
+
+|  |
+
+| This article needs more citations. Please help improve this article by adding citations to reliable sources. Unsourced material may be challenged and removed. Find sources: &quot;Kwality Wall&#x27;s&quot; – news · newspapers · books · scholar · JSTOR (September 2020) (Learn how and when to remove this message) |
+
+Kwality Wall&#x27;s
+
+| Type | Public Subsidiary |
+| Traded as | NSE: KWIL BSE: 544622 |
+| Industry | Food |
+| Founded | 1956; 70 years ago (1956) |
+| Headquarters | Mumbai, Maharashtra, India |
+| Products | Ice creams, Ice Lollies and Sorbets. |
+| Owner |  The Magnum Ice Cream Company (61.9%) |
+| Parent |  Hindustan Unilever Limited (1995–2025)  The Magnum Ice Cream Company (2025–present) |
+| Website | kwalitywalls.in |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.instagram.com/p/DZH-qXSEoMX?hl=" target="_blank">Instagram</a></h3>
+                    <div class="result-url">https://www.instagram.com/p/DZH-qXSEoMX?hl=</div>
+                    <div class="result-content">Investment and Expansion Push  
+👉🏽 The company is scaling up manufacturing and distribution infrastructure, including plans for additional factories and stronger cold-chain systems. It aims to improve cost efficiency and nationwide availability of products like Cornetto.  
+  
+Market Shift and Consumer Impact  
+👉🏽 The transition positions Kwality Wall’s in direct competition with dairy-heavy players like Amul. While consumers may get creamier products, prices could rise due to higher dairy costs, even as frozen desserts continue for budget buyers.  
+  
+The Logical Indian’s Perspective [...] Kwality Wall’s is restructuring its India business, shifting fully from palm oil-based frozen desserts to milk-based ice cream under Magnum Ice Cream Company. The transition, led by global CEO Peter ter Kulve, will be largely completed by 2027, with half the portfolio becoming dairy-based this year. The move aims to align with global identity and rising consumer preference for dairy ice cream, while intensifying competition with brands like Amul.  
+  
+Major Dairy Transition Underway  
+👉🏽 Kwality Wall’s is undergoing a major product overhaul in India, replacing frozen desserts made with vegetable fats such as palm oil with dairy-based ice cream. Peter ter Kulve said, “We are not a frozen dessert company anywhere in the world; we are an ice cream company.” [...] [Kwality Walls India, dairy ice cream shift, frozen dessert vs ice cream, Magnum Ice Cream Company, Peter ter Kulve statement, Amul competition India, The Logical Indian]</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://news.magnumicecream.com/tmicc-completes-majority-acquisition-kwality-walls-india-limited" target="_blank">The Magnum Ice Cream Company completes majority acquisition of Kwality Wall’s (India) Limited</a></h3>
+                    <div class="result-url">https://news.magnumicecream.com/tmicc-completes-majority-acquisition-kwality-walls-india-limited</div>
+                    <div class="result-content">Go to the page
+
+magnum logo
+
+ Newsroom
+ The Magnum Ice Cream Company completes majority acquisition of Kwality Wall’s (India) Limited
+
+Post this release on X Limited&amp;url=https%3A%2F%2Fnews.magnumicecream.com%2Ftmicc-completes-majority-acquisition-kwality-walls-india-limited%2F)
+
+30
+
+March
+
+2026
+
+|
+
+18:00
+
+Europe/Amsterdam
+
+ The Magnum Ice Cream Company completes majority acquisition of Kwality Wall’s (India) Limited
+
+Amsterdam, 30 March 2026
+
+The Magnum Ice Cream Company (TMICC), the world’s largest ice cream company, today announced that it has completed the acquisition of 61.9% of the equity shares of Kwality Wall’s (India) Limited (KWIL) under the terms of the Share Purchase Agreement with Unilever dated June 25, 2025. [...] A mandatory tender offer, made in accordance with applicable Indian laws, is currently underway and it is expected to conclude within the next 4–6 months. If, pursuant to the tender offer, TMICC’s shareholding in KWIL exceeds 75%, TMICC will be required to reduce its shareholding to not more than 75% within one year, in order to comply with the minimum public shareholding requirements.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.thehindu.com/business/Industry/magnum-icecream-to-acquire-619-stake-in-kwality-walls/article70639143.ece" target="_blank">Magnum Icecream to acquire 61.9% stake in Kwality Walls - The Hindu</a></h3>
+                    <div class="result-url">https://www.thehindu.com/business/Industry/magnum-icecream-to-acquire-619-stake-in-kwality-walls/article70639143.ece</div>
+                    <div class="result-content">Kwality Wall’s has a market in 400 cities reaching over 200,000 outlets and 15,000 plus push carts, the company said in its statement announcing the listing.
+
+Published - February 16, 2026 07:20 pm IST
+
+ Copy link
+ Email
+ Facebook
+ Twitter
+ Telegram
+ LinkedIn
+ WhatsApp
+ Reddit
+
+SEE ALL  Remove
+
+Google Preferred Source
+
+ Related Topics
+
+company information  /  business (general)
+
+0 / 0
+
+The Hindu
+
+Sign in to unlock member-only benefits!
+
+ Access 10 free stories every month
+ Save stories to read later
+ Access to comment on every story
+ Sign-up/manage your newsletter subscriptions with a single click
+ Get notified by email for early access to discounts &amp; offers on our products
+
+Sign in
+
+Looks like you are already logged in from more than 5 devices! [...] August 1, 2026e-Paper
+
+The Hindu Logo
+
+Account
+
+eBooks Subscribe
+
+Live Now
+
+News
+
+News   India   World   States   Cities
+
+Israel-US strikes on Iran   Delimitation   Ground Zero   Spotlight
+
+newsletterimg
+
+The View From India Looking at World Affairs from the Indian perspective.SEE ALL NEWSLETTERS
+
+ States   Cities 
+
+Entertainment
+
+Entertainment   Art   Dance   Movies   Music   Reviews   Theatre
+
+newsletterimg
+
+First Day First Show News and reviews from the world of cinema and streaming.SEE ALL NEWSLETTERS
+
+Opinion
+
+Opinion   Editorial   Cartoon   Columns   Comment   Interview   Lead   Letters   Open Page   Corrections &amp; Clarifications
+
+Business
+
+Business   Agri-Business   Economy   Industry   Markets   Budget
+
+Sport [...] “This business … necessitates a dedicated cold chain infrastructure for both its supply chain and points of sale. Furthermore, its pronounced seasonality and capital intensity distinguish it significantly from other segments,” it said, adding that the demerger will help the conglomerate focus on “high growth demand spaces.” The brands Kwality Walls, Cornetto and Magnum were contributing to 3% of the turnover of HUL, it added.
+
+The conglomerate was clocking an average third quarter net profit of ₹2,659 crore between fiscal 2023 to 2024. The company’s third quarter profit increased 2.2 times to ₹6,603 crore in December 2025, when the company announced the demerger.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/kwality-walls/__w50aJMa_rH19mNjE86S58O0kvh1tisvxIAANPc3nqmU" target="_blank">Kwality Walls - 2026 Company Profile, Team &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/kwality-walls/__w50aJMa_rH19mNjE86S58O0kvh1tisvxIAANPc3nqmU</div>
+                    <div class="result-content">| 4th | Logo for Gyan Dairy  Gyan Dairy 2007, Lucknow  (India), Unfunded | Brand of milk and other food products  - | 62/100 |
+| 5th | Logo for Heritage Foods  Heritage Foods 1992, Hyderabad  (India), Public | Indian private sector dairy enterprise  Premji Invest, Businesspartners.co.ke | 61/100 |
+| 6th | Logo for Hangyo  Hangyo 2002, Mangaluru  (India), Series A | Brand of ice creams | $35.5M | Faering Capital, Capvent  &amp; 33 others | 61/100 |
+| 7th | Logo for Havmor Ice Cream  Havmor Ice Cream 1944, Ahmedabad  (India), Acquired | Ice-cream restaurant chain  - | 60/100 |
+| 8th | Logo for Milky Mist Dairy Food  Milky Mist Dairy Food 1985, Erode  (India), Series C | Brand of dairy products | $40.2M | Anicut Capital, Modi Fiduciary  &amp; 15 others | 59/100 | [...] | 9th | Logo for NIC Ice Creams  NIC Ice Creams 1984, Pune  (India), Series C | Natural ice cream brand | $31M | Jungle Ventures, JM Financial Private Equity ... &amp; 3 others | 57/100 |
+| 10th | Logo for Milk Mantra  Milk Mantra 2009, Bhubaneswar  (India), Acquired | Brand of multi-category dairy products | $32.7M | Aavishkaar Capital, Eight Roads Ventures ... &amp; 40 others | 57/100 |
+| 18th | Logo for Kwality Walls  Kwality Walls 1956, Mumbai  (India), Public | Manufacturer of ice cream and frozen desserts  - | 48/100 | [...] | Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |
+ ---  ---  --- |
+| 1st | Logo for Dodla Dairy  Dodla Dairy 1995, Hyderabad  (India), Public | Manufacturer &amp; brand of multi-category dairy products | $84M | BR CPF Holdings Mauritius, IFC  &amp; 13 others | 72/100 |
+| 2nd | Logo for FRUBON  FRUBON 2004, Jaipur  (India), Series B | Manufacturer of a diverse range of dairy and bakery products including ice cream, milk, paneer, and bakery items | $10.5M | Satvijay Investment And Consultant, Pushma Investment ... &amp; 26 others | 67/100 |
+| 3rd | Logo for Parag Milk Foods  Parag Milk Foods 1992, Pune  (India), Public | Manufacturer of dairy products | $45.5M | IDFC First Bank, Motilal Oswal Private Equity ... &amp; 1 others | 64/100 |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mbaskool.com/swot-analysis/food-and-beverages/485-kwality-walls.html" target="_blank">Kwality Walls SWOT Analysis - Key Strengths &amp; Weaknesses | MBA Skool</a></h3>
+                    <div class="result-url">https://www.mbaskool.com/swot-analysis/food-and-beverages/485-kwality-walls.html</div>
+                    <div class="result-content">Home
+ Courses
+ Concepts
+ SWOT
+ Marketing Mix Strategy
+ PESTLE
+ Five Forces
+ Business Lists
+ Competitors
+
+1. SWOT Analysis
+›2. Food &amp; Beverages
+›3. Kwality Walls SWOT Analysis
+
+ Kwality Walls SWOT Analysis
+
+Here is a detailed SWOT analysis of Kwality Walls covering strengths, weaknesses, opportunities and threats.
+
+Published by MBA Skool Team in Food &amp; Beverages category Read time: [...] Related Content
+
+ Ford SWOT Analysis
+ Apple SWOT Analysis
+ Barclays SWOT Analysis
+ Sony SWOT Analysis
+ Amazon SWOT Analysis
+ Walmart SWOT Analysis
+ Nestle SWOT Analysis
+ Pepsi SWOT Analysis
+ McDonald&#x27;s SWOT Analysis
+
+All Business Sections
+
+ Courses
+ Business Concepts
+ SWOT Analysis
+ Marketing Mix &amp; Strategy
+ PESTLE Analysis
+ Five Forces Analysis
+ Competitors
+ Top Brand Lists
+ Articles
+ GD Topics
+
+Write for Us
+
+Write &amp; Contribute Business Content
+
+ Submit Content
+
+ Home
+ About Us
+ Contact Us
+ Terms
+ Privacy Policy
+ Contribute Content
+ Colleges
+ Media
+ Quizzes
+ Articles
+ GD Topics
+ Web Stories
+
+Follow us on FB PageTwitter Page
+
+2011-2025 | MBASkool.com [...] 1. Better and newer flavors
+
+Above we covered the opportunities in Kwality Walls SWOT Analysis. The opportunities for any brand can include prospects of future growth.
+
+Read more about Kwality Walls
+
+ Kwality Walls Marketing Mix &amp; Strategy
+
+ Kwality Walls Threats
+
+1. Threat from existing ice-cream brands
+2. Local Kulfis
+
+The threats in the SWOT Analysis of Kwality Walls are as mentioned above. The threats for any business can be external factors which can negatively impact its business.
+
+Hence this concludes the Kwality Walls SWOT analysis.
+
+Read Similar SWOT analysis
+
+ Amul Ice Cream SWOT Analysis
+ Baskin Robbins SWOT Analysis
+
+About Kwality Walls
+
+The table below gives the brand overview along with its target market, segmentation, positioning &amp; USP
+
+| Kwality Walls Overview |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bastionresearch.substack.com/p/hul-doesnt-want-ice-creams-anymore" target="_blank">HUL Doesn&#x27;t Want Ice Creams Anymore - Kwality Wall&#x27;s Business Explained</a></h3>
+                    <div class="result-url">https://bastionresearch.substack.com/p/hul-doesnt-want-ice-creams-anymore</div>
+                    <div class="result-content">Cold‑Chain Logistics Challenges: The frozen supply chain adds its own hurdles. Reefer trucks often return empty without a reverse load, raising logistics costs. Even brief temperature breaches (above -10 Deg C) can cause “heat shock” and damage products. Freezer space at retail stores is limited and often comes with stocking exclusivity, while retailers bear the electricity cost of running these units. In smaller towns, frequent outages and generator expenses make stores cautious about stocking slower‑moving premium items.
+
+ Where Kwality Wall’s Fits in the Ice-Cream Industry
+
+However, this opportunity comes with its own set of challenges.
+
+A Highly Fragmented and Competitive Market: India’s ice‑cream space is crowded, with competition coming from every direction. [...] The Real Estate Constraint: The average Indian Kirana store is small (200-300 sq. ft.). There is physically only enough floor space for one deep freezer.
+ The Winner-Takes-All Dynamic: This creates a fierce battle for “floor real estate.” The first company to place a freezer in a store effectively locks out competitors. Once a Kwality Wall’s freezer is installed, the retailer is contractually (or practically) bound to stock only Kwality Wall’s products in that unit. [...] National brands like Amul and Mother Dairy bring scale and strong value offerings.
+ Regional champions such as Vadilal, Arun (Hatsun), and Dairy Day enjoy deep loyalty and efficient local distribution.
+ Thousands of local manufacturers dominate rural markets and low‑price segments.
+
+Even though Kwality Wall’s is one of the largest organised players, especially in urban impulse formats (cones, sticks, bars, and novelties), these layers of competition make market share hard‑won.
+
+ Why Kwality Wall’s Still Holds a Strong Position?
+
+Despite these hurdles, Kwality Wall’s enjoys meaningful advantages that keep it firmly positioned among India’s leading organised players.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mbaskool.com/marketing-mix/products/17129-kwality-walls.html" target="_blank">Kwality Walls Marketing Mix (4Ps) &amp; Marketing Strategy | MBA Skool</a></h3>
+                    <div class="result-url">https://www.mbaskool.com/marketing-mix/products/17129-kwality-walls.html</div>
+                    <div class="result-content">Home
+ Courses
+ Concepts
+ SWOT
+ Marketing Mix Strategy
+ PESTLE
+ Five Forces
+ Business Lists
+ Competitors
+
+1. Marketing Mix Strategy
+›2. Products
+›3. Kwality Walls Marketing Mix (4Ps) &amp; Marketing Strategy
+
+ Kwality Walls Marketing Mix (4Ps) &amp; Marketing Strategy
+
+Marketing strategy of Kwality Walls through marketing mix framework which covers the 4Ps (Product, Price, Place, Promotion).
+
+Published by MBA Skool Team in Products category Read time:
+
+ Kwality Walls Product Strategy: [...] Related Content
+
+ Coca Cola Marketing Mix &amp; Strategy
+ Nike Marketing Mix &amp; Strategy
+ FedEx Marketing Mix &amp; Strategy
+ Samsung Marketing Mix &amp; Strategy
+ Walmart Marketing Mix &amp; Strategy
+ Apple Marketing Mix &amp; Strategy
+ Amazon Marketing Mix &amp; Strategy
+ Starbucks Marketing Mix &amp; Strategy
+ Pepsi Marketing Mix &amp; Strategy
+
+All Business Sections
+
+ Courses
+ Business Concepts
+ SWOT Analysis
+ Marketing Mix &amp; Strategy
+ PESTLE Analysis
+ Five Forces Analysis
+ Competitors
+ Top Brand Lists
+ Articles
+ GD Topics
+
+Write for Us
+
+Write &amp; Contribute Business Content
+
+ Submit Content
+
+ Home
+ About Us
+ Contact Us
+ Terms
+ Privacy Policy
+ Contribute Content
+ Colleges
+ Media
+ Quizzes
+ Articles
+ GD Topics
+ Web Stories
+
+Follow us on FB PageTwitter Page
+
+2011-2025 | MBASkool.com [...] Image: company website
+
+This concludes the product strategy in Kwality Walls marketing mix &amp; strategy.
+
+ Kwality Walls Price/Pricing Strategy:
+
+Below is the pricing strategy in Kwality Walls marketing mix strategy:
+
+Kwality Walls is a leader in the Indian segment but still faces stiff competition. The 200 crore ice cream brand continues to thrive in the market despite strict competition from Mother Dairy and Amul is because of its aggressive pricing strategy in its marketing mix.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Kwality_Wall%27s" target="_blank">Kwality Wall&#x27;s</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Kwality_Wall%27s</div>
+                    <div class="result-content">| Products |  Ben &amp; Jerry&#x27;s  Calippo  Cornetto &quot;Cornetto (frozen dessert)&quot;)  Grom &quot;Grom (company)&quot;)  Magnum &quot;Magnum (ice cream)&quot;)  Nogger  Solero &quot;Solero (ice cream)&quot;)  Talenti  Twister &quot;Twister (ice cream)&quot;)  Viennetta  Yasso &quot;Yasso (frozen yogurt)&quot;) |
+| Regional brands |  Frigo &quot;Frigo (ice cream)&quot;)  GB Glace  Glidat Strauss  HB  HB Wall&#x27;s  Holanda?action=edit&amp;redlink=1 &quot;Holanda (brand) (page does not exist)&quot;)  Inmarko  Kibon  Kwality Wall&#x27;s  Miko &quot;Miko (ice cream)&quot;)  Ola  Selecta &quot;Selecta (dairy products)&quot;)1  Wall&#x27;s &quot;Wall&#x27;s (ice cream)&quot;)   |  |  |  --- | | Good Humor-Breyers |  Breyers  Dickie Dee  Good Humor  Klondike   + Choco Taco  Popsicle &quot;Popsicle (brand)&quot;) | | Streets &quot;Streets (ice cream)&quot;) |  Bubble O&#x27; Bill  Golden Gaytime  Paddle Pop  Weis &quot;Weis (ice cream)&quot;) | | [...] 1. 1 2 &quot;HUL–Kwality Wall&#x27;s Split Explained: Listing Timeline, Valuation, and What It Means for Investors&quot;. Outlook Business. 5 December 2025. Retrieved 14 December 2025.
+2. ↑ &quot;Kwality Wall&#x27;s hits Rs 1000 crore mark&quot;. www.telegraphindia.com. Retrieved 12 October 2022.
+3. ↑ &quot;India&#x27;s Most Trusted Brands 2014&quot;. Trust Research Advisory. Archived from the original on 2 May 2015.
+4. ↑ Southey, Flora (2 July 2025). &quot;Unilever makes major step towards ice cream demerger&quot;. FoodNavigator.com. Retrieved 14 December 2025.
+5. ↑ &quot;Kwality Wall&#x27;s Transitions to Milk-Based Ice Cream in India by 2027&quot;. dairynews.today. Retrieved 12 July 2026.
+6. ↑ &quot;Kwality Wall&#x27;s Transitions to Milk-Based Ice Cream in India by 2027&quot;. dairynews.today. Retrieved 12 July 2026. [...]  External links
+
+[edit]
+
+ Kwality Wall&#x27;s at Hindustan Unilever Limited
+
+|  v  t  e  The Magnum Ice Cream Company |</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

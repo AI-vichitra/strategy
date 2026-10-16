@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEPSI - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PEPSI</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="pepsi.com" target="_blank" class="meta-url">pepsi.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> PepsiCo's mission is "Creating more smiles with every sip and every bite." Its vision is "Be the global leader in convenient foods and beverages by winning with a purpose." The company focuses on brand building and continuous productivity.. Products & Services: Pepsi | Mountain Dew | Lay’s potato chips | Gatorade | Tropicana beverages | 7 Up | Doritos tortilla chips | Quaker foods and snacks | Cheetos | Mirinda | Ruffles potato chips | Aquafina bottled water | Tostitos tortilla chips | Mist Twist | Fritos corn chips | Walkers potato crisps     Competitors: Coca-Cola |Dr. Pepper | Red Bull | Kellogg | Unilever | Nestle  Table of Contents  ## Pepsi’s Vision Statement  PepsiCo’s executive leadership embarked on a journey to develop a vision statement which they think best suits their organization.  The vision statement is as follows.  “Be the global leader in convenient foods and beverages by winning with a purpose.”  To advance this vision, the company plans on becoming FASTER, STRONGER, and BETTER. [...] All employees are expected to execute all activities responsibly, keeping in mind the company policy and general rules and regulations. It builds the company’s trust in them.  ## Pepsi’s Market Strategy  PepsiCo uses a very simple marketing strategy that not only cuts down its cost of advertising and marketing but also makes the branding of its products much easier. PepsiCo has “ONE STRATEGY.”  For each one of its product, it has one message worldwide. Since most of its products are generic food and drinks; hence, the downfalls of this strategy are minimal compared to its advantages. In every country that the company operates in, it sells the same product with the same advertising and marketing. [...] #### Faster  PepsiCo plans on becoming more faster in business by focusing on customers and increasing investment for growth and market share.  #### Stronger  The company plans on becoming stronger by building on its capabilities and enhancing its company culture. PepsiCo plans on developing its core capabilities that will better facilitate customer needs, hence strengthening the brand.  #### Better  The organization plans on becoming better by integrating their vision into their business strategy. Furthermore, PepsiCo plans to give back to society and the people so that they can successfully create an everlasting impact of the company on the Planet.  ## Pepsi’s Mission Statement  Pepsi’s mission statement is as follows:  “Creating more smiles with every sip and every bite.”. ## Executive Overview  PepsiCo is a global consumer packaged goods company whose strategy combines scale in convenient foods and beverages with brand building, route-to-market execution, and continuous productivity.<br/><br/><strong>Product & Service Portfolio:</strong> PepsiCo offers a wide range of products including soft drinks, snacks, and beverages. Major brands include Pepsi, Gatorade, and Frito-Lay. Over 200 countries consume PepsiCo products daily.. | Key products or services | Carbonated soft drinks, sports drinks, flavored water, energy drinks, salty snacks, dips, breakfast foods, oats, snack bars, and at-home beverage systems | | Geographic footprint | Products sold in more than 200 countries and territories; major operating footprint across North America, Latin America, Europe, Africa, the Middle East, South Asia, and Asia Pacific | | Business segments as officially reported | Frito-Lay North America; Quaker Foods North America; PepsiCo Beverages North America; Latin America; Europe; Africa, Middle East and South Asia; Asia Pacific, Australia/New Zealand and China Region | | Company website |  | [...] ## 4. What Products and/or Services Does PepsiCo Sell?  PepsiCo’s offering spans several major categories: [...] Salty snacks and savory foods. This includes potato chips, tortilla chips, cheese-flavored snacks, corn snacks, dips, and related convenience foods sold under brands such as Lay’s, Doritos, Cheetos, Ruffles, Tostitos, Fritos, and SunChips.  Carbonated soft drinks and refreshment beverages. Pepsi, Mountain Dew, and other soft-drink brands remain important, but PepsiCo also sells non-cola beverages across hydration and refreshment categories.  Sports hydration, water, and flavored beverages. Gatorade is a major strategic asset in sports drinks, and brands such as bubly, Propel, and Aquafina extend PepsiCo’s reach into sparkling water, enhanced water, and packaged hydration.. PepsiCo's product mix as of 2015 (based on worldwide net revenue) consists of 53 percent foods, and 47 percent beverages. On a worldwide basis, the company's current products lines include several hundred brands that in 2009 were estimated to have generated approximately US$108 billion in cumulative annual retail sales.[needs update] [...] As of January 2021, the company possesses 23 brands that each have over $1 billion in sales annually. PepsiCo products were distributed across more than 200 countries and territories, resulting in annual net revenues of over US$70 billion.[citation needed] PepsiCo is the second-largest food and beverage business in the world based on net revenue, profit, and market capitalization, behind Nestlé. In 2023, the company's seat in the Forbes Global 2000 was 82.<br/><br/><strong>Recent Developments & News:</strong> PepsiCo announced plans to cut nearly 20% of its product lineup and lower prices to boost profits amid investor pressure. The company also declared a quarterly dividend and focuses on sustainability and positive change initiatives.. ↑ Schwartz, Ariel (July 10, 2009). "Naked Juice Brings PET Bottles to the Mainstream". Archived from the original on July 13, 2009. Retrieved December 12, 2010. 181. ↑ "PepsiCo Develops World's First 100 Percent Plant-Based, Renewably Sourced PET Bottle" (Press release). Retrieved June 18, 2012. 182. ↑ "PepsiCo Product Equipment and Displays". Retrieved May 21, 2020. 183. ↑ "Why PepsiCo, L'Oreal and Nestle are banking on this French plastics recycling startup". Retrieved January 21, 2020. 184.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> PepsiCo's key competitors include The Coca-Cola Company, Nestlé, Mondelez International, and Dr Pepper Snapple Group. These companies compete in beverages, snacks, and packaged foods. PepsiCo's market presence is global, facing strong competition across various product categories.. Pepsi competitors are companies that directly compete with PepsiCo across its beverage, snack, and food portfolio segments. Major competitors include The Coca-Cola Company, Nestlé, Mondelez International, General Mills, Kellogg's, and Unilever. These companies compete in carbonated soft drinks, bottled water, snacks, cereals, and packaged foods markets globally.  ## [...] Skip to content   FourWeekMBA  FourWeekMBA    The Leading Source of Insights On Business Model Strategy & Tech Business Models   FourWeekMBA  FourWeekMBA    The Leading Source of Insights On Business Model Strategy & Tech Business Models  pepsi-competitors  # PepsiCo Competitors: Top 12 Rivals (2026)  Business / By   Gennaro Cuofano   /  August 9, 2026  Competitive Landscape  Table of Contents  Toggle  ## Pepsi vs. Competitors  Key players competing across Pepsi’s core markets  Key Competitive Overlaps  ●  The Coca-Cola Company  Both compete in the carbonated soft drink market, offering a variety of soda brands and flavors, but with distinct brand identities and reci  ●  Dr Pepper Snapple Group [...] ## Key takeaways:   After acquiring Frito-Lay in 1965, PepsiCo became much more than a simple soft drink company. Today, the company is a leading beverage and snack producer, operating in most of the world’s countries and territories.  The Coca-Cola Company is the most significant threat to Pepsi’s success, with a more valuable brand and higher market share in the crucial North American market. Similarly, Keurig Dr Pepper with its 21% beverage market share is also a significant player.  Kellogg’s and Mondelez International are two of Pepsi’s largest competitors in the snack food industry. In the lucrative energy drink industry, Monster Beverage Corporation has almost 40% of the market cornered.  ## How AI Is Changing This. In practical terms, PepsiCo’s most important businesses are its North American snacks and beverages operations, because those businesses combine large scale with strong route-to-market control. Quaker is smaller but strategically useful in nutrition and breakfast adjacencies.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bstrategyhub.com/pepsico-vision-mission-core-values-a-complete-analysis" target="_blank">PepsiCo Mission Statement | Vision | Values | Strategy (2025 Analysis) | Business Strategy Hub</a></h3>
+                    <div class="result-url">https://bstrategyhub.com/pepsico-vision-mission-core-values-a-complete-analysis</div>
+                    <div class="result-content">Products &amp; Services: Pepsi | Mountain Dew | Lay’s potato chips | Gatorade | Tropicana beverages | 7 Up | Doritos tortilla chips | Quaker foods and snacks | Cheetos | Mirinda | Ruffles potato chips | Aquafina bottled water | Tostitos tortilla chips | Mist Twist | Fritos corn chips | Walkers potato crisps   
+ Competitors: Coca-Cola |Dr. Pepper | Red Bull | Kellogg | Unilever | Nestle
+
+Table of Contents
+
+ Pepsi’s Vision Statement
+
+PepsiCo’s executive leadership embarked on a journey to develop a vision statement which they think best suits their organization.
+
+The vision statement is as follows.
+
+“Be the global leader in convenient foods and beverages by winning with a purpose.”
+
+To advance this vision, the company plans on becoming FASTER, STRONGER, and BETTER. [...] All employees are expected to execute all activities responsibly, keeping in mind the company policy and general rules and regulations. It builds the company’s trust in them.
+
+ Pepsi’s Market Strategy
+
+PepsiCo uses a very simple marketing strategy that not only cuts down its cost of advertising and marketing but also makes the branding of its products much easier. PepsiCo has “ONE STRATEGY.”
+
+For each one of its product, it has one message worldwide. Since most of its products are generic food and drinks; hence, the downfalls of this strategy are minimal compared to its advantages. In every country that the company operates in, it sells the same product with the same advertising and marketing. [...]  Faster
+
+PepsiCo plans on becoming more faster in business by focusing on customers and increasing investment for growth and market share.
+
+ Stronger
+
+The company plans on becoming stronger by building on its capabilities and enhancing its company culture. PepsiCo plans on developing its core capabilities that will better facilitate customer needs, hence strengthening the brand.
+
+ Better
+
+The organization plans on becoming better by integrating their vision into their business strategy. Furthermore, PepsiCo plans to give back to society and the people so that they can successfully create an everlasting impact of the company on the Planet.
+
+ Pepsi’s Mission Statement
+
+Pepsi’s mission statement is as follows:
+
+“Creating more smiles with every sip and every bite.”</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://umbrex.com/resources/company-profiles/pepsico" target="_blank">PepsiCo Strategy and Business Model</a></h3>
+                    <div class="result-url">https://umbrex.com/resources/company-profiles/pepsico</div>
+                    <div class="result-content">Executive Overview
+
+PepsiCo is a global consumer packaged goods company whose strategy combines scale in convenient foods and beverages with brand building, route-to-market execution, and continuous productivity. Founded in 1965 through the merger of Pepsi-Cola and Frito-Lay, with roots reaching back to 1898, PepsiCo is headquartered in Purchase, New York. It operates in carbonated soft drinks, sports drinks, flavored water, energy, packaged snacks, nutrition, breakfast foods, and at-home beverage systems. Its portfolio includes some of the world’s most recognized brands, including Pepsi, Gatorade, Mountain Dew, Lay’s, Doritos, Cheetos, Ruffles, Tostitos, and Quaker. [...] | Common name | PepsiCo |
+| Full legal name | PepsiCo, Inc. |
+| Headquarters | Purchase, New York, United States |
+| Ownership | Public company; widely held, with no controlling shareholder publicly disclosed |
+| Ticker | PEP |
+| Exchange | NASDAQ |
+| Market Cap | $194.31B |
+| Revenue (FY2024) | $91.85B |
+| Founding / major historical milestones | Pepsi-Cola roots to 1898; Frito-Lay formed in 1961; PepsiCo formed in 1965 through the merger of Pepsi-Cola and Frito-Lay; major milestones later included Tropicana (1998), Quaker Oats/Gatorade (2001), Wimm-Bill-Dann (2011), SodaStream (2018), Rockstar Energy (2020), and Pioneer Foods (2020) |
+| Industry or industries | Food and beverage; consumer packaged goods; snacks; nonalcoholic beverages; nutrition | [...] The main analytical point is that PepsiCo faces different competitive sets by aisle and channel. Beverage competition is more concentrated and globally visible; snack competition is fragmented by format, geography, and retailer private label.
+
+ 6. What Is the Marketing Strategy of PepsiCo?
+
+PepsiCo’s marketing strategy combines classic brand advertising with heavy retail execution. For a company like PepsiCo, marketing is not only about television or digital media; it is also about winning the shelf, building displays, shaping pack-price architecture, and reinforcing consumption occasions across channels.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.linkedin.com/posts/the-business-model-analyst_pepsico-mission-and-vision-statement-activity-7280528289096474624-0TA7" target="_blank">PepsiCo Mission and Vision Statement | The Business Model Analyst</a></h3>
+                    <div class="result-url">https://www.linkedin.com/posts/the-business-model-analyst_pepsico-mission-and-vision-statement-activity-7280528289096474624-0TA7</div>
+                    <div class="result-content">PepsiCo Mission and Vision Statement The PepsiCo mission statement is to “create more smiles with every sip and every bite.” And the PepsiCo vision statement is to “be the global leader in convenient foods and beverages by winning with a purpose.” Founded in 1965 through a merger between Pepsi-Cola and Frito-Lay, PepsiCo is a global corporation based in Purchase, New York. It has grown to become one of the world&#x27;s biggest producers and distributors of snacks, food, and beverages. The company&#x27;s mission and vision statements have been vital to their success in becoming a leader within their industry. PepsiCo’s mission statement aims to maximize performance while giving customers the best possible product experience. Its vision statement focuses on fulfilling its responsibilities as a global</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://boardmix.com/analysis/pepsico-mission-and-vision-statement-analysis" target="_blank">PepsiCo Mission and Vision Statement Analysis | Boardmix</a></h3>
+                    <div class="result-url">https://boardmix.com/analysis/pepsico-mission-and-vision-statement-analysis</div>
+                    <div class="result-content">PepsiCo’s Mission Statement
+
+PepsiCo’s mission statement is: &quot;To create more smiles with every sip and every bite.&quot; At first glance, it appears quite simple, almost bordering on trivial. However, when one delves deeper into the layers of these carefully chosen words, the profound intent and strategic philosophy of the organization emerge.
+
+First and foremost, the mention of &quot;creating more smiles&quot; sets a very human-centric tone. It underlines PepsiCo&#x27;s commitment to spreading joy and delight amongst its customers. The company&#x27;s goal is not just to manufacture and distribute goods but to enrich lives with happiness. It sees its consumers not as mere recipients of its products but as individuals whose satisfaction is paramount. [...] PepsiCo&#x27;s mission statement succinctly captures its commitment to its customers, its product diversity, and its unwavering quality promise. It positions PepsiCo not just as a food and beverage conglomerate but as a company dedicated to making life&#x27;s everyday moments more enjoyable for people worldwide.
+
+ PepsiCo’s Vision Statement
+
+The vision statement of PepsiCo states, &quot;Be the global leader in convenient foods and beverages by winning with purpose.&quot; It offers insight into the company&#x27;s aspirations and strategic direction. Each element of this vision statement carries weight and reflects the long-term objectives that PepsiCo seeks to achieve. [...] In today&#x27;s business world, it&#x27;s not enough for a company to simply provide goods or services. Companies must possess a core set of values and aspirations, encapsulated in their mission and vision statements. Understanding these crucial components gives us a greater appreciation of the company&#x27;s strategy and identity. We have selected one such global conglomerate, PepsiCo, to dissect its mission and vision statements. This analysis offers a glimpse into the heart of the company, revealing its primary driving forces and future aspirations.
+
+ PepsiCo’s Mission Statement</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://edrawmind.wondershare.com/strategy-planning/pepsico-mission-and-vision-statement-analysis.html" target="_blank">A Complete Guide to PepsiCo’s Mission &amp; Vision Statement</a></h3>
+                    <div class="result-url">https://edrawmind.wondershare.com/strategy-planning/pepsico-mission-and-vision-statement-analysis.html</div>
+                    <div class="result-content">Mission Statement
+
+The PepsiCo mission statement shows the determination to significantly impact everyone using differentiated products, especially its target market. The statement also reflects the company&#x27;s ongoing efforts to unite its workforce, partners, and shareholders in growth.
+
+The three essential components of its mission statements are as follows:
+
+ Improve Communities
+
+One of PepsiCo&#x27;s priorities is to nurture the overall welfare of the global communities by providing excellent products and services to everyone. PepsiCo acknowledges that adverse effects on the environment constitute an impact on communities.
+
+Over the years, the firm has been recognized for initiating several sustainability projects due to its commitment to caring for communities.
+
+ Reasonable Prices [...]  Reasonable Prices
+
+PepsiCo recognizes that customer satisfaction extends beyond providing the best-tasting food and beverages to its target market. The company implements a creative pricing technique to provide its clients with the best prices for each product.
+
+PepsiCo also has promos and offers for specific brands.
+
+ Improve Health
+
+You might have noticed that PepsiCo has expanded its product portfolio by introducing low-calorie drinks and cereals. This is because the company acknowledges the demands of its customers for healthy product options.
+
+PepsiCo uses restorative raw materials like vegetables, fruits, and grains in its manufacturing process. This component of its mission statement has also been solidified by reducing added sugar, saturated fats, and sodium. [...] download software
+
+download software
+
+online use
+
+This article will analyze PepsiCo&#x27;s three principles - mission, vision, and core values. However, before that, you can see where the company stands. You’ll get a more grounded reference as you review the company’s mission and vision statements.
+
+|  |  |
+ --- |
+| Aspect | Information |
+| Founded | 1965 (merger of Pepsi-Cola and Frito-Lay) |
+| Headquarters | Purchase, NY, USA |
+| CEO | Ramon Laguarta |
+| Annual revenue | US$91,854 million (2024) |
+| Market cap | US$201.097 billion |
+| Key products | Beverages (Pepsi, Mountain Dew, Gatorade), Snacks (Lay’s, Doritos, Cheetos), Packaged Foods (Quaker, Tropicana) |
+| Latest Growth | 2.1% in Q2 2025 |
+| Official Website | www.pepsico.com |
+
+ Mission Statement</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://umbrex.com/resources/company-profiles/pepsico" target="_blank">PepsiCo Strategy and Business Model</a></h3>
+                    <div class="result-url">https://umbrex.com/resources/company-profiles/pepsico</div>
+                    <div class="result-content">| Key products or services | Carbonated soft drinks, sports drinks, flavored water, energy drinks, salty snacks, dips, breakfast foods, oats, snack bars, and at-home beverage systems |
+| Geographic footprint | Products sold in more than 200 countries and territories; major operating footprint across North America, Latin America, Europe, Africa, the Middle East, South Asia, and Asia Pacific |
+| Business segments as officially reported | Frito-Lay North America; Quaker Foods North America; PepsiCo Beverages North America; Latin America; Europe; Africa, Middle East and South Asia; Asia Pacific, Australia/New Zealand and China Region |
+| Company website |  | [...]  4. What Products and/or Services Does PepsiCo Sell?
+
+PepsiCo’s offering spans several major categories: [...] Salty snacks and savory foods. This includes potato chips, tortilla chips, cheese-flavored snacks, corn snacks, dips, and related convenience foods sold under brands such as Lay’s, Doritos, Cheetos, Ruffles, Tostitos, Fritos, and SunChips.
+ Carbonated soft drinks and refreshment beverages. Pepsi, Mountain Dew, and other soft-drink brands remain important, but PepsiCo also sells non-cola beverages across hydration and refreshment categories.
+ Sports hydration, water, and flavored beverages. Gatorade is a major strategic asset in sports drinks, and brands such as bubly, Propel, and Aquafina extend PepsiCo’s reach into sparkling water, enhanced water, and packaged hydration.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/PepsiCo" target="_blank">PepsiCo</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/PepsiCo</div>
+                    <div class="result-content">PepsiCo&#x27;s product mix as of 2015 (based on worldwide net revenue) consists of 53 percent foods, and 47 percent beverages. On a worldwide basis, the company&#x27;s current products lines include several hundred brands that in 2009 were estimated to have generated approximately US$108 billion in cumulative annual retail sales.[needs update] [...] As of January 2021, the company possesses 23 brands that each have over $1 billion in sales annually. PepsiCo products were distributed across more than 200 countries and territories, resulting in annual net revenues of over US$70 billion.[citation needed] PepsiCo is the second-largest food and beverage business in the world based on net revenue, profit, and market capitalization, behind Nestlé. In 2023, the company&#x27;s seat in the Forbes Global 2000 was 82. PepsiCo&#x27;s flagship product, Pepsi Cola, has been engaged in a rivalry for generations with Coca-Cola; it is commonly referred to as the cola wars. Although Coca-Cola outsells Pepsi Cola in the United States, PepsiCo within the North American market is the largest food and beverage company by net revenue. The company&#x27;s beverage [...] PepsiCo, Inc. is an American multinational food and beverage corporation headquartered in Harrison, New York, in the hamlet of Purchase. PepsiCo&#x27;s business encompasses all aspects of the food and beverage market. It oversees the manufacturing, distribution, and marketing of its products. PepsiCo was formed in 1965 with the merger of the Pepsi-Cola Company and Frito-Lay, Inc., PepsiCo has since expanded from its namesake product Pepsi to a diversified range of food and beverage brands. Significant acquisitions include Tropicana Products in 1998, the Quaker Oats Company in 2001, which added the Gatorade brand to the Pepsi portfolio, and Pioneer Foods in 2020 for US$1.7 billion.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.ebsco.com/research-starters/business-and-management/pepsico" target="_blank">PepsiCo | Business and Management | Research Starters</a></h3>
+                    <div class="result-url">https://www.ebsco.com/research-starters/business-and-management/pepsico</div>
+                    <div class="result-content">PepsiCo is known throughout the world for soft drinks such as Pepsi and Mountain Dew and for salty snacks such as Fritos, Lay’s potato chips, and Doritos. PepsiCo also produces Quaker Oats products, Gatorade, and Aquafina bottled water. In 2024, PepsiCo reported net revenues of over $91 billion, nearly half of which were earned outside the United States. PepsiCo boasts more than five hundred different brands, including twenty-three brands that generate at least $1 billion. Over 1 billion PepsiCo products are consumed around the world on any given day. Though the company is constantly being challenged by rival Coca-Cola, PepsiCo prides itself on being one of the largest food and beverage companies in North America, as well as in other regions of the world. Globally, PepsiCo had 319,000 [...] PepsiCo is known throughout the world for soft drinks such as Pepsi and Mountain Dew and for salty snacks such as Fritos, Lay’s potato chips, and Doritos. PepsiCo also produces Quaker Oats products, Gatorade, and Aquafina bottled water. In 2024, PepsiCo reported net revenues of over $91 billion, nearly half of which were earned outside the United States. PepsiCo boasts more than five hundred different brands, including twenty-three brands that generate at least $1 billion. Over 1 billion PepsiCo products are consumed around the world on any given day. Though the company is constantly being challenged by rival Coca-Cola, PepsiCo prides itself on being one of the largest food and beverage companies in North America, as well as in other regions of the world. Globally, PepsiCo had 319,000 [...] In the early twenty-first century, PepsiCo’s North American market beverage sales suffered in response to greater consumer emphasis on health and demands for sustainable practices. In addition to increasing automation in its manufacturing plants and closing one hundred facilities, PepsiCo began placing greater emphasis on making healthier beverage products through the use of alternative sweeteners, offering 7.5-ounce mini cans and 12-ounce glass bottles, improving packaging, and introducing a range of new products such as Pepsi Throwback, Wild Cherry Pepsi, and Pepsi Vanilla, which were all made with sugar rather than high-fructose corn syrup. In October 2014, the company announced its newest cola product, Pepsi True, which boasts 30 percent less sugar than regular Pepsi and no artificial</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.pepsi.com" target="_blank">Pepsi Official Site | Refreshing the World with Pepsi | Pepsi US</a></h3>
+                    <div class="result-url">https://www.pepsi.com</div>
+                    <div class="result-content">Pepsi
+
+Zero Sugar Wild Cherry and Cream
+
+ SWEET CHERRY COLA WITH A ZERO SUGAR CREAM FLAVOR TWIST
+
+Find out more
+
+Image 4: Can of Pepsi Prebiotic Cola
+
+ Pepsi
+
+Prebiotic Cola
+
+ CLASSIC FLAVOR WITH A REIMAGINED TWIST
+
+Find out more
+
+Image 5: Can of Pepsi Prebiotic Cola Cherry Vanilla
+
+ Pepsi
+
+Prebiotic Cola Cherry Vanilla
+
+ REFRESHING COLA WITH A SMOOTH CHERRY TWIST
+
+Find out more
+
+Image 6: Can of Pepsi Regular
+
+ Pepsi
+
+ MOMENTS WORTH SAVORING
+
+Find out more
+
+Image 7: Can of Pepsi Zero Sugar
+
+ Pepsi
+
+Zero Sugar
+
+ ZERO SUGAR, ALL THE PEPSI TASTE
+
+Find out more
+
+Image 8: Can of Pepsi Diet
+
+ Diet
+
+Pepsi
+
+ ZERO CALORIES, FULL REFRESHMENT
+
+Find out more
+
+Image 9: Can of Pepsi Wild Cherry
+
+ Pepsi
+
+Wild Cherry
+
+ PEPSI TASTE WITH A WILD CHERRY TWIST
+
+Find out more [...] Wild Cherry and Cream
+
+ CLASSIC COLA, CREAMY CHERRY FINISH
+
+Find out more
+
+Image 16: Can of Pepsi Zero Sugar Wild Cherry and Cream
+
+ Pepsi
+
+Zero Sugar Wild Cherry and Cream
+
+ SWEET CHERRY COLA WITH A ZERO SUGAR CREAM FLAVOR TWIST
+
+Find out more
+
+Image 17: Can of Pepsi Prebiotic Cola
+
+ Pepsi
+
+Prebiotic Cola
+
+ CLASSIC FLAVOR WITH A REIMAGINED TWIST
+
+Find out more
+
+Image 18: Can of Pepsi Prebiotic Cola Cherry Vanilla
+
+ Pepsi
+
+Prebiotic Cola Cherry Vanilla
+
+ REFRESHING COLA WITH A SMOOTH CHERRY TWIST
+
+Find out more
+
+Image 19: Can of Pepsi Regular
+
+ Pepsi
+
+ MOMENTS WORTH SAVORING
+
+Find out more
+
+Image 20: Can of Pepsi Zero Sugar
+
+ Pepsi
+
+Zero Sugar
+
+ ZERO SUGAR, ALL THE PEPSI TASTE
+
+Find out more
+
+Image 21: Can of Pepsi Diet
+
+ Diet
+
+Pepsi
+
+ ZERO CALORIES, FULL REFRESHMENT [...] PEPSI TASTE WITH A WILD CHERRY TWIST
+
+Find out more
+
+Image 10: Can of Pepsi Zero Sugar Wild Cherry
+
+ Pepsi
+
+Zero Sugar Wild Cherry
+
+ BIG CHERRY FLAVOR WITH ZERO SUGAR
+
+Find out more
+
+Image 11: Can of Diet Pepsi Wild Cherry
+
+ Diet
+
+Pepsi Wild Cherry
+
+ CRISP CHERRY FLAVOR, ZERO CALORIES
+
+Find out more
+
+Image 12: Can of Pepsi Caffeine Free
+
+ Pepsi
+
+Caffeine Free
+
+ BOLD PEPSI TASTE WITHOUT THE CAFFEINE
+
+Find out more
+
+Image 13: Can of Diet Pepsi Coffeine Free
+
+ Diet
+
+Pepsi Caffeine Free
+
+ CLASSIC TASTE, ZERO CAFFEINE
+
+Find out more
+
+Image 14: Can of Pepsi Real Sugar
+
+ Pepsi-Cola
+
+Made With Real Sugar
+
+ TIMELESS FLAVOR, REAL INGREDIENTS
+
+Find out more
+
+Image 15: Can of Pepsi Wild Cherry and Cream
+
+ Pepsi
+
+Wild Cherry and Cream
+
+ CLASSIC COLA, CREAMY CHERRY FINISH</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.britannica.com/money/PepsiCo-Inc" target="_blank">PepsiCo, Inc. | History, Products, &amp; Facts</a></h3>
+                    <div class="result-url">https://www.britannica.com/money/PepsiCo-Inc</div>
+                    <div class="result-content">PepsiCo’s business structure includes seven divisions: three in North America and the remaining four in various regions around the world. The company has a history of steady growth and stability, having raised its dividend each year for more than 50 years, making it what’s known as a dividend king. As of 2023, PepsiCo brands—present in over 200 countries—serve over a billion customers each day.
+
+ Founding and early history
+
+The first Pepsi-Cola was created by Caleb D. Bradham (1866–1934), a pharmacist in New Bern, North Carolina. Hoping to duplicate the recent success of Coca-Cola, Bradham named his sweet cola-flavored carbonated beverage Pepsi-Cola in 1898. The drink proved so popular that in 1902 Bradham incorporated the Pepsi-Cola Company. [...] Britannica Money
+Coca-Cola advertisement, c. 1890s.
+Indra Nooyi
+Pyramidal plastic boxes filled with gold-wrapped Ferrero Rocher chocolates arranged closely together.
+
+ PepsiCo, Inc.
+
+Coca-Cola advertisement, c. 1890s.
+Indra Nooyi
+Pyramidal plastic boxes filled with gold-wrapped Ferrero Rocher chocolates arranged closely together.
+Pepsi
+
+PepsiCo, Inc., based in Purchase, New York, is one of the world’s largest food and beverage companies. PepsiCo is known for its Frito-Lay snack food brands, soft drinks under its Gatorade, Mountain Dew, and namesake Pepsi brands, and cereal products under its Quaker Oats subsidiary.
+
+The PepsiCo name is deeply embedded within American pop culture. It emerged in 1965, when the Pepsi-Cola Company merged with Frito-Lay, Inc. [...] Pepsi-Cola advertisement
+
+With the Quaker merger, PepsiCo’s popular brands at the turn of the century included Pepsi cola, Frito-Lay snack products, Lipton Tea, Tropicana juices, Gatorade sports drinks, Quaker Oats cereals, and Rold Gold pretzels. In the early 21st century, the company shifted its focus:
+
+PepsiCo has also strived over the decades to tailor its branding and brand marketing to local and regional markets, either through acquisition or through new brands or products. Global brands include Walkers potato crisps (U.K.), Sabritas chips, nuts, and other salty snacks (Mexico), Uncle Chipps potato chips (India), Matutano snack foods (Spain), The Smith’s Snackfood Company (Australia), and Gamesa cookies (Mexico and South America).</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/PepsiCo" target="_blank">PepsiCo</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/PepsiCo</div>
+                    <div class="result-content">180. ↑ Schwartz, Ariel (July 10, 2009). &quot;Naked Juice Brings PET Bottles to the Mainstream&quot;. Fast Company. Archived from the original on July 13, 2009. Retrieved December 12, 2010.
+181. ↑ &quot;PepsiCo Develops World&#x27;s First 100 Percent Plant-Based, Renewably Sourced PET Bottle&quot; (Press release). PepsiCo. March 15, 2011. Retrieved June 18, 2012.
+182. ↑ &quot;PepsiCo Product Equipment and Displays&quot;. PepsiCo Partners. Retrieved May 21, 2020.
+183. ↑ &quot;Why PepsiCo, L&#x27;Oreal and Nestle are banking on this French plastics recycling startup&quot;. greenbiz.com. May 7, 2020. Retrieved January 21, 2020.
+184. 1 2 Geller, Martinne (March 30, 2009). &quot;PepsiCo tests &quot;green&quot; vending machines&quot;. Reuters. Retrieved December 12, 2010. [...] 98. ↑ Drogin, Bob (July 26, 1993). &quot;Pepsi-Cola Uncaps A Lottery Nightmare -- Bombings, Threats Follow Contest With Too Many Winners&quot;. Los Angeles Times. Retrieved October 9, 2015.
+99. ↑ &quot;Is Myanmar a business opportunity bonanza?&quot;. Investvine.com. January 15, 2013. Archived from the original on March 5, 2013. Retrieved February 3, 2013.
+100. ↑ Watson, Elaine (September 29, 2016). &quot;Sabra &#x27;well on its way&#x27; to becoming our next $1bn brand, says PepsiCo&quot;. Foodnavigator-USA.com, William Reed Business Media.
+101. ↑ Goodson, Scott (June 5, 2015). &quot;The Surprising Rise of Hummus in America&quot;. Huffington Post.
+102. ↑ &quot;PepsiCo to invest Rs 5,700 crore in India by 2030&quot;. The Economic Times. 2026.
+103. ↑ No intervention in Smith&#x27;s sale Australian Competition &amp; Consumer Commission August 21, 1998 [...] | Revenue | Increase US$91.85 billion (2024) |
+| Operating income | Increase US$12.89 billion (2024) |
+| Net income | Increase US$9.578 billion (2024) |
+| Total assets | Decrease US$99.47 billion (2024) |
+| Total equity &quot;Equity (finance)&quot;) | Decrease US$18.04 billion (2024) |
+| Number of employees | 318,000 (2024) |
+| Subsidiaries | List of subsidiaries |
+| Website | pepsico.com |
+| Footnotes  |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.youtube.com/watch?v=PqAVHWs-L7c" target="_blank">PepsiCo to Cut Products, Lower Prices After Investor Pressure</a></h3>
+                    <div class="result-url">https://www.youtube.com/watch?v=PqAVHWs-L7c</div>
+                    <div class="result-content">PepsiCo to Cut Products, Lower Prices After Investor Pressure
+ NTD
+1480000 subscribers
+24 likes
+
+ Description
+1889 views
+Posted: 11 Dec 2025
+PepsiCo announced Monday that it will slash nearly a fifth of its product lineup and reduce prices on popular snacks and beverages in an effort to win back customers and boost profits. The overhaul comes after activist investor Elliott Investment Management, which owns a $4 billion stake in the company, pushed executives to shake things up.
+
+The Purchase, New York-based snack and beverage giant, known for brands like Cheetos, Doritos, Lay&#x27;s, and Pepsi, has faced tough times recently. [...] PepsiCo said in February that years of double-digit price increases and changing customer preferences have weakened demand for its drinks and snacks. In July, the company said it was trying to combat perceptions that its products are too expensive by expanding distribution of value brands like Chester’s and Santitas.
+
+Elliott, an investment firm that took its stake in PepsiCo on Sept. 2, argued that the company lacked clear direction and had lost its competitive edge in the market. The firm pressed the company&#x27;s board to make dramatic changes, and PepsiCo&#x27;s leadership responded with what executives call an urgent action plan. [...] &quot;We are announcing our plans and initiatives that aim to accelerate organic revenue growth, deliver record productivity savings, and improve core operating margin – starting in 2026,&quot; said Ramon Laguarta, PepsiCo&#x27;s chairman and CEO, in a statement.
+--
+📺 Watch NTD News 24/7 on cable, broadcast, and streaming: 
+
+--
+🧶More NTD Programs:
+
+--
+🇺🇸 Stay updated with breaking news, special reports, and LIVE COVERAGE on NTD: 
+--
+🔵Sign up for our newsletter to stay informed with NTD News. 👉 If the link is blocked, type in NTD.com manually to sign up.
+--
+🔵 Watch more: 
+
+-
+Watch All NTD Original Documentaries:
+
+-
+🍀 Support NTD: 
+--
+© All Rights Reserved.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.pepsico.com/en" target="_blank">PepsiCo | Food and Drinks to Smile About</a></h3>
+                    <div class="result-url">https://www.pepsico.com/en</div>
+                    <div class="result-content">Image 19: Quaker Oats[Video 3](
+
+Image 20: Doritos[Video 4](
+
+Image 21: Pepsi[Video 5](
+
+Image 22: Gatorade[Video 6](
+
+Image 23: Propel[Video 7](
+
+Image 24: Sabra[Video 8](
+
+Image 25: poppi[Video 9](
+
+Image 26: Siete[Video 10](
+
+Image 27: Cheetos[Video 11](
+
+Image 28: Mountain Dew[Video 12](
+
+Image 29: Starbucks[Video 13](
+
+Image 30: Lipton[Video 14](
+
+Explore our brands
+
+Growing Positive Change
+
+From the way our ingredients are grown to the foods and drinks we share, we aim to create a more resilient and sustainable business, capable of delivering reliable performance for many years to come.
+
+Discover PepsiCo Positive
+
+Image 31: GROWING POSITIVE CHANGE
+
+Video 15
+
+What&#x27;s new
+
+   Stories
+
+ 
+   Press Releases
+
+   Image 32: undefinedStories [...] Press Releases
+
+   Image 32: undefinedStories
+
+   10 delicious ways to enjoy Alvalle gazpacho this summer  
+   Image 33: undefinedStories
+
+   Why loaded meals are the next big trend in eating  
+   Image 34: undefinedStories
+
+   New limited-time flavor brings a bold kick to the Tostitos® roster in time for football season  
+   Image 35: undefinedStories
+
+   How Gatorade turned a dehydration problem into a 60-year science-backed legacy  
+   Image 36: undefinedStories
+
+   How PepsiCo is helping shape the dirty soda trend  
+   Image 37: undefinedStories
+
+   Growing the next generation of farmers  
+
+Food. Drinks. Smiles.
+
+Food. Drinks. Smiles.
+
+Food. Drinks. Smiles.
+
+Food. Drinks. Smiles.
+
+Food. Drinks. Smiles.
+
+Food. Drinks. Smiles.
+
+Food. Drinks. Smiles.
+
+Image 38: Pepsico-logo footer</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.prnewswire.com/news-releases/pepsico-reveals-companys-continued-progress-through-the-voices-of-associates-in-latest-dei-report-301672386.html" target="_blank">PepsiCo Reveals Company&#x27;s Continued Progress Through the Voices of Associates in Latest DE&amp;I Report</a></h3>
+                    <div class="result-url">https://www.prnewswire.com/news-releases/pepsico-reveals-companys-continued-progress-through-the-voices-of-associates-in-latest-dei-report-301672386.html</div>
+                    <div class="result-content">+ Manzanita Sol, a crisp, refreshing apple soda reminiscent of the flavors of Latin America and the Caribbean, supported some of New York City&#x27;s most beloved Black and Hispanic-owned food trucks with $10,000 to help further their small businesses.
++ Walkers introduced a range of limited-edition crisps reminiscent of iconic flavors of UK restaurants (e.g., &#x27;Madras Curry&#x27; inspired by The Radhuni in Edinburgh and &#x27;Chicken Burrito&#x27; inspired by Yucca in London) to encourage customers to give back and support their favorite local eateries.
++ Doritos Mexico launched a Día de Muertos ad that celebrates love and reaffirms the company&#x27;s ongoing allyship of the LGBTQ+ community through its PrideAllYear campaign.
+
+A space for communities to thrive: [...] Guiding PepsiCo is our vision to Be the Global Leader in Beverages and Convenient Foods by Winning with PepsiCo Positive (pep+). pep+ is our strategic end-to-end transformation that puts sustainability and human capital at the center of how we will create value and growth by operating within planetary boundaries and inspiring positive change for planet and people. For more information, visit www.pepsico.com, and follow on Twitter, Instagram, Facebook, and LinkedIn @PepsiCo.  
+
+SOURCE PepsiCo, Inc.
+
+ 21%
+
+more press release views with 
+
+Request a Demo
+
+ Modal title
+
+ Also from this source
+
+PepsiCo Reports on Latest ESG Performance Towards pep+ Goals
+
+ PepsiCo Reports on Latest ESG Performance Towards pep+ Goals [...] PepsiCo, Inc. (NASDAQ: PEP) on Thursday released its 2025 ESG Summary, web pages, and Leadership Message, updated ESG Topics A-Z pages and 2025 ESG...
+
+PepsiCo Declares Quarterly Dividend
+
+ PepsiCo Declares Quarterly Dividend
+
+The Board of Directors of PepsiCo, Inc. (NASDAQ: PEP) today declared a quarterly dividend of $1.48 per share of PepsiCo common stock, a 4 percent...
+
+More Releases From This Source
+
+ Explore
+
+Beverages
+
+Beverages
+
+Non-Alcoholic Beverages
+
+Non-Alcoholic Beverages
+
+Household, Consumer &amp; Cosmetics
+
+Household, Consumer &amp; Cosmetics
+
+Food &amp; Beverages
+
+Food &amp; Beverages
+
+ News Releases in Similar Topics</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://pepsico.gcs-web.com/static-files/23c95492-6a12-4315-b888-d52d81e9d8ed" target="_blank">[PDF] PepsiCo 2025 Annual Report</a></h3>
+                    <div class="result-url">https://pepsico.gcs-web.com/static-files/23c95492-6a12-4315-b888-d52d81e9d8ed</div>
+                    <div class="result-content">filed with or furnished to the SEC. Investors should note that we currently announce material information to our investors and others using filings with the SEC, press releases, public conference calls, webcasts or our corporate website (https:// www.pepsico.com), including news and announcements regarding our financial performance, key personnel, our brands and our business strategy. Information that we post on our corporate website could be deemed material to investors. We encourage investors, the media, our customers, consumers, business partners and others interested in us to review the information we post on these channels. We may from time to time update the list of channels we will use to communicate information that could be deemed material and will post information about any such [...] makes, markets, distributes and sells Sabra refrigerated dips and spreads. PepsiCo Beverages North America Either independently or in conjunction with third parties, PBNA makes, markets and sells beverage concentrates, fountain syrups and finished goods under various beverage brands including Aquafina, Bubly, Diet Mountain Dew, Diet Pepsi, Gatorade, Gatorade Zero, Mountain Dew, Mountain Dew Baja Blast, Pepsi, Pepsi Wild Cherry, Pepsi Zero Sugar and Propel. PBNA operates its own bottling plants and distribution facilities and sells branded finished goods directly to independent distributors and retailers. PBNA also sells concentrate and finished goods for our brands to authorized and independent bottlers, who in turn sell our branded finished goods to independent distributors and retailers [...] about our products, products we distribute, certain brands licensed to and distributed to third parties (including alcoholic beverages), or particular ingredients or substances in our products, including concerns or perceptions regarding whether certain of our products are &quot;ultra-processed,&quot; contain certain ingredients or substances or otherwise contribute to obesity and other health conditions or an increase in public health costs; our research and development efforts; any product quality or safety issues, including the recall of any of our products; any failure to comply with laws and regulations; consumer perception of our advertising campaigns, sponsorship arrangements, marketing programs, use of social media and our response to political and social issues, geopolitical events and</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://fourweekmba.com/pepsi-competitors" target="_blank">PepsiCo Competitors: Top 12 Rivals (2026)</a></h3>
+                    <div class="result-url">https://fourweekmba.com/pepsi-competitors</div>
+                    <div class="result-content">Pepsi competitors are companies that directly compete with PepsiCo across its beverage, snack, and food portfolio segments. Major competitors include The Coca-Cola Company, Nestlé, Mondelez International, General Mills, Kellogg&#x27;s, and Unilever. These companies compete in carbonated soft drinks, bottled water, snacks, cereals, and packaged foods markets globally.
+
+ [...] Skip to content
+
+ FourWeekMBA
+
+FourWeekMBA  
+
+The Leading Source of Insights On Business Model Strategy &amp; Tech Business Models
+
+ FourWeekMBA
+
+FourWeekMBA  
+
+The Leading Source of Insights On Business Model Strategy &amp; Tech Business Models
+
+pepsi-competitors
+
+ PepsiCo Competitors: Top 12 Rivals (2026)
+
+Business / By   Gennaro Cuofano   /  August 9, 2026
+
+Competitive Landscape
+
+Table of Contents
+
+Toggle
+
+ Pepsi vs. Competitors
+
+Key players competing across Pepsi’s core markets
+
+Key Competitive Overlaps
+
+●
+
+The Coca-Cola Company
+
+Both compete in the carbonated soft drink market, offering a variety of soda brands and flavors, but with distinct brand identities and reci
+
+●
+
+Dr Pepper Snapple Group [...]  Key takeaways:
+
+ After acquiring Frito-Lay in 1965, PepsiCo became much more than a simple soft drink company. Today, the company is a leading beverage and snack producer, operating in most of the world’s countries and territories.
+ The Coca-Cola Company is the most significant threat to Pepsi’s success, with a more valuable brand and higher market share in the crucial North American market. Similarly, Keurig Dr Pepper with its 21% beverage market share is also a significant player.
+ Kellogg’s and Mondelez International are two of Pepsi’s largest competitors in the snack food industry. In the lucrative energy drink industry, Monster Beverage Corporation has almost 40% of the market cornered.
+
+ How AI Is Changing This</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://umbrex.com/resources/company-profiles/pepsico" target="_blank">PepsiCo Strategy and Business Model</a></h3>
+                    <div class="result-url">https://umbrex.com/resources/company-profiles/pepsico</div>
+                    <div class="result-content">In practical terms, PepsiCo’s most important businesses are its North American snacks and beverages operations, because those businesses combine large scale with strong route-to-market control. Quaker is smaller but strategically useful in nutrition and breakfast adjacencies. Legacy products such as colas remain important, but newer growth emphasis has been stronger in zero-sugar beverages, hydration, energy, sparkling water, premium snacking, and more permissibly positioned food offerings.
+
+ 5. What Are the Key Competitors or Peers of PepsiCo?
+
+PepsiCo competes across several different categories, so no single competitor mirrors the entire company. The closest set of rivals includes both direct category competitors and broader snack-and-beverage peers.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.hudson-labs.com/research/pepsico-competitors-pep-key-rivals-in-2026" target="_blank">PepsiCo Competitors: PEP Key Rivals in 2026</a></h3>
+                    <div class="result-url">https://www.hudson-labs.com/research/pepsico-competitors-pep-key-rivals-in-2026</div>
+                    <div class="result-content">Conclusion
+
+PepsiCo operates in a highly competitive environment, facing formidable rivals across beverages, snacks, and packaged foods. Its primary beverage competitor is The Coca-Cola Company, but it also contends with Monster Beverage, Keurig Dr Pepper, Campbell Soup Company, Mondelēz International, The J.M. Smucker Company, General Mills, and The Hershey Company. PepsiCo’s broad and diversified portfolio, combined with its global reach and strong brand equity, positions it as a resilient leader in the consumer packaged goods sector. However, ongoing innovation, marketing, and strategic partnerships remain essential for maintaining its competitive edge.
+
+Share
+
+ You might also like
+
+View all
+
+Air Products Competitors: APD vs LIN, DOW in 2026 [...] | Keurig Dr Pepper Inc. | KDP | Dr Pepper, Canada Dry, Snapple, Green Mountain Coffee, 7UP, Vita Coco, C4 Energy, Keurig brewing system | 38.38 | Beverages - Non-Alcoholic |
+| Campbell Soup Company | CPB | Campbell’s soups, Swanson, Prego, V8, Pepperidge Farm, Goldfish, Snyder’s, Cape Cod, Kettle Brand | 7.69 | Packaged Foods |
+| Mondelēz International, Inc. | MDLZ | Oreo, Ritz, LU, Clif Bar, Cadbury, Milka, Toblerone, biscuits, chocolate, gum, candy, cheese, powdered beverages | 74.86 | Confectioners |
+| The J.M. Smucker Company | SJM | Folgers, Dunkin’, Café Bustelo, Uncrustables, Jif, Smucker’s, Meow Mix, Milk-Bone, Hostess | 11.86 | Packaged Foods | [...] | Company Name | Ticker | Key Product Lines | Market Cap ($B) | Subsector |
+ ---  --- 
+| PepsiCo | PEP | Lay’s, Doritos, Cheetos, Gatorade, Pepsi-Cola, Mountain Dew, Quaker, SodaStream, cereals, chips, oatmeal, pasta, rice | 217.88 | Beverages - Non-Alcoholic |
+| The Coca-Cola Company | KO | Coca-Cola, Diet Coke, Sprite, Fanta, Powerade, Dasani, Minute Maid, Costa, Topo Chico, Jack Daniel’s &amp; Coca-Cola | 331.33 | Beverages - Non-Alcoholic |
+| Monster Beverage Corporation | MNST | Monster Energy, Reign, Bang Energy, NOS, Full Throttle, Burn, alcohol brands (Jai Alai IPA, The Beast, etc.) | 73.97 | Beverages - Non-Alcoholic |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/1002567347/PepsiCo-Brand-Competitors-and-Market-Context" target="_blank">PepsiCo Brand Competitors and Market Context | PDF | Pepsi Co | Pepsi</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/1002567347/PepsiCo-Brand-Competitors-and-Market-Context</div>
+                    <div class="result-content">Scribd
+
+ PepsiCo Brand Competitors and Market Context
+
+PepsiCo Brand Competitors and Market Context
+
+ Uploaded by
+
+AI-enhanced description
+
+ PepsiCo Brand Competitors and Market Context
+
+PepsiCo faces strong competition across its brand portfolio, with Coca-Cola being its primary rival in many beverage categories, including soda, energy drinks, and sports drinks. Key PepsiCo brands like Gatorade, Mountain Dew, and Lay&#x27;s hold significant market shares, but they often compete closely with Coca-Cola&#x27;s offerings and other brands like Dr Pepper and Pringles. Pricing strategies vary, with PepsiCo generally adopting a value-oriented approach compared to Coca-Cola&#x27;s premium positioning.
+
+ PepsiCo Brand Competitors and Market Context
+
+PepsiCo Brand Competitors and Market Context</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://thestrategystory.com/blog/pepsi-competitor-analysis" target="_blank">Pepsi competitor analysis - The Strategy Story</a></h3>
+                    <div class="result-url">https://thestrategystory.com/blog/pepsi-competitor-analysis</div>
+                    <div class="result-content">1. Bottled Water and Healthy Drinks: Nestlé, known for its bottled water brands like Nestlé Pure Life and San Pellegrino, faces competition from Pepsi’s Aquafina and other water and healthy beverage offerings. Pepsi has also ventured into flavored and functional waters to expand its market presence.
+2. Diversified Product Portfolio: Both companies offer a range of products beyond their core beverage lines. Pepsi, through its subsidiary Frito-Lay, competes in the snack food market, where Nestlé also has a presence with its various food products.
+3. Global Distribution and Market Presence: Pepsi leverages its extensive global distribution network to compete in markets where Nestlé is also a strong player. This widespread presence is crucial for competing in different regional markets. [...] 1. Product Development and Diversification: Pepsi has expanded its product line to include energy drinks, directly competing with Red Bull. Brands like Mountain Dew Game Fuel and Rockstar, which PepsiCo acquired, are positioned to compete in the energy drink segment.
+2. Targeted Marketing: Pepsi’s marketing strategies often focus on younger demographic and active lifestyle consumers, similar to Red Bull’s target audience. Pepsi enhances its visibility in these areas by using sports, music, and entertainment sponsorships.
+3. Global Distribution Network: Leveraging its extensive global distribution network, Pepsi ensures its energy drink products are widely available, competing with Red Bull’s strong presence in numerous markets worldwide. [...] 6. Strategic Partnerships and Sponsorships: Pepsi engages in various partnerships and sponsorships in sports, music, and entertainment. These initiatives increase brand visibility and appeal, helping to compete with Dr Pepper Snapple’s advertising and promotional efforts.
+7. Focus on Health-Conscious Consumers: With a growing trend towards healthier lifestyles, Pepsi has expanded its portfolio to include lower-calorie, lower-sugar, and more natural options. This strategy helps them to compete in segments where Dr Pepper Snapple Group offers similar health-conscious products.
+8. Global Presence: Pepsi’s global presence and brand recognition are leveraged to compete in international markets where Dr Pepper Snapple operates.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

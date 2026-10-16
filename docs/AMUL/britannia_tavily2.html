@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRITANNIA - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BRITANNIA</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.britannia.co.in" target="_blank" class="meta-url">https://www.britannia.co.in</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Britannia Industries, founded in 1892, is a leading Indian FMCG company known for biscuits, bread, and dairy products. It employs a wide distribution network and focuses on health and nutrition in its marketing strategy. Britannia's mission is to provide quality food products that enhance life experiences.. Britannia employs an extensive distribution network following the Fast-Moving Consumer Goods (FMCG) model, strategically appointing distributors to ensure its products are widely available across various markets. Britannia distribution channel follows the FMCG model, ensuring wide product availability through urban retail stores, rural networks, and modern trade partners. The company boasts a strong presence in urban areas and is actively working to enhance its reach in rural regions, addressing the unique challenges of distribution in these areas. Britannia effectively utilizes modern trade channels, partnering with major retail chains such as Big Bazaar and D Mart to maintain a prominent presence in high-traffic retail environments. Britannia has also expanded its market share [...] Britannia Industries Limited is an Indian food firm formed in Kolkata in 1892 with a small investment of Rs. 295 and is now headquartered in Mumbai. The firm is most known for its many brands of biscuits, but it also sells a wide range of packaged foods, dairy products, and bread to suit a variety of lifestyles.  It produces everyday food products such as Marie Gold, NutriChoice, Milk Bikis, Good Day, and Tiger, and is one of India's most trusted brands. Not only in metropolitan areas but also in rural areas, this brand has become a household name.  It spends some of the country's most prominent digital marketing expenses to maintain its significant presence in the Indian market. [...] ## Britannia Marketing Strategy  Britannia has primarily concentrated on the creation of new products and the promotion of nutrition and wellness.<br/><br/><strong>Product & Service Portfolio:</strong> Britannia offers biscuits, bread, cakes, rusks, and dairy products, with popular brands including Good Day, Tiger, and NutriChoice. The company focuses on quality and health-conscious options. Britannia's major products include Marie Gold biscuits and 50-50 bread.. ### NutriChoice:  For those mindful of health and nutrition, NutriChoice has emerged as a go-to brand. With products like NutriChoice Digestive Biscuits and NutriChoice 5 Grain biscuits, it provides healthful options without compromising on taste. This brand shows Britannia’s commitment to catering to a variety of needs of consumers, offering choices that align with their health and wellness goals. NutriChoice doesn’t merely present healthy biscuits; it delivers on a promise – a promise of flavourful indulgence in each bite while staying true to its nutritional ethos.  ### Britannia Bread: [...] ## About Britannia Industries Ltd.  |  |  |  --- | | Attribute | Detail | | Industry Type | Fast-moving consumer goods (FMCG) | | Year Founded | 1892 | | Headquarters | Kolkata, India | | Key People | Mr. Wadia (Chairman)  Rajneet Singh Kohli (CEO) | | Parent Company | Wadia Group | | Countries Present | Over 80 | | Market Cap | ₹1.08 trillion | | Employee Strength | Over 4500 | | Major Products | Biscuits, Bread, Cakes, Rusk, and Dairy products |  Subscribe to YouTube Channel  ## Overview of Britannia Industries Ltd. [...] ## Get Free Demat Account\  Verify It’s You!  Enter the 4-Digit OTP sent to +91 8080808080  OTP expires in 00:59  ## Frequently Asked Questions  ### What are the major product categories of Britannia Industries?  Answer Field  Britannia’s portfolio spans biscuits, breads, cakes and dairy products such as cheese and milk‑based snacks.  ### Who are Britannia Industries’ main competitors in the FMCG sector?  Answer Field  Britannia competes with other large food and FMCG companies that sell biscuits, bakery products and packaged foods.  ### How has Britannia Industries performed financially in recent years?  Answer Field  Britannia’s revenue rose from about ₹13,136 crore in FY2021 to roughly ₹17,943 crore in FY2025.  ### What is Britannia Industries’ distribution network like?  Answer Field. Britannia biscuits product line length,width,and depth-  Under Britannia’s biscuit segment it has a variety of products to offer.  These include -goodday, tiger, rusk, nutrichoice, puremagic, bourbon, nicetime, little hearts and many more. each of these have their variants in terms of flavour and sizes.for example-  Product characteristics and features-   Durability and tangibility- Britannia’s products can be classified as non durables/tangible.   Product differentiation -Britannia in order to differentiate its products recently changed the packaging of almost all of its biscuits.it improved the quality and made the packaging more colourful and attractive. It also started selling its premium range in light weight boxes.<br/><br/><strong>Recent Developments & News:</strong> Britannia Industries reported a 9% growth in quarterly turnover, launched Doodh Marie Gold, and partnered with quick-commerce platforms. The company faces inflation challenges but maintains ESG commitments.. So, wafers continued growing healthy double digit. Cake and rusk high prevalence in e-commerce driving growth at about 1.4 times of biscuits. We have successfully successfully scaled up our brownie also, very well accepted by consumers. Dairy business also double digit growth, and fueled by cake which has done excellently for us in the last one year. Also, our innovations have gained traction. So, the cheese dipped, the 50-50 cheese dipped, and a variant of that, the caramel dipped, uh which we launched, which has been heavily advertised on TV also during the Indian Premier League, uh has already become the second begins the second biggest player in the sandwich cracker segment in three months of its launch. And continues to grow month on month. Also, we have what we call these our [...] which is cheese dipped. Also, a variant of Marie Gold, which is the Doodh Marie Gold, which was launched across select markets. Uh This was complemented along with multiple consumer engagement and brand activations which covered Tiger, Crunch, Treat, which is our wafer brand, also Croissant and Jim Jam.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Britannia's key competitors include Parle Products, ITC, and Hindustan Unilever (HUL). These companies compete in the food and beverage sector, particularly in biscuits and packaged foods. Britannia's strong brand image and extensive distribution network help it maintain competitive advantages.. INDUSTRY : PACKAGED FOODS 4. BRITANNIA INDUSTRIES LTD.  Britannia Industries Ltd.   NSE: BRITANNIA | BSE: 500825   Expensive Performer    In 1 Starfolio Basket  Download real time  5623.50  113.50  (2.06%)  348.5K   NSE+BSE Volume  NSE 10 Aug, 2026 3:31 PM (IST)  Watchlist     Portfolio     Alert    My Notes. ### Naresh Baluni  ### CEO  ### Naresh Baluni  ### CEO  Britannia's Competitor - Frisco Foods logo  ###   ### CEO  ###   ### CEO  ###   ### CEO  ###   ### CEO  ## Britannia VS Parle Products  Parle Products is the top competitor of Britannia. Parle Products is a Private company that was founded in Mumbai, Maharashtra in 1929. Like Britannia, Parle Products also operates in the Baked Goods, Frozen & Prepared Foods sector. Parle Products has 45,828 more employees vs. Britannia.  ## Britannia VS ITC  ITC is seen as one of Britannia's biggest rivals. ITC was founded in Kolkata, West Bengal} in 1910. Like Britannia, ITC also competes in the Food & Beverages space.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://startuptalky.com/britannia-marketing-strategy" target="_blank">Britannia Marketing Strategy, Product Mix, Pricing Strategy &amp; Best Selling Products</a></h3>
+                    <div class="result-url">https://startuptalky.com/britannia-marketing-strategy</div>
+                    <div class="result-content">Britannia employs an extensive distribution network following the Fast-Moving Consumer Goods (FMCG) model, strategically appointing distributors to ensure its products are widely available across various markets. Britannia distribution channel follows the FMCG model, ensuring wide product availability through urban retail stores, rural networks, and modern trade partners. The company boasts a strong presence in urban areas and is actively working to enhance its reach in rural regions, addressing the unique challenges of distribution in these areas. Britannia effectively utilizes modern trade channels, partnering with major retail chains such as Big Bazaar and D Mart to maintain a prominent presence in high-traffic retail environments. Britannia has also expanded its market share [...] Britannia Industries Limited is an Indian food firm formed in Kolkata in 1892 with a small investment of Rs. 295 and is now headquartered in Mumbai. The firm is most known for its many brands of biscuits, but it also sells a wide range of packaged foods, dairy products, and bread to suit a variety of lifestyles.
+
+It produces everyday food products such as Marie Gold, NutriChoice, Milk Bikis, Good Day, and Tiger, and is one of India&#x27;s most trusted brands. Not only in metropolitan areas but also in rural areas, this brand has become a household name.
+
+It spends some of the country&#x27;s most prominent digital marketing expenses to maintain its significant presence in the Indian market. [...]  Britannia Marketing Strategy
+
+Britannia has primarily concentrated on the creation of new products and the promotion of nutrition and wellness. Taste, food, and life experiences are closely linked in Britannia&#x27;s marketing and social media efforts. Britannia has also used celebrities like Salman Khan and Deepika Padukone to promote its different marketing campaigns. In the baking, biscuits, and dairy industries, it has effectively occupied a significant market share. The brand has relied only on traditional celebrity marketing, ignoring the power of Influencer Campaigning, which may significantly influence social media networks.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/284504645/Britannia-s-Marketing-Strategy" target="_blank">Britannia Marketing Strategy Overview | PDF | Marketing | Microeconomics</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/284504645/Britannia-s-Marketing-Strategy</div>
+                    <div class="result-content">Scribd
+
+ Britannia Marketing Strategy Overview
+
+Britannia Marketing Strategy Overview
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Britannia Marketing Strategy Overview
+
+Britannia Industries is reinventing its marketing strategy to focus on health and nutrition. It aims to become a major foods company in India by expanding its product portfolio beyond biscuits into breads, dairy, and cakes. Britannia targets every consumer segment through an approach of affordable prices and innovative products. Its strategy includes associating the brand with health, nutrition, and performance through taglines like &quot;Eat Healthy. Think Better. Buy Britannia&quot;. The company also leverages cricket tournaments through promotional campaigns to boost brand awareness and loyalty among customers. [...]  Britannia Marketing Strategy Overview
+
+Britannia Marketing Strategy Overview
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://trendlyne.com/equity/about/220/BRITANNIA/britannia-industries-ltd" target="_blank">Britannia Industries company information, history, management and director details and CEO salary</a></h3>
+                    <div class="result-url">https://trendlyne.com/equity/about/220/BRITANNIA/britannia-industries-ltd</div>
+                    <div class="result-content">1. Britannia Industries Ltd.
+2. Company Profile
+
+ About Britannia Industries - Company Information, Overview, History and Profile
+
+ About
+
+Website: www.britannia.co.in
+
+ About the company - Business Profile
+
+Britannia Industries Ltd. is a major Indian food-products corporation primarily engaged in the manufacturing and sale of biscuits, bakery products, and dairy offerings. With a legacy spanning over a century, the company maintains a dominant position in the Indian biscuits market through a multi-brand strategy and an extensive pan-India distribution network. Britannia operates in the Fast-Moving Consumer Goods (FMCG) sector, providing a wide range of products including biscuits, bread, cakes, rusks, and dairy items such as cheese, milk, and yogurt.
+
+ Key Points [...] Key Facts:
+  + Founded: 1918 (Incorporated).
+  + Headquarters: Bengaluru, Karnataka (Executive Office); Kolkata, West Bengal (Registered Office).
+  + Parent Company: Part of the Wadia Group; The Bombay Burmah Trading Corporation Ltd. is a promoter.
+  + Stock Listing: Listed on Bombay Stock Exchange (BSE: 500825) and National Stock Exchange (NSE: BRITANNIA).
+  + Major Products: Good Day, Marie Gold, NutriChoice, Milk Bikis, Tiger, 50-50 (Biscuits); Treat (Croissants and Wafers); various bread, cake, and rusk varieties; and Dairy products.
+ Operations and Resources:
+  + The company operates through a network of owned manufacturing facilities and contract manufacturing units across India and international locations (e.g., Nepal, Egypt). [...] Quarterly Performance (FY 2025-26):
+  + Q3 FY26 Net Sales: ₹4,885 Crore (9.5% YoY growth).
+  + Q2 FY26 Net Sales: ₹4,752 Crore (4.1% YoY growth).
+  + H1 FY26 Revenue Growth: 7%.
+ Key Products and Technology:
+  + Recent focus on &quot;Treat&quot; Croissants and Creme Wafers, and &quot;NutriChoice&quot; 100% Atta biscuits.
+  + Implementation of cost-saving initiatives and digital transformation in supply chain and distribution.
+ Subsidiaries:
+  + Major subsidiaries include Nalanda Biscuits Company Limited, Sunandaram Foods Private Limited, and Britannia Bel Foods Private Limited (a joint venture for dairy).
+ Strategic Initiatives:
+  + Driving volume-led growth through region-specific and consumer-centric products.
+  + Sustaining margins via cost-saving programs despite commodity price fluctuations.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Britannia_Industries" target="_blank">Britannia Industries - Wikipedia</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Britannia_Industries</div>
+                    <div class="result-content">Britannia Industries Limited is an Indian multinational food products company, which sells biscuits, breads and dairy products. Founded in 1892, it is one of India&#x27;s oldest existing companies and currently part of the Wadia Group headed by Nusli Wadia. As of 2023,( about 80% of its revenues came from biscuit products.
+
+Beginning with the circumstances of its takeover by the Wadia Group in the early 1990s, the company has been mired in several controversies connected to its management, but it continues to hold a large market share.
+
+ History
+
+[edit] [...] | Formerly | Britannia Biscuit Company Limited |
+| Type | Public |
+| Traded as | BSE: 500825 NSE: BRITANNIA |
+| ISIN | INE216A01030 |
+| Industry | Food processing |
+| Founded | 1892; 134 years ago (1892) in Calcutta   ---   1918; 108 years ago (1918) (as Britannia Biscuit Company Limited) |
+| Headquarters | Hungerford Street, Kolkata, India (registered office)   ---   Whitefield, Bangalore, India (corporate headquarters)  |
+| Area served | Worldwide |
+| Key people |  Nusli Wadia (Chairman)  Varun Berry (Executive Vice-Chairman &amp; MD)  Rajneet Kohli (CEO)  N Venkataraman (Executive Director &amp; CFO) |
+| Products |  Bakery products including biscuits, bread, cakes and rusk  Dairy products including milk, butter, cheese, ghee and dahi &quot;Dahi (curd)&quot;) | [...] The company was established in 1892 by a group of British businessmen with an initial investment of ₹295. Initially, biscuits were manufactured in a small house in central Kolkata. Later, the enterprise was acquired by the Gupta brothers, mainly Nalin Chandra Gupta, an attorney, and was operated under the name V.S. Brothers. In 1918, C.H. Holmes, an English businessman based in Kolkata, was taken on as a partner and The Britannia Biscuit Company Limited (BBCo) was launched. The Mumbai factory was set up in 1924 and Peek Freans acquired a controlling interest in BBCo. During World War II, the government of British India needed a continuous supply of biscuits for British soldiers. The Britannia Biscuit Company supplied biscuits to British Army for several years, at times devoting up to 95%</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://vizologi.com/business-strategy-canvas/britannia-industries-business-model-canvas" target="_blank">Business Strategy Canvas - Vizologi</a></h3>
+                    <div class="result-url">https://vizologi.com/business-strategy-canvas/britannia-industries-business-model-canvas</div>
+                    <div class="result-content">The business model of Britannia Industries primarily revolves around the manufacturing and distribution of food products. The company earns revenue by selling its diverse range of products to consumers through various channels, including retail stores, supermarkets, and e-commerce platforms. Britannia&#x27;s brand strength and customer loyalty contribute to its consistent revenue streams. Additionally, the company focuses on product innovation and marketing strategies to stay competitive in the dynamic FMCG market. Britannia&#x27;s commitment to delivering quality products with a focus on consumer preferences has propelled it to the forefront of the Indian food industry, making it a trusted choice for millions of consumers. [...] Britannia Industries is a renowned Indian food company that has been a household name for over a century. Established in 1892, Britannia has evolved into one of India&#x27;s leading FMCG (Fast-Moving Consumer Goods) companies, known for its diverse range of delicious and high-quality food products. The company&#x27;s product portfolio includes biscuits, bread, cakes, dairy products, and snacks. Britannia operates through a widespread distribution network, making its products easily accessible to consumers nationwide. With a commitment to innovation and quality, Britannia has become synonymous with trust and taste in the Indian food industry.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bajajbroking.in/blog/britannia-industries-overview" target="_blank">Britannia Industries Ltd. An In-Depth Analysis | Bajaj Broking</a></h3>
+                    <div class="result-url">https://www.bajajbroking.in/blog/britannia-industries-overview</div>
+                    <div class="result-content">NutriChoice:
+
+For those mindful of health and nutrition, NutriChoice has emerged as a go-to brand. With products like NutriChoice Digestive Biscuits and NutriChoice 5 Grain biscuits, it provides healthful options without compromising on taste. This brand shows Britannia’s commitment to catering to a variety of needs of consumers, offering choices that align with their health and wellness goals. NutriChoice doesn’t merely present healthy biscuits; it delivers on a promise – a promise of flavourful indulgence in each bite while staying true to its nutritional ethos.
+
+ Britannia Bread: [...]  About Britannia Industries Ltd.
+
+|  |  |
+ --- |
+| Attribute | Detail |
+| Industry Type | Fast-moving consumer goods (FMCG) |
+| Year Founded | 1892 |
+| Headquarters | Kolkata, India |
+| Key People | Mr. Nusli N. Wadia (Chairman)  Rajneet Singh Kohli (CEO) |
+| Parent Company | Wadia Group |
+| Countries Present | Over 80 |
+| Market Cap | ₹1.08 trillion |
+| Employee Strength | Over 4500 |
+| Major Products | Biscuits, Bread, Cakes, Rusk, and Dairy products |
+
+Subscribe to YouTube Channel
+
+ Overview of Britannia Industries Ltd. [...]  Get Free Demat Account\
+
+Verify It’s You!
+
+Enter the 4-Digit OTP sent to +91 8080808080
+
+OTP expires in 00:59
+
+ Frequently Asked Questions
+
+ What are the major product categories of Britannia Industries?
+
+Answer Field
+
+Britannia’s portfolio spans biscuits, breads, cakes and dairy products such as cheese and milk‑based snacks.
+
+ Who are Britannia Industries’ main competitors in the FMCG sector?
+
+Answer Field
+
+Britannia competes with other large food and FMCG companies that sell biscuits, bakery products and packaged foods.
+
+ How has Britannia Industries performed financially in recent years?
+
+Answer Field
+
+Britannia’s revenue rose from about ₹13,136 crore in FY2021 to roughly ₹17,943 crore in FY2025.
+
+ What is Britannia Industries’ distribution network like?
+
+Answer Field</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://marketingbritannia.wordpress.com/2015/09/17/product-strategy-and-product-mix-of-britannia" target="_blank">Product Strategy and Product Mix of Britannia – Britannia Marketing Blog</a></h3>
+                    <div class="result-url">https://marketingbritannia.wordpress.com/2015/09/17/product-strategy-and-product-mix-of-britannia</div>
+                    <div class="result-content">Britannia biscuits product line length,width,and depth-
+
+Under Britannia’s biscuit segment it has a variety of products to offer.
+
+These include -goodday, tiger, rusk, nutrichoice, puremagic, bourbon, nicetime, little hearts and many more. each of these have their variants in terms of flavour and sizes.for example-
+
+Product characteristics and features-
+
+ Durability and tangibility- Britannia’s products can be classified as non durables/tangible.
+
+ Product differentiation -Britannia in order to differentiate its products recently changed the packaging of almost all of its biscuits.it improved the quality and made the packaging more colourful and attractive. It also started selling its premium range in light weight boxes. [...] Now let us understand the products offered by Britannia industries limited and their product strategy.Over the last century and a quarter, Britannia has been serving the Indian consumer with a range of fresh, nutritious and flavour-rich products. They takes pride in their food making traditions and in their innovations, in equal measure. They demand the best of ingredients and package their natural goodness in their products, without compromise. They deliver a complete sensory experience, in every product, every time.
+
+Today, Britannia is a leading food company in India with over rs. 6000 crores in revenues, delivering products in over 5 categories through 3.5 million retail outlets to more than half the Indian population.
+
+In this respect we can now understand Britannia’s product mix [...] Labeling-all the biscuit packs contains details about the product as well as the company.these include list of ingredients,nutrition value,date and place of manufacture,expiry date,company address, brand logo,brand tag line,product tag line,and also the keep your city clean logo for the purpose of environment friendliness
+
+.annut
+
+ Design-be it the design of the product or the packaging-Britannia has it all.it has biscuits of almost all shapes and sizes and its makes them look appetising by adding different coloured creams and icing.
+ Product and brand-Britannia’s products share a strong connection with its brand.many people purchase its products blindly because of the trust the brand has.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Britannia_Industries" target="_blank">Britannia Industries</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Britannia_Industries</div>
+                    <div class="result-content">| Formerly | Britannia Biscuit Company Limited |
+| Type | Public |
+| Traded as | BSE: 500825 NSE: BRITANNIA |
+| ISIN | INE216A01030 |
+| Industry | Food processing |
+| Founded | 1892; 134 years ago (1892) in Calcutta   ---   1918; 108 years ago (1918) (as Britannia Biscuit Company Limited) |
+| Headquarters | Hungerford Street, Kolkata, India (registered office)   ---   Whitefield, Bangalore, India (corporate headquarters)  |
+| Area served | Worldwide |
+| Key people |  Nusli Wadia (Chairman)  Varun Berry (Executive Vice-Chairman &amp; MD)  Rajneet Kohli (CEO)  N Venkataraman (Executive Director &amp; CFO) |
+| Products |  Bakery products including biscuits, bread, cakes and rusk  Dairy products including milk, butter, cheese, ghee and dahi &quot;Dahi (curd)&quot;) | [...] Britannia Industries Limited is an Indian multinational food products company, which sells biscuits, breads and dairy products. Founded in 1892, it is one of India&#x27;s oldest existing companies and currently part of the Wadia Group headed by Nusli Wadia. As of 2023,( about 80% of its revenues came from biscuit products.
+
+Beginning with the circumstances of its takeover by the Wadia Group in the early 1990s, the company has been mired in several controversies connected to its management, but it continues to hold a large market share.
+
+ History
+
+[edit] [...] Hidden categories:
+
+ Articles with short description
+ Short description is different from Wikidata
+ Use Indian English from August 2016
+ All Wikipedia articles written in Indian English
+ Use dmy dates from August 2016
+ Articles containing potentially dated statements from March 2025
+ All articles containing potentially dated statements
+ Articles containing potentially dated statements from 2023
+ All articles with unsourced statements
+ Articles with unsourced statements from March 2023
+ Articles with unsourced statements from May 2024
+ Webarchive template wayback links
+ All articles with dead external links
+ Articles with dead external links from October 2023
+ Articles with permanently dead external links
+ Commons category link from Wikidata
+
+Britannia Industries
+
+Add topic</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://alphastreet.com/india/britannia-india-companies-brand-portfolio-marketing-updates" target="_blank">Britannia India: Companies Brand Portfolio &amp; Marketing Updates | AlphaStreet</a></h3>
+                    <div class="result-url">https://alphastreet.com/india/britannia-india-companies-brand-portfolio-marketing-updates</div>
+                    <div class="result-content">Tiger: Tiger biscuits are designed to provide nutrition and energy, particularly for children. This brand is known for its fortified biscuits that aim to meet the nutritional needs of young consumers, making it a trusted choice among parents.  
+50-50: Britannia’s 50-50 brand combines the perfect balance of sweet and salty flavors in its biscuits. It caters to consumers looking for a unique and satisfying snacking experience.  
+Britannia Bread: Britannia’s foray into the bread segment has been marked by a commitment to providing fresh, nutritious, and high-quality bread products. Their bread range includes white, brown, and multi-grain options. [...] NutriChoice: NutriChoice is Britannia’s health-focused brand, offering a variety of biscuits and snacks that prioritize nutrition and wellness. These products are designed to cater to health-conscious consumers seeking tasty yet wholesome snacks.  
+Milk Bikis: Milk Bikis is a brand that specializes in milk-based biscuits, targeting children and families. These biscuits are known for their unique flavor and nutritional value.  
+Timepass: Timepass is another popular brand that offers a range of affordable and tasty biscuits, perfect for quick snacking and tea-time enjoyment. [...] Here is an overview of some of the prominent brands under Britannia’s umbrella:  
+  
+Britannia: The eponymous brand of the company, Britannia, represents a wide array of products, including biscuits, cakes, and dairy items. Known for its commitment to quality and taste, Britannia offers a range of biscuit variants such as Marie Gold, Bourbon, and Treat, catering to different consumer preferences.  
+Good Day: Good Day is one of Britannia’s most beloved brands, offering a delightful assortment of cookies and biscuits. With its premium quality and delectable flavors, Good Day has become synonymous with indulgence and relaxation.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/446574864/OVERVIEW-OF-BRITANNIA-docx" target="_blank">Britannia Industries: Company Overview | PDF | Pricing | New Product Development</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/446574864/OVERVIEW-OF-BRITANNIA-docx</div>
+                    <div class="result-content">Scribd
+
+ Britannia Industries: Company Overview
+
+Britannia Industries is one of India&#x27;s leading food companies with annual revenues over Rs. 9000 Cr. It manufactures popular brands like Good Day, Tiger, Nutri Choice, and Milk Bikis. Britannia has a portfolio of biscuits, bread, cakes, rusk, and dairy products. It is a trusted brand in India and has a presence in over 60 countries. While biscuits contribute most of its revenue, Britannia is working to expand its dairy and international businesses. It aims to dominate the food market with tasty yet healthy products and be a natural part of every Indian&#x27;s life.
+
+ Britannia Industries: Company Overview
+
+Britannia Industries: Company Overview
+
+AI-enhanced title and description
+
+ Uploaded by
+
+No thumbnails available [...]  Uploaded by
+
+No thumbnails available
+
+ Read this document in other languages
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.youtube.com/watch?v=PySRyY-jqx4" target="_blank">5 Key Takeaways From Britannia Industries Q4 | Quick Commerce, Premium Push &amp; Gen Z Growth</a></h3>
+                    <div class="result-url">https://www.youtube.com/watch?v=PySRyY-jqx4</div>
+                    <div class="result-content">So, wafers continued growing healthy double digit. Cake and rusk high prevalence in e-commerce driving growth at about 1.4 times of biscuits. We have successfully successfully scaled up our brownie also, very well accepted by consumers. Dairy business also double digit growth, and fueled by cake which has done excellently for us in the last one year. Also, our innovations have gained traction. So, the cheese dipped, the 50-50 cheese dipped, and a variant of that, the caramel dipped, uh which we launched, which has been heavily advertised on TV also during the Indian Premier League, uh has already become the second begins the second biggest player in the sandwich cracker segment in three months of its launch. And continues to grow month on month. Also, we have what we call these our [...] which is cheese dipped. Also, a variant of Marie Gold, which is the Doodh Marie Gold, which was launched across select markets. And also, Good Day Butter. Uh This was complemented along with multiple consumer engagement and brand activations which covered Tiger, Crunch, Treat, which is our wafer brand, also Croissant and Jim Jam. And as you would know, Croissant is a very exciting category, doing very well for us. If you take a look at the adjacency business, if you take a look at the cake budget, uh this is really a Gen Z focused brand. We have promoted it significantly during Valentine&#x27;s. Uh and we can see that there is significant growth in that, and it becomes an impulse kind of a you know, confectionery kind of a purchase. So, wafers continued growing healthy double digit. Cake and [...] grow month on month. Also, we have what we call these our signature brands, Treat, Little Hearts, and Jim Jams. Uh they are actually outpacing the overall company growth by about 3x. And as we see, and we continue to see growth in the coming quarter also. And obviously, to leverage this, uh the teams have innovation and All right. So, that was a Britannia con call. Those updates will continue at the bottom of your screen. This is something that the street is watching closely and a bit of recovery in the stock actually from where it started, but</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://leadiq.com/c/britannia-industries-limited/5a1d95da2300005e008481dd" target="_blank">Britannia Industries Limited Company Overview, Contact ...</a></h3>
+                    <div class="result-url">https://leadiq.com/c/britannia-industries-limited/5a1d95da2300005e008481dd</div>
+                    <div class="result-content">LinkedIn logo
+
+ Section iconCompany Overview
+
+Website
+:   britannia.co.in
+
+SIC Code
+:   2099 - Food Preparations, Not Elsewhere Classified
+
+NAICS Code
+:   722 - Food Services and Drinking Places
+
+Founded
+:   1892
+
+Employees
+:   10001+
+
+ Section iconMedia &amp; News
+
+ Media icon
+
+   Britannia Industries Limited partnered with Blinkit on Jul 17th &#x27;26.
+
+  Jul 17, 2026 | mediabrief.com
+ Media icon
+
+   Britannia Industries Limited promoted Shailesh Kumar to Vice President - Procurement on Apr 1st &#x27;26.
+
+  Jul 01, 2026 | www.investywise.com
+ Media icon
+
+   Britannia Industries Limited launched Doodh Marie Gold on Jun 25th &#x27;26.
+
+  Jun 25, 2026 | themileage.in
+
+Read more newsArrow icon
+
+ Section iconFunding &amp; Financials
+
+ $500M$1B [...] Web Analytics
+
+ Media &amp; News
+
+ Media icon
+
+   Britannia Industries Limited partnered with Blinkit on Jul 17th &#x27;26.
+
+  Taking the celebration beyond print, Britannia has also partnered with quick-commerce platforms Zepto and Blinkit to extend the OG Heart experience into everyday shopping.
+
+  Jul 17, 2026 | mediabrief.com
+ Media icon
+
+   Britannia Industries Limited promoted Shailesh Kumar to Vice President - Procurement on Apr 1st &#x27;26.
+
+  Britannia Industries Limited has announced the elevation of Mr. Shailesh Kumar from General Manager - Procurement to Vice President - Procurement.
+
+  Jul 01, 2026 | www.investywise.com
+ Media icon
+
+   Britannia Industries Limited launched Doodh Marie Gold on Jun 25th &#x27;26. [...] Consumers looking for a richer biscuit experience with their daily cup of tea now have a new option, as Britannia Industries has launched Doodh Marie Gold, the latest addition to its Marie biscuit portfolio.
+
+  Jun 25, 2026 | themileage.in
+ Media icon
+
+   Desai will leave Britannia Industries Limited as Vice President - Consumer Insight, Media and Competitive Intelligence on Jul 3rd &#x27;26.
+
+  Britannia stated that Desai has tendered his resignation to explore opportunities beyond the organisation and will officially be relieved of his responsibilities at the end of business hours on 3 July 2026.
+
+  Jun 11, 2026 | www.pitchonnet.com
+ Media icon</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.business-standard.com/markets/britannia-industries-ltd-share-price-93/news" target="_blank">Britannia Industries Ltd News: Latest Britannia Industries Ltd News Today on Business Standard</a></h3>
+                    <div class="result-url">https://www.business-standard.com/markets/britannia-industries-ltd-share-price-93/news</div>
+                    <div class="result-content">Leading fastmoving consumer goods (FMCG) companies expect volumedriven growth to take centre stage in the next fiscal year, supported by easing inflation and stable commodity prices that have begun to ease pressure on margins.
+In the December quarter, leading FMCG companies reported mid- to high single-digit volume growth. On their latest earnings calls, the industry captains said the operating environment is turning more favourable after several quarters of volatility.
+Key inputs such as edible oils, wheat, copra and surfactants softened, and with macroeconomic tailwinds including GST rationalisation, higher MSPs and a healthy crop season, FMCG makers anticipate sustained demand recovery. [...] FMCG makers looks volume-based growth in FY27 with Ebitda improvements
+FMCG makers looks volume-based growth in FY27 with Ebitda improvements &quot;FMCG makers looks volume-based growth in FY27 with Ebitda improvements&quot;)
+
+ F&amp;B players to sustain outperformance; Britannia, Marico top picks: JM Fin
+
+For Q4, the brokerage expects Marico to lead the HPC segment with around 20 per cent sales growth, followed by 9-10 per cent growth for Dabur India and Godrej Consumer Products
+
+F&amp;B players to sustain outperformance; Britannia, Marico top picks: JM Fin
+F&amp;B players to sustain outperformance; Britannia, Marico top picks: JM Fin &quot;F&amp;B players to sustain outperformance; Britannia, Marico top picks: JM Fin&quot;)
+
+ Britannia sees &#x27;Darvas Box&#x27;; VBL, Marico show reversal signs, says analyst [...] No disruptions due to industrial gas supply issues, says Britannia
+No disruptions due to industrial gas supply issues, says Britannia &quot;No disruptions due to industrial gas supply issues, says Britannia&quot;)
+
+ BSE FMCG, IT, Realty indices hit 52-week lows; down up to 13% in 1 month
+
+Concerns over rising inflation stemming from potential energy supply disruptions and rationing prompted investors to book profits, while FII outflows added to the market pressure, said Geojit.
+
+BSE FMCG, IT, Realty indices hit 52-week lows; down up to 13% in 1 month
+BSE FMCG, IT, Realty indices hit 52-week lows; down up to 13% in 1 month &quot;BSE FMCG, IT, Realty indices hit 52-week lows; down up to 13% in 1 month&quot;)
+
+ Antique initiates &#x27;Buy&#x27; on Britannia Ind; sees medium-term opportunity</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://finance.yahoo.com/news/britannia-industries-ltd-bom-500825-070054087.html" target="_blank">Britannia Industries Ltd (BOM:500825) Q4 2025 Earnings Call Highlights: Strong Sales Growth ...</a></h3>
+                    <div class="result-url">https://finance.yahoo.com/news/britannia-industries-ltd-bom-500825-070054087.html</div>
+                    <div class="result-content">Negative Points
+
+ The company faced aggressive inflation, with palm oil prices increasing by 54% year-on-year and wheat prices expected to remain high.
+ Despite a 4% growth in profit after tax for the quarter, the growth was relatively flat on a 24-month basis.
+ Competitive intensity remains a concern, with the presence of numerous unlisted players and B2C companies entering the market.
+ The company has not introduced any new categories in recent years, focusing instead on growing existing adjacencies.
+ There is uncertainty regarding the impact of inflation on future pricing strategies, with the company closely monitoring commodity prices.
+
+ Q &amp; A Highlights [...]  Positive Points
+
+ Britannia Industries Ltd (BOM:500825) reported a 9% growth in turnover for the quarter, indicating a positive trend in sales.
+ The company achieved a 6% growth in revenue from operations for the full year, with a 10% growth on a two-year basis.
+ Significant progress in distribution was made, with direct reach increasing from 27.9 lakh outlets to 28.7 lakh outlets, and rural distributors rising from 30,000 to 31,000.
+ Innovative product launches, such as the Pure Magic Harry Potter-themed biscuits, have been successful, particularly in e-commerce channels.
+ The company has maintained its ESG commitments, achieving plastic neutrality for the fourth consecutive year and increasing recyclable packaging by 17% compared to last year.
+
+ Negative Points [...] Quarterly Turnover: INR 4,376 crores, 9% growth year-on-year.
+ Profit After Tax (Quarterly): 12.8% of revenue, 4% growth year-on-year.
+ Annual Revenue from Operations: INR 17,535 crores, 6% growth year-on-year.
+ Profit After Tax (Annual): 12.5% of revenue, 3% growth year-on-year.
+ Direct Outlets: Increased from 27.9 lakh to 28.7 lakh outlets.
+ Rural Distributors: Increased from 30,000 to 31,000.
+ E-commerce Growth: 7.5 times growth compared to other channels.
+ Operating Profit Margin (Quarterly): 16.6%.
+ Operating Profit Margin (Annual): 16.4%.
+ Profit Before Tax (Quarterly): 2.4% growth year-on-year.
+ Profit After Tax (Quarterly): 4% growth year-on-year.
+ Inflation Impact: 12% inflation year-on-year, 54% inflation in palm oil, 80% inflation in cocoa.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.reuters.com/company/britannia-industries-ltd" target="_blank">Britannia Industries Ltd | Reuters</a></h3>
+                    <div class="result-url">https://www.reuters.com/company/britannia-industries-ltd</div>
+                    <div class="result-content">Image 4: A gig worker waits to pick an order outside a Swiggy&#x27;s grocery warehouse, in New Delhi
+   July 22, 2026 India&#x27;s FMCG sector faces margin squeeze as costs spike amid strong demand, price hikes 
+Indian consumer goods companies are expected to report pressure on first-quarter profit margins, as the Iran war-fuelled higher raw material costs outweighed benefits from ​resilient demand and price hikes, brokerages said.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://trendlyne.com/fundamentals/peer-group/220/BRITANNIA/britannia-industries-ltd" target="_blank">Britannia Industries - Competitors/Peers Analysis</a></h3>
+                    <div class="result-url">https://trendlyne.com/fundamentals/peer-group/220/BRITANNIA/britannia-industries-ltd</div>
+                    <div class="result-content">1. MARKETS
+2. SECTOR : FMCG
+3. INDUSTRY : PACKAGED FOODS
+4. BRITANNIA INDUSTRIES LTD.
+
+Britannia Industries Ltd.
+
+ NSE: BRITANNIA | BSE: 500825 
+
+Expensive Performer
+
+  In 1 Starfolio Basket
+
+Download real time
+
+5623.50  113.50  (2.06%)
+
+348.5K 
+
+NSE+BSE Volume
+
+NSE 10 Aug, 2026 3:31 PM (IST)
+
+Watchlist
+
+ 
+
+Portfolio
+
+ 
+
+Alert
+
+  My Notes</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.owler.com/company/britannia/competitors" target="_blank">Britannia Competitors and Alternatives - Owler</a></h3>
+                    <div class="result-url">https://www.owler.com/company/britannia/competitors</div>
+                    <div class="result-content">Naresh Baluni
+
+ CEO
+
+ Naresh Baluni
+
+ CEO
+
+Britannia&#x27;s Competitor - Frisco Foods logo
+
+ 
+
+ CEO
+
+ 
+
+ CEO
+
+ 
+
+ CEO
+
+ 
+
+ CEO
+
+ Britannia VS Parle Products
+
+Parle Products is the top competitor of Britannia. Parle Products is a Private company that was founded in Mumbai, Maharashtra in 1929. Like Britannia, Parle Products also operates in the Baked Goods, Frozen &amp; Prepared Foods sector. Parle Products has 45,828 more employees vs. Britannia.
+
+ Britannia VS ITC
+
+ITC is seen as one of Britannia&#x27;s biggest rivals. ITC was founded in Kolkata, West Bengal} in 1910. Like Britannia, ITC also competes in the Food &amp; Beverages space. Compared to Britannia, ITC generates $7.7B more revenue.
+
+ Britannia VS HUL [...] - Community driven business intelligence&#x27;s Logo
+Owler - Community driven business intelligence&#x27;s Logo
+Britannia
+
+ Britannia Competitors or Alternatives
+
+ Britannia&#x27;s top competitors include Parle Products, ITC and HUL.
+
+ RANK
+
+ COMPANY
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+Britannia&#x27;s company profile
+
+ Rakshit Hargave
+
+ Managing Director &amp; CEO
+
+ Rakshit Hargave
+
+ Managing Director &amp; CEO
+
+ Rakshit Hargave
+
+ Managing Director &amp; CEO
+
+ Rakshit Hargave
+
+ Managing Director &amp; CEO
+
+Britannia&#x27;s Competitor - Parle Products logo [...] Britannia&#x27;s Competitor - Parle Products logo
+
+ Raj K. Chauhan
+
+ Managing Director
+
+ Raj K. Chauhan
+
+ Managing Director
+
+ Raj K. Chauhan
+
+ Managing Director
+
+ Raj K. Chauhan
+
+ Managing Director
+
+Britannia&#x27;s Competitor - ITC logo
+
+ Sanjiv Puri
+
+ Managing Director
+
+ Sanjiv Puri
+
+ Managing Director
+
+ Sanjiv Puri
+
+ Managing Director
+
+ Sanjiv Puri
+
+ Managing Director
+
+Britannia&#x27;s Competitor - HUL logo
+
+ Priya Nair
+
+ Managing Director &amp; CEO
+
+ Priya Nair
+
+ Managing Director &amp; CEO
+
+ Priya Nair
+
+ Managing Director &amp; CEO
+
+ Priya Nair
+
+ Managing Director &amp; CEO
+
+Britannia&#x27;s Competitor - Richfield Industries logo
+
+ Naresh Baluni
+
+ CEO
+
+ Naresh Baluni
+
+ CEO
+
+ Naresh Baluni
+
+ CEO
+
+ Naresh Baluni
+
+ CEO</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Britannia_Industries" target="_blank">Britannia Industries</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Britannia_Industries</div>
+                    <div class="result-content">Dairy products
+
+[edit]
+
+Dairy products contribute close to 10% to Britannia&#x27;s revenue. The company not only markets dairy products to the public but also trades dairy commodities business-to-business. Its dairy portfolio grew to 47% in 2000-01 and by 30% in 2001-02. Its main competitors are Nestlé India, the National Dairy Development Board (NDDB), and Amul (GCMMF).
+
+Britannia holds an equity stake in Dynamix Dairy and outsources the bulk of its dairy products from its associate.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mbaskool.com/competitors/companies/18787-britannia.html" target="_blank">Top Britannia Competitors &amp; Similar Companies | MBA Skool</a></h3>
+                    <div class="result-url">https://www.mbaskool.com/competitors/companies/18787-britannia.html</div>
+                    <div class="result-content">For a company like Britannia to grow, it is not only important for them to improve their own products and services, but to also look at what their competitors are offering.
+
+Quick Glance:
+
+ 1. HUL (Hindustan Unilever)
+ 2. ITC
+ 3. Dabur
+ 4. Patanjali
+ 5. Parle
+ 6. Nestle
+ 7. Pepsi
+ 8. Marico
+ 9. Procter and Gamble (P&amp;G)
+ 10. Coca Cola
+ 11. Amul
+
+Below we look at the top 11 competitors of Britannia.
+
+ 1. HUL (Hindustan Unilever):
+
+Hindustan Unilever is an Indian subsidiary Dutch company Unilever and is India’s biggest fast moving consumer goods company. The HUL company is based in Mumbai, Maharashtra. HUL has the widest outreach to the customers through its 6 million+ outlets across the country.
+
+ 2. ITC: [...]  4. Patanjali:
+
+Patanjali Ayurved is one the fastest growing FMCG companies in India, which focuses on food, healthcare and medicinal products. Patanjali is founded by Indian yoga guru Baba Ramdev and Acharya Balkrishna in 2006 with the aim of promoting ayurvedic products amongst consumers. With annual revenues exceeding INR 10,000 crore, Patanjali had become one of the largest consumer goods company in India.
+
+Read more about Britannia
+
+ Britannia SWOT Analysis
+ Britannia Marketing Mix &amp; Strategy
+ Britannia PESTLE Analysis
+
+ 5. Parle: [...]  7. Pepsi:
+
+Pepsi Co, being a huge company has a lot of brands under its hat. There are various products of Pepsi Co, like Pepsi, Mountain Dew, Lays, Tropicana beverages, 7Ups, Cheetos, Lipton Tea, Aquafina, etc. Pepsi are mainly targeting the food and beverages market.
+
+ 8. Marico:
+
+One out of every ten coconuts grown in India is used by Marico – the statement in itself surmises the strength of Marico Limited. Marico is an Indian FMCG company and it was setup in 1991 in Mumbai by Harsh Mariwala. Marico deals in production of personal care goods, oils and male grooming products too.
+
+ 9. Procter and Gamble (P&amp;G):</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/529620052/Competition-to-Britannia" target="_blank">Britannia&#x27;s Competitive Landscape Analysis | PDF | Brand | Marketing</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/529620052/Competition-to-Britannia</div>
+                    <div class="result-content">Britannia&#x27;s Competitive Landscape Analysis
+
+Britannia faces direct competition from other biscuit manufacturers like Parle and ITC that produce similar product categories. Indirect competition comes from companies that target the same customer groups by meeting similar demands. Parle Products has reduced the market share gap with Britannia and the two are now neck-and-neck. Britannia has competitive advantages through its strong product portfolio across multiple categories, extensive distribution network reaching over 36 lakh outlets daily, and trusted brand image valued at $6 billion. It positions different brands to target specific customer segments.
+
+ Britannia&#x27;s Competitive Landscape Analysis
+
+Britannia&#x27;s Competitive Landscape Analysis
+
+ Uploaded by [...] Britannia&#x27;s Competitive Landscape Analysis
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play [...] Scribd
+
+ Britannia&#x27;s Competitive Landscape Analysis
+
+Britannia&#x27;s Competitive Landscape Analysis
+
+ Uploaded by
+
+AI-enhanced title and description
+
+ Britannia&#x27;s Competitive Landscape Analysis</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

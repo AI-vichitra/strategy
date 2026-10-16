@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANASONIC AC - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PANASONIC AC</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">Technology & Software</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.panasonic.com/in/" target="_blank" class="meta-url">https://www.panasonic.com/in/</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Panasonic AC focuses on technology and software, with a mission to improve lives through innovation, a vision to be a top global company, and a pricing model based on product quality and market demand. Marketing strategy emphasizes customer-centric solutions and sustainability.. Panasonic Panasonic Menu Menu Open in a new tab Open in a new tab Open in a new tab Open in a new tab Search Search Search Play Pause  Transform the ordinary into the unforgettable-making everyday irreplaceable.  Transform the ordinary into the unforgettable-making everyday irreplaceable.  Our Mission and Vision  Consumer  Consumer Electronics    Products, Services,    and Support  Business  B2B Products   and   Solutions  Careers  New Graduate and    Mid‑Career    Recruiting  Investor Relations  IR Information    including Financial    Announcements  About Us Overview of the New Panasonic Corporation  About Us  Overview of the New Panasonic Corporation  Corporate Profile Key Facts about Panasonic Corporation  Corporate Profile  Key Facts about Panasonic Corporation [...] Corporate Profile  Key Facts about Panasonic Corporation  CEO Message Greetings from the CEO  CEO Message  Greetings from the CEO  Business Structure Organizational Structure, including Business Divisions  Business Structure  Organizational Structure, including Business Divisions  Senior Management Members of the Leadership Team  Senior Management  Members of the Leadership Team  Locations Main Sites (Japan)  Locations  Main Sites (Japan)  Group Companies Affiliated Companies  Group Companies  Affiliated Companies  News  Latest News Releases & Notices  Play Pause  Create what doesn't yet exist through the power of evolving creativity.  Create what doesn't yet exist through the power of evolving creativity.  Our Mission and Vision  Top To. Open in a new tab Meeting Room Solutions  ## About Us  Menu Menu New window New window New window New window Open in a new tab Panasonic Green Impact  ## Company Overview  Company Overview  ## Corporate History  Corporate History  ## News  News  ### News / Blogs  Back to top Open in a new tab Open in a new tab Open in a new tab Open in a new tab Open in a new tab [...] Panasonic Panasonic  # Panasonic Life Solutions India Pvt. Ltd  Menu Menu Open in a new tab Open in a new tab Open in a new tab Open in a new tab Search Search Search  ## This site uses cookies, by continuing to browse you explicitly consent to usage as per Privacy Policy  Open in a new tab Panasonic Brings “Captain Cool” MS Dhoni on board  ## Consumer  Menu  New window New window  New window New window New window New window New window New window New window New window New window New window New window  ## Air Conditioners  Open in a new tab Smart cooling that adapts to you — comfort, customized.  ## Microwave Ovens  Open in a new tab Even heat, precise power — elevate every meal with ease.  ## Audio  Open in a new tab Deep bass. Pure Panasonic power.  ## Camera. ## Panasonic Mission Statement  A business won't survive without profits. Still, profit is not the sole purpose of business. Improving people's lives through creating goods needed for society or through providing wholehearted services are vitally important. After all, business is ultimately for the betterment of our society. That is where the mission and value of every business exist. If business underscored by that mission is conducted forcefully, it will generate appropriate profits as a natural result of being supported by society.  ## Panasonic Vision Statement  A top global company by pursuing the management objectives of realizing a ubiquitous networking society and coexisting with the global environment through cutting edge technologies.  ## Panasonic Values [...] Deutsch  Italiano  Português  Pусский  Español  Profile Image  Panasonic's Logo  Panasonic Claimed Company  Panasonic Corporation is one of the largest electronic product manufacturers in the world, comprised of over 634 companies.<br/><br/><strong>Product & Service Portfolio:</strong> Panasonic offers air conditioners, home appliances, consumer electronics, and industrial automation products. Key products include Lumix cameras, Toughbook laptops, and HVAC systems. The company also provides smart IoT solutions.. ## Products  [edit]  Panasonic has offered a wide range of products and services, including air conditioners, refrigerators, washing machines, compressors, lighting, televisions, personal computers (Matsushita JR series, Let's Note [jp]), mobile phones (as a subsidiary of TCL Electronics), audio equipment, cameras, broadcasting equipment, projectors, automotive electronics, aircraft in-flight entertainment systems, semiconductors, lithium batteries, electrical components, optical devices, bicycles, electronic materials, video game systems (3DO), and photovoltaic modules. Ventilation appliances such as electric fans are manufactured under KDK and rebranded as Panasonic.   R-31 tube radio.jpg "R-31 tube radio")    R-31 tube radio  A Panasonic Lumix camera [...] | Founder | Kōnosuke Matsushita | | Headquarters | Kadoma, Osaka, Japan 34°44′38″N 135°34′12″E﻿ / ﻿34.7438°N 135.5701°E﻿ / 34.7438; 135.5701: {{#parsoid\u0000fragment:30}}[ 34°44′38″N 135°34′12″E﻿ / ﻿34.7438°N 135.5701°E﻿ / 34.7438; 135.5701]"}}" id="mwHg" about="#mwt32" typeof="mw:Extension/indicator"> | | Area served | Worldwide | | Key people |  Kazuhiro Tsuga (chairman)  Yuki Kusumi (president "President (corporate title)") and CEO) | | Products |  Consumer electronics  Home appliances  Batteries  Automotive systems  Avionics  In-flight entertainment  HVAC systems  Industrial automation  Electronic components | | Brands |  Eneloop  Lumix  Sanyo  Technics "Technics (brand)") | [...] | Products | |  |  |  --- | | Consoles |  3DO  Panasonic M2  Panasonic Q  Jungle "Jungle (console)") | | Turntables "Technics (brand)") |  Technics SL-1200  Technics SL-10  Technics SL-J2 | | Other |  Bicycles  Camcorders  CD interface  Hospi  MN103  Panapet  Panasonic JR series  Panasonic Toot-a-Loop Radio  Toughpad  Toughbook  Panasonic TR-005  Venus Engine | | | Formats and standards |  Archival Disc  Blu-ray  D5 HD  DVD  M-3DI Standard  Micro Four Thirds system  MicroP2  MII "MII (videocassette format)")  Nintendo optical discs  P2 "P2 (storage media)")  Secure Digital  VHS  Viera Cast  VX "VX (videocassette format)") | | People |  Kōnosuke Matsushita  Masaharu Matsushita  Hiro Matsushita  Hirofumi Hirano  Toshio Iue  Kazuhiro Tsuga |. Hand Dryer  ## Air Purifier & Air Treatment  Air Purifier  nanoe™ Generator  ziaino  ## Water Solution  Air to Water Heat Pump  Water Heater  Water Pump  Water Purification System  ## Cold Chain Solution  Cold Chain Solution  ## Controller & IoT Cloud  Controllers  Smart Connectivity＋  Panasonic Comfort Cloud  AC Smart Cloud  AC Service Cloud  Aquarea Smart Cloud  Aquarea Service Cloud  # Panasonic Products Are Used Globally  See examples of Panasonic being used globally in a variety of locations and applications.  Top To [...] Panasonic Panasonic Menu Menu Open in a new tab Open in a new tab Search Search Search  We offer a wide range of household and commercial products including air conditioners, fans, ventilation fans, air-quality appliances, water solutions, and IoT cloud solutions. Leveraging our proprietary environmental technologies, our various air and water-related products and businesses are operated on a global scale.  ## Air Conditioner  Single-Split Wall Mounted Air Conditioner  Mulit-Split Air Conditioner  Single-Split Packaged Air conditioner  VRF/Mini VRF System  Gas Heat Pump System  Absorption Chiller System  Air Handling Unit  ## Fan / Ventilation  Ceiling Fan/Electric Fan  Fan/Ventilating Fan  Air Moving Equipment  Air Curtain  Hand Dryer  ## Air Purifier & Air Treatment  Air Purifier. ### Key Takeaways   Panasonic offers over 300 air conditioning products for various applications.  The company has been a leader in the industry since 1958.  Panasonic air conditioning units can operate in extreme temperatures, from +52°C to -25°C.  Innovative features include voice control and Wi-Fi control for added convenience.  Units are built to withstand harsh environmental conditions, extending their lifespan.  Service areas include major locations like Brisbane and Gold Coast.  Backed by a 5-year warranty for peace of mind.  ## Introduction to Panasonic Air Conditioners [...] ## Cutting-edge Features and Technologies  Panasonic leads in home cooling with innovative features. Demonstrated at the Grand Hyatt Ballroom on January 26, 2024, they show their focus on energy efficiency, smart tech, and air cleaning.  ### Energy Efficiency  Panasonic’s air conditioners focus strongly on saving energy. They use Inverter tech, which can save up to 59% energy. To boost savings, the AI ECO mode adjusts based on temperature changes. It boosts Panasonic’s energy efficiency by another 20%.<br/><br/><strong>Recent Developments & News:</strong> Panasonic completed the acquisition of Systemair's air-conditioning business in February 2023. The company announced growth strategies for its European hydronic systems and air-to-water heat pumps. Panasonic also shifted some production lines to AI data center batteries in Kansas.. Mar 17, 2023 Press Release. Panasonic Completes Acquisition of Air-Conditioning Business of Sweden's Systemair AB of Sweden. Panasonic Corporation has announced that at the end of February 2023, its Heating & Ventilation A/C Company completed the acquisition of all of the outstanding shares of Systemair AC SAS, Systemair S.r.l. and Tecnair S.p.A., which operate commercial air-conditioning businesses owned by Systemair AB ("Systemair"), a leading Swedish manufacturer of air quality and air-conditioning equipment. Mar 15, 2023 Press Release. Panasonic Accelerates Growth Strategy for Hydronic Systems Business in Europe, Establishes Engineering, Manufacturing, and Sales Functions in the Region. Panasonic Corporation has announced that it will accelerate its growth strategy for its Heating & Ventilation A/C Company (HVAC Company) for the air-to-water (A2W) heat pump and hydronic systems business in the European market. Nov 17, 2022 Press Release. Panasonic to Purchase All Shares of the Air-Conditioning Business of Systemair AB of Sweden.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Panasonic's key competitors include Samsung, LG, and Sony in consumer electronics; CATL and LG Energy Solution in batteries; and Siemens and Robert Bosch in industrial solutions. Panasonic's diversified portfolio and strong brand reputation help it compete effectively.. Competition is therefore mixed: Panasonic faces consumer-brand competitors in home products, highly technical rivals in batteries and automotive systems, and software specialists in supply-chain applications. That diversity is part of what makes portfolio management so important for Panasonic.  ## 6. What Is the Marketing Strategy of Panasonic?  Panasonic’s marketing strategy is segmented by business model. In consumer and home-product categories, the company relies on long-established brand recognition, dealer and retailer relationships, product merchandising, and trade marketing. In those markets, Panasonic’s reputation for reliability, safety, and energy efficiency still matters, particularly in Japan and selected Asian markets. [...] LG Electronics: a major rival in appliances, home electronics, and some business solutions.  Samsung Electronics: competes in consumer electronics, appliances, displays, and some device categories.  Daikin Industries: a key competitor in air conditioning, heat pumps, and broader climate-control solutions.  Mitsubishi Electric: overlaps with Panasonic in building systems, factory and industrial products, and some automotive and electrical equipment markets.  CATL: one of the most important global competitors in electric-vehicle batteries and energy storage.  LG Energy Solution: a direct rival in lithium-ion batteries for automakers, especially in North America and Europe.  Samsung SDI: another battery competitor with exposure to electric vehicles and energy storage. [...] In strategic importance, batteries, software-led Connect offerings, and energy-efficient building and home products appear especially important to Panasonic’s future positioning. Some legacy consumer electronics categories still matter to brand presence, but they are less central to the investment thesis than batteries, industrial technology, and enterprise software.  ## 5. What Are the Key Competitors or Peers of Panasonic?  Panasonic does not have one clean all-company competitor because its portfolio spans multiple industries. The most useful way to think about competition is by business line..
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.panasonic.com/global/about.html" target="_blank">Panasonic Corporation</a></h3>
+                    <div class="result-url">https://www.panasonic.com/global/about.html</div>
+                    <div class="result-content">Panasonic
+Panasonic
+Menu
+Menu
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Search
+Search
+Search
+Play
+Pause
+
+Transform the ordinary into the unforgettable-making everyday irreplaceable.
+
+Transform the ordinary into the unforgettable-making everyday irreplaceable.
+
+Our Mission and Vision
+
+Consumer
+
+Consumer Electronics   
+Products, Services,   
+and Support
+
+Business
+
+B2B Products  
+and  
+Solutions
+
+Careers
+
+New Graduate and   
+Mid‑Career   
+Recruiting
+
+Investor Relations
+
+IR Information   
+including Financial   
+Announcements
+
+About Us Overview of the New Panasonic Corporation
+
+About Us
+
+Overview of the New Panasonic Corporation
+
+Corporate Profile Key Facts about Panasonic Corporation
+
+Corporate Profile
+
+Key Facts about Panasonic Corporation [...] Corporate Profile
+
+Key Facts about Panasonic Corporation
+
+CEO Message Greetings from the CEO
+
+CEO Message
+
+Greetings from the CEO
+
+Business Structure Organizational Structure, including Business Divisions
+
+Business Structure
+
+Organizational Structure, including Business Divisions
+
+Senior Management Members of the Leadership Team
+
+Senior Management
+
+Members of the Leadership Team
+
+Locations Main Sites (Japan)
+
+Locations
+
+Main Sites (Japan)
+
+Group Companies Affiliated Companies
+
+Group Companies
+
+Affiliated Companies
+
+News
+
+Latest News Releases &amp; Notices
+
+Play
+Pause
+
+Create what doesn&#x27;t yet exist through the power of evolving creativity.
+
+Create what doesn&#x27;t yet exist through the power of evolving creativity.
+
+Our Mission and Vision
+
+Top To</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.panasonic.com/in/home.html" target="_blank">Panasonic Home Appliances &amp; Consumer Electronics in India</a></h3>
+                    <div class="result-url">https://www.panasonic.com/in/home.html</div>
+                    <div class="result-content">Open in a new tab
+Meeting Room Solutions
+
+ About Us
+
+Menu
+Menu
+New window
+New window
+New window
+New window
+Open in a new tab
+Panasonic Green Impact
+
+ Company Overview
+
+Company Overview
+
+ Corporate History
+
+Corporate History
+
+ News
+
+News
+
+ News / Blogs
+
+Back to top
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Open in a new tab [...] Panasonic
+Panasonic
+
+ Panasonic Life Solutions India Pvt. Ltd
+
+Menu
+Menu
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Search
+Search
+Search
+
+ This site uses cookies, by continuing to browse you explicitly consent to usage as per Privacy Policy
+
+Open in a new tab
+Panasonic Brings “Captain Cool” MS Dhoni on board
+
+ Consumer
+
+Menu
+
+New window
+New window
+
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+
+ Air Conditioners
+
+Open in a new tab
+Smart cooling that adapts to you — comfort, customized.
+
+ Microwave Ovens
+
+Open in a new tab
+Even heat, precise power — elevate every meal with ease.
+
+ Audio
+
+Open in a new tab
+Deep bass. Crystal sound. Pure Panasonic power.
+
+ Camera</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.comparably.com/companies/panasonic/mission" target="_blank">Panasonic Mission, Vision &amp; Values | Comparably</a></h3>
+                    <div class="result-url">https://www.comparably.com/companies/panasonic/mission</div>
+                    <div class="result-content">Panasonic Mission Statement
+
+A business won&#x27;t survive without profits. Still, profit is not the sole purpose of business. Improving people&#x27;s lives through creating goods needed for society or through providing wholehearted services are vitally important. After all, business is ultimately for the betterment of our society. That is where the mission and value of every business exist. If business underscored by that mission is conducted forcefully, it will generate appropriate profits as a natural result of being supported by society.
+
+ Panasonic Vision Statement
+
+A top global company by pursuing the management objectives of realizing a ubiquitous networking society and coexisting with the global environment through cutting edge technologies.
+
+ Panasonic Values [...] Deutsch
+ Italiano
+ Português
+ Pусский
+ Español
+
+Profile Image
+
+Panasonic&#x27;s Logo
+
+Panasonic Claimed Company
+
+Panasonic Corporation is one of the largest electronic product manufacturers in the world, comprised of over 634 companies. read more
+
+EMPLOYEE PARTICIPANTS
+:   235
+
+TOTAL RATINGS
+:   1511
+
+Yuki Kasumi Panasonic&#x27;s CEO
+
+CEO
+:   Yuki Kasumi
+
+Panasonic&#x27;s Logo
+
+ Overview
+ Leadership
+ Reviews
+ Salaries
+ Competitors
+ Interviews
+ Q&amp;A
+
+HR or Marketing? Claim Your Free Employer Account
+
+ Panasonic Mission, Vision &amp; Values
+
+ Panasonic Mission Statement</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://holdings.panasonic/global/corporate/about.html" target="_blank">About Panasonic Group</a></h3>
+                    <div class="result-url">https://holdings.panasonic/global/corporate/about.html</div>
+                    <div class="result-content">The mission of the Panasonic Group is to achieve “an ideal society with affluence both in matter and mind,” as advocated by the founder, Konosuke Matsushita, as “prosperity both in terms of material and spiritual affluence.” To achieve this, the Company established its Basic Business Philosophy as an approach toward applying the management philosophy created by its founder and the core principles of the Basic Management Objective, the Company Creed, the Seven Principles.​​ [...]  Business Philosophy
+
+The mission of the Panasonic Group is to achieve “an ideal society with affluence both in matter and mind,” as advocated by the founder, Konosuke Matsushita, as “prosperity both in terms of material and spiritual affluence.” To achieve this, the Company established its Basic Business Philosophy as an approach toward applying the management philosophy created by its founder and the core principles of the Basic Management Objective, the Company Creed, the Seven Principles.​ [...]  DX Initiatives
+
+By fully leveraging digital technologies and IT, we transform business models, processes, and ways of working to drive the growth of the Group’s businesses and enhance the speed and quality of management.
+
+ Design
+
+Our design philosophy is Future Craft. Our role is to continue to create the future of lifestyle and societies along with the stories that will connect to our customers.
+
+ Brand
+
+Introducing the principles, identity, and history of the Panasonic Group&#x27;s brand, and our communication activities.
+
+ Panasonic GREEN IMPACT</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://panasonic.cn/wp-content/uploads/2024/10/sdb2023e.pdf" target="_blank">Panasonic Group</a></h3>
+                    <div class="result-url">https://panasonic.cn/wp-content/uploads/2024/10/sdb2023e.pdf</div>
+                    <div class="result-content">................................................................... 1 Corporate Profile....................................... 3 Our Approach to Sustainability Management.
+................................................ 4 The Promotion of Sustainability Management............................................... 5 Environment.
+.......................................... 9 Policy ................................................................. 9 Mid-term to Long-term Environmental Vision ............................................................... 11 Environmental Governance .
+.................... 23 Environmental Management Systems ......................................................................... 24 Environmental Risk Management ......... 25 Response to TCFD . [...] ..... 148 GRI Standard Contents Index... 150 Contents 2 contents home next page prev back Human Rights Environment Employees Supply Chain Quality / Safety AI Ethics Customer Advertisement Intellectual Property Community Risk Management Business Ethics Cyber / Data Security About the Sustainability Data Book 2023 Sustainability Data Book 2023 Contents Corporate Profile Our Approach to Sustainability Management The Promotion of Sustainability Management External Recognition Independent Assurance Statement by LRQA Limited GRI Standard Contents Index Basics Sustainability Data Book 2023 3 Corporate Profile Company Name: Panasonic Corporation Company Headquarters: 1006 Oaza Kadoma, Kadoma City, Osaka 571-8501, Japan Tel: +81-6-6908-1121 Incorporated: December 15, 1935 Founded: March 7, 1918 [...] • Through our corporate communications, comprising our public relations and advertising activities, we will provide fair and accurate information on our Basic Business Philosophy, as well as on our products, services and technologies, with the aim of better informing our customers and other stakeholders, thereby enhancing the value of our brands. At the same time, we will continually listen to and observe the public and customers, to learn from them and reflect their opinions in our business, marketing and merchandising activities. • We value diversity, and we conduct all our corporate communications activities based on the principle of truth-based communications. We will not make representations that are deceptive, misleading, fraudulent or unfair. Our advertisements shall not be</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Panasonic" target="_blank">Panasonic</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Panasonic</div>
+                    <div class="result-content">Products
+
+[edit]
+
+Panasonic has offered a wide range of products and services, including air conditioners, refrigerators, washing machines, compressors, lighting, televisions, personal computers (Matsushita JR series, Let&#x27;s Note [jp]), mobile phones (as a subsidiary of TCL Electronics), audio equipment, cameras, broadcasting equipment, projectors, automotive electronics, aircraft in-flight entertainment systems, semiconductors, lithium batteries, electrical components, optical devices, bicycles, electronic materials, video game systems (3DO), and photovoltaic modules. Ventilation appliances such as electric fans are manufactured under KDK and rebranded as Panasonic.
+
+ R-31 tube radio.jpg &quot;R-31 tube radio&quot;)
+
+  R-31 tube radio
+ A Panasonic Lumix camera [...] | Founder | Kōnosuke Matsushita |
+| Headquarters | Kadoma, Osaka, Japan 34°44′38″N 135°34′12″E﻿ / ﻿34.7438°N 135.5701°E﻿ / 34.7438; 135.5701: {{parsoid\u0000fragment:30}}[ 34°44′38″N 135°34′12″E﻿ / ﻿34.7438°N 135.5701°E﻿ / 34.7438; 135.5701]&quot;}}&quot; id=&quot;mwHg&quot; about=&quot;mwt32&quot; typeof=&quot;mw:Extension/indicator&quot;&gt; |
+| Area served | Worldwide |
+| Key people |  Kazuhiro Tsuga (chairman)  Yuki Kusumi (president &quot;President (corporate title)&quot;) and CEO) |
+| Products |  Consumer electronics  Home appliances  Batteries  Automotive systems  Avionics  In-flight entertainment  HVAC systems  Industrial automation  Electronic components |
+| Brands |  Eneloop  Lumix  Sanyo  Technics &quot;Technics (brand)&quot;) | [...] | Products | |  |  |  --- | | Consoles |  3DO  Panasonic M2  Panasonic Q  Jungle &quot;Jungle (console)&quot;) | | Turntables &quot;Technics (brand)&quot;) |  Technics SL-1200  Technics SL-10  Technics SL-J2 | | Other |  Bicycles  Camcorders  CD interface  Hospi  MN103  Panapet  Panasonic JR series  Panasonic Toot-a-Loop Radio  Toughpad  Toughbook  Panasonic TR-005  Venus Engine | |
+| Formats and standards |  Archival Disc  Blu-ray  D5 HD  DVD  M-3DI Standard  Micro Four Thirds system  MicroP2  MII &quot;MII (videocassette format)&quot;)  Nintendo optical discs  P2 &quot;P2 (storage media)&quot;)  Secure Digital  VHS  Viera Cast  VX &quot;VX (videocassette format)&quot;) |
+| People |  Kōnosuke Matsushita  Masaharu Matsushita  Hiro Matsushita  Hirofumi Hirano  Toshio Iue  Kazuhiro Tsuga |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.panasonic.com/global/hvac-cc/products.html" target="_blank">Products - Panasonic</a></h3>
+                    <div class="result-url">https://www.panasonic.com/global/hvac-cc/products.html</div>
+                    <div class="result-content">Hand Dryer
+
+ Air Purifier &amp; Air Treatment
+
+Air Purifier
+
+nanoe™ Generator
+
+ziaino
+
+ Water Solution
+
+Air to Water Heat Pump
+
+Water Heater
+
+Water Pump
+
+Water Purification System
+
+ Cold Chain Solution
+
+Cold Chain Solution
+
+ Controller &amp; IoT Cloud
+
+Controllers
+
+Smart Connectivity＋
+
+Panasonic Comfort Cloud
+
+AC Smart Cloud
+
+AC Service Cloud
+
+Aquarea Smart Cloud
+
+Aquarea Service Cloud
+
+ Panasonic Products Are Used Globally
+
+See examples of Panasonic being used globally in a variety of locations and applications.
+
+Top To [...] Panasonic
+Panasonic
+Menu
+Menu
+Open in a new tab
+Open in a new tab
+Search
+Search
+Search
+
+We offer a wide range of household and commercial products including air conditioners, fans, ventilation fans, air-quality appliances, water solutions, and IoT cloud solutions. Leveraging our proprietary environmental technologies, our various air and water-related products and businesses are operated on a global scale.
+
+ Air Conditioner
+
+Single-Split Wall Mounted Air Conditioner
+
+Mulit-Split Air Conditioner
+
+Single-Split Packaged Air conditioner
+
+VRF/Mini VRF System
+
+Gas Heat Pump System
+
+Absorption Chiller System
+
+Air Handling Unit
+
+ Fan / Ventilation
+
+Ceiling Fan/Electric Fan
+
+Fan/Ventilating Fan
+
+Air Moving Equipment
+
+Air Curtain
+
+Hand Dryer
+
+ Air Purifier &amp; Air Treatment
+
+Air Purifier</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://allcoolsales.com.au/overview-of-panasonic-air-conditioners" target="_blank">Overview of Panasonic Air Conditioners - All Cool Sales</a></h3>
+                    <div class="result-url">https://allcoolsales.com.au/overview-of-panasonic-air-conditioners</div>
+                    <div class="result-content">Key Takeaways
+
+ Panasonic offers over 300 air conditioning products for various applications.
+ The company has been a leader in the industry since 1958.
+ Panasonic air conditioning units can operate in extreme temperatures, from +52°C to -25°C.
+ Innovative features include voice control and Wi-Fi control for added convenience.
+ Units are built to withstand harsh environmental conditions, extending their lifespan.
+ Service areas include major locations like Brisbane and Gold Coast.
+ Backed by a 5-year warranty for peace of mind.
+
+ Introduction to Panasonic Air Conditioners [...]  Cutting-edge Features and Technologies
+
+Panasonic leads in home cooling with innovative features. Demonstrated at the Grand Hyatt Ballroom on January 26, 2024, they show their focus on energy efficiency, smart tech, and air cleaning.
+
+ Energy Efficiency
+
+Panasonic’s air conditioners focus strongly on saving energy. They use Inverter tech, which can save up to 59% energy. To boost savings, the AI ECO mode adjusts based on temperature changes. It boosts Panasonic’s energy efficiency by another 20%. Every model, like the X-Deluxe, Smart Inverter, or Eco Inverter Series, has top-notch Energy Efficiency Ratios (EER) and Coefficients of Performance (COP). They all promise excellent eco-friendly performance.
+
+ Smart Functionality [...] These air conditioners also have Air-Cond Purifier features. They control temperature and clean the air. This makes the indoor air healthier. Panasonic offers more than 300 products. They suit homes and businesses, for cooling, reversing, or dehumidifying.
+
+It’s important to choose the right air conditioner for your room. Ceiling height, floor area and insulation matter. Capacity is measured in Kilowatts (kW). Panasonic offers models from 2.50 kW to 9.00 kW. They meet different needs and have star ratings for various climates.
+
+Panasonic started in 1958 with a window-type air conditioner. They offer a 5-year warranty on all units. Their air conditioners are known for being reliable. They have raised living standards for many Australians.].</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.panasonic.com/in/home.html" target="_blank">Panasonic Home Appliances &amp; Consumer Electronics in India</a></h3>
+                    <div class="result-url">https://www.panasonic.com/in/home.html</div>
+                    <div class="result-content">Camera
+
+Open in a new tab
+Capture more than moments — tell stories with Lumix.
+New window
+
+ Business
+
+Menu
+
+New window
+New window
+New window
+
+New window
+
+New window
+
+New window
+
+New window
+New window
+New window
+New window
+New window
+New window
+
+New window
+
+New window
+
+ Professional Displays
+
+Open in a new tab
+Professional Displays
+
+ Touch Displays / IFPD
+
+Open in a new tab
+Touch Displays / IFPD
+
+ LED Video Walls
+
+Open in a new tab
+LED Video Walls
+
+ ePaper Solutions
+
+Open in a new tab
+ePaper Solutions
+
+ Projectors
+
+Open in a new tab
+Projectors
+
+ Toughbook
+
+Open in a new tab
+Toughbook
+
+ Security Solutions
+
+Open in a new tab
+Security Solutions
+
+ Meeting Room Solutions
+
+Open in a new tab
+Meeting Room Solutions
+
+ About Us [...] Panasonic
+Panasonic
+
+ Panasonic Life Solutions India Pvt. Ltd
+
+Menu
+Menu
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Search
+Search
+Search
+
+ This site uses cookies, by continuing to browse you explicitly consent to usage as per Privacy Policy
+
+Open in a new tab
+Panasonic Brings “Captain Cool” MS Dhoni on board
+
+ Consumer
+
+Menu
+
+New window
+New window
+
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+
+ Air Conditioners
+
+Open in a new tab
+Smart cooling that adapts to you — comfort, customized.
+
+ Microwave Ovens
+
+Open in a new tab
+Even heat, precise power — elevate every meal with ease.
+
+ Audio
+
+Open in a new tab
+Deep bass. Crystal sound. Pure Panasonic power.
+
+ Camera</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.panasonic.com/in" target="_blank">Panasonic Home Appliances &amp; Consumer Electronics in India</a></h3>
+                    <div class="result-url">https://www.panasonic.com/in</div>
+                    <div class="result-content">Camera
+
+Open in a new tab
+Capture more than moments — tell stories with Lumix.
+New window
+
+ Business
+
+Menu
+
+New window
+New window
+New window
+
+New window
+
+New window
+
+New window
+
+New window
+New window
+New window
+New window
+New window
+New window
+
+New window
+
+New window
+
+ Professional Displays
+
+Open in a new tab
+Professional Displays
+
+ Touch Displays / IFPD
+
+Open in a new tab
+Touch Displays / IFPD
+
+ LED Video Walls
+
+Open in a new tab
+LED Video Walls
+
+ ePaper Solutions
+
+Open in a new tab
+ePaper Solutions
+
+ Projectors
+
+Open in a new tab
+Projectors
+
+ Toughbook
+
+Open in a new tab
+Toughbook
+
+ Security Solutions
+
+Open in a new tab
+Security Solutions
+
+ Meeting Room Solutions
+
+Open in a new tab
+Meeting Room Solutions
+
+ About Us [...] Panasonic
+Panasonic
+
+ Panasonic Life Solutions India Pvt. Ltd
+
+Menu
+Menu
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Open in a new tab
+Search
+Search
+Search
+
+ This site uses cookies, by continuing to browse you explicitly consent to usage as per Privacy Policy
+
+Open in a new tab
+Panasonic Brings “Captain Cool” MS Dhoni on board
+
+ Consumer
+
+Menu
+
+New window
+New window
+
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+New window
+
+ Air Conditioners
+
+Open in a new tab
+Smart cooling that adapts to you — comfort, customized.
+
+ Microwave Ovens
+
+Open in a new tab
+Even heat, precise power — elevate every meal with ease.
+
+ Audio
+
+Open in a new tab
+Deep bass. Crystal sound. Pure Panasonic power.
+
+ Camera</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.panasonic.com/global/hvac/press.html" target="_blank">News | Air Conditioner | Panasonic</a></h3>
+                    <div class="result-url">https://www.panasonic.com/global/hvac/press.html</div>
+                    <div class="result-content">Mar 17, 2023 Press Release. Panasonic Completes Acquisition of Air-Conditioning Business of Sweden&#x27;s Systemair AB of Sweden. Panasonic Corporation has announced that at the end of February 2023, its Heating &amp; Ventilation A/C Company completed the acquisition of all of the outstanding shares of Systemair AC SAS, Systemair S.r.l. and Tecnair S.p.A., which operate commercial air-conditioning businesses owned by Systemair AB (&quot;Systemair&quot;), a leading Swedish manufacturer of air quality and air-conditioning equipment. Mar 15, 2023 Press Release. Panasonic Accelerates Growth Strategy for Hydronic Systems Business in Europe, Establishes Engineering, Manufacturing, and Sales Functions in the Region. Panasonic Corporation has announced that it will accelerate its growth strategy for its Heating &amp; Ventilation A/C Company (HVAC Company) for the air-to-water (A2W) heat pump and hydronic systems business in the European market. Nov 17, 2022 Press Release. Panasonic to Purchase All Shares of the Air-Conditioning Business of Systemair AB of Sweden. Panasonic Corporation has announced that its Heating &amp; Ventilation A/C Company intends to acquire the commercial air-conditioning business from Systemair AB, a leading global manufacturer in the ventilation and commercial air-conditioning business, at an enterprise value of 100 million Euros. Oct 3, 2022 Press Release. Panasonic Corporation has announced that its Heating &amp; Ventilation A/C Company is expediting its growth strategy for its air-to-water (A2W) heat pumps business in Europe. Sep 2, 2022 Press Release. Panasonic Accelerates Investment in Air-to-water Heat Pump Production in Its Czech Factory. Feb 26, 2019 Press Release. Sep 13, 2017 Press Release. Panasonic Acquires UNION RHAC TECNOLOGIA, Brazilian Air Conditioning Engineering Company. Panasonic Corporation has announced that it has completed the procedures to acquire UNION RHAC TECNOLOGIA (UR), a Brazilian air conditioning engineering company. Sep 1, 2017 Press Release. Panasonic Acquires UK Air Conditioning Equipment Distributor AMP. Panasonic Corporation has announced that it has completed the acquisition of A.M.P. Air Conditioning Ltd (AMP), one of the largest independent air conditioning distributors in the United Kingdom. Feb 8, 2017 Press Release. Panasonic Expands Air Conditioner Business in Asia. Panasonic Corporation has announced that it is increasing its local production in Asia in order to further expand its business in the rapidly-growing room air conditioner market in the region. Oct 11, 2016 Press Release.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://holdings.panasonic/global/corporate/investors/news.html" target="_blank">Latest News Archive - Investor Relations - Panasonic Holdings</a></h3>
+                    <div class="result-url">https://holdings.panasonic/global/corporate/investors/news.html</div>
+                    <div class="result-content">| Apr 23 | Acquisition of Blue Yonder Audio Streaming (Presentation / Q&amp;A) |
+| Apr 23 | Acquisition of Blue Yonder Presentation materials [PDF:1,410KB] |
+| Apr 23 | Panasonic Announces the Acquisition of Blue Yonder, a Specialized Supply Chain Software Provider, Making it as a Wholly-owned Subsidiary [PDF:448KB] |
+| Apr 1 | Yuki Kusumi Assumes Office as New Panasonic CEO [PDF:85KB] |
+| Mar 18 | Panasonic Announces Share Transfer of American Lighting Device Company [PDF:146KB] |
+| Mar 9 | Panasonic Comments on Media Reports [PDF:117KB] |
+| Feb 25 | Panasonic Announces Proposed Senior Management Changes [PDF:247KB] |
+| Feb 25 | Additional Disclosure with Respect to Transition to a Holding Company System through Absorption-type Company Split [PDF:276KB] | [...] | Apr 23 | Acquisition of Blue Yonder Audio Streaming (Presentation / Q&amp;A) |
+| Apr 23 | Acquisition of Blue Yonder Presentation materials [PDF:1,410KB] |
+| Apr 23 | Panasonic Announces the Acquisition of Blue Yonder, a Specialized Supply Chain Software Provider, Making it as a Wholly-owned Subsidiary [PDF:448KB] |
+| Apr 1 | Yuki Kusumi Assumes Office as New Panasonic CEO [PDF:85KB] |
+| Mar 18 | Panasonic Announces Share Transfer of American Lighting Device Company [PDF:146KB] |
+| Mar 9 | Panasonic Comments on Media Reports [PDF:117KB] |
+| Feb 25 | Panasonic Announces Proposed Senior Management Changes [PDF:247KB] |
+| Feb 25 | Additional Disclosure with Respect to Transition to a Holding Company System through Absorption-type Company Split [PDF:276KB] | [...] | Feb 28 | Panasonic Announces Senior Management Changes [PDF:205KB] |
+| Feb 28 | Notice Concerning Sale of Shares Held by Untraceable Shareholders [PDF:108KB] |
+| Feb 15 | FY2018 3Q Quarterly Report |
+| Feb 9 | Partial Correction in Supplemental Consolidated Financial Data for Fiscal 2018 Third Quarter and Nine Months, ended December 31, 2017 [IFRS](/global/corporate/investors/pdf/en180209-1.pdf) |
+| Feb 5 | FY2018 3Q Financial Presentation materials |
+| Feb 5 | Consolidated Financial Results for the Third Quarter and Nine Months ended December 31, 2017 |
+| Feb 5 | Panasonic Announces to have Revised the Consolidated Financial Forecasts [PDF:130KB] |
+| Feb 5 | Panasonic Announces Dividends Forecasts [PDF:153KB] |
+| Jan 10 | IR Technology Seminar Presentation Outline [PDF:159KB] |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://news.panasonic.com/global" target="_blank">Panasonic Newsroom Global</a></h3>
+                    <div class="result-url">https://news.panasonic.com/global</div>
+                    <div class="result-content">2
+
+Aug 31, 2026
+
+ Products &amp; Solutions
+ Stories
+
+ “Always-On” Social Operations: Panasonic Technologies Supporting Safe Frontline Environments, Reliable Infrastructure, and Trusted Data
+
+3
+
+Aug 26, 2026
+
+ Company
+ Stories
+
+ Q1 FY2027 Financial Results Key Points: Full-Year Outlook Raised on Growing AI Infrastructure-Related and Adjacent Businesses Demand, Toward Record Profit
+
+4
+
+Aug 27, 2026
+
+ Products &amp; Solutions
+ Press Releases
+
+ Launch of Outdoor CO2 Refrigerant Condensing Units in Singapore
+
+5
+
+Aug 25, 2026
+
+ Company
+ Stories
+
+ Automating iPS Cell Manufacturing for Regenerative Medicine: Working Toward Truly Personalized Cell Therapies
+
+Aug 27, 2026
+
+ Company
+ Topics [...] 4
+
+Aug 25, 2026
+
+ Company
+ Stories
+
+ Automating iPS Cell Manufacturing for Regenerative Medicine: Working Toward Truly Personalized Cell Therapies
+
+5
+
+Aug 27, 2026
+
+ Company
+ Topics
+
+ Panasonic Holdings updates and publishes “Integrated Report,” “Sustainability Website,” and “Sustainability Data Book”
+
+6
+
+Aug 27, 2026
+
+ Products &amp; Solutions
+ Press Releases
+
+ Launch of Outdoor CO2 Refrigerant Condensing Units in Singapore
+
+1
+
+Aug 05, 2026
+
+ Company
+ Stories
+
+ Devices Area: Driving Growth Through FY3/29 with Businesses Supporting AI Infrastructure
+
+2
+
+Aug 18, 2026
+
+ Company
+ Press Releases
+
+ Panasonic Industry Announces Share Transfer of its Manufacturing Subsidiaries in Germany and Slovakia
+
+3
+
+Jun 29, 2026
+
+ Company
+ Stories [...] Aug 27, 2026
+
+ Company
+ Topics
+
+ Panasonic Holdings updates and publishes “Integrated Report,” “Sustainability Website,” and “Sustainability Data Book”
+
+1
+
+Aug 28, 2026
+
+ Company
+ Press Releases
+
+ Panasonic HD Announces Organizational Changes, Assignment of Responsibility to an Executive Officer, and Personnel Change
+
+2
+
+Aug 26, 2026
+
+ Company
+ Stories
+
+ Q1 FY2027 Financial Results Key Points: Full-Year Outlook Raised on Growing AI Infrastructure-Related and Adjacent Businesses Demand, Toward Record Profit
+
+3
+
+Aug 18, 2026
+
+ Company
+ Press Releases
+
+ Panasonic Industry Announces Share Transfer of its Manufacturing Subsidiaries in Germany and Slovakia
+
+4
+
+Aug 25, 2026
+
+ Company
+ Stories</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.panasonic.com/global/hvac-cc/press.html" target="_blank">News | Air Conditioner</a></h3>
+                    <div class="result-url">https://www.panasonic.com/global/hvac-cc/press.html</div>
+                    <div class="result-content">Mar 15, 2023 Press Release
+
+Panasonic Accelerates Growth Strategy for Hydronic Systems Business in Europe, Establishes Engineering, Manufacturing, and Sales Functions in the Region
+
+Panasonic Corporation has announced that it will accelerate its growth strategy for its Heating &amp; Ventilation A/C Company (HVAC Company) for the air-to-water (A2W) heat pump and hydronic systems business in the European market.  
+  
+ 
+
+Nov 17, 2022 Press Release
+
+Panasonic to Purchase All Shares of the Air-Conditioning Business of Systemair AB of Sweden [...] Panasonic
+Panasonic
+Menu
+Menu
+Open in a new tab
+Open in a new tab
+Search
+Search
+Search
+
+ News Archives
+
+Mar 17, 2023 Press Release
+
+Panasonic Completes Acquisition of Air-Conditioning Business of Sweden&#x27;s Systemair AB of Sweden
+
+Panasonic Corporation has announced that at the end of February 2023, its Heating &amp; Ventilation A/C Company completed the acquisition of all of the outstanding shares of Systemair AC SAS, Systemair S.r.l. and Tecnair S.p.A., which operate commercial air-conditioning businesses owned by Systemair AB (&quot;Systemair&quot;), a leading Swedish manufacturer of air quality and air-conditioning equipment.
+
+Mar 15, 2023 Press Release [...] Panasonic Corporation has announced that its Heating &amp; Ventilation A/C Company intends to acquire the commercial air-conditioning business from Systemair AB, a leading global manufacturer in the ventilation and commercial air-conditioning business, at an enterprise value of 100 million Euros.
+
+Oct 3, 2022 Press Release
+
+Expediting Growth of Business for Air-to-water Heat Pumps for Europe
+
+Panasonic Corporation has announced that its Heating &amp; Ventilation A/C Company is expediting its growth strategy for its air-to-water (A2W) heat pumps business in Europe.  
+ 
+
+Sep 2, 2022 Press Release
+
+Panasonic Accelerates Investment in Air-to-water Heat Pump Production in Its Czech Factory</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bccresearch.com/company-index/profile/panasonic-corp/news" target="_blank">Panasonic Holdings Corp. News - Recent Updates &amp; Announcements</a></h3>
+                    <div class="result-url">https://www.bccresearch.com/company-index/profile/panasonic-corp/news</div>
+                    <div class="result-content">Yahoo Finance - May 25, 2026
+
+ Panasonic to shift some Kansas production lines to make AI data center batteries - Kansas Reflector
+
+Kansas Reflector - Jun 17, 2026
+
+ Q1 2027 Panasonic Holdings Corp Earnings Presentation Transcript - GuruFocus
+
+GuruFocus - Jul 30, 2026
+
+ Yomiuri: Panasonic Eyes 120% Jump in Net Profit on AI Boom, Restructuring Efforts - MarketWatch
+
+MarketWatch - May 13, 2026
+
+ After cost cuts and reforms, Panasonic enters decisive stage in turnaround - The Japan Times
+
+The Japan Times - May 13, 2026
+
+ Panasonic to localise its US data centre battery production, CEO says - Reuters
+
+Reuters - Jun 30, 2026
+
+ Yomiuri: Panasonic Holdings Stock Hits 17-year High - MarketWatch
+
+MarketWatch - Jan 20, 2026 [...] MarketWatch - Jan 20, 2026
+
+ Panasonic Corporation transitions into a new corporate framework dedicated to lifestyle solutions centered on consumer electronics | Management/Financials | Company | Press Releases - Panasonic Newsroom Global
+
+Panasonic Newsroom Global - Apr 01, 2026
+
+ Panasonic (PCRFY) Unveils Growth Strategy with AI Focus Amid Bat - GuruFocus
+
+GuruFocus - May 12, 2026
+
+ Panasonic eyes aggressive AI profit push, battery unit misses target - Reuters
+
+Reuters - May 12, 2026
+
+Stay Informed
+
+Join our mailing list for the latest report releases and upcoming event notifications.
+
+Thank you for your interest in BCC Research. You will be added to our mailing list. [...] Resources 
+
+ e-Course
+ Spotlights Library
+ Megatrends
+ Association Exclusives
+
+About 
+
+ About BCC Research
+ Press Releases
+ Events
+ Careers
+ Contact
+ Excellence Awards
+
+ 
+
+1. Company Index
+2. Panasonic Holdings Corp.
+3. News
+
+ Panasonic Holdings Corp.
+
+ Overview
+ Financial
+ In Reports
+ Products
+ History
+ Point of Contacts
+ News
+
+ In News
+
+ Panasonic Group FY2026 Financial Results, FY2027 Forecast, and Group Growth Strategy: Key Points - Panasonic Newsroom Global
+
+Panasonic Newsroom Global - May 29, 2026
+
+ Panasonic raises profit outlook on AI demand, battery unit profit jumps - Reuters
+
+Reuters - Jul 30, 2026
+
+ Panasonic Holdings (TSE:6752) Is Up 6.3% After Guiding Higher 2027 Dividends Despite Weaker Results - Yahoo Finance
+
+Yahoo Finance - May 25, 2026</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://umbrex.com/resources/company-profiles/panasonic-holdings-corp" target="_blank">Panasonic Strategy and Business Model</a></h3>
+                    <div class="result-url">https://umbrex.com/resources/company-profiles/panasonic-holdings-corp</div>
+                    <div class="result-content">Competition is therefore mixed: Panasonic faces consumer-brand competitors in home products, highly technical rivals in batteries and automotive systems, and software specialists in supply-chain applications. That diversity is part of what makes portfolio management so important for Panasonic.
+
+ 6. What Is the Marketing Strategy of Panasonic?
+
+Panasonic’s marketing strategy is segmented by business model. In consumer and home-product categories, the company relies on long-established brand recognition, dealer and retailer relationships, product merchandising, and trade marketing. In those markets, Panasonic’s reputation for reliability, safety, and energy efficiency still matters, particularly in Japan and selected Asian markets. [...] LG Electronics: a major rival in appliances, home electronics, and some business solutions.
+ Samsung Electronics: competes in consumer electronics, appliances, displays, and some device categories.
+ Daikin Industries: a key competitor in air conditioning, heat pumps, and broader climate-control solutions.
+ Mitsubishi Electric: overlaps with Panasonic in building systems, factory and industrial products, and some automotive and electrical equipment markets.
+ CATL: one of the most important global competitors in electric-vehicle batteries and energy storage.
+ LG Energy Solution: a direct rival in lithium-ion batteries for automakers, especially in North America and Europe.
+ Samsung SDI: another battery competitor with exposure to electric vehicles and energy storage. [...] In strategic importance, batteries, software-led Connect offerings, and energy-efficient building and home products appear especially important to Panasonic’s future positioning. Some legacy consumer electronics categories still matter to brand presence, but they are less central to the investment thesis than batteries, industrial technology, and enterprise software.
+
+ 5. What Are the Key Competitors or Peers of Panasonic?
+
+Panasonic does not have one clean all-company competitor because its portfolio spans multiple industries. The most useful way to think about competition is by business line.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.globaldata.com/company-profile/panasonic-corp/competitors" target="_blank">Panasonic Holdings Corp Peers &amp; Key Competitors</a></h3>
+                    <div class="result-url">https://www.globaldata.com/company-profile/panasonic-corp/competitors</div>
+                    <div class="result-content">Share
+
+ Share on Twitter
+ Share on LinkedIn
+
+Competitors
+
+ Overview
+ Segment Analysis
+ Financials
+ Executives
+ SWOT Analysis
+ Locations
+ Competitors
+ Deals
+ Filing Analytics
+ Patents
+ Theme Exposure
+ Media
+ Premium Data
+  + Product Launch Analytics
+  + Consumer Market Data Insights
+  + IT Services Contracts
+  + ICT Spend &amp; Tech Priorities
+
+ Related keylists
+
+ Top 10 Component Makers in the World by Market Capitalization
+ Top 10 Consumer Electronics Companies in the World by Market Capitalization
+ Top 10 IT Hardware Companies in the World by Market Capitalization
+
+Discover information and data insights on Panasonic Holdings Corp&#x27;s key competitors and market peers.
+
+ Competitor comparison
+
+Apple Inc
+
+Headquarters
+
+United States of America
+
+No. of employees
+
+166,000
+
+Revenue
+
+$416.2B [...] No. of employees
+
+166,000
+
+Revenue
+
+$416.2B
+
+Entity type
+
+Public
+
+Samsung Electronics Co Ltd
+
+Headquarters
+
+South Korea
+
+No. of employees
+
+129,480
+
+Revenue
+
+$234.8B
+
+Entity type
+
+Public
+
+Robert Bosch GmbH
+
+Headquarters
+
+Germany
+
+No. of employees
+
+412,774
+
+Revenue
+
+$98.4B
+
+Entity type
+
+Private
+
+Siemens AG
+
+Headquarters
+
+Germany
+
+No. of employees
+
+231,000
+
+Revenue
+
+$85.4B
+
+Entity type
+
+Public
+
+Benchmark the company against the market with exclusive information on key competitors
+
+Benchmark the company against the market with exclusive information on key competitors
+Learn more
+
+Premium data is available in 12-months subscription package only. [...]  Panasonic Holdings Corp - Company Profile
+
+Powered by GD logo
+
+All the sales intelligence you need on Panasonic Holdings Corp in one solution.
+
+$395
+$295
+
+Register your interest
+Learn more
+
+ Save hours of research time with a comprehensive   
+  Sales Intelligence Solution.
+ Understand how Panasonic Holdings Corp fits into your total   
+  addressable market and Ideal Customer Profile.
+ Gain competitive edge with triggers that tell you  
+   when and how to engage with Panasonic Holdings Corp.
+
+Back to companies
+
+ Panasonic Holdings Corp: Competitors
+
+Share
+
+ Share on Twitter
+ Share on LinkedIn
+
+Competitors</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://swotanalysisexample.com/blogs/competitors/panasonic-competitors" target="_blank">What is Competitive Landscape of Panasonic Company? – SWOTAnalysisExample.com</a></h3>
+                    <div class="result-url">https://swotanalysisexample.com/blogs/competitors/panasonic-competitors</div>
+                    <div class="result-content">Panasonic&#x27;s consumer electronics and home appliance segments face intense competition but benefit from strong brand recognition and product innovation. Panasonic&#x27;s market share and competitive landscape are shaped by its diversified portfolio and strategic initiatives. Understanding Panasonic&#x27;s marketing strategy provides further insights into its approach to competition and market positioning. The company faces intense competition but leverages its brand recognition and product innovation to maintain market share. * **Panasonic competition** includes companies like Samsung, Sony, and LG in consumer electronics. * In the battery market, key **Panasonic rivals** include LG Energy Solution and CATL. The company faces intense competition across various sectors, including automotive batteries, consumer electronics, home appliances, and industrial solutions. In the automotive battery market, **Panasonic rivals** such as LG Energy Solution and CATL are aggressively expanding their production capabilities. In the automotive battery market, Panasonic competes with major players such as LG Energy Solution, SK On, Samsung SDI, CATL, and BYD. The competitive landscape of Panasonic is dynamic, with new players and technological advancements constantly reshaping the market. The competitive dynamics of Panasonic are influenced by several factors, including technological advancements, market trends, and the strategies of its competitors. Panasonic&#x27;s competitive advantages are rooted in its long history of innovation, diversified business portfolio, and strategic investments across key growth areas. These advantages have allowed it to maintain a strong position in various markets, despite facing intense **Panasonic competition**. Continuous investment in research and development for higher energy density and safer battery solutions, such as the 4680 battery cells, helps maintain its edge in the **Panasonic market share**. Panasonic&#x27;s competitive advantages are multifaceted, including advanced battery technology, brand reputation, a diversified business portfolio, and strategic partnerships. The company&#x27;s ability to innovate and adapt to changing market conditions is crucial for maintaining its competitive edge against **Panasonic rivals**. Panasonic&#x27;s competitive advantages include its strong brand reputation, technological innovation, and diversified product portfolio. Panasonic’s market share in key sectors, such as automotive batteries, is a critical factor in its competitive analysis. * **Panasonic competition** is fierce in the battery market, with significant players like CATL and LG Energy Solution. * **Panasonic&#x27;s market share** varies by sector, with strong positions in automotive batteries and certain appliance categories.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.marketing91.com/top-panasonic-competitors" target="_blank">Top 20 Panasonic Competitors &amp; Alternatives in 2026</a></h3>
+                    <div class="result-url">https://www.marketing91.com/top-panasonic-competitors</div>
+                    <div class="result-content">As at 2023 Panasonic’s revenue stood at $62.004B, its profit was $16.735B while its assets were worth $59.641B. Panasonic annual operating income for 2023 was $2.135B. Panasonic annual net income for 2023 was $1.965B.  The company had employees who numbered 257,533 in the same period.
+
+Its subsidiaries include Universal Lighting Technologies, Panasonic Avionics Corporation, Kawakita Denki Kigyosha, Panasonic Electric Works and Sanyo Electric Company. However, the electronics industry has a lot of competition and discussed below are some of Panasonic top competitors
+
+Table of Contents
+
+ Top 20 Competitors of Panasonic
+
+ 1) Samsung
+
+Top Panasonic Competitors 1Top Panasonic Competitors 1
+
+Top Panasonic Competitors 1
+Top Panasonic Competitors 1 [...] Top Panasonic Competitors 3
+Top Panasonic Competitors 3
+
+Haier is a multinational company based in China that deals with the production of home appliances and consumer electronics. Its wide range of products include computers, TVs, microwave ovens, air conditioners, refrigerators, mobile phones and washing machines.
+
+The company traces its roots back to 1984 when it was founded. It has its headquarters in Qingdao, China. Some of Haier’s subsidiaries include Haier Electronics Group, Qingdao Haier, Hotpoint America and Fisher &amp; Paykel among others.
+
+In 2022, the global sales revenue grew 7.2% to RMB 243.514 billion. The net profit increased by 12.5% to RMB 14.711 billion and recurring net profit rose by 18% to RMB13.963 billion under China GAAP.
+
+ 4) Sony [...]  12) Bestron
+
+Bestron is a family-owned business that has been producing modern, high-quality electrical appliances for over 50 years. The company is an internationally protected brand name and is known as “The Concept Company.” Bestron produces qualitative electrical household appliances and has been successful in the industry for many years. The company has a strong reputation for producing innovative and reliable products that meet the needs of consumers. Bestron is committed to providing its customers with the best possible products and services, and its success is a testament to its dedication to quality and innovation.
+
+ 13) Apple Inc
+
+Apple Inc.Apple Inc.
+
+Apple Inc.
+Apple Inc.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://swottemplate.com/blogs/competitors/panasonic-competitors" target="_blank">What is Competitive Landscape of Panasonic Company? – SWOTTemplate.com</a></h3>
+                    <div class="result-url">https://swottemplate.com/blogs/competitors/panasonic-competitors</div>
+                    <div class="result-content">Title: What is Competitive Landscape of Panasonic Company? – SWOTTemplate.com
+Panasonic&#x27;s consumer electronics and home appliance segments face intense competition but benefit from strong brand recognition and product innovation. Panasonic&#x27;s market share and competitive landscape are shaped by its diversified portfolio and strategic initiatives. Understanding Panasonic&#x27;s marketing strategy provides further insights into its approach to competition and market positioning. The company faces intense competition but leverages its brand recognition and product innovation to maintain market share. The company faces intense competition across various sectors, including automotive batteries, consumer electronics, home appliances, and industrial solutions. In the automotive battery market, **Panasonic rivals** such as LG Energy Solution and CATL are aggressively expanding their production capabilities. In the automotive battery market, Panasonic competes with major players such as LG Energy Solution, SK On, Samsung SDI, CATL, and BYD. Key competitors in the automotive battery market include LG Energy Solution, which has a significant market presence and major partnerships with automakers. The competitive landscape of Panasonic is dynamic, with new players and technological advancements constantly reshaping the market. Analyzing **Panasonic&#x27;s competitive advantages in consumer electronics** and other sectors helps to understand its strategic positioning. The competitive dynamics of Panasonic are influenced by several factors, including technological advancements, market trends, and the strategies of its competitors. Panasonic&#x27;s competitive advantages are rooted in its long history of innovation, diversified business portfolio, and strategic investments across key growth areas. These advantages have allowed it to maintain a strong position in various markets, despite facing intense **Panasonic competition**. Continuous investment in research and development for higher energy density and safer battery solutions, such as the 4680 battery cells, helps maintain its edge in the **Panasonic market share**. Panasonic&#x27;s diversified product portfolio, spanning consumer electronics, automotive components, and industrial solutions, provides revenue stream diversification. Panasonic&#x27;s competitive advantages are multifaceted, including advanced battery technology, brand reputation, a diversified business portfolio, and strategic partnerships. The company&#x27;s ability to innovate and adapt to changing market conditions is crucial for maintaining its competitive edge against **Panasonic rivals**. Panasonic&#x27;s competitive advantages include its strong brand reputation, technological innovation, and diversified product portfolio. Panasonic’s market share in key sectors, such as automotive batteries, is a critical factor in its competitive analysis.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

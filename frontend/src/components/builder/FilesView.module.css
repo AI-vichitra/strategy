@@ -1,6 +1,6 @@
 .container {
   padding: 32px;
-  color: #111827;
+  color: #1A1A1A;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -17,23 +17,26 @@
 }
 
 .title {
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: #1A1A1A;
 }
 
 .badge {
-  background: rgba(124, 58, 237, 0.08);
-  border: 1px solid rgba(124, 58, 237, 0.2);
-  color: #7c3aed;
+  background: rgba(212, 168, 67, 0.08);
+  border: 1px solid rgba(212, 168, 67, 0.2);
+  color: #D4A843;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .subtitle {
-  color: #4b5563;
+  color: #6B6560;
   font-size: 15px;
 }
 
@@ -49,31 +52,31 @@
 
 .tabGroup {
   display: flex;
-  background: #f3f4f6;
+  background: #F5F1EB;
   padding: 4px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  border: 1px solid #E8E4DC;
 }
 
 .tabBtn {
   background: transparent;
   border: none;
-  color: #4b5563;
+  color: #6B6560;
   font-size: 14px;
   font-weight: 500;
   padding: 6px 16px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tabBtn:hover {
-  color: #111827;
+  color: #1A1A1A;
 }
 
 .tabActive {
-  background: white;
-  color: #111827;
+  background: #ffffff;
+  color: #1A1A1A;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
@@ -93,31 +96,32 @@
 .searchIcon {
   position: absolute;
   left: 12px;
-  color: #9ca3af;
+  color: #A39E97;
   pointer-events: none;
 }
 
 .searchInput {
   padding: 8px 16px 8px 36px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  border: 1px solid #E8E4DC;
   font-size: 14px;
   width: 260px;
-  background: white;
-  color: #111827;
+  background: #ffffff;
+  color: #1A1A1A;
   outline: none;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
 }
 
 .searchInput:focus {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: #D4A843;
+  box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.1);
 }
 
 .clearSearch {
   position: absolute;
   right: 10px;
-  background: #e5e7eb;
+  background: #F5F1EB;
   border: none;
   border-radius: 50%;
   width: 18px;
@@ -126,12 +130,13 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #4b5563;
+  color: #6B6560;
   font-size: 12px;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .clearSearch:hover {
-  background: #d1d5db;
+  background: #E8E4DC;
 }
 
 .sortWrapper {
@@ -141,17 +146,19 @@
 
 .sortSelect {
   padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  border: 1px solid #E8E4DC;
   font-size: 14px;
-  color: #374151;
-  background: white;
+  color: #4A4540;
+  background: #ffffff;
   outline: none;
   cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sortSelect:focus {
-  border-color: #8b5cf6;
+  border-color: #D4A843;
 }
 
 /* Grid layout */
@@ -163,20 +170,20 @@
 
 /* Card */
 .card {
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #E8E4DC;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-  border-color: #d8b4fe;
+  box-shadow: 0 12px 24px rgba(212, 168, 67, 0.08);
+  border-color: #D4A843;
 }
 
 /* Thumbnail */
@@ -187,12 +194,13 @@
   align-items: flex-end;
   padding: 16px;
   overflow: hidden;
+  background: #F5F1EB;
 }
 
 .thumbnailOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.65) 100%);
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.1) 0%, rgba(26, 26, 26, 0.65) 100%);
   z-index: 1;
 }
 
@@ -200,16 +208,17 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
   letter-spacing: 0.05em;
   z-index: 2;
+  text-transform: uppercase;
 }
 
 .thumbnailContent {
@@ -235,7 +244,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Details Area */
@@ -254,13 +263,21 @@
 }
 
 .fileIconWrapper {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: #FAF8F5;
+  border: 1px solid #E8E4DC;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #2D2A26;
+  font-size: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card:hover .fileIconWrapper {
+  background: #FEFDFB;
+  border-color: #D4A843;
+  color: #D4A843;
 }
 
 .fileIcon {
@@ -276,7 +293,7 @@
 .fileName {
   font-size: 15px;
   font-weight: 600;
-  color: #1f2937;
+  color: #1A1A1A;
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -285,19 +302,19 @@
 
 .fileMetadata {
   font-size: 12px;
-  color: #6b7280;
+  color: #A39E97;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .bullet {
-  color: #d1d5db;
+  color: #D4CFC7;
 }
 
 .description {
   font-size: 13px;
-  color: #4b5563;
+  color: #6B6560;
   line-height: 1.5;
   margin-bottom: 16px;
   flex: 1;
@@ -310,17 +327,17 @@
 .cardActions {
   display: flex;
   gap: 8px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #F0ECE4;
   padding-top: 12px;
 }
 
 .actionBtn {
   flex: 1;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  color: #374151;
+  background: #FAF8F5;
+  border: 1px solid #E8E4DC;
+  color: #4A4540;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -328,13 +345,14 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
 }
 
 .actionBtn:hover {
-  background: #f3e8ff;
-  border-color: #d8b4fe;
-  color: #6b21a8;
+  background: #FEFDFB;
+  border-color: #D4A843;
+  color: #B8912E;
 }
 
 /* Empty state */
@@ -350,23 +368,25 @@
 .emptyIconWrapper {
   width: 80px;
   height: 80px;
-  background: #f3e8ff;
+  background: #F5F1EB;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
+  color: #A39E97;
+  font-size: 32px;
 }
 
 .emptyState h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: #1A1A1A;
   margin-bottom: 8px;
 }
 
 .emptyState p {
-  color: #6b7280;
+  color: #6B6560;
   font-size: 14px;
   max-width: 380px;
 }

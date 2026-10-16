@@ -1,17 +1,38 @@
 'use client';
+
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 
 export default function TierSelection() {
   const router = useRouter();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.push('/auth');
+    } else {
+      setCheckingAuth(false);
+    }
+  }, [router]);
 
   const handleSelectIndividual = () => {
-    router.push('/build');
+    localStorage.setItem('pathChosen', 'true');
+    router.push('/brand-setup');
   };
 
   const handleSelectEnterprise = () => {
     alert('Enterprise Tier: Please contact our sales team at sales@stratai.com to set up your enterprise workspace.');
   };
+
+  if (checkingAuth) {
+    return (
+      <main className={styles.container} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: '#fff' }}>
+        <p>Checking authentication...</p>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.container}>

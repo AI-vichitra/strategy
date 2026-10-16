@@ -33,7 +33,7 @@ export default function Hero() {
           </p>
 
           <div className={styles.ctaRow}>
-            <a href="/strategy-setup" className="btn btn-primary btn-lg" id="hero-cta-primary">
+            <a href="/auth" className="btn btn-primary btn-lg" id="hero-cta-primary">
               Build Your Strategy
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7"/>

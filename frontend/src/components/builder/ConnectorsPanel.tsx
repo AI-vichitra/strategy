@@ -7,6 +7,8 @@ import styles from './ConnectorsPanel.module.css';
 interface ConnectorsPanelProps {
   open: boolean;
   onClose: () => void;
+  agentConnectors?: string[];  // when set, only show these connector names
+  agentName?: string;          // agent display name for the header
 }
 
 function ConnectorCard({
@@ -58,10 +60,13 @@ function ConnectorCard({
   );
 }
 
-export default function ConnectorsPanel({ open, onClose }: ConnectorsPanelProps) {
+export default function ConnectorsPanel({ open, onClose, agentConnectors, agentName }: ConnectorsPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [modalConnector, setModalConnector] = useState<Connector | null>(null);
   const [statuses, setStatuses] = useState<Record<string, ConnectorStatus>>({});
+
+  // When agent is selected, filter to only its required connectors (preserving order from agent definition)
+  const isFiltered = agentConnectors && agentConnectors.length > 0;
 
   const getStatus = (id: string): ConnectorStatus => statuses[id] || 'not_connected';
 
@@ -75,10 +80,10 @@ export default function ConnectorsPanel({ open, onClose }: ConnectorsPanelProps)
     setModalConnector(null);
   };
 
-  // Reset expanded when panel closes
+  // Reset expanded when panel closes or if it becomes filtered
   useEffect(() => {
-    if (!open) setExpanded(false);
-  }, [open]);
+    if (!open || isFiltered) setExpanded(false);
+  }, [open, isFiltered]);
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -90,10 +95,15 @@ export default function ConnectorsPanel({ open, onClose }: ConnectorsPanelProps)
     return () => { document.body.style.overflow = 'auto'; };
   }, [open]);
 
-  // Split connectors into two columns
-  const half = Math.ceil(connectors.length / 2);
-  const col1 = connectors.slice(0, half);
-  const col2 = connectors.slice(half);
+  const displayedConnectors = isFiltered
+    ? agentConnectors
+        .map(name => connectors.find(c => c.name === name))
+        .filter((c): c is Connector => !!c)
+    : connectors;
+
+  // Split into two columns (only if not filtered)
+  const col1 = isFiltered ? displayedConnectors : displayedConnectors.slice(0, Math.ceil(displayedConnectors.length / 2));
+  const col2 = isFiltered ? [] : displayedConnectors.slice(Math.ceil(displayedConnectors.length / 2));
 
   return (
     <>
@@ -101,24 +111,33 @@ export default function ConnectorsPanel({ open, onClose }: ConnectorsPanelProps)
         className={`${styles.overlay} ${open ? styles.overlayOpen : ''}`} 
         onClick={onClose}
       />
-      <div className={`${styles.panel} ${open ? styles.panelOpen : ''} ${expanded ? styles.panelExpanded : ''}`}>
+      <div className={`${styles.panel} ${open ? styles.panelOpen : ''} ${(expanded && !isFiltered) ? styles.panelExpanded : ''}`}>
         <div className={styles.header}>
-          <h2 className={styles.headerTitle}>Connectors</h2>
+          <div>
+            <h2 className={styles.headerTitle}>Connectors</h2>
+            {isFiltered && agentName && (
+              <p style={{ fontSize: '11px', color: 'var(--text-tertiary, #888)', margin: '2px 0 0', fontWeight: 500 }}>
+                Required for {agentName}
+              </p>
+            )}
+          </div>
           <div className={styles.headerActions}>
-            <button 
-              className={`${styles.expandBtn} ${expanded ? styles.expandBtnActive : ''}`}
-              onClick={() => setExpanded(prev => !prev)}
-              aria-label={expanded ? 'Collapse' : 'Expand'}
-              title={expanded ? 'Show less' : 'Show more'}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {expanded ? (
-                  <><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></>
-                ) : (
-                  <><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></>
-                )}
-              </svg>
-            </button>
+            {!isFiltered && (
+              <button 
+                className={`${styles.expandBtn} ${expanded ? styles.expandBtnActive : ''}`}
+                onClick={() => setExpanded(prev => !prev)}
+                aria-label={expanded ? 'Collapse' : 'Expand'}
+                title={expanded ? 'Show less' : 'Show more'}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {expanded ? (
+                    <><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></>
+                  ) : (
+                    <><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></>
+                  )}
+                </svg>
+              </button>
+            )}
             <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>

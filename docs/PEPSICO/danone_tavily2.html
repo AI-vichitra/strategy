@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DANONE - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DANONE</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.danone.com" target="_blank" class="meta-url">https://www.danone.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Danone is a global food and beverage company focused on health-oriented nutrition, with a mission to bring health through food to as many people as possible. It operates in three main segments: dairy and plant-based products, bottled water, and specialized nutrition. Danone employs over 90,000 people worldwide.. ## Executive Overview  Danone is a French food and beverage group focused on health-oriented everyday nutrition. Its portfolio spans Essential Dairy and Plant-Based products, Specialized Nutrition, and Waters. In practice, that means yogurt and fermented dairy, plant-based drinks and foods, infant formula, medical nutrition, and branded bottled water sold through retail, pharmacy, hospital, e-commerce, and out-of-home channels. Founded in 1919 and headquartered in Paris, Danone operates globally, with especially important positions in Europe, North America, China and other Asian markets, Latin America, and selected emerging markets. As of FY2024, Danone generated about €27.4 billion in sales. What Is the Marketing Strategy of Danone?  Danone’s marketing strategy is brand-led, category-specific, and closely tied to the functional positioning of its products. Marketing is a major differentiator in consumer dairy, plant-based, and waters, and a supporting capability in Specialized Nutrition, where scientific credibility and healthcare engagement matter as much as consumer advertising.  The overall pattern is clear: Danone uses marketing not just to drive awareness, but to justify pricing, support premiumization, and reinforce trust in science-linked nutrition categories.  ## 7. What Are the Key Customer Segments of Danone? [...] ## 14. What Is the History of Danone?  Danone traces its origins to 1919, when Isaac Carasso began selling yogurt in Barcelona.<br/><br/><strong>Product & Service Portfolio:</strong> Danone sells dairy and plant‑based foods and drinks, including yogurts, fermented dairy, plant‑based milks, cheese alternatives, frozen desserts, and coffee creamers. It offers bottled waters, natural mineral and functional beverages, and ready‑to‑drink coffee. The company provides specialized nutrition products such as infant formula, medical nutrition, early‑life nutrition, and targeted solutions for cancer care, brain health, and critical illness. Danone supports these products with nutrition science, sustainability programs,. ###   So Delicious Dairy Free  Silk  Follow Your Heart  Image alt text  Image alt text  Image alt text  1. Item 3  ## Beverages  Water, milk, ready-to-drink coffee and creamers offering hydration, nutrition, flavor and deliciousness.  ###   evian  Silk  So Delicious Dairy Free  International Delight  STōK  Image alt text  Image alt text  Image alt text  Image alt text  Image alt text  1. Item 5  ## Specialized Nutrition  Nutricia develops science-based nutritional solutions designed to positively impact health through food for people who need it most, and at the most critical times of their lives, from preterm infants to seniors.  ###   Nutricia  Image alt text  Image alt text  Image alt text  1. image 3 [...] ## Our Portfolio  ## Yogurt  As the largest maker of yogurt and yogurt-like cultured products in the U.S., our dairy yogurts fit various diets, preferences, tastes and life stages.  ###   Activia  Oikos  Silk  Danimals  So Delicious Dairy Free  Dannon  Too Good & Co.  Light + Fit  YoCrunch  Image alt text  Image alt text  Image alt text  Image alt text  Image alt text  Image alt text  Image alt text  Image alt text  Image alt text  1. item 9  ## Plant-Based  We’re the leaders in plant-based foods and beverages – with yogurt alternatives, creamers, cheese alternatives, frozen desserts and a wide variety of plant-based milks that deliver great taste and nutrition for consumers looking for plant-based options.  ### [...] # Leading market positions  Danone is proud to have market-leading positions in multiple product categories including yogurt, plant-based food and beverages, coffee and creamers, waters and baby/specialized nutrition. Our health-focused portfolio is driven by creating products that consumers need through industry-leading innovation – all while staying grounded in our purpose.  Texto alternativo do ícone  ### #1 Plant-Based Company in the United States  Texto alternativo do ícone  ### #1 Yogurt Producer in the United States  Texto alternativo do ícone  ## #2 in creamers, ready-to-drink coffee, specialized nutrition and import waters  ## Our Portfolio  ## Yogurt. ## About Danone  Danone is a leading global food and beverage company with three main fast-growing categories: Essential Dairy and Plant-based products, Waters, and Specialized Nutrition. We’re driven by our mission to bring health through food to as many people as possible by creating nutritious products, raising awareness about healthy eating and drinking habits, and conducting our business sustainably.  Our portfolio includes leading international brands, as well as brands tailored to specific regions.<br/><br/><strong>Recent Developments & News:</strong> Danone achieved key progress in its global B Corp ambition and announced a new phase in its strategic partnership with Yakult. The company also completed the sale of part of its stake in Yakult for €1.3 billion. Danone continues to focus on sustainable growth and innovation.. ### Silk® Teams Up with Pro Basketball Star, Monique Billings, to Bring the Ultimate Protein-Packed Power Assist to Big Ten Fans  Silk® Teams Up with Pro Basketball Star, Monique Billings, to Bring the Ultimate Protein-Packed Power Assist to Big Ten Fans  ### Calling All Flavor Lovers: International Delight and Paris Hilton Want You to Choose Party Over Plain! The Two Are Teaming Up to Show Everyone How to Become a Parista  Calling All Flavor Lovers: International Delight and Paris Hilton Want You to Choose Party Over Plain! The Two Are Teaming Up to Show Everyone How to Become a Parista.JPG)  ## Stories  Go in-depth to hear more about our ambitions and announcements around our purpose, people and portfolio.  ### From Farm to Fridge: The Danone Milk Difference [...] Danone North America logo  # Newsroom  Find the latest news about Danone.  ## Recent News  Press releases and other business news from Danone.  ### Danone USA Supports Inaugural Food is Life, Food is Health Summit as Founding Exhibitor  Danone USA Supports Inaugural Food is Life, Food is Health Summit as Founding Exhibitor  ### Danone USA’s Economic Impact: Putting Health through Food in Action for America  Danone USA’s Economic Impact: Putting Health through Food in Action for America   ### Danone U.S. Meets Nutrition Expectations of Consumers Today Through Its Health-Driven Portfolio  Danone U.S. Meets Nutrition Expectations of Consumers Today Through Its Health-Driven Portfolio [...] ### From Farm to Fridge: The Danone Milk Difference  From Farm to Fridge: The Danone Milk Difference  ### Why Everyone Is Obsessed With Their Gut  Why Everyone Is Obsessed With Their Gut  ### Danone U.S. Celebrates National Nutrition Month Alongside Our Non-Profit Partners  Partner Perspectives for National Nutrition Month: Expanding Access to Nourishing Food  ## Quick Links  Media Resources Image alt text  ## Contact Us  Still have questions or need more information? Get in touch with us here.  Danone brand Certified Corporation logo  © 2024 Danone North America Public Benefit Corporation. Press Release   Press release  ### Danone achieves key progress in its global B Corp ambition with new subsidiaries certified in the U.S. and Canada   Press Release   Press release  ### Convening to combined Shareholders’ Meeting of April 26; 2018   Press Release   Press release  ### Danone completes the sale of part of its stake in Yakult for €1.3 billion   Press Release   Press release  ### Danone successfully issues a pioneer €300m social bond continuing to invest for sustainable value for all   Press Release   Press release  ### Danone publishes its 2017 Registration Document   Press Release   Press release  ### Strong results in 2017 with solid progress on growth and efficiency   Press Release   Press release  ### Danone enters a new phase in its strategic partnership with Yakult [...] Press Release   Press release  ### Danone strengthens its leadership team to sharpen the delivery of the Renew Danone Strategy   Press Release   Press release  ### Danone announces an ambitious plan to reduce its methane emissions   Press Release   Press release  ### Danone announces Re-Fuel Danone: A global energy excellence programme to drive energy efficiency; resilience and decarbonisation journey   Press Release   Press release  ### Making progress on Renew Danone; Further growth acceleration in the third quarter   Press Release   Press release  ### Danone announces it plans to transfer the effective control of its EDP business in Russia   Press Release   Press release  ### Danone further progresses on Board renewal with two additions   Press Release   Press release [...] Press Release   Press release  ### First quarter in line with expectations   Press Release   Press release  ### Danone sells Earthbound Farm to Taylor Farms   Press Release   Press release  ### Convening to Combined Shareholders’ Meeting of April 25; 2019   Press Release   Press release  ### Danone publishes its 2018 Registration Document   Press Release   Press release  ### Solid performance in 2018: Accelerating sales growth and efficiencies   Press Release   Press release  ### Véronique Penchienati-Bosetta succeeds Bridgette Heller as EVP Specialized Nutrition   Press Release   Press release  ### Danone accelerates the transition towards a circular economy of packaging   Press Release   Press release  ### Danone reaffirms objective to superior sustainable profitable growth. ### Solid Q1 performance amid a challenging context  5 min time reading   Corporate news   Press release  ### Danone celebrates 200 years of evian® and opens a new chapter focused on resource preservation, industrial excellence, and innovation  5 min time reading   Corporate news   Press release  ### Danone to acquire Huel, extending its portfolio in Functional Nutrition  3 min time reading   Corporate news  ## Popular Topics   Dairy and Plant-Based  Waters  Specialized Nutrition  Strategy  Sustainability  Research & Innovation  Working at Danone  Policies and Positions  ## Press releases   Press release  ### Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio  5 min time reading   Corporate news   Press release [...] 5 min time reading   Corporate news   Press release  ### Silk® Expands Plant-Powered Nutrition Offerings in High-Protein & Fiber with NEW Silk Protein Yogurt and Shakes  5 min time reading   Corporate news   Press release  ### Danone to acquire MADE Group, expanding its presence in the fast-growing healthy nutrition space in Asia Pacific  7 min time reading   Corporate news   Press release  ### New Nature Medicine study sheds light on why weight loss is difficult to sustain — and how biotic strain Akkermansia muciniphila MucT® plays a key role  5 min time reading   Corporate news  All press releases  ## Stories   Story  ### Is AI the secret to stronger, more resilient supply chains?  7 min time reading   Story  ### Building strong futures: taking action against iron deficiency [...] contenu  Menu  Footer  Global | EN   Sustainability  Brands  Research & Innovation   Press releases  Investors   Understanding Danone  Results center  Investors and Capital Market Events  ## Newsroom  Press releases  Stories   Press release  5 min time reading  # Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio   Corporate news   Press release  ### Danone to acquire MADE Group, expanding its presence in the fast-growing healthy nutrition space in Asia Pacific  7 min time reading   Corporate news   Press release  ### Silk® Expands Plant-Powered Nutrition Offerings in High-Protein & Fiber with NEW Silk Protein Yogurt and Shakes  5 min time reading   Corporate news   Press release  ### Solid Q1 performance amid a challenging context. 7 min time reading   Corporate news   Press release  ### Danone to acquire Huel, extending its portfolio in Functional Nutrition  3 min time reading   Corporate news   Press release  ### Danone reaffirms its sustainability ambition with its Impact Journey phase two  3 min time reading   Corporate news   Press release  ### 2025: Another year of strong delivery  6 min time reading   Corporate news   Press release  ### Danone Achieves CDP ‘Triple A’ Recognition for Environmental Leadership and Transparency  3 min time reading   Sustainability   Press release  ### Danone achieves B Corp™ certification worldwide  3 min time reading   Sustainability   Press release  ### Danone Launches Industry-first Academy for Farmers to Build Resilience in Global Dairy Supply Chain  3 min time reading [...] contenu  Menu  Footer  Global | EN   Sustainability  Brands  Research & Innovation   Press releases  Investors   Understanding Danone  Results center  Investors and Capital Market Events  Danone, a world leading food and beverage company, present in over 120 countries and with the essential business lines such as Waters and Early Life Nutrition.  Danone, a world leading food and beverage company, present in over 120 countries and with the essential business lines such as Waters and Early Life Nutrition.  Our mission  ## Bringing health through food to as many people as possible  Scroll to discover  Newsroom  ## Renew Danone in action   Press release  ### Danone to acquire MADE Group, expanding its presence in the fast-growing healthy nutrition space in Asia Pacific  7 min time reading. ### Danone and Arcor complete the creation of their joint venture to unlock new dairy opportunities in Argentina    GlobeNewswire • 10 days ago  Danone: Notification of availability of  Danone’s 2026 interim financial report    ### Danone: Notification of availability of Danone’s 2026 interim financial report    GlobeNewswire • 15 days ago  Danone: Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio    ### Danone: Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio    GlobeNewswire • 15 days ago  Recent Patent and Court Developments in the U.S.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Danone's key competitors include Nestlé, Unilever, Coca-Cola, PepsiCo, and specialized brands like Oatly and Chobani. These rivals compete in dairy, plant-based, and bottled water segments. Danone differentiates through health-focused nutrition and sustainability.. Danone competes across three core segments – Essential Dairy & Plant-Based (EDP), Specialized Nutrition, and Waters – facing direct rivals with global scale in milk, yogurt, and bottled water while leveraging R&D-led product differentiation in health-focused nutrition. Direct competitors include Nestlé and Unilever in dairy and plant-based, Coca-Cola and PepsiCo in bottled water, and category specialists like Oatly and Chobani in plant-based and yoghurt niches; substitute pressure comes from private-label retailers and fast-growing regional brands in Europe and Latin America. Danone's competitive strength rests on a high-margin Specialized Nutrition pipeline (gut health and immunology), its premium pricing in Active Health dairy, and sustainability credentials that resonate with [...] ## Frequently Asked Questions  Danone competes through premium health positioning, strong brands, and a focus on fresh dairy and Specialized Nutrition. The company uses R&D-led product differentiation, sustainability credentials, and targeted portfolio changes to defend margins and improve focus against larger rivals and private labels.  Danone's main competitors include Nestlé and Unilever in dairy and plant-based, Coca-Cola and PepsiCo in bottled water, and Oatly and Chobani in premium plant-based and yogurt niches. Private-label retailers and regional brands also pressure Danone in Europe and Latin America. [...] Key market signals in 2025: Danone reported group net sales of €22.4 billion in fiscal 2025 with Specialized Nutrition and EDP driving margin resilience; the company's B Corp commitments and measurable carbon-reduction targets support premium positioning, while persistent private-label growth in European supermarkets and Nestlé's cost advantage create episodic margin pressure in value tiers.  Icon  ### Direct competitors: Global F&B giants and focused challengers  Nestlé and Unilever matter for scale, distribution, and private-label pressure; Coca-Cola and PepsiCo dominate water channels; Oatly and Chobani shape premium plant-based and yogurt innovation.  Icon  ### Indirect rivals and substitutes: Retail brands and regional players. Icon  ### Nestlé Is the Broadest Rival  Nestlé is the biggest test of Danone market position in dairy and nutrition. It competes across infant nutrition, medical nutrition, coffee creamers, and water-adjacent health claims, backed by global scale and deep R&D.  Icon  ### Infant Nutrition Has Clinical Pressure  Danone infant nutrition competitors include Abbott and Reckitt's Mead Johnson, both strong on pediatric trust and clinical credibility. Fresenius Kabi and Nestlé Health Science add pressure in hospital and specialist channels.  Icon  ### Yogurt Faces Fast Local Threats  Danone dairy segment competitor analysis shows sharp pressure from Chobani in the US, Müller in Europe, and Lactalis across dairy formats.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://umbrex.com/resources/company-profiles/danone-sa" target="_blank">Danone Strategy and Business Model</a></h3>
+                    <div class="result-url">https://umbrex.com/resources/company-profiles/danone-sa</div>
+                    <div class="result-content">Executive Overview
+
+Danone is a French food and beverage group focused on health-oriented everyday nutrition. Its portfolio spans Essential Dairy and Plant-Based products, Specialized Nutrition, and Waters. In practice, that means yogurt and fermented dairy, plant-based drinks and foods, infant formula, medical nutrition, and branded bottled water sold through retail, pharmacy, hospital, e-commerce, and out-of-home channels. Founded in 1919 and headquartered in Paris, Danone operates globally, with especially important positions in Europe, North America, China and other Asian markets, Latin America, and selected emerging markets. As of FY2024, Danone generated about €27.4 billion in sales. [...]  6. What Is the Marketing Strategy of Danone?
+
+Danone’s marketing strategy is brand-led, category-specific, and closely tied to the functional positioning of its products. Marketing is a major differentiator in consumer dairy, plant-based, and waters, and a supporting capability in Specialized Nutrition, where scientific credibility and healthcare engagement matter as much as consumer advertising.
+
+The overall pattern is clear: Danone uses marketing not just to drive awareness, but to justify pricing, support premiumization, and reinforce trust in science-linked nutrition categories.
+
+ 7. What Are the Key Customer Segments of Danone? [...]  14. What Is the History of Danone?
+
+Danone traces its origins to 1919, when Isaac Carasso began selling yogurt in Barcelona. The brand name came from the Catalan nickname of his son Daniel. In 1929, Daniel Carasso expanded the business into France, laying the foundation for what became one of Europe’s best-known food groups.
+
+The modern corporation emerged through a series of combinations. Gervais merged with Danone in 1967, and BSN later combined with Gervais Danone in 1973. BSN eventually adopted the Danone name in 1994, reflecting the growing strategic centrality of the brand and the company’s consumer-food identity.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Danone" target="_blank">Danone</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Danone</div>
+                    <div class="result-content">Over time the company organized its activities around three main business segments: fresh dairy and plant-based products, bottled water, and specialized nutrition, including medical and infant nutrition. Present in more than 120 markets in 2025, Danone reported sales of €27.283 billion, making it the world&#x27;s tenth-largest food company. The group employs nearly 90,000 people worldwide and operates more than 180 production sites. The group employs approximately 90,000 people worldwide across more than 180 production sites.
+
+In 2025 dairy and plant-based products represented 48% of total group sales; specialized nutrition (medical and infant), 34%; and water, 18%. Danone is the 4th largest dairy processing company globally, behind Nestlé, Dairy Farmers of America, and Lactalis.
+
+ History [...] Danone (French pronunciation: ( &quot;Help:IPA/French&quot;)) is a French multinational food-products corporation based in Paris. It was founded in 1919 in Barcelona, Spain. It is listed on Euronext Paris, where it is a component of the CAC 40 stock market index. In 2020, Danone became the first listed company to adopt the status of société à mission, as introduced by France&#x27;s PACTE law of 2019. [...] 1 History
+  + 1.1 Birth of Danone and creation of Gervais Danone (1919–1969))
+  + 1.2 From yoghurt to its jar (1970–1977))
+  + 1.3 Refocusing on food, diversification and group expansion (1978–1995))
+  + 1.4 Refocusing on three areas and the beginning of internationalization (1996–2006))
+  + 1.5 Continued internationalization around dairy products, water, and infant nutrition (2007–2019))
+  + 1.6 Internal reorganization and governance crisis (2020–2021))
+  + 1.7 Renew strategy and refocusing of the brand portfolio around health (since 2021))
+ 2 Main brands
+ 3 Corporate governance
+  + 3.1 Company leadership
+  + 3.2 Board of directors
+ 4 Ownership
+ 5 Joint ventures
+  + 5.1 Australia
+  + 5.2 Bangladesh
+  + 5.3 India
+  + 5.4 Israel
+  + 5.5 Saudi Arabia
+  + 5.6 China
+    - 5.6.1 Bright Dairy</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danone.com/group/about-us/our-history.html" target="_blank">The history of Danone | Danone Group</a></h3>
+                    <div class="result-url">https://www.danone.com/group/about-us/our-history.html</div>
+                    <div class="result-content">1997
+
+ Our HOPE values
+
+Danone’s values, articulated through the acronym HOPE (Humanism, Openness, Proximity, and Enthusiasm), are at the heart of the company and serve as the moral compass guiding our decisions. They were introduced in 1997.
+
+2006
+
+ Our mission
+
+Since the invention of Danone yogurt at the beginning of the 20th century by Isaac Carasso, health has been central to what we do. Our mission statement reaffirms this commitment, as does our portfolio – which is progressively being reshaped.​
+
+2007
+
+ A portfolio spanning every stage of life [...]  The History of Danone
+
+At the start of the 20th century, hundreds of thousands of people in Spain were suffering from digestive health issues, caused in part by malnutrition. It was the plight of Spanish children in particular that inspired Isaac Carasso, a Greek immigrant living in Barcelona, to take interest in the work of Élie Metchnikoff (also spelled “Ilya” Metchnikoff). Metchnikoff was a Nobel Prize winner and considered by many to be “the father of innate immunity.” It was this interest in Metchnikoff’s work that led Carasso to advocate for the health benefits of yogurt. Carasso believed that this traditional fermented dairy product of the Balkans would be able to tackle the widespread nutritional problems that he witnessed in his adopted home.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danone.com/group/about-us.html" target="_blank">Danone is a leading global food and beverage company | Danone Group</a></h3>
+                    <div class="result-url">https://www.danone.com/group/about-us.html</div>
+                    <div class="result-content">Our mission
+
+It all started with a yogurt
+
+ Our history
+
+Health through food has been at the heart of Danone for over a century, starting with Isaac Carasso&#x27;s first pot of yogurt in 1919, sold in pharmacies in Barcelona to help children with digestive problems. Since then, Danone has been a science-based, consumer- and patient-centric company.
+
+In its expansion from Spain to France, the US, and now in 120 countries, Danone has always considered the tastes and needs of those we serve, expanding its portfolio to ensure health is at the heart. [...] Our new Renew Danone strategy is our plan to create long-term value for our business by  innovating with our partners, while supporting vulnerable communities. Today, Danone is included in leading sustainability indexes and has been globally B Corp certified since 2025.
+
+OUR MISSION  
+ MAKES US UNIQUE
+
+Danone’s mission is to bring health through food to as many people as possible. Our success depends on our ability to protect our natural resources. We want our business to make a positive difference at every level – economically, socially and environmentally. Our vision for the future of Danone is a sustainable business that respects each culture and each individual.
+
+That’s why in 2020, we became the first listed company to adopt the ‘Société à Mission’ status.
+
+Our mission [...]  About Danone
+
+Danone is a leading global food and beverage company with three main fast-growing categories: Essential Dairy and Plant-based products, Waters, and Specialized Nutrition. We’re driven by our mission to bring health through food to as many people as possible by creating nutritious products, raising awareness about healthy eating and drinking habits, and conducting our business sustainably.
+
+Our portfolio includes leading international brands, as well as brands tailored to specific regions. With almost 90,000 employees, and products sold in over 120 markets, Danone generated €27.3 billion in sales in 2025.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/713392641/Danone-Company" target="_blank">Danone Marketing Strategy Overview | PDF | Marketing | Marketing Strategy</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/713392641/Danone-Company</div>
+                    <div class="result-content">Scribd
+
+ Danone Marketing Strategy Overview
+
+1) Danone is a French food and beverage company that wants to expand its international business. This proposal analyzes Danone&#x27;s current marketing strategies and provides recommendations for improvement.
+2) The proposal suggests that Danone segment its markets geographically and behaviorally. It should target countries with high milk consumption and monitor purchasing habits.
+3) Danone&#x27;s target customers are people of all demographics. The proposal recommends positioning Danone as a company that offers healthy but tasty products and emphasizes a competitive advantage through low prices and product differentiation.
+
+ Danone Marketing Strategy Overview
+
+Danone Marketing Strategy Overview
+
+AI-enhanced title and description
+
+ Uploaded by [...] AI-enhanced title and description
+
+ Uploaded by
+
+No thumbnails available
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danonenorthamerica.com/our-brands.html" target="_blank">Danone North America Brands</a></h3>
+                    <div class="result-url">https://www.danonenorthamerica.com/our-brands.html</div>
+                    <div class="result-content">So Delicious Dairy Free
+
+Silk
+
+Follow Your Heart
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+1. Item 1
+2. Item 2
+3. Item 3
+
+ Beverages
+
+Water, milk, ready-to-drink coffee and creamers offering hydration, nutrition, flavor and deliciousness.
+
+ 
+
+evian
+
+Silk
+
+So Delicious Dairy Free
+
+International Delight
+
+STōK
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+1. Item 1
+2. Item 2
+3. Item 3
+4. Item 4
+5. Item 5
+
+ Specialized Nutrition
+
+Nutricia develops science-based nutritional solutions designed to positively impact health through food for people who need it most, and at the most critical times of their lives, from preterm infants to seniors.
+
+ 
+
+Nutricia
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+1. Image 1
+2. Image 2
+3. image 3 [...]  Our Portfolio
+
+ Yogurt
+
+As the largest maker of yogurt and yogurt-like cultured products in the U.S., our dairy yogurts fit various diets, preferences, tastes and life stages.
+
+ 
+
+Activia
+
+Oikos
+
+Silk
+
+Danimals
+
+So Delicious Dairy Free
+
+Dannon
+
+Too Good &amp; Co.
+
+Light + Fit
+
+YoCrunch
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+Image alt text
+
+1. item
+2. item
+3. item
+4. item
+5. item 5
+6. item 6
+7. item 7
+8. item 8
+9. item 9
+
+ Plant-Based
+
+We’re the leaders in plant-based foods and beverages – with yogurt alternatives, creamers, cheese alternatives, frozen desserts and a wide variety of plant-based milks that deliver great taste and nutrition for consumers looking for plant-based options.
+
+ [...]  Leading market positions
+
+Danone is proud to have market-leading positions in multiple product categories including yogurt, plant-based food and beverages, coffee and creamers, waters and baby/specialized nutrition. Our health-focused portfolio is driven by creating products that consumers need through industry-leading innovation – all while staying grounded in our purpose.
+
+Texto alternativo do ícone
+
+ 1 Plant-Based Company in the United States
+
+Texto alternativo do ícone
+
+ 1 Yogurt Producer in the United States
+
+Texto alternativo do ícone
+
+ 2 in creamers, ready-to-drink coffee, specialized nutrition and import waters
+
+ Our Portfolio
+
+ Yogurt</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danone.com/group/about-us.html" target="_blank">About Us</a></h3>
+                    <div class="result-url">https://www.danone.com/group/about-us.html</div>
+                    <div class="result-content">About Danone
+
+Danone is a leading global food and beverage company with three main fast-growing categories: Essential Dairy and Plant-based products, Waters, and Specialized Nutrition. We’re driven by our mission to bring health through food to as many people as possible by creating nutritious products, raising awareness about healthy eating and drinking habits, and conducting our business sustainably.
+
+Our portfolio includes leading international brands, as well as brands tailored to specific regions. With almost 90,000 employees, and products sold in over 120 markets, Danone generated €27.3 billion in sales in 2025.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danoneresearch.com/product-superiority/products-categories" target="_blank">Danone’s product categories</a></h3>
+                    <div class="result-url">https://www.danoneresearch.com/product-superiority/products-categories</div>
+                    <div class="result-content">Danone’s specialized nutrition supports people during critical life stages—from early life to healthy aging, as well as patients facing medical challenges. We develop targeted products with Human Milk Oligosaccharides (HMOs), offering immune protection for infants with faltering growth. Our innovations address malnutrition, support recovery in cancer care, promote brain health, and provide nutritional solutions for critically ill patients.
+
+Young boy stirring lemon mint water in a glass bottle promoting naturally flavoured hydration
+
+ Waters: hydration tailored for health and sustainability [...] Our waters category promotes healthy hydration for all ages, backed by scientific research on hydration needs. We are committed to sustainability through circular packaging initiatives and responsible water resource management. Danone waters delivers natural mineral waters and functional beverages that support health while respecting the environment.
+
+ Innovation powered by science: advanced technologies and strategic partnerships [...] Researchers in dairy lab overlooking green meadows representing dual focus on nutrition and sustainability
+
+ Essential dairy and plant-based products: balancing taste, nutrition, and sustainability
+
+We are pioneers in both dairy and plant-based alternatives, offering spoonable and drinkable options that combine delicious taste with nutritional value. Our range adapts to evolving lifestyles and moments of consumption—whether it&#x27;s a spoonful of yogurt for gut health or a creamy oat drink to elevate your morning coffee. Our diverse portfolio supports healthier and more sustainable food choices, every day.
+
+Child playing football with grandfather in the park indicating science-based solutions for all life stages
+
+ Specialized nutrition: science-based solutions for vulnerable populations</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://umbrex.com/resources/company-profiles/danone-sa" target="_blank">Danone Strategy and Business Model - Umbrex</a></h3>
+                    <div class="result-url">https://umbrex.com/resources/company-profiles/danone-sa</div>
+                    <div class="result-content">3. What Is the Business Model of Danone?
+
+Danone is a repeat-purchase branded nutrition and hydration company. Customers do not buy a one-time platform or a long-duration contract; they buy everyday products that are consumed and repurchased frequently. That makes the business highly repeat-driven, but not purely subscription-like. Demand is sustained by household routines, consumer trust, healthcare recommendations, and retail distribution rather than long-term contractual lock-in.
+
+ 4. What Products and/or Services Does Danone Sell?
+
+Danone sells a broad but strategically focused set of nutrition and hydration products.
+
+ Essential Dairy &amp; Plant-Based [...] | Industry or industries | Packaged foods, dairy, plant-based foods and beverages, infant nutrition, medical nutrition, bottled water |
+| Key products or services | Yogurt and fermented dairy, plant-based beverages and foods, coffee creamers in North America, infant formula, early-life nutrition, medical nutrition, natural mineral and bottled water |
+| Geographic footprint | Global operations across Europe, North America, China/North Asia/Oceania, Latin America, and other international markets | [...]  Essential Dairy &amp; Plant-Based
+
+This category includes yogurt, fermented dairy, fresh dairy desserts, probiotic drinks, plant-based beverages, plant-based yogurt alternatives, and selected adjacent products such as coffee creamers and ready-to-drink coffee in North America. It is the company’s everyday-consumption engine and a major source of retail scale. Brands in this category include Activia, Actimel, Oikos, Alpro, Silk, and others depending on market.
+
+ Specialized Nutrition</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Danone" target="_blank">Danone</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Danone</div>
+                    <div class="result-content">Over time the company organized its activities around three main business segments: fresh dairy and plant-based products, bottled water, and specialized nutrition, including medical and infant nutrition. Present in more than 120 markets in 2025, Danone reported sales of €27.283 billion, making it the world&#x27;s tenth-largest food company. The group employs nearly 90,000 people worldwide and operates more than 180 production sites. The group employs approximately 90,000 people worldwide across more than 180 production sites.
+
+In 2025 dairy and plant-based products represented 48% of total group sales; specialized nutrition (medical and infant), 34%; and water, 18%. Danone is the 4th largest dairy processing company globally, behind Nestlé, Dairy Farmers of America, and Lactalis.
+
+ History [...] 1. 1 2 3 4 &quot;Results Center&quot;. Danone S.A. Retrieved 1 April 2026.
+2. ↑ &quot;Danone devient la première entreprise à mission du CAC40&quot;. Novethic. Retrieved 17 June 2026.
+3. ↑ &quot;About Danone – Danone&quot;. Danone.com. 30 June 2026. Retrieved 30 June 2026.
+4. ↑ &quot;Danone en bref&quot;. Danone. Retrieved 17 June 2026.
+5. ↑ &quot;Top 20 des laiteries dans le monde&quot;. Réussir Lait. Retrieved 17 June 2026.
+6. ↑ &quot;Top 20 des laiteries dans le monde&quot;. Réussir Lait. Retrieved 17 June 2026.
+7. ↑ &quot;Hygiène et santé en Europe, fin XVIIIe siècle aux lendemains de la Première Guerre mondiale&quot;. HAL-SHS. 2017. Retrieved 26 June 2026.
+8. ↑ &quot;Le yaourt a 100 ans : comment Danone s&#x27;adapte un siècle plus tard&quot;. Le Parisien. 17 November 2019. Retrieved 23 June 2026. [...] | Formerly | Boussois-Souchon-Neuvesel (1966–1967) BSN (1967–1973) BSN-Gervais Danone (1973–1983) BSN Groupe (1983–1994) |
+| Type | Public company |
+| Traded as | Euronext Paris: BN  CAC 40 component |
+| ISIN | FR0000120644 Edit this on Wikidata |
+| Industry | Food processing |
+| Founded | Company: 1966; 60 years ago (1966) (as Boussois-Souchon-Neuvesel) Brand: 1919; 107 years ago (1919) |
+| Founder | Isaac Carasso |
+| Headquarters | Rue La Fayette  9th arrondissement, Paris, France |
+| Area served | Worldwide |
+| Key people | Franck Riboud (honorary chairman) Gilles Schnepp (chair)   Antoine Bernard de Saint-Affrique (CEO) |
+| Products |  Baby food  coffee  dairy products  dairy-free products  bottled water  dietary supplements  protein supplements |
+| Brands | Main brands |</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danonenorthamerica.com/newsroom.html" target="_blank">Danone North America News, Updates and Press Releases</a></h3>
+                    <div class="result-url">https://www.danonenorthamerica.com/newsroom.html</div>
+                    <div class="result-content">Silk® Teams Up with Pro Basketball Star, Monique Billings, to Bring the Ultimate Protein-Packed Power Assist to Big Ten Fans
+
+Silk® Teams Up with Pro Basketball Star, Monique Billings, to Bring the Ultimate Protein-Packed Power Assist to Big Ten Fans
+
+ Calling All Flavor Lovers: International Delight and Paris Hilton Want You to Choose Party Over Plain! The Two Are Teaming Up to Show Everyone How to Become a Parista
+
+Calling All Flavor Lovers: International Delight and Paris Hilton Want You to Choose Party Over Plain! The Two Are Teaming Up to Show Everyone How to Become a Parista.JPG)
+
+ Stories
+
+Go in-depth to hear more about our ambitions and announcements around our purpose, people and portfolio.
+
+ From Farm to Fridge: The Danone Milk Difference [...] Danone North America logo
+
+ Newsroom
+
+Find the latest news about Danone.
+
+ Recent News
+
+Press releases and other business news from Danone.
+
+ Danone USA Supports Inaugural Food is Life, Food is Health Summit as Founding Exhibitor
+
+Danone USA Supports Inaugural Food is Life, Food is Health Summit as Founding Exhibitor
+
+ Danone USA’s Economic Impact: Putting Health through Food in Action for America
+
+Danone USA’s Economic Impact: Putting Health through Food in Action for America 
+
+ Danone U.S. Meets Nutrition Expectations of Consumers Today Through Its Health-Driven Portfolio
+
+Danone U.S. Meets Nutrition Expectations of Consumers Today Through Its Health-Driven Portfolio [...]  From Farm to Fridge: The Danone Milk Difference
+
+From Farm to Fridge: The Danone Milk Difference
+
+ Why Everyone Is Obsessed With Their Gut
+
+Why Everyone Is Obsessed With Their Gut
+
+ Danone U.S. Celebrates National Nutrition Month Alongside Our Non-Profit Partners
+
+Partner Perspectives for National Nutrition Month: Expanding Access to Nourishing Food
+
+ Quick Links
+
+Media Resources
+Image alt text
+
+ Contact Us
+
+Still have questions or need more information? Get in touch with us here.
+
+Danone brand
+Certified Corporation logo
+
+© 2024 Danone North America Public Benefit Corporation</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danone.com/investors/publications-and-events/press-releases.html" target="_blank">Investors press releases | Danone Group</a></h3>
+                    <div class="result-url">https://www.danone.com/investors/publications-and-events/press-releases.html</div>
+                    <div class="result-content">Press Release
+
+ Press release
+
+ Danone achieves key progress in its global B Corp ambition with new subsidiaries certified in the U.S. and Canada
+
+ Press Release
+
+ Press release
+
+ Convening to combined Shareholders’ Meeting of April 26; 2018
+
+ Press Release
+
+ Press release
+
+ Danone completes the sale of part of its stake in Yakult for €1.3 billion
+
+ Press Release
+
+ Press release
+
+ Danone successfully issues a pioneer €300m social bond continuing to invest for sustainable value for all
+
+ Press Release
+
+ Press release
+
+ Danone publishes its 2017 Registration Document
+
+ Press Release
+
+ Press release
+
+ Strong results in 2017 with solid progress on growth and efficiency
+
+ Press Release
+
+ Press release
+
+ Danone enters a new phase in its strategic partnership with Yakult [...] Press Release
+
+ Press release
+
+ Danone strengthens its leadership team to sharpen the delivery of the Renew Danone Strategy
+
+ Press Release
+
+ Press release
+
+ Danone announces an ambitious plan to reduce its methane emissions
+
+ Press Release
+
+ Press release
+
+ Danone announces Re-Fuel Danone: A global energy excellence programme to drive energy efficiency; resilience and decarbonisation journey
+
+ Press Release
+
+ Press release
+
+ Making progress on Renew Danone; Further growth acceleration in the third quarter
+
+ Press Release
+
+ Press release
+
+ Danone announces it plans to transfer the effective control of its EDP business in Russia
+
+ Press Release
+
+ Press release
+
+ Danone further progresses on Board renewal with two additions
+
+ Press Release
+
+ Press release [...] Press Release
+
+ Press release
+
+ First quarter in line with expectations
+
+ Press Release
+
+ Press release
+
+ Danone sells Earthbound Farm to Taylor Farms
+
+ Press Release
+
+ Press release
+
+ Convening to Combined Shareholders’ Meeting of April 25; 2019
+
+ Press Release
+
+ Press release
+
+ Danone publishes its 2018 Registration Document
+
+ Press Release
+
+ Press release
+
+ Solid performance in 2018: Accelerating sales growth and efficiencies
+
+ Press Release
+
+ Press release
+
+ Véronique Penchienati-Bosetta succeeds Bridgette Heller as EVP Specialized Nutrition
+
+ Press Release
+
+ Press release
+
+ Danone accelerates the transition towards a circular economy of packaging
+
+ Press Release
+
+ Press release
+
+ Danone reaffirms objective to superior sustainable profitable growth</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danone.com/newsroom.html" target="_blank">Newsroom | Danone Group</a></h3>
+                    <div class="result-url">https://www.danone.com/newsroom.html</div>
+                    <div class="result-content">Solid Q1 performance amid a challenging context
+
+5 min time reading
+
+ Corporate news
+
+ Press release
+
+ Danone celebrates 200 years of evian® and opens a new chapter focused on resource preservation, industrial excellence, and innovation
+
+5 min time reading
+
+ Corporate news
+
+ Press release
+
+ Danone to acquire Huel, extending its portfolio in Functional Nutrition
+
+3 min time reading
+
+ Corporate news
+
+ Popular Topics
+
+ Dairy and Plant-Based
+ Waters
+ Specialized Nutrition
+ Strategy
+ Sustainability
+ Research &amp; Innovation
+ Working at Danone
+ Policies and Positions
+
+ Press releases
+
+ Press release
+
+ Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio
+
+5 min time reading
+
+ Corporate news
+
+ Press release [...] 5 min time reading
+
+ Corporate news
+
+ Press release
+
+ Silk® Expands Plant-Powered Nutrition Offerings in High-Protein &amp; Fiber with NEW Silk Protein Yogurt and Shakes
+
+5 min time reading
+
+ Corporate news
+
+ Press release
+
+ Danone to acquire MADE Group, expanding its presence in the fast-growing healthy nutrition space in Asia Pacific
+
+7 min time reading
+
+ Corporate news
+
+ Press release
+
+ New Nature Medicine study sheds light on why weight loss is difficult to sustain — and how biotic strain Akkermansia muciniphila MucT® plays a key role
+
+5 min time reading
+
+ Corporate news
+
+All press releases
+
+ Stories
+
+ Story
+
+ Is AI the secret to stronger, more resilient supply chains?
+
+7 min time reading
+
+ Story
+
+ Building strong futures: taking action against iron deficiency [...] contenu
+ Menu
+ Footer
+
+Global | EN
+
+ Sustainability
+ Brands
+ Research &amp; Innovation
+
+ Press releases
+
+Investors
+
+ Understanding Danone
+ Results center
+ Investors and Capital Market Events
+
+ Newsroom
+
+Press releases
+
+Stories
+
+ Press release
+
+5 min time reading
+
+ Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio
+
+ Corporate news
+
+ Press release
+
+ Danone to acquire MADE Group, expanding its presence in the fast-growing healthy nutrition space in Asia Pacific
+
+7 min time reading
+
+ Corporate news
+
+ Press release
+
+ Silk® Expands Plant-Powered Nutrition Offerings in High-Protein &amp; Fiber with NEW Silk Protein Yogurt and Shakes
+
+5 min time reading
+
+ Corporate news
+
+ Press release
+
+ Solid Q1 performance amid a challenging context</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.danone.com" target="_blank">Danone: World food company | Danone Group</a></h3>
+                    <div class="result-url">https://www.danone.com</div>
+                    <div class="result-content">7 min time reading
+
+ Corporate news
+
+ Press release
+
+ Danone to acquire Huel, extending its portfolio in Functional Nutrition
+
+3 min time reading
+
+ Corporate news
+
+ Press release
+
+ Danone reaffirms its sustainability ambition with its Impact Journey phase two
+
+3 min time reading
+
+ Corporate news
+
+ Press release
+
+ 2025: Another year of strong delivery
+
+6 min time reading
+
+ Corporate news
+
+ Press release
+
+ Danone Achieves CDP ‘Triple A’ Recognition for Environmental Leadership and Transparency
+
+3 min time reading
+
+ Sustainability
+
+ Press release
+
+ Danone achieves B Corp™ certification worldwide
+
+3 min time reading
+
+ Sustainability
+
+ Press release
+
+ Danone Launches Industry-first Academy for Farmers to Build Resilience in Global Dairy Supply Chain
+
+3 min time reading [...] contenu
+ Menu
+ Footer
+
+Global | EN
+
+ Sustainability
+ Brands
+ Research &amp; Innovation
+
+ Press releases
+
+Investors
+
+ Understanding Danone
+ Results center
+ Investors and Capital Market Events
+
+Danone, a world leading food and beverage company, present in over 120 countries and with the essential business lines such as Waters and Early Life Nutrition.
+
+Danone, a world leading food and beverage company, present in over 120 countries and with the essential business lines such as Waters and Early Life Nutrition.
+
+Our mission
+
+ Bringing health through food to as many people as possible
+
+Scroll to discover
+
+Newsroom
+
+ Renew Danone in action
+
+ Press release
+
+ Danone to acquire MADE Group, expanding its presence in the fast-growing healthy nutrition space in Asia Pacific
+
+7 min time reading</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://nz.finance.yahoo.com/quote/GPDNF/press-releases" target="_blank">Danone S.A. (GPDNF) latest press releases and corporate news – Yahoo Finance</a></h3>
+                    <div class="result-url">https://nz.finance.yahoo.com/quote/GPDNF/press-releases</div>
+                    <div class="result-content">Danone and Arcor complete the creation of their joint venture to unlock new dairy opportunities in Argentina
+
+  GlobeNewswire • 10 days ago
+ Danone: Notification of availability of  Danone’s 2026 interim financial report
+
+   Danone: Notification of availability of Danone’s 2026 interim financial report
+
+  GlobeNewswire • 15 days ago
+ Danone: Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio
+
+   Danone: Strong Q2 performance and solid H1 results, demonstrating the relevance of our health-focused portfolio
+
+  GlobeNewswire • 15 days ago
+ Recent Patent and Court Developments in the U.S. and Europe Reinforce Danone’s Patent Position as Global Commercialization of Akkermansia MucT® Expands [...]  Recent Patent and Court Developments in the U.S. and Europe Reinforce Danone’s Patent Position as Global Commercialization of Akkermansia MucT® Expands
+
+  GlobeNewswire • 21 days ago
+ Danone USA Supports Inaugural Food is Life, Food is Health Summit as Founding Exhibitor
+
+   Danone USA Supports Inaugural Food is Life, Food is Health Summit as Founding Exhibitor
+
+  PR Newswire • 1 mo ago
+ Danone USA&#x27;s Economic Impact: Putting Health Through Food in Action for America
+
+   Danone USA&#x27;s Economic Impact: Putting Health Through Food in Action for America
+
+  PR Newswire • 1 mo ago
+ Druid Sport Secures a Record Number of AFA Partnerships Across China
+
+   Druid Sport Secures a Record Number of AFA Partnerships Across China [...]  Danone SA Digital Transformation Strategy Analysis Report 2025: Accelerators, Innovation Programs, Technology Initiatives, ICT, Partnerships, Investments &amp; Acquisitions, Network Map
+
+  GlobeNewswire • 4 mo ago
+ Danone: Convening to the Combined Shareholders’ Meeting of April 23, 2026
+
+   Danone: Convening to the Combined Shareholders’ Meeting of April 23, 2026
+
+  GlobeNewswire • 4 mo ago
+ Global Medical Nutrition Market to Reach USD 31.1 Billion by 2035, Driven by Preventive Healthcare Across North America, Europe &amp; Asia-Pacific - Key Players Nestlé, Abbott, Danone &amp; DSM Lead Innovation</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://4pmarketingmix.com/blogs/company-competitive-landscape/danone" target="_blank">Danone Market Competition: How It Stays Competitive – 4P Marketing Mix</a></h3>
+                    <div class="result-url">https://4pmarketingmix.com/blogs/company-competitive-landscape/danone</div>
+                    <div class="result-content">Danone competes across three core segments – Essential Dairy &amp; Plant-Based (EDP), Specialized Nutrition, and Waters – facing direct rivals with global scale in milk, yogurt, and bottled water while leveraging R&amp;D-led product differentiation in health-focused nutrition. Direct competitors include Nestlé and Unilever in dairy and plant-based, Coca-Cola and PepsiCo in bottled water, and category specialists like Oatly and Chobani in plant-based and yoghurt niches; substitute pressure comes from private-label retailers and fast-growing regional brands in Europe and Latin America. Danone&#x27;s competitive strength rests on a high-margin Specialized Nutrition pipeline (gut health and immunology), its premium pricing in Active Health dairy, and sustainability credentials that resonate with [...]  Frequently Asked Questions
+
+Danone competes through premium health positioning, strong brands, and a focus on fresh dairy and Specialized Nutrition. The company uses R&amp;D-led product differentiation, sustainability credentials, and targeted portfolio changes to defend margins and improve focus against larger rivals and private labels.
+
+Danone&#x27;s main competitors include Nestlé and Unilever in dairy and plant-based, Coca-Cola and PepsiCo in bottled water, and Oatly and Chobani in premium plant-based and yogurt niches. Private-label retailers and regional brands also pressure Danone in Europe and Latin America. [...] Key market signals in 2025: Danone reported group net sales of €22.4 billion in fiscal 2025 with Specialized Nutrition and EDP driving margin resilience; the company&#x27;s B Corp commitments and measurable carbon-reduction targets support premium positioning, while persistent private-label growth in European supermarkets and Nestlé&#x27;s cost advantage create episodic margin pressure in value tiers.
+
+Icon
+
+ Direct competitors: Global F&amp;B giants and focused challengers
+
+Nestlé and Unilever matter for scale, distribution, and private-label pressure; Coca-Cola and PepsiCo dominate water channels; Oatly and Chobani shape premium plant-based and yogurt innovation.
+
+Icon
+
+ Indirect rivals and substitutes: Retail brands and regional players</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://pestel-analysis.com/blogs/competitors/danone" target="_blank">Danone Competitive Landscape: 4 Segments, 120+ Markets – Pestel-analysis.com</a></h3>
+                    <div class="result-url">https://pestel-analysis.com/blogs/competitors/danone</div>
+                    <div class="result-content">Icon
+
+ Nestlé Is the Broadest Rival
+
+Nestlé is the biggest test of Danone market position in dairy and nutrition. It competes across infant nutrition, medical nutrition, coffee creamers, and water-adjacent health claims, backed by global scale and deep R&amp;D.
+
+Icon
+
+ Infant Nutrition Has Clinical Pressure
+
+Danone infant nutrition competitors include Abbott and Reckitt&#x27;s Mead Johnson, both strong on pediatric trust and clinical credibility. Fresenius Kabi and Nestlé Health Science add pressure in hospital and specialist channels.
+
+Icon
+
+ Yogurt Faces Fast Local Threats
+
+Danone dairy segment competitor analysis shows sharp pressure from Chobani in the US, Müller in Europe, and Lactalis across dairy formats. Private label also weighs on Danone pricing strategy versus competitors. [...]  Who Are the Main Competitors Challenging Danone?
+
+Danone monetizes through branded nutrition, dairy, plant-based foods, and bottled water. Its 2024 net sales were about €27.4 billion, with demand driven by premium pricing, mix, and volume in health-led categories.
+
+In the competitive landscape of Danone, scale, shelf space, and trust matter most. Danone competitive strategy depends on defending margin in infant nutrition, medical nutrition, dairy, and water while pushing premium claims and local reach.
+
+For a broader view, see the Growth Strategy of Danone.
+
+Icon
+
+ Nestlé Is the Broadest Rival [...] Icon
+
+ Plant-Based Needs Differentiation
+
+Danone competitors in plant-based products include Oatly and retailer-owned brands. The fight is about taste, protein claims, and price, so branded products must justify a premium fast.
+
+Icon
+
+ Bottled Water Has Heavy Distribution Rivalry
+
+Danone bottled water market competition comes from Coca-Cola, PepsiCo, and local mineral-water brands. Distribution strength and pricing power matter as much as the brand in Evian and Volvic channels.
+
+Icon
+
+ One Rival Does Not Explain the Market
+
+Who are Danone competitors in food and beverage? It is a stack of rivals, each attacking a different part of the Danone brand portfolio compared with Nestle. That is why Danone market analysis must be segment by segment.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.owler.com/company/danone/competitors" target="_blank">Danone Competitors and Alternatives - Owler</a></h3>
+                    <div class="result-url">https://www.owler.com/company/danone/competitors</div>
+                    <div class="result-content">CEO
+
+ Dirk Van de Put
+
+ CEO
+
+ Dirk Van de Put
+
+ CEO
+
+ Danone VS Kraft Heinz
+
+Kraft Heinz is Danone&#x27;s top competitor. Kraft Heinz is headquartered in Chicago, Illinois, and was founded in 2015. Like Danone, Kraft Heinz also operates in the Juices, Soft Drinks &amp; Non-alcoholic Beverages field. Kraft Heinz generates 76% the revenue of Danone.
+
+ Danone VS Unilever
+
+Unilever is seen as one of Danone&#x27;s top competitors. Unilever&#x27;s headquarters is in London, England, and was founded in 1885. Like Danone, Unilever also works within the Food &amp; Beverages industry. Unilever generates 182% of Danone&#x27;s revenue.
+
+ Danone VS Nestle [...] - Community driven business intelligence&#x27;s Logo
+Owler - Community driven business intelligence&#x27;s Logo
+Danone
+
+ Danone Competitors or Alternatives
+
+ Danone&#x27;s top competitors include Kraft Heinz, Unilever and Nestle.
+
+ RANK
+
+ COMPANY
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+ CEO
+
+ CEO RATING
+
+ EMPLOYEES
+
+ FUNDING
+
+ REVENUE
+
+Danone&#x27;s company profile
+
+ Antoine de Saint-Affrique
+
+ CEO
+
+ Antoine de Saint-Affrique
+
+ CEO
+
+ Antoine de Saint-Affrique
+
+ CEO
+
+ Antoine de Saint-Affrique
+
+ CEO
+
+Danone&#x27;s Competitor - Kraft Heinz logo
+
+ Steve Cahillane
+
+ CEO
+
+ Steve Cahillane
+
+ CEO [...]  Steve Cahillane
+
+ CEO
+
+ Steve Cahillane
+
+ CEO
+
+ Steve Cahillane
+
+ CEO
+
+ Steve Cahillane
+
+ CEO
+
+Danone&#x27;s Competitor - Unilever logo
+
+ Fernando Fernandez
+
+ CEO
+
+ Fernando Fernandez
+
+ CEO
+
+ Fernando Fernandez
+
+ CEO
+
+ Fernando Fernandez
+
+ CEO
+
+Danone&#x27;s Competitor - Nestle logo
+
+ Philipp Navratil
+
+ CEO
+
+ Philipp Navratil
+
+ CEO
+
+ Philipp Navratil
+
+ CEO
+
+ Philipp Navratil
+
+ CEO
+
+Danone&#x27;s Competitor - Mars logo
+
+ Poul Weihrauch
+
+ President &amp; CEO
+
+ Poul Weihrauch
+
+ President &amp; CEO
+
+ Poul Weihrauch
+
+ President &amp; CEO
+
+ Poul Weihrauch
+
+ President &amp; CEO
+
+Danone&#x27;s Competitor - Mondelez logo
+
+ Dirk Van de Put
+
+ CEO
+
+ Dirk Van de Put
+
+ CEO
+
+ Dirk Van de Put
+
+ CEO
+
+ Dirk Van de Put</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mbaskool.com/competitors/companies/18515-danone.html" target="_blank">Top Danone Competitors &amp; Similar Companies | MBA Skool</a></h3>
+                    <div class="result-url">https://www.mbaskool.com/competitors/companies/18515-danone.html</div>
+                    <div class="result-content">For a company like Danone to grow, it is not only important for them to improve their own products and services, but to also look at what their competitors are offering.
+
+Quick Glance:
+
+ 1. Unilever
+ 2. Nestle
+ 3. Pepsi
+ 4. Coca Cola
+ 5. Kraft Foods
+ 6. Dr Pepper
+ 7. General Mills
+
+Below we look at the top 7 competitors of Danone.
+
+ 1. Unilever:
+
+Unilever is one of the biggest FMCG (fast moving consumer goods) company in the world. It is a British-Dutch company co headquartered in Rotterdam and London. Unilever has more than 400 brands and operates in more than 190 countries with a turnover of €50+ billion.
+
+ 2. Nestle: [...]  2. Nestle:
+
+Nestle – largest food company in terms of revenue is based out of Vaud, Switzerland. It has a wide range of product line such baby foods, coffee, tea, dairy products, Maggi and many more. It has presence in 194 countries having approximate 450 factories with a head count of 339,000 people.
+
+Read more about Danone
+
+ Danone SWOT Analysis
+ Danone Marketing Mix &amp; Strategy
+ Danone PESTLE Analysis
+ Danone Porter Five Forces Analysis
+
+ 3. Pepsi:
+
+Pepsi Co, being a huge company has a lot of brands under its hat. There are various products of Pepsi Co, like Pepsi, Mountain Dew, Lays, Tropicana beverages, 7Ups, Cheetos, Lipton Tea, Aquafina, etc. Pepsi are mainly targeting the food and beverages market.
+
+ 4. Coca Cola: [...] Home
+ Courses
+ Concepts
+ SWOT
+ Marketing Mix Strategy
+ PESTLE
+ Five Forces
+ Business Lists
+ Competitors
+
+1. Competitors
+›2. Companies
+›3. Top Danone Competitors &amp; Similar Companies
+
+ Top Danone Competitors &amp; Similar Companies
+
+Published by MBA Skool Team in Companies category Read time:
+
+Danone competitors include Unilever, Nestle, Pepsi, Coca Cola, Kraft Foods, Dr Pepper, and General Mills. This article covers details about these competitors.
+
+DANONE, one of the world famous food product based company is based in Paris. It was founded in the year 1919, in Barcelona Spain. Currently, chairman of the board is Franck Riboud and chief executive officer is Emmanuel Faber.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/danone/alternatives-competitors" target="_blank">Top Danone Alternatives, Competitors</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/danone/alternatives-competitors</div>
+                    <div class="result-content">Technology Vendors
+ Recent Research
+ Newsletter
+ Media Support
+ Login
+
+CB Insights
+
+Danone company logo
+
+ Danone
+
+danone.com
+
+ Danone&#x27;s alternatives and competitors
+
+See how Danonecompares to similar products. Danone&#x27;s top competitors include DMK Group, Coca-Cola Beverages Africa, and BIOVIT.
+
+DMK Group Logo
+
+DMK Group
+
+DMK Group is a dairy processing company in the food industry. The company specializes in a range of milk-based products including cheese, quark, ice cream, and milk bev…
+
+Danone vs. DMK Group
+
+View more in-depth data on:
+
+ Competitors
+ Products
+ Customer References and more
+
+Compare Danone and DMK Group
+
+New call-to-action
+
+ Coca-Cola Beverages Africa Logo
+
+  Coca-Cola Beverages Africa [...] Agropur Logo
+
+Agropur
+
+Agropur operates as a dairy cooperative in Canada, specializing in the supply of dairy products across retail, food service, and industrial sectors. The company offers dairy products and ingredients, including cheese, milk, and other items, catering to both consumer and business needs. Agropur focuses on sustainable farming, animal welfare, and corporate social responsibility. It was founded in 1938 and is based in Longueuil, Canada.
+
+FrieslandCampina Logo
+
+FrieslandCampina</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

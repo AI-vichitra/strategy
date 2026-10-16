@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AAKASH (BYJU'S) - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AAKASH (BYJU'S)</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">Education & EdTech</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.aakash.ac.in" target="_blank" class="meta-url">https://www.aakash.ac.in</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> BYJU'S, an Indian multinational educational technology company headquartered in Bengaluru, was founded in 2011 by Byju Raveendran and Divya Gokulnath. The company has grown to become a leading edtech firm, offering online education and tutoring services for students from classes 4 to 12, and preparing students for various competitive exams like IIT-JEE, NEET, CAT, IAS, GRE, and GMAT. Byju's has raised over $2 billion in funding from investors including Sequoia Capital, Tencent Holdings, and the Chan Zuckerberg Initiative. The company's business strategy includes strategic partnerships with schools, acquisitions of edtech companies, and heavy investments in marketing to increase brand awareness. In 2021, BYJU'S acquired Aakash Educational Services, merging its online offerings with Aakash's established classroom network to create a hybrid online and offline education model. As of 2025, the company is under insolvency proceedings in India.. BYJU'S company profile: Online Education / EdTech, Bangalore, founded 2015, 5001–10000 employees. Firmographics, revenue lines, pricing. Byju's (stylised as BYJU'S) was an Indian multinational educational technology company, headquartered in Bengaluru. It was founded in 2011 by Byju Raveendran and Divya Gokulnath. At its peak, it was the world's most valuable edtech startup, with a valuation of $22 billion in 2022. However, by October 2024, multiple media reports indicated that its valuation had effectively dropped to zero.<br/><br/><strong>Product & Service Portfolio:</strong> Aakash Educational Services Limited (AESL) offers comprehensive test preparatory services for students preparing for Medical (NEET) and Engineering Entrance Examinations (JEE), School/Board Exams, and Competitive Exams such as NTSE, KVPY, and Olympiads. They provide coaching for medical and engineering entrance exams, short-term crash courses for NEET-JEE, short-term test series courses for NEET-JEE, coaching on Aakash iTutor, coaching through Aakash Live, and classroom coaching for NEET/JEE. Byju's, an Indian edtech company, delivers K-12 learning, competitive exam preparation (IIT-JEE, NEET, IAS), and early-childhood education. Byju's was an education tutoring app that offered educational content for students from classes 4 to 12, with an early learning program for classes 1 to 3. It also trains students for examinations in India such as IIT-JEE, NEET, CAT, IAS, and international examinations such as GRE and GMAT.. ## Products and services Keywords: education, medical (neet-aiims) coaching, engineering (iit-jee main & advanced) coaching, short-term crash courses for neet-jee, short-term test series courses for neet-jee, coaching on aakash itutor, dlp for medical-engineering, coaching through aakash live, classroom coaching for neet/jee, test preparation centre, neet, olympiad [...] Description: Aakash Educational Services Limited (AESL) is a leading test-prep company in India with a strong legacy of over 37 years, that provides comprehensive test preparatory services for students preparing for Medical (NEET) and Engineering Entrance Examinations (JEE), School/Board Exams & Competitive Exams such as NTSE, KVPY, and Olympiads. Founded in 1988, we have 300+ centres nationwide and growing. Over the last three decades, Aakash has helped transform the lives of lakhs of students by helping them fulfil their dreams of becoming a doctor or an engineer. With a strong selection track record of producing 85,000+ Rankers across NEET & JEE, Aakash commitment to a ‘Student First’ approach has been at the core of all initiatives. Whether it is a new product launch or tech [...] all initiatives. Whether it is a new product launch or tech innovations to make the student experience more engaging and meaningful, Aakash leaves no stone unturned to offer simply the best. At Aakash, we are on a mission to build an omni-channel learning platform that will catapult the test-prep experience to the next level and help build India’s largest education company.<br/><br/><strong>Recent Developments & News:</strong> Aakash Educational Services, now a subsidiary of Byju's, has been making significant moves in the education sector. Byju's plans to take Aakash public next year, as reported by VCCircle. The acquisition of Aakash by Byju's was confirmed in a billion-dollar deal, as detailed by Livemint. Ranjan Pai, chairman of Manipal Education and Medical Group, has invested heavily in Aakash, owning 40% and potentially putting in an additional $50-60 million to grow Byju’s Aakash, according to The Economic Times. Aakash Educational Services is also planning to invest Rs 100 crore to scale up its edtech unit, Aakash Digital, aiming to reach 1 lakh students, as reported on Instagram. The company reported a massive ₹2,443 crore loss after booking ₹2,720 crore in exceptional charges linked to parent Byju’s.. # Aakash Educational Services NEWS. <em> business | Nov 6, 2025 2:39 PM IST. ## Ranjan Pai eyes bankrupt Byju’s parent? A look at business tycoon’s recent investments. </em> business | Nov 3, 2025 11:46 PM IST. ## Supreme Court upholds NCLAT order allowing Aakash to hold EGM for rights issue. * business | Oct 27, 2025 11:32 PM IST.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Aakash Educational Services, a subsidiary of BYJU’S, faces competition from several key rivals in the education and EdTech sectors. These include T.I.M.E., Resonance Eduventures, FIITJEE, Vidyanext Personalized Tuition, and Cuemath, all of which offer coaching for medical and engineering entrance exams, school exams, and other competitive tests. Additionally, PrepMed NEET, which focuses on medical entrance exam preparation, is also a competitor. Unacademy, PhysicsWallah, and other emerging EdTech companies also challenge Aakash's market position with their diverse educational offerings and competitive pricing strategies. The sources do not provide a definitive answer on all competitors.. The current revenue for Aakash Educational Services is  .  ### How much funding has Aakash Educational Services raised over time?    Aakash Educational Services has raised $190M.  ### Who are Aakash Educational Services’s investors?    BYJU'S, Blackstone, and Manipal Global Education Services have invested in Aakash Educational Services.  ### Who are Aakash Educational Services’s competitors?    T.I.M.E., Resonance Eduventures, FIITJEE, Vidyanext Personalized Tuition, and Cuemath are some of the 20 competitors of Aakash Educational Services.  ### Data Transparency       Meet our data hygiene team    Discover how our experts ensure you’re getting the most accurate financial data in the industry.    Read more      How PitchBook sources data [...] | Company Name | Financing Status | Location | Employees | Total Raised | Last Financing Date/Type | Last Financing Amount |  ---  ---  ---  | T.I.M.E. | Venture Capital-Backed | Secunderabad, India |  |  |  |  | | Resonance Eduventures | Formerly PE-Backed | Kota, India |  |  |  |  | | FIITJEE | Formerly PE-Backed | New Delhi, India |  |  |  |  | | Vidyanext Personalized Tuition | Corporation |  |  |  |  |  | | Cuemath | Venture Capital-Backed | Gurugram, India |  |  |  |  |  You’re viewing 5 of 20 competitors. Get the full list »  ## Aakash Educational Services Signals  Growth Rate  Weekly   Growth  Weekly Growth  Size Multiple  Key Data Points  Similarweb Unique Visitors  Majestic Referring Domains [...] Secunderabad, India  logo  ##  Kota, India  Add Comparison  PitchBook’s comparison feature gives you a side-by-side look at key metrics for similar companies. Personalize which data points you want to see and create visualizations instantly.  Request a free trial  ## Aakash Educational Services Competitors (20)  One of Aakash Educational Services’s 20 competitors is T.I.M.E., a Venture Capital-Backed company based in Secunderabad, India.. Who are Aakash Educational Services's competitors?  Competitors of Aakash Educational Services include PrepMed NEET.  Loading...  ## Compare Aakash Educational Services to Competitors  PrepMed NEET Logo  Prepmed Neet is an educational technology company focused on providing preparation for the NEET UG medical entrance exam. The company offers courses including foundation, test series, and specialized NEET preparation for students from Class 7 to Class 12, as well as for repeaters. Prepmed Neet serves students preparing for medical school entrance examinations in India.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://akta.pro/company-profiles/0003z2s/byju-s" target="_blank">BYJU&#x27;S company profile: firmographics, business model, ...</a></h3>
+                    <div class="result-url">https://akta.pro/company-profiles/0003z2s/byju-s</div>
+                    <div class="result-content">BYJU&#x27;S company profile: Online Education / EdTech, Bangalore, founded 2015, 5001–10000 employees. Firmographics, revenue lines, pricing</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Byju%27s" target="_blank">Byju&#x27;s - Wikipedia</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Byju%27s</div>
+                    <div class="result-content">Byju&#x27;s (stylised as BYJU&#x27;S) was an Indian multinational educational technology company, headquartered in Bengaluru. It was founded in 2011 by Byju Raveendran and Divya Gokulnath. At its peak, it was the world&#x27;s most valuable edtech startup, with a valuation of $22 billion in 2022. However, by October 2024, multiple media reports indicated that its valuation had effectively dropped to zero. As of April 2023, BYJU&#x27;S claimed to have over 150 million registered students.
+
+In 2024, the company faced severe financial and operational challenges, which caused it to lay off approximately 500 employees, mainly from its sales and marketing departments.
+
+As of 2025, the company is under insolvency proceedings in India.[AI-retrieved source]
+
+Byju&#x27;s owns GeoGebra.
+
+ History
+
+[edit] [...] Byju&#x27;s received seed funding from Aarin Capital in 2013. As of 2019, Byju&#x27;s had secured nearly $785 million in funding from investors, including Sequoia Capital India, Chan Zuckerberg Initiative (CZI), Tencent, Sofina, Lightspeed Venture Partners, Qatar Investment Authority, Verlinvest, IFC, Naspers Ventures, CPPIB and General Atlantic. Byju&#x27;s was the first company in Asia to receive an investment from Chan-Zuckerberg Initiative (co-funded by Meta Platforms co founder, chairman and CEO Mark Zuckerberg and Priscilla Chan &quot;Priscilla Chan (philanthropist)&quot;)). As per the company filings with the Ministry of Corporate Affairs, Byju&#x27;s became a unicorn &quot;Unicorn (finance)&quot;) and was valued at ₹6,505 crore ($1 billion) as of March 2018. In June 2020, Byju&#x27;s attained the decacorn status with an [...]  Products and services
+
+[edit]
+
+Byju&#x27;s was an education tutoring app that ran on a freemium model, with free access to content limited for 15 days after the registration. It was launched in August 2015, offering educational content for students from classes 4 to 12. In 2019, an early learning program started for classes 1 to 3. It also trains students for examinations in India such as IIT-JEE, NEET, CAT, IAS, and international examinations such as GRE and GMAT.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://vocal.media/journal/byju-s-a-comprehensive-analysis-of-its-history-business-model-finance-ceo-board-of-directors-advantages-and-disadvantages-business-strategy-and-business-lessons" target="_blank">Byju&#x27;s: A Comprehensive Analysis of its History, Business Model, Finance, CEO, Board of Directors, Advantages and Disadvantages, Business Strategy, and Business Lessons | Journal</a></h3>
+                    <div class="result-url">https://vocal.media/journal/byju-s-a-comprehensive-analysis-of-its-history-business-model-finance-ceo-board-of-directors-advantages-and-disadvantages-business-strategy-and-business-lessons</div>
+                    <div class="result-content">Business Strategy
+
+Byju&#x27;s has been successful in growing its business through a combination of strategic partnerships, acquisitions, and marketing campaigns. The company has formed partnerships with several schools and educational institutions in India to offer its courses to students. Byju&#x27;s has also acquired several edtech companies to expand its offerings and enter new markets.
+
+In addition to partnerships and acquisitions, Byju&#x27;s has invested heavily in marketing to increase its brand awareness and attract new customers. The company has used a variety of marketing channels, including television, social media, and influencer marketing, to reach its target audience. [...] Tag Business
+
+ History
+
+Byju&#x27;s was founded by Byju Raveendran, a former teacher who was passionate about using technology to enhance the learning experience for students. Raveendran initially started teaching math to students through live classes before launching an online learning platform in 2015. The company has since grown rapidly and has expanded its offerings to include courses in science, social studies, and test preparation.
+
+In 2019, Byju&#x27;s acquired US-based learning platform Osmo for $120 million, which helped the company expand its presence in the US market. The company has also received several rounds of funding from various investors, including Sequoia Capital, Tencent Holdings, and the Chan Zuckerberg Initiative.
+
+ Business Model [...]  Finance
+
+Byju&#x27;s has raised significant funding from various investors, with a total funding amount of over $2 billion to date. The company was valued at $16.5 billion in April 2021, making it one of the most valuable edtech companies in the world.
+
+In 2020, Byju&#x27;s reported a revenue of $283 million, a 42% increase from the previous year. The company also reported a net loss of $183 million, which was primarily due to its investments in marketing and expanding its offerings.
+
+ CEO
+
+Byju Raveendran is the founder and CEO of Byju&#x27;s. Raveendran has a background in engineering and has worked as a teacher and tutor before starting Byju&#x27;s. Under his leadership, the company has grown rapidly and has become one of the leading edtech companies in India.
+
+ Board of Directors</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/519617996/Byjus-akaksh-merger" target="_blank">Byju&#x27;s Acquires Aakash: A New Era in EdTech | PDF | Educational Technology | Cognition</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/519617996/Byjus-akaksh-merger</div>
+                    <div class="result-content">Byjus, India&#x27;s largest online education startup, acquired test preparation institute Aakash Educational Services on April 5th, 2021 through a strategic merger. Byjus CEO Byju Raveendran expressed optimism about leveraging the opportunities of both organizations to complement each other and move toward a hybrid online and offline education model. Byjus is renowned for its online offerings, which proved valuable during the pandemic, while Aakash has an established classroom network and success coaching students for exams like NEET through high-quality faculty. The merger could benefit students by extending Aakash&#x27;s classroom strengths online while increasing competition through national mock exams.
+Human: Thank you for the summary. Can you please provide another summary in [...] Scribd
+
+ Byju&#x27;s Acquires Aakash: A New Era in EdTech</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.hbs.edu/faculty/Pages/item.aspx?num=60899" target="_blank">BYJU&#x27;S: EdTech Giant Investing in Brick and Mortar - Case</a></h3>
+                    <div class="result-url">https://www.hbs.edu/faculty/Pages/item.aspx?num=60899</div>
+                    <div class="result-content">Aakash Educational Services (Aakash), one of India&#x27;s largest brick-and-mortar test-prep firms, for $1 billion. Business Strategy; Diversification; Investment;</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/aakash-educational-services-limited" target="_blank">Aakash Educational Services Limited</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/aakash-educational-services-limited</div>
+                    <div class="result-content">Products and services
+Keywords: education, medical (neet-aiims) coaching, engineering (iit-jee main &amp; advanced) coaching, short-term crash courses for neet-jee, short-term test series courses for neet-jee, coaching on aakash itutor, dlp for medical-engineering, coaching through aakash live, classroom coaching for neet/jee, test preparation centre, neet, olympiad [...] Description: Aakash Educational Services Limited (AESL) is a leading test-prep company in India with a strong legacy of over 37 years, that provides comprehensive test preparatory services for students preparing for Medical (NEET) and Engineering Entrance Examinations (JEE), School/Board Exams &amp; Competitive Exams such as NTSE, KVPY, and Olympiads. Founded in 1988, we have 300+ centres nationwide and growing. Over the last three decades, Aakash has helped transform the lives of lakhs of students by helping them fulfil their dreams of becoming a doctor or an engineer. With a strong selection track record of producing 85,000+ Rankers across NEET &amp; JEE, Aakash commitment to a ‘Student First’ approach has been at the core of all initiatives. Whether it is a new product launch or tech [...] all initiatives. Whether it is a new product launch or tech innovations to make the student experience more engaging and meaningful, Aakash leaves no stone unturned to offer simply the best. At Aakash, we are on a mission to build an omni-channel learning platform that will catapult the test-prep experience to the next level and help build India’s largest education company. We intend to transform the test-prep sector through innovative &amp; technology-driven Hybrid programs and digitally-enabled learning solutions to complement a robust and fast-growing national footprint of centres that will enable millions of students to access quality education beyond geographical barriers. We are excited to create amazing opportunities to work in an environment that encourages innovation, collaboration,</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Byju%27s" target="_blank">Byju&#x27;s - Wikipedia</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Byju%27s</div>
+                    <div class="result-content">Products and services
+
+[edit]
+
+Byju&#x27;s was an education tutoring app that ran on a freemium model, with free access to content limited for 15 days after the registration. It was launched in August 2015, offering educational content for students from classes 4 to 12. In 2019, an early learning program started for classes 1 to 3. It also trains students for examinations in India such as IIT-JEE, NEET, CAT, IAS, and international examinations such as GRE and GMAT. [...] | Company Logo |
+| Trade name | Byju&#x27;s |
+| Type | Private |
+| Industry |  Edtech |
+| Founded | 2011; 15 years ago (2011) |
+| Founders |  Byju Raveendran  Divya Gokulnath |
+| Defunct | October 2024 (2024-10) |
+| Fate | Entered insolvency proceedings / valuation collapsed to 0 |
+| Headquarters | Bangalore, Karnataka , India |
+| Area served | Worldwide |
+| Key people |  Byju Raveendran (CEO)  Divya Gokulnath (Director &quot;Director (business)&quot;)) |
+| Products | BYJU&#x27;S – The Learning App |
+| Revenue | Increase ₹5,298 crore (US$550 million) (FY22) |
+| Net income | Negative increase ₹−8,245 crore (US$−860 million) (FY22) |
+| Number of employees | 0 (2026) | [...] | Number of employees | 0 (2026) |
+| Subsidiaries |  Osmo &quot;Osmo (game system)&quot;)  TutorVista (Rebranded as iRobot Tutor TV STEM)  HashLearn  WhiteHat Jr  LabInApp  Scholr  Aakash Institute  Toppr  Whodat  Tynker  Epic!  Great Learning  Superset  GradeUp (Rebranded as Byju&#x27;s Exam Prep)  GeoGebra |
+| Website |  |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/aakash-educational" target="_blank">Aakash Educational Services - Products, Competitors, Financials, Employees, Headquarters Locations</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/aakash-educational</div>
+                    <div class="result-content">Revenue
+
+ About Aakash Educational Services
+
+Aakash Educational Services provides test-preparatory services in the education sector. The company offers coaching for medical and engineering entrance examinations, school/board exams, and competitive exams like NTSE, KVPY, and Olympiads. Aakash Educational Services serves students preparing for higher education in medicine and engineering, as well as those preparing for competitive academic examinations. It was founded in 1988 and is based in Bengaluru, India. Aakash Educational Services operates as a subsidiary of BYJU’s. In June 2025, Manipal Education &amp; Medical Group acquired a majority stake in Aakash Educational Services.
+
+ Headquarters Location
+
+No. 5/2 Varthur Road 2nd Floor, Kundanahalli Gate
+
+Bengaluru, 560037,
+
+India [...] Bengaluru, 560037,
+
+India
+
+0124-4168300
+
+Loading...
+
+Loading...
+
+ Expert Collections containing Aakash Educational Services
+
+Expert Collections are analyst-curated lists that highlight the companies you need to know in the most important technology spaces.
+
+Aakash Educational Services is included in 1 Expert Collection, including Education Technology (Edtech).
+
+ Education Technology (Edtech)
+
+3,429 items
+
+These companies offer tech-enabled solutions that facilitate education and learning for people of all ages, from pre-K to adult and professional education.
+
+ Latest Aakash Educational Services News
+
+Sep 23, 2026 [...] AI Quick Read</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://akta.pro/company-profiles/0003z2s/byju-s" target="_blank">BYJU&#x27;S company profile: firmographics, business model, ...</a></h3>
+                    <div class="result-url">https://akta.pro/company-profiles/0003z2s/byju-s</div>
+                    <div class="result-content">BYJU&#x27;S is an Indian edtech company that delivers K-12 learning, competitive exam preparation (IIT-JEE, NEET, IAS), early-childhood education,</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://finance.yahoo.com/news/byjus-acquires-indian-tutor-aakash-080032121.html" target="_blank">Byju&#x27;s acquires Indian tutor Aakash for nearly $1 billion</a></h3>
+                    <div class="result-url">https://finance.yahoo.com/news/byjus-acquires-indian-tutor-aakash-080032121.html</div>
+                    <div class="result-content">4. Student Loan Forgiveness
+      5. Paying Off Student Loans
+   6. Personal Loans 
+      1. Best Personal Loans
+      2. Get Approved
+      3. Best Lenders
+   7. Insurance 
+      1. Find Car Insurance
+      2. Types of Car Insurance
+      3. Car Insurance Discounts
+      4. Find Life Insurance
+   8. Taxes 
+      1. How to File
+      2. Refund Status
+      3. Tax Extension
+      4. Child Tax Credit
+   9. Investing 
+      1. Investing Basics
+      2. Real Estate Investing
+      3. Retirement Basics
+   10. Calculators
+6. 1. Live
+   2. Daily Shows
+   3. The 8:30
+   4. Sozzi Unleashed
+   5. The Daily Wolf
+   6. Market Hang
+   7. In the Loop
+   8. Weekly Shows
+   9. Built Different
+   10. How They Run
+   11. Power Players
+   12. The Big Idea
+   13. Trader Talk
+   14. ETF Report [...] 4. Analyst Strong Buy
+   3. Stock Comparison
+   4. Currency Converter
+   5. Advanced Charts
+   6. Community
+5. Personal Finance
+   1. My Money   BETA
+   2. Credit Cards 
+      1. Compare Credit Cards
+      2. Best 0% APR Cards
+      3. Best Balance Transfer
+      4. Best Cash Back Cards
+      5. Best Travel Cards
+   3. Banking 
+      1. CD Rates
+      2. Best High-Yield Savings
+      3. Best Money Market
+      4. Best Free Checking
+      5. Best Online Banks
+   4. Mortgage 
+      1. Best Mortgage Lenders
+      2. Best Mortgage Rates
+      3. Mortgage Refinance
+      4. Mortgage Calculator
+      5. Mortgage Affordability Calculator
+   5. Student Loans 
+      1. Federal vs. Private
+      2. FAFSA Guide
+      3. Student Loan Assistance
+      4. Student Loan Forgiveness [...] 7. Industrials
+   6. Treasury Bonds
+   7. Currencies
+   8. World Indices
+   9. Commodities
+   10. ETFs
+   11. Mutual Funds
+3. 1. Markets 
+      1. Stock Market News
+      2. Real Estate
+      3. Magnificent 7
+      4. Private Markets
+      5. Futures &amp; Derivatives
+   2. Originals
+   3. Newsletters
+   4. Economy &amp; Policy 
+      1. Earnings
+      2. Oil &amp; Gas
+      3. Strait of Hormuz
+      4. Tariffs
+      5. Clean Energy
+   5. Tech 
+      1. Aerospace &amp; Defense
+      2. Enterprise Cloud
+   6. Exchange-Traded Funds
+4. Research &amp; Tools
+   1. Calendars 
+      1. Earnings Calendar
+      2. IPO Calendar
+      3. Stock Splits
+      4. Economic Events
+   2. Screeners 
+      1. Equities
+      2. Most Shorted
+      3. Most Active Penny Stocks
+      4. Analyst Strong Buy</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cnbctv18.com/tags/aakash-educational-services.htm" target="_blank">Aakash educational services: Read Latest News &amp; Updates on Aakash educational services, Photos, Videos | CNBCTV18</a></h3>
+                    <div class="result-url">https://www.cnbctv18.com/tags/aakash-educational-services.htm</div>
+                    <div class="result-content">Aakash Educational Services NEWS. * business | Nov 6, 2025 2:39 PM IST.  Ranjan Pai eyes bankrupt Byju’s parent? A look at business tycoon’s recent investments. * business | Nov 3, 2025 11:46 PM IST.  Supreme Court upholds NCLAT order allowing Aakash to hold EGM for rights issue. * business | Oct 27, 2025 11:32 PM IST.  Byju’s moves NCLAT against NCLT order allowing Aakash EGM on rights issue. * business | Jun 6, 2025 8:44 PM IST.  NCLAT denies Byju’s plea for equity fund raise by Aakash Educational Services. * business | Feb 24, 2025 7:28 PM IST.  Blackstone-backed Singapore Topco withdraws legal plea against Aakash AoA amendments, strengthening Byju&#x27;s position. * business | Nov 29, 2024 1:27 PM IST.  Byju’s fundraise through stake sale in Aakash faces Supreme Court hurdle. * startup | Apr 8, 2024 8:19 PM IST.  Startup Digest: STG acquires Eka Software, Filter Capital secures ₹800 crore for maiden fund and more. * business | Apr 8, 2024 11:08 AM IST.  Byju&#x27;s-owned Aakash Edcational Services appoints former Pearson India head Deepak Mehrotra as CEO. * business | Oct 18, 2023 3:05 PM IST.  Aakash Chaudhry set to return as CEO of Aakash Educational Services as Byju’s closes in on share swap deal. * startup | Jun 5, 2023 7:43 PM IST.  Startup Digest: BYJU’S to launch Aakash IPO in mid-2024, ONDC launches B2B transactions and more. * business | Mar 23, 2023 9:58 PM IST.  SoftBank-backed Unacademy explores merger with Byju’s-owned Aakash. * business | Apr 6, 2021 9:31 PM IST.  Byju&#x27;s may take IPO route in18-24 months, says founder Raveendran: Report. * information technology | Apr 5, 2021 11:57 PM IST.  Startup Digest: Top stories of the day. * startup | Apr 5, 2021 5:34 PM IST.  BYJU’S to acquire Aakash Educational Services through a strategic merger. * startup | Feb 18, 2021 8:35 PM IST.  Edtech firms on a buying spree amid COVID-19.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://economictimes.indiatimes.com/topic/ranjan-pai-aakash/news" target="_blank">ranjan pai aakash News and Updates from The Economic Times - Page 1</a></h3>
+                    <div class="result-url">https://economictimes.indiatimes.com/topic/ranjan-pai-aakash/news</div>
+                    <div class="result-content">Title: ranjan pai aakash News and Updates from The Economic Times - Page 1
+This is the second submission of EoI from Ranjan Pai’s Manipal Education &amp; Medical Group (MEMG) for Think &amp; Learn after its resolution professional, Shailendra Ajmera, extended the deadline for such submissions to November 13, from September 24. Ranjan Pai-led Manipal Group&#x27;s purchase of a stake in Aakash Educational Services from JC Chaudhry was also cleared. CCI clears Manipal Group&#x27;s stake purchase in Aakash Educational Services.  CCI clears Manipal Group&#x27;s stake purchase in Aakash Educational Services. Aakash Educational Services plans to invest Rs 100 crore to scale up its edtech unit, Aakash Digital, following its exit from BYJU&#x27;S control. Ranjan Pai’s stake buy in Byju&#x27;s Aakash Educational Services gets CCI green signal.  Ranjan Pai’s stake buy in Byju&#x27;s Aakash Educational Services gets CCI green signal. The board of Byju’s-owned Aakash Institute earlier approved the conversion into equity of the $300 million Ranjan Pai, chairman of Manipal Education and Medical Group, invested in January 2024. Presently, the chairman of Manipal group Ranjan Pai owns 40% in Aakash. Byju’s investors are reconciled to his acquisition of 40% in Aakash, the people said, adding that the Manipal Education and Medical Group chairman has also invested an additional Rs 250 crore as working capital and to pay salaries. The lenders of Byju’s $1.2 billion term loan had moved the city court last Thursday seeking an ex-parte injunction on the transaction allowing Ranjan Pai to convert a loan of about $250-$300 million he had advanced to the brick-and-mortar coaching network into equity in Aakash Institute. Ranjan Pai may put $50-60 million more to grow Byju’s Aakash.  Ranjan Pai may put $50-60 million more to grow Byju’s Aakash. Ranjan Pai turns white knight for Byju’s with 40% stake in Aakash.  Ranjan Pai turns white knight for Byju’s with 40% stake in Aakash. Manipal group head Ranjan Pai will soon become the largest shareholder in Aakash—one of the few remaining valuable assets of troubled edtech Byju’s. Manipal Group boss Ranjan Pai has pumped Rs 1,400 crore into Bjyu’s subsidiary Aakash Institute, enabling the embattled edtech major to clear its debt to Davidson Kempner.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.instagram.com/popular/aakash-educational-services-news" target="_blank">Aakash Educational Services News</a></h3>
+                    <div class="result-url">https://www.instagram.com/popular/aakash-educational-services-news</div>
+                    <div class="result-content">Title: Aakash Educational Services News
+ Aakash Educational Services News. Aakash Educational Services is making significant moves in the education sector. Recently, the company plans to invest Rs 100 crore to scale up its edtech unit, Aakash Digital, aiming to reach 1 lakh...  education news.  aakash.  aakash education.  aakash educational services.  aakash education news.  aakash news.  news education. Aakash Educational Services Limited reported a massive ₹2,443 crore loss after booking ₹2,720 crore in exceptional charges linked to parent Byju’s. Latest news update live news latest updates trending reels news live latest news update live news latest updates trending reels news live latest news update live news latest updates trending reels news live latest news update live news latest updates trending reels news live latest news update live news trendingreels instagramreels reels news trending. Aakash Neet Aspirants Daily Routine aakash indore kota jee neet2026 exam study. For the rank 5 from faridabad Sector 16 branch and your biggest achievement and success 💘🙏. 🚀 Shape your future with excellence. Join Aakash Institute, Gangapur City. reels ggc viralnow admissionopen 2025. trending neet gangapurcity reelsinstagram jee aakashian aakashinstitute aakashgangapurcity less. aakashinstitute kuchamancity futurdoctors futureengineers neet&amp;jee. WELCOME TO AAKASH INSTITUTE 💯💫 .📱- 8490050567 8490050597 aakashinstitute kuchamancity futurdoctors futureengineers neet&amp;jee. Aakash institute &quot; where preparation meet Success&quot; Intro: Aakash Institute is one of India&#x27;s leading coaching centers, dedicated to preparing students for competitive exams like NEET, JEE, and IIT With expert faculty, personalized guidance, and a strong success record, Aakash helps students achieve their academic dreams. Doing an add for aakash institute. Doing an add for aakash institute Thanks for this aakash😊. We’re thrilled to announce that Aakash Institute—India’s premier classroom coaching institution with 36+ years of legacy in producing top NEET &amp; JEE achievers—is now open in Bidar! 🏆 Aakash’s repeater batches are renowned for transforming near-miss attempts into extraordinary successes—like *Suryansh Aryan scoring 705 in NEET after scoring 592 the prior year, now at *AIIMS Bhopal,* and *Andaman &amp; Nicobar topper Anjali improving from 622 to 706*. Struggling to crack the exam? Current school-year students don’t miss out! Lay a strong groundwork early:. Perfect for future NEET/JEE aspirants. Don’t miss this chance to learn from the institution that consistently delivers top ranks:.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.livemint.com/companies/news/byjus-acquires-aakash-educational-services-in-a-billion-dollar-deal-11617611732591.html" target="_blank">Aakash joins Byju&#x27;s universe in a deal worth nearly $1 billion</a></h3>
+                    <div class="result-url">https://www.livemint.com/companies/news/byjus-acquires-aakash-educational-services-in-a-billion-dollar-deal-11617611732591.html</div>
+                    <div class="result-content">Edtech company Byju&#x27;s on Monday confirmed the acquisition of education institution Aakash Educational Services Ltd (AESL), as it looks to</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://vccircle.com/company/aakash-education-services-limited/all" target="_blank">Aakash Education Services Limited Latest News | Aakash Education Services Limited Top stories | Aakash Education Services Limited Funding | Aakash Education Services Limited Fund vccircle</a></h3>
+                    <div class="result-url">https://vccircle.com/company/aakash-education-services-limited/all</div>
+                    <div class="result-content">Title: Aakash Education Services Limited Latest News | Aakash Education Services Limited Top stories | Aakash Education Services Limited Funding | Aakash Education Services Limited Fund vccircle
+ Aakash Education Services Limited. Byju&#x27;s plans to take Aakash public next year.  TMT. Edtech decacorn Byju’s is planning to take its wholly-owned test prep unit Aakash Educational Services Ltd public by ......  Most Popular. KKR-backed Baby Memorial snaps up another South Indian hospital.  Healthcare. IRB Infrastructure Trust to transfer two toll road assets to IRB InvIT Fund.  Infrastructure. Lightrock unveils $500 mn climate-focused fund with India mandate. Avataar Ventures secures financing to make GP commitments, back portfolio firms.  Finance. Deals Digest: PE‑VC activity steady; AI, tech deals drive value. Qatar Science &amp; Technology Park launches early-stage deeptech fund.  Google News. Follow VCCircle on Google News for the latest updates on Business and Startup News.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://pitchbook.com/profiles/company/338577-04" target="_blank">Aakash Educational Services 2026 Company Profile: Valuation, Funding &amp; Investors | PitchBook</a></h3>
+                    <div class="result-url">https://pitchbook.com/profiles/company/338577-04</div>
+                    <div class="result-content">The current revenue for Aakash Educational Services is  .
+  How much funding has Aakash Educational Services raised over time?
+
+  Aakash Educational Services has raised $190M.
+  Who are Aakash Educational Services’s investors?
+
+  BYJU&#x27;S, Blackstone, and Manipal Global Education Services have invested in Aakash Educational Services.
+  Who are Aakash Educational Services’s competitors?
+
+  T.I.M.E., Resonance Eduventures, FIITJEE, Vidyanext Personalized Tuition, and Cuemath are some of the 20 competitors of Aakash Educational Services.
+
+ Data Transparency
+
+ 
+
+  Meet our data hygiene team
+
+  Discover how our experts ensure you’re getting the most accurate financial data in the industry.
+
+  Read more
+ 
+
+  How PitchBook sources data [...] | Company Name | Financing Status | Location | Employees | Total Raised | Last Financing Date/Type | Last Financing Amount |
+ ---  ---  --- 
+| T.I.M.E. | Venture Capital-Backed | Secunderabad, India |  |  |  |  |
+| Resonance Eduventures | Formerly PE-Backed | Kota, India |  |  |  |  |
+| FIITJEE | Formerly PE-Backed | New Delhi, India |  |  |  |  |
+| Vidyanext Personalized Tuition | Corporation |  |  |  |  |  |
+| Cuemath | Venture Capital-Backed | Gurugram, India |  |  |  |  |
+
+You’re viewing 5 of 20 competitors. Get the full list »
+
+ Aakash Educational Services Signals
+
+Growth Rate
+
+Weekly  
+Growth
+
+Weekly Growth
+
+Size Multiple
+
+Key Data Points
+
+Similarweb Unique Visitors
+
+Majestic Referring Domains [...] Secunderabad, India
+
+logo
+
+
+
+Kota, India
+
+Add Comparison
+
+PitchBook’s comparison feature gives you a side-by-side look at key metrics for similar companies. Personalize which data points you want to see and create visualizations instantly.
+
+Request a free trial
+
+ Aakash Educational Services Competitors (20)
+
+One of Aakash Educational Services’s 20 competitors is T.I.M.E., a Venture Capital-Backed company based in Secunderabad, India.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/aakash-educational" target="_blank">Aakash Educational Services - Products, Competitors, Financials, Employees, Headquarters Locations</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/aakash-educational</div>
+                    <div class="result-content">Who are Aakash Educational Services&#x27;s competitors?
+
+Competitors of Aakash Educational Services include PrepMed NEET.
+
+Loading...
+
+ Compare Aakash Educational Services to Competitors
+
+PrepMed NEET Logo
+
+Prepmed Neet is an educational technology company focused on providing preparation for the NEET UG medical entrance exam. The company offers courses including foundation, test series, and specialized NEET preparation for students from Class 7 to Class 12, as well as for repeaters. Prepmed Neet serves students preparing for medical school entrance examinations in India. It was founded in 2020 and is based in Kolkata, India.
+
+Loading...
+
+CB Insights
+
+Follow Us On Social
+
+Twitter
+Linkedin
+Facebook
+
+ About
+
+ How We Help
+
+ What We Offer
+
+ Popular Research [...]  Revenue
+
+ About Aakash Educational Services
+
+Aakash Educational Services provides test-preparatory services in the education sector. The company offers coaching for medical and engineering entrance examinations, school/board exams, and competitive exams like NTSE, KVPY, and Olympiads. Aakash Educational Services serves students preparing for higher education in medicine and engineering, as well as those preparing for competitive academic examinations. It was founded in 1988 and is based in Bengaluru, India. Aakash Educational Services operates as a subsidiary of BYJU’s. In June 2025, Manipal Education &amp; Medical Group acquired a majority stake in Aakash Educational Services.
+
+ Headquarters Location
+
+No. 5/2 Varthur Road 2nd Floor, Kundanahalli Gate
+
+Bengaluru, 560037,
+
+India [...]  Aakash Educational Services Frequently Asked Questions (FAQ)
+
+When was Aakash Educational Services founded?
+
+Aakash Educational Services was founded in 1988.
+
+Where is Aakash Educational Services&#x27;s headquarters?
+
+Aakash Educational Services&#x27;s headquarters is located at No. 5/2 Varthur Road, Bengaluru.
+
+What is Aakash Educational Services&#x27;s latest funding round?
+
+Aakash Educational Services&#x27;s latest funding round is Corporate Majority.
+
+How much did Aakash Educational Services raise?
+
+Aakash Educational Services raised a total of $358.21M.
+
+Who are the investors of Aakash Educational Services?
+
+Investors of Aakash Educational Services include Manipal Education &amp; Medical Group, MEMG Family Office, Manipal Health Systems, Ranjan Pai Family Office, BYJU’s and 3 more.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://journals.sagepub.com/doi/10.1177/20438869251347635" target="_blank">The Indian edtech giant under dark skies: Can they survive?</a></h3>
+                    <div class="result-url">https://journals.sagepub.com/doi/10.1177/20438869251347635</div>
+                    <div class="result-content">With 53% of the Indian edtech market, BYJU&#x27;S is in the lead. Unacademy, the company&#x27;s main rival, holds a 17% market share. The detailed market</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/manipal-education-medical-group" target="_blank">Manipal Education &amp; Medical Group - Products, Competitors, Financials, Employees, Headquarters Locations</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/manipal-education-medical-group</div>
+                    <div class="result-content">talks value Aakash at $2 Bn. Byjus Aakash Edtech”~ Inc42 Aakash: The Crown Jewel That Survived Byju&#x27;s Collapse While Byju&#x27;s core online learning business imploded almost entirely, Aakash Educational Services has remained structurally insulated from the wreckage. It operates more than 300 coaching centres across India, providing test-preparation services for medical and engineering entrance examinations including NEET and JEE as well as school exams. The institute has a faculty of more than 5,000 experts and last reported annual revenue of approximately $254 million. That resilience is precisely why lenders want a piece of it rather than continuing to chase recovery through unpredictable bankruptcy court proceedings spread across multiple jurisdictions. Byju&#x27;s originally acquired Aakash [...] multiple jurisdictions. Byju&#x27;s originally acquired Aakash in 2021 at a price of around $1 billion, calling it the crown jewel of its expanding education empire. But its stake in the institute has since been heavily diluted through rights issues and subsequent investments by Manipal Education and Medical Group, which now holds approximately 60% and is the single largest shareholder. Byju&#x27;s parent entity, Think &amp; Learn Pvt. Ltd., holds only a minority position today. By targeting a 30% stake in Aakash, lenders are effectively bypassing the messy bankruptcy process entirely and going straight for the most valuable surviving asset in the group&#x27;s portfolio. “Byju&#x27;s global lenders are in talks to take a roughly 30% stake in Aakash Educational Services in return for dropping all legal action [...] case began after Byju&#x27;s defaulted on a $1.2 billion loan it took out in 2021, the same year it paid $1 billion for Aakash. GLAS charged Raveendran of fund misuse, alleging that the corporation concealed $533 million in funds through a US-based shell subsidiary known as Byju&#x27;s Alpha. Raveendran and Byju have repeatedly denied any misconduct. The legal battle eventually spread to courts in India, Singapore, and the United States, and Byju&#x27;s declared insolvency in India in 2024. Raveendran admitted that year that the company&#x27;s valuation had reached nothing. “BYJU&#x27;S creditors are negotiating a settlement with Aakash to take a 30% stake in the coaching institute in exchange for dropping legal action against Byju Raveendran. Settlement talks value Aakash at $2 Bn. Byjus Aakash Edtech”~ Inc42</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://medium.com/@theadityabadola/the-edtech-battlefield-byjus-unacademy-physicswallah-strategies-38753ddf36e7" target="_blank">The Edtech Battlefield: BYJU’S, Unacademy, PhysicsWallah Strategies | by Aditya Badola | Medium</a></h3>
+                    <div class="result-url">https://medium.com/@theadityabadola/the-edtech-battlefield-byjus-unacademy-physicswallah-strategies-38753ddf36e7</div>
+                    <div class="result-content">Unacademy’s marketplace economics worked when educators were willing to be on the platform exclusively. As competition increased and educators realized they could monetize independently, the platform had to spend more to retain talent. The cut they took had to justify the infrastructure they provided, and that math got harder as alternatives emerged.
+
+PhysicsWallah’s low-cost approach meant they could reach profitability faster. Lower prices meant more customers, and more customers meant better word of mouth. The economics worked because they weren’t trying to build a premium brand. They were trying to serve the maximum number of students possible.
+
+ The Marketing Wars [...] The model was centered on one-on-one sales. BYJU’S hired thousands of salespeople who would go into homes, demonstrate the app, and convince parents to pay upfront for annual subscriptions. The sales pitch worked because the product looked impressive. High production value videos, gamified learning, celebrity teachers. It felt like something that justified the cost.
+
+The growth was explosive. BYJU’S raised billions in funding and became one of the most valuable startups in India. They acquired companies left and right, expanding into test prep, coding, and international markets. The strategy was to own every segment of learning, from kindergarten through competitive exams. [...] They raised significant funding and expanded aggressively. Free content drew students in, and paid subscriptions converted them. The company hired celebrities and cricketers as brand ambassadors, trying to build mainstream appeal. They wanted to be the default choice for anyone preparing for exams.
+
+The challenge was that a marketplace is only as good as the educators on it. Quality control became an issue. Some teachers were exceptional, others less so. Students had to figure out which courses were actually worth their time. The platform also faced competition from the educators themselves, who could build their own followings and eventually leave to start independent channels.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

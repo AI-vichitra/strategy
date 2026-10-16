@@ -1,11 +1,11 @@
 .container {
   min-height: 100vh;
-  background-color: #F8F5FB;
-  background-image: radial-gradient(ellipse at 50% 0%, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
+  background-color: #FAF8F5;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(212, 168, 67, 0.08) 0%, transparent 60%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 80px 20px;
+  padding: 80px 24px;
   font-family: inherit;
 }
 
@@ -19,27 +19,30 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #7c3aed;
-  font-size: 14px;
-  font-weight: 600;
+  color: #D4A843;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   margin-bottom: 16px;
 }
 
 .brandLabel svg {
-  color: #8b5cf6;
+  color: #B8912E;
 }
 
 .title {
-  font-size: 36px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 38px;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 8px;
+  color: #1A1A1A;
+  margin-bottom: 10px;
   letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-size: 15px;
-  color: #6b7280;
+  font-size: 16px;
+  color: #6B6560;
 }
 
 .cardsRow {
@@ -54,62 +57,64 @@
 .card {
   flex: 1;
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  padding: 32px 40px;
-  border: 1px solid #f3f4f6;
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.04);
+  padding: 40px 48px;
+  border: 1px solid #E8E4DC;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(139, 92, 246, 0.1);
-  border-color: #d4a843;
+  box-shadow: 0 16px 40px rgba(212, 168, 67, 0.08);
+  border-color: #D4A843;
 }
 
 .cardHeader {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 18px;
+  margin-bottom: 28px;
 }
 
 .iconWrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #8b5cf6, #d4a843);
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2D2A26, #D4A843);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 6px 16px rgba(45, 42, 38, 0.12);
   flex-shrink: 0;
 }
 
 .iconWrapper svg {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
 }
 
 .cardTitle {
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: #1A1A1A;
   margin-bottom: 4px;
+  letter-spacing: 0.02em;
 }
 
 .cardSubtitle {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  color: #6B6560;
 }
 
 .cardBody {
   flex-grow: 1;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
 
 .featuresList {
@@ -118,23 +123,23 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .featuresList li {
   font-size: 14px;
-  color: #4b5563;
-  line-height: 1.5;
+  color: #4A4540;
+  line-height: 1.6;
   position: relative;
-  padding-left: 20px;
+  padding-left: 24px;
 }
 
 .featuresList li::before {
   content: '✓';
   position: absolute;
   left: 0;
-  color: #8b5cf6;
-  font-weight: bold;
+  color: #D4A843;
+  font-weight: 900;
 }
 
 .cardFooter {
@@ -148,20 +153,24 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #8B5CF6, #d4a843);
+  background: linear-gradient(135deg, #2D2A26, #D4A843);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
+  border-radius: 12px;
+  padding: 14px 28px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
-  transition: opacity 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 16px rgba(45, 42, 38, 0.15);
+  font-family: inherit;
 }
 
 .continueBtn:hover {
-  opacity: 0.95;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(45, 42, 38, 0.2);
+  background: linear-gradient(135deg, #4A4540, #E8C96A);
 }
 
 .enterpriseBtn {
@@ -169,24 +178,29 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #111827;
+  background: #1A1A1A;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
+  border-radius: 12px;
+  padding: 14px 28px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
-  transition: background-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 16px rgba(26, 26, 26, 0.15);
+  font-family: inherit;
 }
 
 .enterpriseBtn:hover {
-  background: #1f2937;
+  background: #2D2A26;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);
 }
 
 @media (max-width: 768px) {
   .cardsRow {
     flex-direction: column;
+    gap: 24px;
   }
 }

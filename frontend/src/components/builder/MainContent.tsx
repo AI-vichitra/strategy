@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import TemplateGrid, { allTemplates } from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
 import ChatInput from './ChatInput';
@@ -10,8 +10,18 @@ import FilesView from './FilesView';
 import ProjectsView from './ProjectsView';
 import WorkflowView from './WorkflowView';
 import styles from './MainContent.module.css';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  LabelList
+} from 'recharts';
+import { exportReportToPdf } from '../../utils/pdfExport';
 
-type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string };
+type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string };
 
 // ── Per-agent questionnaire configs ───────────────────────────────
 const agentQuestions: Record<string, Question[]> = {
@@ -304,7 +314,7 @@ const agentQuestions: Record<string, Question[]> = {
     },
     {
       question: "What is your business model?",
-      options: ["SaaS", "E-commerce", "Marketplace", "Agency", "Professional Services", "Healthcare", "Real Estate", "Mobile App", "Manufacturing", "Other"],
+      options: ["SaaS", "E-commerce", "Marketplace", "Agency", "Professional Services", "Healthcare", "Real Estate", "Consumer Electronics", "Mobile App", "Manufacturing", "Other"],
       multiSelect: false
     },
   ],
@@ -353,7 +363,7 @@ const agentQuestions: Record<string, Question[]> = {
     },
     {
       question: "What type of business are you?",
-      options: ["SaaS", "E-commerce", "Agency", "Professional Services", "Healthcare", "Real Estate", "Marketplace", "Consumer Brand", "other"],
+      options: ["SaaS", "E-commerce", "Agency", "Professional Services", "Healthcare", "Real Estate", "Marketplace", "Consumer Brand", "Consumer Electronics", "other"],
       multiSelect: false
     },
     {
@@ -573,10 +583,10 @@ const agentPrompts: Record<string, string> = {
   'User Persona Generator': `You're a world-class user persona researcher. Given a business, you are tasked with creating a comprehensive User Persona Report to help the business better understand its target audience. The report should be well-structured and informative.\n\nUser Personas:\nCreate 3 personas for different user segments. Each persona should include:\nName: Give the persona a name for easy reference.\nDemographics: Age, gender, location, income, education, etc.\nBackground: Provide a brief overview of their personal and professional life.\nGoals and Objectives: Clearly outline their primary goals, both long-term and short-term.\nPain Points and Challenges: Identify their pain points and obstacles they face in their daily lives.\nMotivations: Understand what drives and motivates them to take action.\nBehaviors and Preferences: Describe how they behave, make decisions, and their preferences when it comes to products or services.\nNeeds and Expectations: Highlight what they expect from our product or service.\nReal Quotes and Anecdotes: Include real quotes, anecdotes, or testimonials from interviews and surveys with users. These can make the personas more relatable and authentic.\n\nSummary of Key Insights:\nProvide a concise summary that captures the key insights gained from the personas. Emphasize the common themes, challenges, and opportunities that emerge from the personas.\n\n3 User Acquisition Ideas:\nSuggest three user acquisition ideas based on the personas and their characteristics. Be creative and specific in your recommendations.\nIdea 1:\nIdea 2:\nIdea 3:\n\n3 Conversion Rate Optimization Ideas:\nPropose three conversion rate optimization ideas tailored to the personas. Ensure these ideas are actionable and have a direct impact on improving conversion rates.\nIdea 1:\nIdea 2:\nIdea 3:\n\n3 Content Marketing Ideas:\nPresent three content marketing ideas designed to resonate with the personas and their interests. Ensure these ideas are engaging and address their pain points and needs.\nIdea 1:\nIdea 2:\nIdea 3:`,
   'Business Plan Generator': `You are an expert business analyst and strategist skilled at transforming raw business ideas into detailed, actionable business plans. Your role is to conduct extensive research on every aspect of the user's idea, including product, marketing, sales, finance, hiring, competition, and funding. For each category, you will gather relevant data, analyze market trends, and synthesize insights to create a robust business plan. You will structure the plan in a format suitable for Excel, with each main category as a separate sheet or section, and each aspect within a category detailed in a canvas format (e.g., problem, solution, key metrics, channels, etc.).\n\nGuidelines:\n• Always clarify ambiguous or incomplete user input by making reasonable assumptions and stating them clearly.\n• Use up-to-date, reputable sources for research and cite them where appropriate.\n• For each category, provide actionable recommendations, realistic projections, and clear justifications, and write your report in a document canvas using Text Canvas\n• If information is unavailable or speculative, clearly label it as such and suggest next steps for validation.\n• Maintain a professional, concise, and user-friendly tone.\n\nConstraints:\n• Do not fabricate data; use estimates only when necessary and label them as such.\n• Avoid jargon unless it is explained or commonly understood in business contexts.\n• Do not provide legal or financial advice beyond general business planning.\n\nError Handling:\n• If the user's idea is too vague, request clarification or provide a list of assumptions made.\n• If research yields conflicting information, summarize the main viewpoints and recommend a course of action.\n\nOutput format\nOutput Format:\n• For each main category (Product, Marketing, Sales, Finance, Hiring, Competition, Funding), create a document to report them.\n\nQuality Standards:\n• All information must be well-researched, relevant, and actionable.\n• Projections and recommendations should be realistic and justified.\n• The plan should be logically structured and easy to follow.\n\nCommon Mistakes to Avoid:\n• Overly generic or vague recommendations.\n• Failing to clarify assumptions or limitations.\n• Ignoring key business plan categories or omitting critical details.\n\nBest Practices:\n• Use clear, consistent formatting for easy Excel transfer.\n• Reference reputable sources where possible.\n• Clearly state any assumptions or areas needing further validation.\n• Tailor recommendations to the user's specific idea and context.`,
   'Legal Agreement Drafter': `You are an experienced contract lawyer with a strong background in drafting legal agreements. You have a deep understanding of contract law principles and are skilled at creating clear, concise, and legally binding documents. Your expertise includes identifying key terms and conditions, ensuring compliance with relevant laws and regulations, and protecting the interests of all parties involved in the agreement. You have a keen eye for detail, excellent communication skills, and the ability to tailor contracts to meet the specific needs and objectives of your clients.`,
-  'Competition Analysis': `I want you to help me set up the following agent. Help me connect the right accounts, tailor it to my specific workflow, and configure everything so it's ready to use. A competitive content analyst. Point it at a competitor's website and it breaks down their messaging, content strategy, and where they're leaving gaps you can fill. Once everything is configured, also set up your own profile image and write a short description for yourself. Then, setup 4 example prompts for this agent I can use to get started with it.`,
-  'Content Calendar': `I want you to help me set up the following agent. Help me connect the right accounts, tailor it to my specific workflow, and configure everything so it's ready to use. A content planner. It researches what's trending, proposes a monthly calendar of topics, and drafts a brief for each piece. Once everything is configured, also set up your own profile image and write a short description for yourself. Then, setup 4 example prompts for this agent I can use to get started with it.`,
-  'SEO Audit': `I want you to help me set up the following agent. Help me connect the right accounts, tailor it to my specific workflow, and configure everything so it's ready to use. An SEO auditor. Give it a website URL and it crawls the pages, identifies issues, and produces an actionable report with what to fix first. Once everything is configured, also set up your own profile image and write a short description for yourself. Then, setup 4 example prompts for this agent I can use to get started with it.`,
-  'Ad Copywriter': `You are a seasoned ad copywriter with a proven track record of creating compelling and persuasive ad copy that drives conversions. Your primary role is to craft ad copy that not only captures attention but also resonates with the target audience, leading to increased engagement and conversions. You excel in understanding diverse target audiences, identifying their needs, preferences, and pain points, and using this insight to craft engaging headlines and body copy. You are adept at incorporating strong calls-to-action that prompt immediate responses from the audience. You possess a deep understanding of various advertising platforms, such as Google Ads, Facebook, Instagram, LinkedIn, and Twitter, and can tailor your ad copy to align with each platform's unique requirements and best practices. For instance, you know that Facebook ads benefit from a more conversational tone, while LinkedIn ads may require a more professional approach. Your ad copy is not only creative and concise but also strategically aligned with the specific goals of the advertising campaign, whether it's brand awareness, lead generation, or direct sales. You are expected to maintain high standards of quality, ensuring that your copy is free from grammatical errors, adheres to brand guidelines, and is optimized for SEO where applicable. In handling edge cases, such as tight character limits or sensitive topics, you demonstrate flexibility and creativity, ensuring the message remains impactful without compromising on clarity or compliance. You are also aware of the importance of A/B testing and data analysis in refining ad copy to achieve optimal results. Additionally, you are expected to stay updated with the latest trends in digital marketing and advertising, continuously improving your skills and adapting to new tools and technologies. You should be able to provide constructive feedback on ad performance and suggest improvements based on data insights. You are also responsible for ensuring that all ad copy complies with legal and ethical standards, avoiding misleading claims or inappropriate content. In cases where the target audience is not well-defined, you should be able to conduct quick research to gather insights and tailor the ad copy accordingly. You should also be prepared to handle last-minute changes or urgent requests while maintaining the quality and effectiveness of the ad copy.\n\nOutput format\nYour output should be structured as follows: 1. Headline: A compelling and attention-grabbing headline that encapsulates the main message of the ad. Ensure it is within the character limit specific to the platform. Use active voice and power words to enhance impact. 2. Body Copy: A concise and engaging body copy that elaborates on the headline, highlights key benefits, and addresses the target audience's needs or pain points. Use clear and persuasive language, and keep it within the platform's character limit. Ensure the tone matches the platform's audience expectations. 3. Call-to-Action (CTA): A strong and clear call-to-action that encourages the audience to take the desired action, such as 'Learn More', 'Sign Up', or 'Buy Now'. Ensure the CTA is aligned with the campaign's goals and is prominently placed. 4. Platform-Specific Adjustments: Include any necessary adjustments or considerations specific to the advertising platform, such as hashtags for Instagram or professional tone for LinkedIn. Consider the visual elements that accompany the text and ensure coherence. 5. Quality Checks: Ensure the ad copy is free from grammatical errors, adheres to brand guidelines, and is optimized for SEO if applicable. Double-check for compliance with platform policies and legal standards. 6. Examples: Provide examples of good and bad ad copy for reference. Good Example: 'Unlock Your Potential with Our Online Courses - Enroll Today and Start Learning!' Bad Example: 'We offer courses. Sign up.' 7. Common Pitfalls to Avoid: Avoid overly complex language, lack of clear CTA, and failure to address the target audience's needs. Ensure the message is clear, concise, and compelling. Avoid using jargon unless it is well-understood by the target audience. 8. Style Consistency: You always write in the style of Alex Hormozi, ensuring a consistent voice across all ad copy. 9. Feedback and Iteration: Be prepared to iterate on the ad copy based on feedback and performance data, making necessary adjustments to improve effectiveness. 10. Legal and Ethical Compliance: Ensure all claims are substantiated and the ad copy does not contain misleading or inappropriate content. 11. Urgency and Scarcity: Where appropriate, incorporate elements of urgency or scarcity to encourage immediate action, such as 'Limited Time Offer' or 'Only a Few Spots Left'. 12. Formatting Guidelines: Use bullet points or numbered lists for clarity where applicable, and ensure proper spacing and alignment for readability. 13. Review Process: Before finalizing, review the ad copy for coherence, alignment with campaign objectives, and overall impact. Consider peer reviews for additional insights.`
+  'Competition Analysis': `Generate a complete, board-ready competitive analysis report for my brand and competitors based on all our scanned website and Instagram knowledge base data. Include full comparison tables, Recharts dashboard visualizations for pricing/scale/share of voice, SWOT analysis, and personalized next steps.`,
+  'Content Calendar': `Generate a comprehensive monthly content calendar and campaign strategy based on our brand and competitor research.`,
+  'SEO Audit': `Generate a full SEO and generative search optimization (GEO/AEO) audit based on our scanned brand data.`,
+  'Ad Copywriter': `Generate high-converting ad copy sets across Meta and Google Ads tailored to our brand positioning and competitive differentiators.`,
 };
 
 const getDomain = (connectorName: string) => {
@@ -589,8 +599,729 @@ const homeAgents = homeAgentTitles
   .map(title => allTemplates.find(t => t.title === title))
   .filter(Boolean) as typeof allTemplates;
 
+const EXECUTIVE_COLORS = [
+  '#2D2A26', // Deep Charcoal
+  '#D4A843', // Warm StratAI Gold
+  '#3B82F6', // Corporate Blue
+  '#10B981', // Emerald
+  '#8B5CF6', // Purple
+  '#EC4899', // Rose
+  '#F59E0B', // Amber
+  '#06B6D4', // Cyan
+  '#6366F1', // Indigo
+];
+
+const resolveChartContext = (data: any, chartData: any[], chartType: string) => {
+  const title = (data.title || '').trim();
+  const lowerTitle = title.toLowerCase();
+
+  // Detect scale types
+  const isTenScale = lowerTitle.includes('1-10') || lowerTitle.includes('1–10') || lowerTitle.includes('index') || lowerTitle.includes('scale');
+  const isPercentage = lowerTitle.includes('share') || lowerTitle.includes('%') || lowerTitle.includes('voice') || lowerTitle.includes('percent');
+
+  // 1. Resolve X-Axis Demonstration
+  let xLabel = data.x_label || '';
+  if (!xLabel) {
+    if (lowerTitle.includes('brand') || lowerTitle.includes('competitor') || lowerTitle.includes('pricing') || lowerTitle.includes('price') || lowerTitle.includes('scale signal')) {
+      xLabel = 'Brands & Competitors Analyzed';
+    } else if (lowerTitle.includes('channel') || lowerTitle.includes('acquisition') || lowerTitle.includes('media')) {
+      xLabel = 'Marketing & Growth Channels';
+    } else if (lowerTitle.includes('segment') || lowerTitle.includes('audience') || lowerTitle.includes('customer')) {
+      xLabel = 'Target Customer Segments';
+    } else if (lowerTitle.includes('timeline') || lowerTitle.includes('month') || lowerTitle.includes('quarter') || lowerTitle.includes('phase')) {
+      xLabel = 'Execution Phase / Timeline';
+    } else if (chartData.length > 0 && chartData[0].subject) {
+      xLabel = 'Strategic Dimensions Evaluated';
+    } else {
+      xLabel = 'Analyzed Categories';
+    }
+  }
+
+  // 2. Resolve Y-Axis Demonstration & Metric Units
+  let yLabel = data.y_label || '';
+  let yShortLabel = '';
+  let metricUnit = data.unit || '';
+  if (!yLabel) {
+    if (lowerTitle.includes('price') || lowerTitle.includes('pricing')) {
+      yLabel = 'Price Index (Scale 1–10: 1 = Budget, 10 = Luxury/Premium)';
+      yShortLabel = 'Price Index (1–10)';
+      metricUnit = 'Price Index';
+    } else if (lowerTitle.includes('scale')) {
+      yLabel = 'Scale Signal (1–10) • Digital Reach & Operational Volume (1 = Niche Challenger, 10 = Market Giant)';
+      yShortLabel = 'Scale Signal (1–10)';
+      metricUnit = 'Scale Score';
+    } else if (isPercentage) {
+      yLabel = 'Share of Voice (%) • Organic & Digital Market Presence';
+      yShortLabel = 'Share (%)';
+      metricUnit = 'Share (%)';
+    } else if (lowerTitle.includes('budget') || lowerTitle.includes('spend') || lowerTitle.includes('allocation')) {
+      yLabel = 'Budget Allocation Weight / Resource Focus';
+      yShortLabel = 'Resource Weight';
+      metricUnit = 'Allocation';
+    } else if (lowerTitle.includes('intensity') || lowerTitle.includes('effort')) {
+      yLabel = 'Execution Intensity (Scale 1–10)';
+      yShortLabel = 'Intensity (1–10)';
+      metricUnit = 'Intensity Score';
+    } else {
+      yLabel = 'Benchmark Performance Score';
+      yShortLabel = 'Score';
+      metricUnit = 'Score';
+    }
+  } else {
+    yShortLabel = yLabel.includes('Scale Signal') ? 'Scale Signal (1–10)' : (yLabel.split('(')[0].trim() || yLabel);
+  }
+
+  // 3. Resolve Descriptive Meaning (What the graph actually measures)
+  let description = data.description || '';
+  if (!description) {
+    if (lowerTitle.includes('price') || lowerTitle.includes('pricing')) {
+      description = 'Benchmarks commercial pricing positioning relative to direct competitors. High scores reflect premium, high-margin brand positioning, whereas lower scores reflect accessibility, economy pricing, or freemium customer acquisition.';
+    } else if (lowerTitle.includes('scale')) {
+      description = 'Evaluates operational scale, content volume, and digital reach signals to compare institutional market weight against agile challenger brands.';
+    } else if (isPercentage) {
+      description = 'Measures estimated brand visibility, search prominence, and social conversation share across competitive alternatives.';
+    } else if (lowerTitle.includes('budget') || lowerTitle.includes('allocation')) {
+      description = 'Illustrates strategic capital and operational focus distribution across customer acquisition and brand awareness channels.';
+    } else if (lowerTitle.includes('segment') || lowerTitle.includes('customer')) {
+      description = 'Maps target audience distribution across core demographic and organizational buying groups.';
+    } else if (chartType === 'radar') {
+      description = 'Multi-dimensional competitive capability matrix highlighting differentiation boundaries, strengths, and market vulnerabilities.';
+    } else {
+      description = `Visual strategic benchmark evaluating ${xLabel.toLowerCase()} against ${yLabel.toLowerCase()}.`;
+    }
+  }
+
+  // 4. Synthesize Strategic Meaning / Takeaway
+  let takeaway = data.takeaway || '';
+  if (!takeaway && Array.isArray(chartData) && chartData.length > 0) {
+    const numericItems = chartData
+      .filter((d: any) => typeof d.value === 'number')
+      .sort((a: any, b: any) => b.value - a.value);
+
+    if (numericItems.length >= 2) {
+      const highest = numericItems[0];
+      const lowest = numericItems[numericItems.length - 1];
+      const sum = numericItems.reduce((acc: number, curr: any) => acc + curr.value, 0);
+      const avg = (sum / numericItems.length).toFixed(1);
+
+      if (lowerTitle.includes('price') || lowerTitle.includes('pricing')) {
+        takeaway = `${highest.name} commands the highest price point (${highest.value}/10), establishing luxury or premium positioning. Conversely, ${lowest.name} (${lowest.value}/10) focuses on value-driven volume. The market benchmark median is ${avg}/10, indicating competitive pricing room for differentiated mid-to-high offerings.`;
+      } else if (lowerTitle.includes('scale')) {
+        takeaway = `${highest.name} leads in aggregate operational scale (${highest.value}/10), whereas ${lowest.name} (${lowest.value}/10) operates as a focused specialist. Peer group average sits at ${avg}/10.`;
+      } else if (isPercentage) {
+        takeaway = `${highest.name} dominates estimated share of voice (${highest.value}%), while the remaining segment is contested among challengers.`;
+      } else {
+        takeaway = `${highest.name} ranks highest with a score of ${highest.value}, compared to the benchmark baseline of ${lowest.value} held by ${lowest.name} (Peer average: ${avg}).`;
+      }
+    }
+  }
+
+  return { xLabel, yLabel, yShortLabel, metricUnit, description, takeaway, isTenScale, isPercentage };
+};
+
+const CustomChartTooltip = ({ active, payload, label, context }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E8E4DC',
+      borderRadius: '10px',
+      padding: '10px 14px',
+      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+      fontSize: '12px',
+      fontFamily: "'Inter', sans-serif",
+      minWidth: '150px',
+    }}>
+      {label && (
+        <div style={{ fontWeight: 700, color: '#1A1A1A', marginBottom: '6px', borderBottom: '1px solid #F0ECE4', paddingBottom: '4px' }}>
+          {label}
+        </div>
+      )}
+      {payload.map((item: any, i: number) => {
+        let metricName = item.name;
+        if (!metricName || metricName === 'value') {
+          metricName = context?.metricUnit || 'Score';
+        }
+
+        let valText = `${item.value}`;
+        if (context?.isTenScale && typeof item.value === 'number') {
+          const tier = item.value >= 8 ? 'Premium' : item.value >= 5 ? 'Mid-Tier' : 'Budget';
+          valText = `${item.value} / 10 (${tier})`;
+        } else if (context?.isPercentage && typeof item.value === 'number') {
+          valText = `${item.value}%`;
+        }
+
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color || item.fill }} />
+              <span style={{ color: '#57534E', fontWeight: 500 }}>{metricName}</span>
+            </div>
+            <span style={{ fontWeight: 700, color: '#1A1A1A' }}>{valText}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const RechartsBlock = memo(({ children, className, ...props }: any) => {
+  try {
+    const rawText = String(children).replace(/\n$/, '');
+    const data = JSON.parse(rawText);
+    const COLORS = EXECUTIVE_COLORS;
+    
+    // Normalize chart type
+    let chartType = (data.type || '').toString().toLowerCase().trim();
+    if (chartType === 'bar_chart' || chartType === 'column') chartType = 'bar';
+    if (chartType === 'line_chart' || chartType === 'trend') chartType = 'line';
+    if (chartType === 'area_chart') chartType = 'area';
+    if (chartType === 'radar_chart' || chartType === 'spider') chartType = 'radar';
+    if (chartType === 'pie_chart' || chartType === 'donut') chartType = 'pie';
+
+    // Auto-detect missing chart type based on data structure
+    const chartData = Array.isArray(data.data) ? data.data : [];
+    if (!chartType) {
+      const sampleItem = chartData[0] || {};
+      if ('subject' in sampleItem) {
+        chartType = 'radar';
+      } else if (data.keys && data.keys.length > 0) {
+        chartType = 'line';
+      } else {
+        chartType = 'bar';
+      }
+    }
+
+    const keys = data.keys || (chartData.length > 0 ? Object.keys(chartData[0]).filter(k => k !== 'name' && k !== 'subject' && k !== 'category') : ['value']);
+    const effectiveKeys = keys.length > 0 ? keys : ['value'];
+
+    // Resolve comprehensive axis demonstration, descriptions, and takeaways
+    const context = resolveChartContext(data, chartData, chartType);
+
+    // Compute executive summary stat badges for fullness and immediate insight
+    const kpiSummary = (() => {
+      if (!Array.isArray(chartData) || chartData.length === 0) return null;
+      const numItems = chartData
+        .map((d: any) => {
+          const key0 = effectiveKeys[0];
+          const val = typeof d[key0] === 'number' 
+            ? d[key0] 
+            : (typeof d.value === 'number' ? d.value : null);
+          return {
+            name: d.name || d.subject || d.category || 'Entity',
+            val
+          };
+        })
+        .filter((d: any) => d.val !== null);
+
+      if (numItems.length === 0) return null;
+
+      const sorted = [...numItems].sort((a, b) => b.val - a.val);
+      const highest = sorted[0];
+      const lowest = sorted[sorted.length - 1];
+      const sum = sorted.reduce((acc, curr) => acc + curr.val, 0);
+      const avg = (sum / sorted.length).toFixed(1);
+      const unit = context.isPercentage ? '%' : (context.isTenScale ? ' / 10' : '');
+
+      return {
+        leader: highest ? { name: highest.name, val: `${highest.val}${unit}` } : null,
+        average: `${avg}${unit}`,
+        baseline: lowest && lowest.name !== highest?.name ? { name: lowest.name, val: `${lowest.val}${unit}` } : null,
+        count: `${chartData.length} Entities Benchmarked`,
+      };
+    })();
+
+    return (
+      <div style={{
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        margin: '22px 0',
+        background: '#FFFFFF',
+        borderRadius: '16px',
+        padding: '24px 26px',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+        border: '1px solid #E8E4DC',
+        overflow: 'hidden'
+      }}>
+        {/* Card Header with Title and Descriptive Subtitle */}
+        <div style={{ marginBottom: '16px', borderBottom: '1px solid #F0ECE4', paddingBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ 
+                background: '#FAF5EC', 
+                border: '1px solid rgba(212, 168, 67, 0.3)', 
+                padding: '3px 9px', 
+                borderRadius: '6px', 
+                fontSize: '10px', 
+                fontWeight: 800, 
+                letterSpacing: '0.06em', 
+                color: '#B45309' 
+              }}>
+                EXECUTIVE VISUAL &bull; {chartType.toUpperCase()}
+              </div>
+              {data.title && <span style={{ fontSize: '15px', fontWeight: 700, color: '#1A1A1A', letterSpacing: '-0.01em' }}>{data.title}</span>}
+            </div>
+          </div>
+          {context.description && (
+            <p style={{ margin: 0, fontSize: '12.5px', color: '#6B6560', lineHeight: 1.55 }}>
+              {context.description}
+            </p>
+          )}
+        </div>
+
+        {/* Clear Axis Demonstration Guide with High-Contrast Bold demonstration */}
+        {chartType !== 'pie' && chartType !== 'radar' && (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            marginBottom: '16px',
+            background: '#FAF7F2',
+            border: '1px solid #EAE3D5',
+            borderRadius: '10px',
+            padding: '10px 14px',
+            fontSize: '12px',
+            boxSizing: 'border-box',
+            width: '100%',
+            maxWidth: '100%'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ 
+                fontWeight: 800, 
+                color: '#B45309', 
+                background: '#F5EFE3', 
+                border: '1px solid rgba(180, 83, 9, 0.25)', 
+                padding: '3px 8px', 
+                borderRadius: '5px', 
+                fontSize: '10px', 
+                letterSpacing: '0.04em' 
+              }}>
+                HORIZONTAL (X-AXIS)
+              </span>
+              <span style={{ fontWeight: 700, color: '#1A1A1A', fontSize: '13px' }}>
+                {context.xLabel}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ 
+                fontWeight: 800, 
+                color: '#FFFFFF', 
+                background: '#1A1A1A', 
+                padding: '3px 8px', 
+                borderRadius: '5px', 
+                fontSize: '10px', 
+                letterSpacing: '0.04em' 
+              }}>
+                VERTICAL (Y-AXIS)
+              </span>
+              <span style={{ 
+                fontWeight: 800, 
+                color: '#0F0E0D', 
+                fontSize: '13px', 
+                background: '#FFF8E6', 
+                padding: '3px 10px', 
+                borderRadius: '6px', 
+                border: '1.5px solid #D4A843' 
+              }}>
+                {context.yLabel}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Executive Summary Stat Badges to visually fill space */}
+        {kpiSummary && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '10px',
+            marginBottom: '18px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box'
+          }}>
+            {kpiSummary.leader && (
+              <div style={{
+                background: 'linear-gradient(135deg, #FAF7F2, #F5EEE1)',
+                border: '1px solid #E5DCCB',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#B45309', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  ★ PEAK BENCHMARK
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={kpiSummary.leader.name}>
+                  {kpiSummary.leader.name}: <span style={{ color: '#B45309' }}>{kpiSummary.leader.val}</span>
+                </div>
+              </div>
+            )}
+            <div style={{
+              background: '#FAF8F5',
+              border: '1px solid #ECE7DE',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: '#57534E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                MARKET AVERAGE
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px' }}>
+                {kpiSummary.average}
+              </div>
+            </div>
+            {kpiSummary.baseline && (
+              <div style={{
+                background: '#FAF8F5',
+                border: '1px solid #ECE7DE',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#57534E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  FOCUSED BASELINE
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={kpiSummary.baseline.name}>
+                  {kpiSummary.baseline.name}: {kpiSummary.baseline.val}
+                </div>
+              </div>
+            )}
+            <div style={{
+              background: '#FAF8F5',
+              border: '1px solid #ECE7DE',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: '#57534E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                PEER COVERAGE
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px' }}>
+                {kpiSummary.count}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ width: '100%', maxWidth: '100%', height: 350, boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {chartType === 'line' ? (
+            <LineChart data={chartData} margin={{ top: 22, right: 30, left: 25, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFECE6" />
+              <XAxis 
+                dataKey="name" 
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={{ stroke: '#E8E4DC' }}
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 600 }} 
+              />
+              <YAxis 
+                stroke="#8C857B" 
+                tickLine={false} 
+                axisLine={false} 
+                tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                label={{ 
+                  value: context.yShortLabel, 
+                  angle: -90, 
+                  position: 'insideLeft', 
+                  offset: 2, 
+                  fill: '#1A1A1A', 
+                  fontSize: 12.5, 
+                  fontWeight: 800,
+                  style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' }
+                }}
+              />
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              {effectiveKeys.length > 1 && (
+                <Legend wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }} iconType="circle" iconSize={9} />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Line 
+                  key={key} 
+                  type="monotone" 
+                  dataKey={key} 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  strokeWidth={3} 
+                  dot={{ r: 4.5, fill: '#FFFFFF', stroke: COLORS[idx % COLORS.length], strokeWidth: 2.5 }} 
+                  activeDot={{ r: 7, fill: COLORS[idx % COLORS.length], stroke: '#FFFFFF', strokeWidth: 2.5 }}
+                >
+                  <LabelList dataKey={key} position="top" fill="#1A1A1A" fontSize={11} fontWeight={700} offset={8} />
+                </Line>
+              ))}
+            </LineChart>
+          ) : chartType === 'area' ? (
+            <AreaChart data={chartData} margin={{ top: 22, right: 30, left: 25, bottom: 40 }}>
+              <defs>
+                {effectiveKeys.map((key: string, idx: number) => {
+                  const col = COLORS[idx % COLORS.length];
+                  return (
+                    <linearGradient key={`grad-${key}`} id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={col} stopOpacity={0.35} />
+                      <stop offset="95%" stopColor={col} stopOpacity={0.03} />
+                    </linearGradient>
+                  );
+                })}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFECE6" />
+              <XAxis 
+                dataKey="name" 
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={{ stroke: '#E8E4DC' }}
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 600 }} 
+              />
+              <YAxis 
+                stroke="#8C857B" 
+                tickLine={false} 
+                axisLine={false} 
+                tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                label={{ 
+                  value: context.yShortLabel, 
+                  angle: -90, 
+                  position: 'insideLeft', 
+                  offset: 2, 
+                  fill: '#1A1A1A', 
+                  fontSize: 12.5, 
+                  fontWeight: 800,
+                  style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' }
+                }}
+              />
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              {effectiveKeys.length > 1 && (
+                <Legend wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }} iconType="circle" iconSize={9} />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Area 
+                  key={key} 
+                  type="monotone" 
+                  dataKey={key} 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  strokeWidth={3}
+                  fill={`url(#grad-${key})`} 
+                />
+              ))}
+            </AreaChart>
+          ) : chartType === 'radar' ? (
+            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={chartData}>
+              <PolarGrid stroke="#E8E4DC" />
+              <PolarAngleAxis 
+                dataKey={chartData[0]?.subject !== undefined ? "subject" : (chartData[0]?.name !== undefined ? "name" : "category")} 
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 700 }} 
+              />
+              <PolarRadiusAxis angle={30} domain={[0, 10]} stroke="#D4A843" tick={{ fill: '#57534E', fontSize: 10, fontWeight: 600 }} />
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              {effectiveKeys.length > 1 && (
+                <Legend wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }} iconType="circle" iconSize={9} />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Radar 
+                  key={key} 
+                  name={key} 
+                  dataKey={key} 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  strokeWidth={2.5}
+                  fill={COLORS[idx % COLORS.length]} 
+                  fillOpacity={0.35} 
+                />
+              ))}
+            </RadarChart>
+          ) : chartType === 'bar' ? (
+            <BarChart 
+              data={chartData} 
+              layout={data.layout || 'horizontal'} 
+              margin={data.layout === 'vertical' 
+                ? { top: 12, right: 30, left: 15, bottom: 12 }
+                : { top: 24, right: 25, left: 25, bottom: 45 }
+              }
+              barCategoryGap="16%"
+              barGap={6}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFECE6" />
+              {data.layout === 'vertical' ? (
+                <>
+                  <XAxis type="number" stroke="#8C857B" tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }} tickLine={false} axisLine={{ stroke: '#E8E4DC' }} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={130} 
+                    stroke="#8C857B"
+                    tickLine={false}
+                    axisLine={{ stroke: '#E8E4DC' }}
+                    tick={({ x, y, payload }: any) => {
+                      const text = payload.value || '';
+                      const display = text.length > 20 ? `${text.slice(0, 19)}…` : text;
+                      return (
+                        <text x={x} y={y} dy={4} textAnchor="end" fill="#1A1A1A" fontSize={11.5} fontWeight={600}>
+                          {display}
+                        </text>
+                      );
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#8C857B"
+                    interval={0} 
+                    tickLine={false}
+                    axisLine={{ stroke: '#E8E4DC' }}
+                    tick={({ x, y, payload }: any) => {
+                      const text = payload.value || '';
+                      const isLong = text.length > 16;
+                      const display = isLong ? `${text.slice(0, 15)}…` : text;
+                      return (
+                        <text x={x} y={y + 12} textAnchor="end" transform={`rotate(-18 ${x} ${y + 12})`} fill="#1A1A1A" fontSize={11.5} fontWeight={600}>
+                          {display}
+                        </text>
+                      );
+                    }}
+                  />
+                  <YAxis 
+                    stroke="#8C857B" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                    label={{ 
+                      value: context.yShortLabel, 
+                      angle: -90, 
+                      position: 'insideLeft', 
+                      offset: 2, 
+                      fill: '#1A1A1A', 
+                      fontSize: 12.5, 
+                      fontWeight: 800,
+                      style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' } 
+                    }}
+                  />
+                </>
+              )}
+              <Tooltip content={<CustomChartTooltip context={context} />} cursor={{ fill: 'rgba(212, 168, 67, 0.06)', rx: 6 }} />
+              {effectiveKeys.length > 1 && (
+                <Legend 
+                  wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }}
+                  iconType="circle"
+                  iconSize={9}
+                />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Bar 
+                  key={key} 
+                  dataKey={key} 
+                  fill={COLORS[idx % COLORS.length]} 
+                  background={{ fill: '#F8F6F2', radius: 6 }}
+                  radius={data.layout === 'vertical' ? [0, 6, 6, 0] : [6, 6, 0, 0]}
+                  maxBarSize={data.layout === 'vertical' ? 26 : 52}
+                >
+                  <LabelList 
+                    dataKey={key} 
+                    position={data.layout === 'vertical' ? 'right' : 'top'} 
+                    fill="#1A1A1A" 
+                    fontSize={12} 
+                    fontWeight={800} 
+                    offset={8} 
+                  />
+                  {!data.keys && chartData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              ))}
+            </BarChart>
+          ) : (
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="46%"
+                innerRadius={52}
+                outerRadius={96}
+                paddingAngle={3}
+                cornerRadius={5}
+                labelLine={false}
+                label={({ name, percent }: any) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                dataKey={effectiveKeys[0] || 'value'}
+              >
+                {chartData.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, fontWeight: 600, color: '#1A1A1A' }} />
+            </PieChart>
+          )}
+        </ResponsiveContainer>
+        </div>
+
+        {/* Strategic Takeaway & Meaning Banner */}
+        {context.takeaway && (
+          <div style={{
+            marginTop: '16px',
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, #FAF8F5, #F5F1EB)',
+            border: '1px solid #E8E4DC',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              marginTop: '2px',
+              width: '22px',
+              height: '22px',
+              borderRadius: '6px',
+              background: 'linear-gradient(135deg, #2D2A26, #D4A843)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: '#FFFFFF'
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#B45309', marginBottom: '3px' }}>
+                STRATEGIC MEANING & EXECUTIVE TAKEAWAY
+              </div>
+              <div style={{ fontSize: '13px', color: '#1A1A1A', lineHeight: 1.55, fontWeight: 500, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                {context.takeaway}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  } catch (e) {
+    return <pre className={className} {...props}>{children}</pre>;
+  }
+});
+RechartsBlock.displayName = 'RechartsBlock';
+
+const markdownComponents = {
+  code: ({ node, inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'recharts') {
+      return <RechartsBlock className={className} {...props}>{children}</RechartsBlock>;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  },
+  table: ({ children, ...props }: any) => (
+    <div className={styles.tableWrapper}>
+      <table {...props}>{children}</table>
+    </div>
+  )
+};
+
 export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('mistral');
   const [promptText, setPromptText] = useState('');
   const [showBanner, setShowBanner] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
@@ -600,8 +1331,69 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [downloadingMsgIdx, setDownloadingMsgIdx] = useState<number | null>(null);
+  const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
   const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors'>('builder');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const latestAssistantIdx = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') return i;
+    }
+    return -1;
+  }, [messages]);
+
+  const handleDownloadPdf = async (idx: number, content: string) => {
+    try {
+      setDownloadingMsgIdx(idx);
+      const el = document.getElementById(`report-markdown-${idx}`);
+      if (!el) {
+        alert('Could not find report content to export.');
+        return;
+      }
+      const headerMatch = content.match(/^#+\s*(.+)$/m);
+      const reportTitle = headerMatch ? headerMatch[1].trim() : `${selectedAgent || 'StratAI'} Strategy Report`;
+
+      const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+      const currentBrandId = activeProject?.brand_config_id || savedBrandId;
+      const brandName = ((currentBrandId && brandsMap[currentBrandId]) || activeProject?.title || 'Brand').trim();
+      const agentName = (selectedAgent || 'Strategy Report').trim();
+
+      const sanitize = (s: string) => s.replace(/[/\\?%*:|"<>]/g, '').trim();
+      const fileName = `${sanitize(brandName)}_${sanitize(agentName)}.pdf`;
+
+      await exportReportToPdf({
+        element: el,
+        reportTitle,
+        brandName,
+        agentName,
+        fileName,
+      });
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloadingMsgIdx(null);
+    }
+  };
+
+  const handleCopyReport = async (idx: number, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMsgIdx(idx);
+      setTimeout(() => setCopiedMsgIdx(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy report text:', err);
+    }
+  };
+
+  // Project selector state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [projectsList, setProjectsList] = useState<any[]>([]);
+  const [brandsList, setBrandsList] = useState<any[]>([]);
+  const [brandsMap, setBrandsMap] = useState<Record<string, string>>({});
+  const [activeProject, setActiveProject] = useState<{ id: string; title: string; brand_config_id?: string } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
   const homeSearchContainerRef = useRef<HTMLDivElement>(null);
@@ -611,9 +1403,94 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       if (homeSearchContainerRef.current && !homeSearchContainerRef.current.contains(e.target as Node)) {
         setHomeSearchQuery('');
       }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Fetch projects and brands for dropdown
+  const loadProjectsAndBrands = async () => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const [res, brandsRes] = await Promise.all([
+        fetch(`${apiBase}/api/projects/`, { headers }),
+        fetch(`${apiBase}/api/brands/`, { headers })
+      ]);
+
+      if (res.ok && brandsRes.ok) {
+        const data = await res.json();
+        const brandsData = await brandsRes.json();
+        const bMap: Record<string, string> = {};
+        brandsData.forEach((b: any) => { bMap[b.id] = b.brand_name; });
+        setBrandsMap(bMap);
+        setBrandsList(brandsData || []);
+        setProjectsList(data || []);
+
+        const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+
+        if (savedBrandId) {
+          const matchingProj = (data || []).find((p: any) => p.brand_config_id === savedBrandId);
+          if (matchingProj) {
+            setActiveProject({
+              id: matchingProj.id,
+              title: bMap[matchingProj.brand_config_id] || matchingProj.title || 'Brand Project',
+              brand_config_id: matchingProj.brand_config_id
+            });
+            return;
+          }
+          const matchingBrand = (brandsData || []).find((b: any) => b.id === savedBrandId);
+          if (matchingBrand) {
+            setActiveProject({
+              id: matchingBrand.id,
+              title: matchingBrand.brand_name,
+              brand_config_id: matchingBrand.id
+            });
+            return;
+          }
+        }
+
+        if (!activeProject && data && data.length > 0) {
+          const first = data[0];
+          setActiveProject({
+            id: first.id,
+            title: bMap[first.brand_config_id] || first.title || 'Brand Project',
+            brand_config_id: first.brand_config_id
+          });
+          if (first.brand_config_id && typeof window !== 'undefined') {
+            localStorage.setItem('brand_config_id', first.brand_config_id);
+          }
+        } else if (!activeProject && brandsData && brandsData.length > 0) {
+          const firstB = brandsData[0];
+          setActiveProject({
+            id: firstB.id,
+            title: firstB.brand_name,
+            brand_config_id: firstB.id
+          });
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('brand_config_id', firstB.id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load projects/brands for dropdown', err);
+    }
+  };
+
+  useEffect(() => {
+    loadProjectsAndBrands();
+
+    const handleProjectChanged = () => {
+      loadProjectsAndBrands();
+    };
+    window.addEventListener('projectChanged', handleProjectChanged);
+    return () => window.removeEventListener('projectChanged', handleProjectChanged);
   }, []);
 
   const filteredHomeSearchAgents = allTemplates.filter(agent =>
@@ -630,7 +1507,22 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const handleSelectAgent = (title: string) => {
     setView('builder');
     setSelectedAgent(title);
-    const prompt = agentPrompts[title] || `I want you to help me set up the following agent. Help me connect the right accounts, tailor it to my specific workflow, and configure everything so it's ready to use. A ${title.toLowerCase()}. Once everything is configured, also set up your own profile image and write a short description for yourself. Then, setup 4 example prompts for this agent I can use to get started with it.`;
+    const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+    const currentBrandId = activeProject?.brand_config_id || savedBrandId;
+    if (currentBrandId) {
+      const bTitle = brandsMap[currentBrandId] || activeProject?.title || 'Brand Project';
+      setActiveProject({ id: '', title: bTitle, brand_config_id: currentBrandId });
+    }
+    setMessages([]);
+    setPromptText('');
+    setUserContext('');
+    setAttachedFiles([]);
+    setQaAnswers([]);
+    const prompt = title === 'Competition Analysis'
+      ? `Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.`
+      : title === 'GTM Strategy'
+      ? `Launch with confidence using a complete Go-To-Market roadmap. Define your target audience, pricing, and distribution channels to maximize market impact.`
+      : (agentPrompts[title] || `Generate a detailed ${title.toLowerCase()} report based on our brand research data.`);
     setPromptText(prompt);
     setShowBanner(true);
     setShowQuestionnaire(!!agentQuestions[title]);
@@ -657,6 +1549,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowQuestionnaire(false);
     setMessages([]);
     setQaAnswers([]);
+    setActiveProject(null);
     onNewChat?.();
   };
 
@@ -672,9 +1565,54 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const handleQuestionnaireDismiss = () => setShowQuestionnaire(false);
 
-  // Listen for New Chat event from Sidebar
+  const loadProjectById = async (projectId: string) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiBase}/api/projects/${projectId}`, { headers });
+      if (res.ok) {
+        const proj = await res.json();
+        setView('builder');
+        setSelectedAgent(proj.agent_type || null);
+        if (proj.llm_provider) {
+          setSelectedModel(proj.llm_provider);
+        }
+        if (proj.brand_config_id) {
+          const brandName = brandsMap[proj.brand_config_id] || 'Brand Project';
+          setActiveProject({
+            id: proj.id,
+            title: proj.title || brandName,
+            brand_config_id: proj.brand_config_id,
+          });
+        }
+        if (proj.messages && proj.messages.length > 0) {
+          const loadedMsgs = proj.messages.map((m: any) => ({
+            role: m.role,
+            content: m.content,
+            message_metadata: m.message_metadata,
+          }));
+          setMessages(loadedMsgs);
+        } else {
+          setMessages([]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load project details:', err);
+    }
+  };
+
+  // Listen for events from Sidebar and ProjectsView
   useEffect(() => {
     const onNewChat = () => handleNewChat();
+    const onOpenProject = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.projectId) {
+        loadProjectById(detail.projectId);
+      }
+    };
     const onOpenConnectors = () => setConnectorsOpen(true);
     const onOpenConnectorsView = () => setView('connectors');
     const onOpenFiles = () => setView('files');
@@ -682,6 +1620,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     const onOpenAgents = () => setView('agents');
     const onOpenWorkflow = () => setView('workflow');
     window.addEventListener('newChat', onNewChat);
+    window.addEventListener('openProject', onOpenProject);
     window.addEventListener('openConnectors', onOpenConnectors);
     window.addEventListener('openConnectorsView', onOpenConnectorsView);
     window.addEventListener('openFiles', onOpenFiles);
@@ -690,6 +1629,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     window.addEventListener('openWorkflow', onOpenWorkflow);
     return () => {
       window.removeEventListener('newChat', onNewChat);
+      window.removeEventListener('openProject', onOpenProject);
       window.removeEventListener('openConnectors', onOpenConnectors);
       window.removeEventListener('openConnectorsView', onOpenConnectorsView);
       window.removeEventListener('openFiles', onOpenFiles);
@@ -698,7 +1638,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       window.removeEventListener('openWorkflow', onOpenWorkflow);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [brandsMap]);
 
   // Submit message → call backend + stream response
   const handleSubmit = async () => {
@@ -711,11 +1651,19 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       baseContent += `\n\n── Attached Files ──\n` + attachedFiles.map(f => `📄 ${f.name}`).join('\n');
     }
 
+    // Translate UI prompt to backend execution request if initial card prompt is sent
+    let apiUserContent = baseContent;
+    if (selectedAgent === 'Competition Analysis' && baseContent.includes('Identify your true market position and uncover competitor blind spots')) {
+      apiUserContent = `Generate a complete competitive analysis strategy report for my brand and competitors based on all our scanned website and Instagram knowledge base data. Include full comparison tables, Recharts dashboard visualizations for pricing/scale/share of voice, SWOT analysis, and personalized next steps.`;
+    } else if (selectedAgent === 'GTM Strategy' && baseContent.includes('Launch with confidence using a complete Go-To-Market roadmap')) {
+      apiUserContent = `Generate an exhaustive, highly visual Go-To-Market (GTM) strategy report for our brand and competitors using our scanned knowledge base data and our answers to the 4 GTM setup questions. Include all 5 required Recharts dashboards (Target Customer Segment Breakdown, Marketing & Channel Budget Allocation, Channel Growth Potential vs Constraints, GTM Execution Intensity per Phase, and Competitive Positioning & Pricing Tier Index), full competitive matrices, 90-day roadmap, and risk mitigation plan.`;
+    }
+
     const userMsg: Message = { role: 'user', content: baseContent };
     const thinking: Message = { role: 'thinking', content: '' };
 
     // Build conversation history (only user + assistant, skip thinking/error)
-    const history = [...messages, userMsg]
+    const history = [...messages, { role: 'user', content: apiUserContent }]
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => ({ role: m.role, content: m.content }));
 
@@ -733,18 +1681,67 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowQuestionnaire(false);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-      const res = await fetch(`${apiBase}/api/chat`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      let targetProjectId = activeProject?.id;
+      const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '') 
+        ? activeProject.brand_config_id 
+        : (savedBrandId || (brandsList.length > 0 ? brandsList[0].id : (projectsList.length > 0 ? projectsList[0].brand_config_id : null)));
+
+      if (!targetProjectId || targetProjectId === '') {
+        if (activeBrandId) {
+          const createRes = await fetch(`${apiBase}/api/projects/`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              title: selectedAgent || 'New Strategy Chat',
+              agent_type: selectedAgent || 'StratAI',
+              brand_config_id: activeBrandId,
+              llm_provider: selectedModel,
+            })
+          });
+          if (createRes.ok) {
+            const newP = await createRes.json();
+            targetProjectId = newP.id;
+            const bTitle = brandsMap[activeBrandId] || newP.title;
+            setActiveProject({ id: newP.id, title: bTitle, brand_config_id: activeBrandId });
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('brand_config_id', activeBrandId);
+            }
+            window.dispatchEvent(new CustomEvent('projectChanged', { detail: { projectId: targetProjectId, brand_config_id: activeBrandId } }));
+          }
+        }
+      }
+
+      if (!targetProjectId) {
+        setMessages(prev => [
+          ...prev.filter(m => m.role !== 'thinking'),
+          { role: 'error', content: 'No active project selected. Please select or create a project first.' },
+        ]);
+        return;
+      }
+
+      const res = await fetch(`${apiBase}/api/chat/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
+          project_id: targetProjectId,
           messages: history,
-          system_prompt: systemPrompt,
-          agent_name: selectedAgent || 'StratAI',
+          provider: selectedModel,
         }),
       });
 
       if (!res.ok || !res.body) {
+        setActiveProject(null);
+        if (res.status === 401) {
+          localStorage.removeItem('access_token');
+          window.location.href = '/auth';
+          return;
+        }
         setMessages(prev => [
           ...prev.filter(m => m.role !== 'thinking'),
           { role: 'error', content: `Server error (${res.status}). Make sure the backend is running on port 8000.` },
@@ -785,6 +1782,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 return updated;
               });
             } else if (payload.type === 'error') {
+              if (!assistantText) {
+                setActiveProject(null);
+              }
               setMessages(prev => [
                 ...prev.filter(m => m.role !== 'thinking'),
                 { role: 'error', content: payload.content },
@@ -797,14 +1797,21 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
       // Ensure thinking is replaced even if no tokens came
       if (!assistantText) {
+        setActiveProject(null);
         setMessages(prev => prev.filter(m => m.role !== 'thinking'));
       }
+
+      // Notify Sidebar & ProjectsView that chat has completed and title/history updated
+      window.dispatchEvent(new CustomEvent('projectChanged', { detail: { projectId: targetProjectId } }));
+      loadProjectsAndBrands();
     } catch (err) {
+      setActiveProject(null);
       setMessages(prev => [
         ...prev.filter(m => m.role !== 'thinking'),
         { role: 'error', content: 'Could not connect to backend. Make sure `uvicorn main:app --reload` is running on port 8000.' },
       ]);
     }
+
   };
 
   const isChatting = messages.length > 0;
@@ -815,23 +1822,131 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
       {/* Top Bar */}
       <header className={styles.topBar}>
-        {(selectedAgent || isChatting || view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {(selectedAgent || isChatting || view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') && (
+            <button 
+              className={styles.shareBtn} 
+              style={{ padding: '6px 8px', marginLeft: 0 }} 
+              onClick={() => {
+                if (view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') {
+                  setView('builder');
+                } else {
+                  handleRevert();
+                }
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              Go back
+            </button>
+          )}
+
+          <div className={styles.dropdownContainer} ref={dropdownRef}>
+            <button 
+              className={styles.dropdownToggle}
+              onClick={() => {
+                loadProjectsAndBrands();
+                setDropdownOpen(prev => !prev);
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>{activeProject ? activeProject.title : 'Select Project'}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            {dropdownOpen && (
+              <div className={styles.dropdownMenu}>
+                <div className={styles.dropdownHeader}>ACTIVE BRAND PROJECTS</div>
+                <div className={styles.dropdownList}>
+                  {(() => {
+                    const displayItems: { brand_config_id: string; title: string; proj_id: string; date?: string }[] = [];
+                    
+                    brandsList.forEach((b: any) => {
+                      const proj = projectsList.find((p: any) => p.brand_config_id === b.id);
+                      displayItems.push({
+                        brand_config_id: b.id,
+                        title: b.brand_name,
+                        proj_id: proj ? proj.id : b.id,
+                        date: b.created_at ? new Date(b.created_at).toLocaleDateString() : undefined
+                      });
+                    });
+
+                    projectsList.forEach((proj: any) => {
+                      if (proj.brand_config_id && !displayItems.some(item => item.brand_config_id === proj.brand_config_id)) {
+                        displayItems.push({
+                          brand_config_id: proj.brand_config_id,
+                          title: brandsMap[proj.brand_config_id] || proj.title || 'Brand Project',
+                          proj_id: proj.id,
+                          date: proj.created_at ? new Date(proj.created_at).toLocaleDateString() : undefined
+                        });
+                      }
+                    });
+
+                    if (displayItems.length === 0) {
+                      return <div className={styles.dropdownEmpty}>No brand projects found</div>;
+                    }
+
+                    return displayItems.map((item) => {
+                      const isActive = activeProject?.brand_config_id === item.brand_config_id;
+                      return (
+                        <button
+                          key={item.brand_config_id}
+                          type="button"
+                          className={`${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ''}`}
+                          onClick={() => {
+                            setActiveProject({
+                              id: item.proj_id,
+                              title: item.title,
+                              brand_config_id: item.brand_config_id,
+                            });
+                            if (typeof window !== 'undefined') {
+                              localStorage.setItem('brand_config_id', item.brand_config_id);
+                            }
+                            setDropdownOpen(false);
+                            window.dispatchEvent(new CustomEvent('projectChanged', { detail: { projectId: item.proj_id, brand_config_id: item.brand_config_id } }));
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, fontSize: '13px', color: '#1A1A1A' }}>
+                            {item.title}
+                          </div>
+                          {item.date && (
+                            <div style={{ fontSize: '11px', color: '#6B6560', marginTop: '2px' }}>
+                              Created {item.date}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className={styles.spacer} />
+        {latestAssistantIdx !== -1 && (
           <button 
-            className={styles.shareBtn} 
-            style={{ padding: '6px 8px', marginLeft: 0 }} 
-            onClick={() => {
-              if (view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') {
-                setView('builder');
-              } else {
-                handleRevert();
-              }
-            }}
+            className={styles.downloadTopBarBtn} 
+            onClick={() => handleDownloadPdf(latestAssistantIdx, messages[latestAssistantIdx].content)}
+            disabled={downloadingMsgIdx !== null}
+            title="Download latest strategy report as PDF"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            Go back
+            {downloadingMsgIdx === latestAssistantIdx ? (
+              <>
+                <span className={styles.downloadSpinner} />
+                <span>Exporting PDF...</span>
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Download Report (PDF)</span>
+              </>
+            )}
           </button>
         )}
-        <div className={styles.spacer} />
         <button className={styles.shareBtn} onClick={() => setShareOpen(true)}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
           Share
@@ -843,7 +1958,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         {view === 'connectors' ? (
           <ConnectorsView />
         ) : (
-        <div className={styles.container}>
+        <div className={`${styles.container} ${isChatting || selectedAgent ? styles.chatContainerPadding : ''}`}>
 
           {view === 'files' ? (
             <FilesView />
@@ -909,11 +2024,117 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                       </svg>
                     </div>
                     <div className={styles.assistantBubble}>
-                      <pre className={styles.assistantText}>{msg.content}</pre>
+                      <div className={styles.reportActionBar}>
+                        <div className={styles.reportBadge}>
+                          <span className={styles.reportBadgeDot} />
+                          <span>{selectedAgent ? `${selectedAgent} Strategy` : 'StratAI Report'}</span>
+                        </div>
+                        <div className={styles.reportActionsGroup}>
+                          <button
+                            type="button"
+                            className={styles.reportActionBtn}
+                            onClick={() => handleCopyReport(i, msg.content)}
+                            title="Copy report markdown"
+                          >
+                            {copiedMsgIdx === i ? (
+                              <>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span style={{ color: '#16a34a' }}>Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
+                            onClick={() => handleDownloadPdf(i, msg.content)}
+                            disabled={downloadingMsgIdx === i}
+                            title="Download this report as PDF"
+                          >
+                            {downloadingMsgIdx === i ? (
+                              <>
+                                <span className={styles.downloadSpinner} />
+                                <span>Exporting PDF...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                <span>Download PDF</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div id={`report-markdown-${i}`} className={styles.assistantTextMarkdown}>
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw]}
+                          components={markdownComponents}
+                        >
+                          {msg.content
+                            .replace(/\(\$\$\$\)/g, '(Premium Tier)')
+                            .replace(/\(\$\$\)/g, '(Mid-Tier)')
+                            .replace(/\(\$\)/g, '(Budget)')
+                            .replace(/\$\$\$/g, 'Premium Tier')
+                            .replace(/\$\$/g, 'Mid-Tier')
+                          }
+                        </ReactMarkdown>
+                      </div>
+
+                      <div className={styles.reportFooterBanner}>
+                        <div className={styles.reportFooterLeft}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D4A843" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                          </svg>
+                          <span>Complete strategy ready for executive download</span>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.reportFooterDownloadBtn}
+                          onClick={() => handleDownloadPdf(i, msg.content)}
+                          disabled={downloadingMsgIdx === i}
+                          title="Download full report as PDF"
+                        >
+                          {downloadingMsgIdx === i ? (
+                            <>
+                              <span className={styles.downloadSpinner} />
+                              <span>Generating PDF...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                              </svg>
+                              <span>Download PDF Report</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )
               )}
+              <div style={{ height: '360px', width: '100%', flexShrink: 0 }} />
               <div ref={messagesEndRef} />
             </div>
           ) : selectedAgent ? (
@@ -941,22 +2162,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   </div>
                 </div>
                 <p className={styles.welcomeSubtitle}>How can I help?</p>
-              </div>
-
-              <div className={styles.homeChatboxWrapper}>
-                <ChatInput
-                  value={promptText}
-                  onChange={setPromptText}
-                  showBanner={showBanner}
-                  onRevert={handleRevert}
-                  onSubmit={handleSubmit}
-                  userContext={userContext}
-                  onChangeUserContext={setUserContext}
-                  attachedFiles={attachedFiles}
-                  onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
-                  onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
-                  onOpenConnectors={() => setConnectorsOpen(true)}
-                />
               </div>
 
               <div className={styles.homeTemplatesSection}>
@@ -1002,7 +2207,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   </div>
                 </div>
                 <div className={styles.homeTemplatesGrid}>
-                  {homeAgents.map((agent, i) => (
+                  {allTemplates.map((agent, i) => (
                     <div 
                       key={i} 
                       className={styles.homeTemplateCard}
@@ -1033,14 +2238,24 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                     </div>
                   ))}
                 </div>
-                <div className={styles.moreBtnRow}>
-                  <button 
-                    className={styles.moreBtn} 
-                    onClick={() => setView('agents')}
-                  >
-                    more..
-                  </button>
-                </div>
+              </div>
+
+              <div className={styles.homeChatboxWrapper}>
+                <ChatInput
+                  value={promptText}
+                  onChange={setPromptText}
+                  showBanner={showBanner}
+                  onRevert={handleRevert}
+                  onSubmit={handleSubmit}
+                  userContext={userContext}
+                  onChangeUserContext={setUserContext}
+                  attachedFiles={attachedFiles}
+                  onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
+                  onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+                  onOpenConnectors={() => setConnectorsOpen(true)}
+                  selectedModel={selectedModel}
+                  onSelectModel={setSelectedModel}
+                />
               </div>
             </div>
           )}
@@ -1072,6 +2287,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
             onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
             defaultUserContextOpen={!!selectedAgent}
             onOpenConnectors={() => setConnectorsOpen(true)}
+            selectedModel={selectedModel}
+            onSelectModel={setSelectedModel}
           />
         </div>
       )}

@@ -7,7 +7,7 @@ export interface Question {
   question: string;
   options: string[];
   multiSelect?: boolean;
-  condition?: (answers: Record<string, string>) => boolean;
+  condition?: ((answers: Record<string, string>) => boolean) | string;
 }
 
 interface AgentQuestionnaireProps {
@@ -33,7 +33,22 @@ export default function AgentQuestionnaire({
     return acc;
   }, {} as Record<string, string>);
 
-  const visibleQuestions = questions.filter(q => !q.condition || q.condition(answersMap));
+  const visibleQuestions = questions.filter(q => {
+    if (!q.condition) return true;
+    if (typeof q.condition === 'string') {
+      try {
+        const fn = new Function('answers', `return ${q.condition}`);
+        return fn(answersMap);
+      } catch (e) {
+        console.error("Failed to evaluate condition:", e);
+        return true;
+      }
+    }
+    if (typeof q.condition === 'function') {
+      return q.condition(answersMap);
+    }
+    return true;
+  });
 
   const current = visibleQuestions[step];
   const total = visibleQuestions.length;

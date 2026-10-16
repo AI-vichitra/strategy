@@ -12,6 +12,7 @@ export interface Connector {
 export const connectors: Connector[] = [
   // ── API Connectors ──────────────────────────────────
   { id: 'openai', name: 'OpenAI API Key', description: 'Connect your OpenAI account for GPT models', domain: 'openai.com', type: 'api' },
+  { id: 'qwen', name: 'Qwen API Key', description: 'Connect Alibaba Qwen models', domain: 'aliyun.com', type: 'api' },
   { id: 'anthropic', name: 'Anthropic API Key', description: 'Connect Claude models for advanced reasoning', domain: 'anthropic.com', type: 'api' },
   { id: 'gemini', name: 'Google Gemini API Key', description: 'Integrate Google Gemini capabilities', domain: 'google.com', type: 'api' },
   { id: 'perplexity', name: 'Perplexity API Key', description: 'Real-time search and AI answers', domain: 'perplexity.ai', type: 'api' },

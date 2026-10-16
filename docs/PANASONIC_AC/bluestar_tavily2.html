@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLUESTAR - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BLUESTAR</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">Technology & Software</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.bluestarindia.com/" target="_blank" class="meta-url">https://www.bluestarindia.com/</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> BlueStar is a technology and software company founded in 1943, known for its air conditioning and refrigeration products, with a mission to be the best in everything it does. It focuses on enhancing market share through quality and competitive pricing. BlueStar also distributes specialty electronics and technology solutions.. Mission, Vision, and Values of Blue Star. Vision Statement: “To dream, to strive, to care, and above all, to be the best in everything we do.”. "Blue Star Registered Address Contact Details, Blue Star Management". 1 2 3 4 5 6 Com, Moneycontrol. "Blue Star Financial Statements". ↑ Mukherjee, Writankar (22 March 2018). "Blue Star eyes commercial refrigeration products, water purifiers as next growth driver". ↑ "Bluestar aims to be USD 1 bn plus company in 5 years - Times of India". Corporate India 500: A Visual Survey.<br/><br/><strong>Product & Service Portfolio:</strong> Blue Star offers air conditioners, air coolers, refrigeration products, water purifiers, and professional electronics. They also provide electro-mechanical projects and comprehensive after-sales service.. View Products  Air Coolers    ## Air Coolers    Sleek and elegant air coolers packed with smart features to provide efficient cooling.    View Products  Electro-Mechanical Projects  ## Electro-Mechanical Projects  Blue Star is India's leading integrated MEP service provider with over seven decades of experience.  Know more  Central Airconditioning  ## Central Air Conditioning Products  End-to-end solutions with a comprehensive range of VRF systems, ducted and packaged ACs, and chillers, among others.  View Products  Commercial Refrigeration  ## Commercial Refrigeration  Leaders in commercial refrigeration providing an array of freezers, coolers, bottled water dispensers, and more to small and large scale industries.  View Products  Water Coolers  ## Water Coolers [...] View Products  Water Coolers  ## Water Coolers  Get surprisingly fast cool water with this range of durable, value-for-money and eco-friendly coolers for commercial spaces.  Know More  After-Sales Service  ## After-Sales Service  Providing you with the finest and most comprehensive range of service solutions.  Know More  Manufacturing and R&D  ## Manufacturing and R&D  A manufacturing division with world-class calibre, and an R&D team that consistently aims to develop and enhance products with up-to-date technology.  Know More  International Business Group  ## International Business Group  This group manages joint ventures in Qatar, Malaysia and Oman, and product exports to the Middle East, SAARC, Africa, and ASEAN regions.  Know More  Professional Electronics & Industrial Systems [...] Update cookies preferences     Locations  Dealers  Dealership Request  Careers  Contact Us  TVCs  Consumers  Resources           ## Welcome to the corporate website of Blue Star Limited  Are you a Business?    Click here to stay on this site.  Are you a Consumer?   Click here for our e-commerce site.   Room Air Conditioners    # Room Air Conditioners    The most technologically advanced and energy efficient air conditioning solutions for small spaces.    View Products  Water Purifiers    ## Water Purifiers    Presenting a range of water purifiers, obsessed with purity.    View Products  Air Purifiers    ## Air Purifiers    An array of purifiers built with superior technology for clean and healthy air in your home.    View Products  Air Coolers    ## Air Coolers. BlueStar Technology Solutions uses 8 technology products and services including Modernizr, JBoss, PHP, and more. Explore BlueStar Technology Solutions's tech. Blue Star offers comprehensive range of products such as chillers with screw and hermetic scroll compressors, a wide range of air handling and fan coil. img-waizu  ### ISV 45 - Asset Management   Software Overview: ISV 45 has been trading for 5+ years and offers an identity and traceability tool for users of shared Android scanning devices or POD devices. This ISV helps prevent expenditure associated with high levels of device breakage and loss. Also helps make operations more efficient through automated accountability.  Operating System(s): Android  Software Language(s): English  Support Language(s): English  Hardware Certified: Honeywell, Zebra           Make Connection >>  img-kutir-mobility  ### ISV 46 - RFID Inventory tracking [...] Facebook   Instagram   Linkedin   X   YouTube  ### Our Valued Partners  BlueStar's diverse portfolio offers unparalleled access to premium products and services that drive business growth and success. From state-of-the-art hardware to advanced software solutions, our portfolio is designed to empower businesses with the tools they need to thrive in today's competitive landscape.  Full Line Card   apg  BarTender  Brady  Brodit  Brother  Citizen  Custom  Datalogic  DTM Print  Elo   Entrust  Epson  Ergonomic Solutions  HID  Honeywell  Impinj  Loftware  Microtouch  Newcastle  Nordic ID   oona  Proglove  RAM Mounts  SATO  Star Micronics  Teklynx  TSC  Unitech  VIP Color  Zebra  ### Industry Insights [...] img-algorithm-people  ### ISV 35 - Transport Planning   Software Overview: ISV 35 has been trading for 6 years and helps fleets optimise, decarbonise, and transform their operations using AI-powered algorithms that are proven to reduce costs, increase productivity and cut emissions by up to 30%. Additionally, their mobile apps streamline workflows with vehicle checks and ePOD.  Operating System(s): Browser-based  Software Language(s):  Bulgarian, Croatian, Czech, Danish, Dutch, English, Finnish, French, German, Greek, Hungarian, Icelandic, Italian, Latvian, Lithuanian,  Norwegian, Polish, Portuguese, Romanian, Slovak, Spanish, Swedish  Support Language(s): English  Hardware Certified: Zebra, Honeywell, Panasonic           Make Connection >>  img-ventory  ### ISV 36 - Inventory Management. | Type | Public | | Traded as |  BSE: 500067  NSE: BLUESTARCO | | ISIN | INE472A01039 | | Industry |  Home appliances | | Founded | 1943; 83 years ago (1943) | | Founder | Mohan T Advani | | Headquarters | Mumbai, Maharashtra , India | | Area served | Worldwide | | Key people |  Shailesh Haribhakti (Chairman)  Vir S Advani (Vice Chairman & MD)  B Thiagarajan (MD) | | Products |  Air conditioners  Air coolers  Refrigerators  Washing machines  Cold storage, water purifier  Microwaves  Air purifiers  Water dispensers | | Revenue | Increase ₹6,081 crore (US$630 million) (2022) | | Operating income | Increase ₹296 crore (US$31 million) (2022) | | Net income | Increase ₹166 crore (US$17 million) (2022) | | Total assets | Increase ₹4,312 crore (US$450 million) (2022) | [...] ## External links  [edit&action=edit&section=4 "Edit section: External links")]   Official website  |  v  t  e  India Electronics industry in India | [...] | Total equity "Equity (finance)") | Increase ₹998 crore (US$100 million) (2022) | | Number of employees | 2,800+ (2022) | | Website | www.bluestarindia.com |.<br/><br/><strong>Recent Developments & News:</strong> BlueStar, a leading Indian technology and software distributor, recently expanded its portfolio with new RFID and mobile computing products. The company also appointed Santiago Arias as General Manager for its Latin America division. BlueStar's revenue and net income grew significantly in 2022.. Title: BlueStar Press Releases & News - PR.com # BlueStar. ### BlueStar to Carry Zebra’s RFID-Enabled Mobile Thermal Transfer Printers. ### BlueStar to Distribute Janam’s XM65. ### BlueStar Offers New Honeywell Dolphin 9900 Mobile Computer. ### BlueStar to Distribute Zebra G-Series Printers. ### BlueStar Announces Santiago Arias as New General Manager of Latin America Division. BlueStar, the leading innovator in solutions-based distribution for Auto ID, Point-of-Sale, RFID, and Mobility products, is proud to announce the recent addition of Santiago Arias to the BlueStar Latin America team. ### BlueStar Announces Néstor Talavera Montalvo as New Caribbean Business Development Manager. ### BlueStar Announces Anastasia Semeraro as New Latin America Marketing Manager.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> BlueStar's key competitors include Westcon-Comstor, Exertis, SHI, and IBM Consulting. These companies operate in technology distribution and IT services. BlueStar faces direct competition in the software and technology sectors.. Blue Star's top competitors include GENERAL, Carrier, and Trane Technologies. India focuses on automation and software solutions. Blue Star competitors include Jet Partners, WACKER Chemie AG, Carrier, and Evonik Industries. Blue Star ranks 2nd in CEO Score on Comparably vs its competitors.. Technology Vendors  Recent Research  Newsletter  Media Support  Login  CB Insights  BlueStar company logo  # BlueStar  bluestarinc.com  ## BlueStar's alternatives and competitors  See how BlueStarcompares to similar products. BlueStar's top competitors include Westcon-Comstor, Exertis, and Ingram Micro.  Westcon-Comstor Logo  Westcon-Comstor  Westcon-Comstor operates as a global technology distributor specializing in cybersecurity, networking, and hybrid cloud solutions. The company connects technology vendo…  BlueStar vs. Westcon-Comstor  View more in-depth data on:   Competitors  Products  Customer References and more  Compare BlueStar and Westcon-Comstor  New call-to-action   Exertis Logo    Exertis [...] SHI Logo  SHI  SHI provides information technology (IT) solutions and services focused on organizational needs and employee support. The company offers services including hybrid workplace development, cybersecurity, cloud optimization, software portfolio management, data center integration, device configuration, deployment, and license advisory.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.comparably.com/companies/blue-star/mission" target="_blank">Blue Star Mission, Vision &amp; Values</a></h3>
+                    <div class="result-url">https://www.comparably.com/companies/blue-star/mission</div>
+                    <div class="result-content">Mission, Vision, and Values of Blue Star. Vision Statement: “To dream, to strive, to care, and above all, to be the best in everything we do.”</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Blue_Star_(company)" target="_blank">Blue Star (company) - Wikipedia</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Blue_Star_(company)</div>
+                    <div class="result-content">1. 1 2 Com, Moneycontrol. &quot;Blue Star Registered Address Contact Details, Blue Star Management&quot;. www.moneycontrol.com. Retrieved 4 May 2019.
+2. 1 2 3 4 5 6 Com, Moneycontrol. &quot;Blue Star Financial Statements&quot;. moneycontrol.com.
+3. ↑ Mukherjee, Writankar (22 March 2018). &quot;Blue Star eyes commercial refrigeration products, water purifiers as next growth driver&quot;. The Economic Times. Retrieved 7 May 2019.
+4. ↑ &quot;Bluestar aims to be USD 1 bn plus company in 5 years - Times of India&quot;. The Times of India. PTI. Retrieved 7 May 2019.
+5. ↑ Gupta, Pavan (1987). Corporate India 500: A Visual Survey. Business Press. p. 82.
+6. ↑ &quot;Blue Star &gt; Company History &gt; Consumer Goods - White Goods &gt; Company History of Blue Star&quot;. www.moneycontrol.com. Retrieved 7 May 2019. [...] | Total equity &quot;Equity (finance)&quot;) | Increase ₹998 crore (US$100 million) (2022) |
+| Number of employees | 2,800+ (2022) |
+| Website | www.bluestarindia.com | [...] Blue Star was founded in 1943 by Mohan T Advani as a reconditioning company. Soon after inception, Blue Star ventured into the manufacturing of ice candy machines and bottle coolers and began the design, execution of central air conditioning projects, followed by the manufacturing of water coolers. The company later expanded into new product lines and began exporting to Dubai. It went public in 1969 with an initial public offering, listing on the Bombay Stock Exchange. In the late 2000s, Blue Star ventured into the electrical, plumbing and fire-fighting contracting businesses, offering customers an integrated mechanical, electrical, and plumbing (MEP) solution. It then forayed into the residential air conditioning segment a few years later, along with entering the water and air</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/doc/23883479/Marketing-Strategy-on-Bluestar-by-Satish-Singh" target="_blank">Blue Star Ltd: AC Marketing Strategies | PDF</a></h3>
+                    <div class="result-url">https://www.scribd.com/doc/23883479/Marketing-Strategy-on-Bluestar-by-Satish-Singh</div>
+                    <div class="result-content">Marketing Strategy on Bluestar by Satish Singh. Blue Star aims to enhance market share through product quality, ethical business practices, competitive pricing</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bluestarinc.com/en-us/about-the-company" target="_blank">About The Company | BlueStar</a></h3>
+                    <div class="result-url">https://www.bluestarinc.com/en-us/about-the-company</div>
+                    <div class="result-content">Learn More
+
+point-of-sale
+
+ RFID
+
+Handheld Readers, Fixed Readers, Antennas, Tags, Software and Related Congifuration Services
+
+Learn More
+
+RFID
+
+ &quot;Our mission is to serve the specialty electronics channel with the very best solutions, services, and support, as well as exceed the expectations of our Value-Added Reseller customers and manufacturing partners.&quot;
+
+ Stephen G. Cuntz
+
+Founder, BlueStar
+
+ The History of BlueStar
+
+ Important Events in BlueStar&#x27;s History
+
+2025
+
+2024
+
+Warehouse automation project completed in EMEA distribution center
+
+2023
+
+BlueStar Europe expands into South Africa and the Middle East.
+
+2023
+
+2023
+
+Warehouse automation project completed in US distribution center
+
+2023
+
+Ryan Girvin named second-ever CEO of BlueStar
+
+2023
+
+2019 [...] - SNUC
+    - Socket Mobile
+    - Star Micronics
+    - Toshiba TABS
+    - Toshiba Retail
+    - Touch Dynamic
+    - VoCoVo
+    - Zebra Technologies
+ Promotions
+ Industries &amp; Technologies 
+  + Vertical Education 
+    - Field Service
+    - Government
+    - Healthcare
+    - Retail &amp; Hospitality
+    - Supply Chain
+  + Technologies 
+    - Access Control &amp; Security
+    - Data Capture &amp; Barcoding
+    - Digital Signage &amp; AV
+    - Kiosk &amp; Self-Service
+    - Printer Supplies
+    - Mobility
+    - Networking &amp; Connectivity
+    - Point of Sale &amp; Payments
+    - RFID
+ Programs &amp; Services 
+  + Services 
+    - Connectivity Services
+    - Custom Configuration
+    - Financial Services
+    - Installation &amp; Site Surveys
+    - Technical Support
+  + Programs 
+    - BlueStar Academy
+    - Demand Lab Marketing [...]  Articles by Topic
+
+View All Articles  
+Artificial Intelligence  
+Automatic Data Capture  
+Field Service  
+Healthcare  
+Marketing &amp; Social  
+Point of Sale  
+Surveys &amp; Data
+
+ Technologies
+
+Access Control  
+Data Capture &amp; Barcoding  
+Digital Signage &amp; AV  
+Kiosk &amp; Self-Service  
+Printer Supplies  
+Mobility  
+Networking &amp; Connectivity  
+Point of Sale &amp; Payments  
+RFID
+
+ Education by Industry
+
+Field Service  
+Government  
+Healthcare  
+Retail &amp; Hospitality  
+Supply Chain
+
+ Committed to Serving the Specialized Electronics Industry
+
+Become a Reseller
+
+bluestar-flag-header-1
+
+bluestar-building
+
+ BlueStar is a global distributor of specialty B2B electronics devices.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.intel.com/content/www/us/en/partner/showcase/storefront/a5S3b000000IRC6EAO/bluestar-inc.html" target="_blank">BlueStar, Inc.</a></h3>
+                    <div class="result-url">https://www.intel.com/content/www/us/en/partner/showcase/storefront/a5S3b000000IRC6EAO/bluestar-inc.html</div>
+                    <div class="result-content">BlueStar is the leading global distributor of solutions-based Digital Identification, Mobility, Point-of-Sale, RFID, IoT, AI. AR, M2M, Digital Signage, Networking, Blockchain, and Security technology solutions. BlueStar works exclusively with Value-Added Resellers (VARs) to provide complete solutions, custom configuration offerings, business development, and marketing support. The company brings unequaled expertise to the market, offers award-winning technical support, and is an authorized service center for a growing number of manufacturers. BlueStar is the exclusive distributor for the In-a-Box® Solutions Series, delivering hardware, software, and critical accessories all in one bundle with technology solutions across all verticals, as well as BlueStar’s HybridSaaS finance program to [...] BlueStar is the leading global distributor of solutions-based Digital Identification, Mobility, Point-of-Sale, RFID, IoT, AI. AR, M2M, Digital Signage, Networking, Blockchain, and Security technology solutions. BlueStar works exclusively with Value-Added Resellers (VARs) to provide complete solutions, custom configuration offerings, business development, and marketing support. The company brings unequaled expertise to the market, offers award-winning technical support, and is an authorized service center for a growing number of manufacturers. BlueStar is the exclusive distributor for the In-a-Box® Solutions Series, delivering hardware, software, and critical accessories all in one bundle with technology solutions across all verticals, as well as BlueStar’s HybridSaaS finance program to [...] as well as BlueStar’s HybridSaaS finance program to provide OPEX/subscription services for hardware, software, and service bundles. For more information, please contact BlueStar at 1-800-354-9776 or visit www.bluestarinc.com.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bluestarindia.com" target="_blank">Blue Star</a></h3>
+                    <div class="result-url">https://www.bluestarindia.com</div>
+                    <div class="result-content">View Products
+ Air Coolers
+
+   Air Coolers
+
+  Sleek and elegant air coolers packed with smart features to provide efficient cooling.
+
+  View Products
+
+Electro-Mechanical Projects
+
+ Electro-Mechanical Projects
+
+Blue Star is India&#x27;s leading integrated MEP service provider with over seven decades of experience.
+
+Know more
+
+Central Airconditioning
+
+ Central Air Conditioning Products
+
+End-to-end solutions with a comprehensive range of VRF systems, ducted and packaged ACs, and chillers, among others.
+
+View Products
+
+Commercial Refrigeration
+
+ Commercial Refrigeration
+
+Leaders in commercial refrigeration providing an array of freezers, coolers, bottled water dispensers, and more to small and large scale industries.
+
+View Products
+
+Water Coolers
+
+ Water Coolers [...] View Products
+
+Water Coolers
+
+ Water Coolers
+
+Get surprisingly fast cool water with this range of durable, value-for-money and eco-friendly coolers for commercial spaces.
+
+Know More
+
+After-Sales Service
+
+ After-Sales Service
+
+Providing you with the finest and most comprehensive range of service solutions.
+
+Know More
+
+Manufacturing and R&amp;D
+
+ Manufacturing and R&amp;D
+
+A manufacturing division with world-class calibre, and an R&amp;D team that consistently aims to develop and enhance products with up-to-date technology.
+
+Know More
+
+International Business Group
+
+ International Business Group
+
+This group manages joint ventures in Qatar, Malaysia and Oman, and product exports to the Middle East, SAARC, Africa, and ASEAN regions.
+
+Know More
+
+Professional Electronics &amp; Industrial Systems [...] Update cookies preferences
+
+
+
+ Locations
+ Dealers
+ Dealership Request
+ Careers
+ Contact Us
+ TVCs
+ Consumers
+ Resources
+
+ 
+
+ 
+
+ 
+
+ Welcome to the corporate website of Blue Star Limited
+
+Are you a Business?  
+ Click here to stay on this site.
+
+Are you a Consumer?  
+Click here for our e-commerce site.
+
+ Room Air Conditioners
+
+   Room Air Conditioners
+
+  The most technologically advanced and energy efficient air conditioning solutions for small spaces.
+
+  View Products
+ Water Purifiers
+
+   Water Purifiers
+
+  Presenting a range of water purifiers, obsessed with purity.
+
+  View Products
+ Air Purifiers
+
+   Air Purifiers
+
+  An array of purifiers built with superior technology for clean and healthy air in your home.
+
+  View Products
+ Air Coolers
+
+   Air Coolers</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://leadiq.com/c/bluestar-technology-solutions/5a1d9d1623000053008cf22c" target="_blank">BlueStar Technology Solutions</a></h3>
+                    <div class="result-url">https://leadiq.com/c/bluestar-technology-solutions/5a1d9d1623000053008cf22c</div>
+                    <div class="result-content">BlueStar Technology Solutions uses 8 technology products and services including Modernizr, JBoss, PHP, and more. Explore BlueStar Technology Solutions&#x27;s tech</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bluestarindia.com/international-business-group/overview" target="_blank">International Business Group | Overview | Blue Star India</a></h3>
+                    <div class="result-url">https://www.bluestarindia.com/international-business-group/overview</div>
+                    <div class="result-content">Blue Star offers comprehensive range of products such as chillers with screw and hermetic scroll compressors, a wide range of air handling and fan coil</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bluestarinc.com/en-gb/programs-services/teconnect/portal" target="_blank">TEConnect - Portal | BlueStar</a></h3>
+                    <div class="result-url">https://www.bluestarinc.com/en-gb/programs-services/teconnect/portal</div>
+                    <div class="result-content">img-waizu
+
+ ISV 45 - Asset Management
+
+ Software Overview: ISV 45 has been trading for 5+ years and offers an identity and traceability tool for users of shared Android scanning devices or POD devices. This ISV helps prevent expenditure associated with high levels of device breakage and loss. Also helps make operations more efficient through automated accountability.
+ Operating System(s): Android
+ Software Language(s): English
+ Support Language(s): English
+ Hardware Certified: Honeywell, Zebra  
+    
+
+  Make Connection &gt;&gt;
+
+img-kutir-mobility
+
+ ISV 46 - RFID Inventory tracking [...] Facebook   Instagram   Linkedin   X   YouTube
+
+ Our Valued Partners
+
+BlueStar&#x27;s diverse portfolio offers unparalleled access to premium products and services that drive business growth and success. From state-of-the-art hardware to advanced software solutions, our portfolio is designed to empower businesses with the tools they need to thrive in today&#x27;s competitive landscape.
+
+Full Line Card
+
+ apg
+ BarTender
+ Brady
+ Brodit
+ Brother
+ Citizen
+ Custom
+ Datalogic
+ DTM Print
+ Elo
+
+ Entrust
+ Epson
+ Ergonomic Solutions
+ HID
+ Honeywell
+ Impinj
+ Loftware
+ Microtouch
+ Newcastle
+ Nordic ID
+
+ oona
+ Proglove
+ RAM Mounts
+ SATO
+ Star Micronics
+ Teklynx
+ TSC
+ Unitech
+ VIP Color
+ Zebra
+
+ Industry Insights [...] img-algorithm-people
+
+ ISV 35 - Transport Planning
+
+ Software Overview: ISV 35 has been trading for 6 years and helps fleets optimise, decarbonise, and transform their operations using AI-powered algorithms that are proven to reduce costs, increase productivity and cut emissions by up to 30%. Additionally, their mobile apps streamline workflows with vehicle checks and ePOD.
+ Operating System(s): Browser-based
+ Software Language(s):  Bulgarian, Croatian, Czech, Danish, Dutch, English, Finnish, French, German, Greek, Hungarian, Icelandic, Italian, Latvian, Lithuanian,  Norwegian, Polish, Portuguese, Romanian, Slovak, Spanish, Swedish
+ Support Language(s): English
+ Hardware Certified: Zebra, Honeywell, Panasonic  
+    
+
+  Make Connection &gt;&gt;
+
+img-ventory
+
+ ISV 36 - Inventory Management</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Blue_Star_(company)" target="_blank">Blue Star (company)</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Blue_Star_(company)</div>
+                    <div class="result-content">| Type | Public |
+| Traded as |  BSE: 500067  NSE: BLUESTARCO |
+| ISIN | INE472A01039 |
+| Industry |  Home appliances |
+| Founded | 1943; 83 years ago (1943) |
+| Founder | Mohan T Advani |
+| Headquarters | Mumbai, Maharashtra , India |
+| Area served | Worldwide |
+| Key people |  Shailesh Haribhakti (Chairman)  Vir S Advani (Vice Chairman &amp; MD)  B Thiagarajan (MD) |
+| Products |  Air conditioners  Air coolers  Refrigerators  Washing machines  Cold storage, water purifier  Microwaves  Air purifiers  Water dispensers |
+| Revenue | Increase ₹6,081 crore (US$630 million) (2022) |
+| Operating income | Increase ₹296 crore (US$31 million) (2022) |
+| Net income | Increase ₹166 crore (US$17 million) (2022) |
+| Total assets | Increase ₹4,312 crore (US$450 million) (2022) | [...]  External links
+
+[edit&amp;action=edit&amp;section=4 &quot;Edit section: External links&quot;)]
+
+ Official website
+
+|  v  t  e  India Electronics industry in India | [...] | Total equity &quot;Equity (finance)&quot;) | Increase ₹998 crore (US$100 million) (2022) |
+| Number of employees | 2,800+ (2022) |
+| Website | www.bluestarindia.com |</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.pr.com/company-profile/press-releases/26643" target="_blank">BlueStar Press Releases &amp; News - PR.com</a></h3>
+                    <div class="result-url">https://www.pr.com/company-profile/press-releases/26643</div>
+                    <div class="result-content">Title: BlueStar Press Releases &amp; News - PR.com
+ BlueStar.  BlueStar to Carry Zebra’s RFID-Enabled Mobile Thermal Transfer Printers.  BlueStar to Distribute Janam’s XM65.  BlueStar Offers New Honeywell Dolphin 9900 Mobile Computer.  BlueStar to Distribute Zebra G-Series Printers.  BlueStar Announces Santiago Arias as New General Manager of Latin America Division. BlueStar, the leading innovator in solutions-based distribution for Auto ID, Point-of-Sale, RFID, and Mobility products, is proud to announce the recent addition of Santiago Arias to the BlueStar Latin America team.  BlueStar Announces Néstor Talavera Montalvo as New Caribbean Business Development Manager.  BlueStar Announces Anastasia Semeraro as New Latin America Marketing Manager.  BlueStar to Distribute RFID Products from FEIG Electronics.  BlueStar Distributes LXE Bluetooth Ring Scanner. Mr. Nix will lead BlueStar’s international business development, including bringing more vendors’ products into BlueStar for distribution as well as developing an international marketing and sales presence.  BlueStar Distributes the LXE MX7CS Hand-Held Computer.  BlueStar Distributes Cherry’s New Washable Keyboards.  BlueStar Inks TABLETmedia Distribution Agreement. BlueStar has signed a distribution agreement with TABLETmedia to distribute the company’s iTalkie software that enables Motorola/Symbol, Intermec, and other products including PCs, to act as walkie-talkies.  BlueStar to Distribute CradlePoint Products. BlueStar has signed a distribution agreement with CradlePoint, a SymbolPLUS Provider Program Partner that designs and manufacturers specialized communications cradles and external adapters that are certified compatible with the Symbol/Motorola family of handheld terminals.  BlueStar to Distribute Janam’s XM60 Microsoft Windows® CE Rugged Mobile Computer.  BlueStar Signs Distribution Agreement with Z-Space Technologies. BlueStar has signed a distribution agreement with Z-Space Technologies, developers of the ITScriptNet® data-collection program development and communication software. BlueStar will distribute the company’s complete list of products.  BlueStar to Distribute New Elo TouchSystems 17-in.  BlueStar Distributes Motorola MC70 with New Integrated GPS Functionality.  BlueStar to Distribute SATO LM4e Barcode Printer Series.  BlueStar to Distribute Datamax M-Class Mark II Printer.  BlueStar to Distribute the New LXE MX8 Handheld Computer. BlueStar has signed a distribution agreement with Bartec to distribute the company’s rugged intrinsically safe (I-Safe) computers for use in explosive-prone environments.  BlueStar Distributes the LXE HX2 Rugged Wearable Computer.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Blue_Star_(company)" target="_blank">Blue Star (company)</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Blue_Star_(company)</div>
+                    <div class="result-content">| Total equity &quot;Equity (finance)&quot;) | Increase ₹998 crore (US$100 million) (2022) |
+| Number of employees | 2,800+ (2022) |
+| Website | www.bluestarindia.com | [...] | Type | Public |
+| Traded as |  BSE: 500067  NSE: BLUESTARCO |
+| ISIN | INE472A01039 |
+| Industry |  Home appliances |
+| Founded | 1943; 83 years ago (1943) |
+| Founder | Mohan T Advani |
+| Headquarters | Mumbai, Maharashtra , India |
+| Area served | Worldwide |
+| Key people |  Shailesh Haribhakti (Chairman)  Vir S Advani (Vice Chairman &amp; MD)  B Thiagarajan (MD) |
+| Products |  Air conditioners  Air coolers  Refrigerators  Washing machines  Cold storage, water purifier  Microwaves  Air purifiers  Water dispensers |
+| Revenue | Increase ₹6,081 crore (US$630 million) (2022) |
+| Operating income | Increase ₹296 crore (US$31 million) (2022) |
+| Net income | Increase ₹166 crore (US$17 million) (2022) |
+| Total assets | Increase ₹4,312 crore (US$450 million) (2022) | [...]  External links
+
+[edit&amp;action=edit&amp;section=4 &quot;Edit section: External links&quot;)]
+
+ Official website
+
+|  v  t  e  India Electronics industry in India |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.prnewswire.com/news/BlueStar" target="_blank">BlueStar News and Press Releases</a></h3>
+                    <div class="result-url">https://www.prnewswire.com/news/BlueStar</div>
+                    <div class="result-content">A wide array of domestic and global news stories; news topics include politics/government, business, technology, religion, sports/entertainment, science/nature,</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bluestarindia.com" target="_blank">Blue Star</a></h3>
+                    <div class="result-url">https://www.bluestarindia.com</div>
+                    <div class="result-content">Know More
+
+Professional Electronics &amp; Industrial Systems
+
+ Professional Electronics &amp; Industrial Systems
+
+Advanced Technology Products. Turnkey Engineering Solutions.
+
+Know More
+
+CAREERS
+
+ CAREERS
+
+Partnering with the leader in a high-growth industry is a sensible career move. Join us for an opportunity to make it big!
+
+Join Now
+
+PRESS
+
+ PRESS
+
+ Blue Star&#x27;s Q1FY27 Consolidated Revenue grows 13.3% to Rs 3,377.92 crores; rising input costs impact margins
+
+Read More
+
+Investors
+
+ Investors
+
+ Blue Star’s Q2FY24 Net Profit increases by 66% to Rs 70.77 crores
+
+Read More
+
+Social Initiatives
+
+ Social Initiatives
+
+Blue Star believes that organisations must look beyond making profits and should contribute to the development and welfare of society.
+
+Read More
+
+Go to Top
+
+Get In Touch [...] View Products
+ Air Coolers
+
+   Air Coolers
+
+  Sleek and elegant air coolers packed with smart features to provide efficient cooling.
+
+  View Products
+
+Electro-Mechanical Projects
+
+ Electro-Mechanical Projects
+
+Blue Star is India&#x27;s leading integrated MEP service provider with over seven decades of experience.
+
+Know more
+
+Central Airconditioning
+
+ Central Air Conditioning Products
+
+End-to-end solutions with a comprehensive range of VRF systems, ducted and packaged ACs, and chillers, among others.
+
+View Products
+
+Commercial Refrigeration
+
+ Commercial Refrigeration
+
+Leaders in commercial refrigeration providing an array of freezers, coolers, bottled water dispensers, and more to small and large scale industries.
+
+View Products
+
+Water Coolers
+
+ Water Coolers [...] View Products
+
+Water Coolers
+
+ Water Coolers
+
+Get surprisingly fast cool water with this range of durable, value-for-money and eco-friendly coolers for commercial spaces.
+
+Know More
+
+After-Sales Service
+
+ After-Sales Service
+
+Providing you with the finest and most comprehensive range of service solutions.
+
+Know More
+
+Manufacturing and R&amp;D
+
+ Manufacturing and R&amp;D
+
+A manufacturing division with world-class calibre, and an R&amp;D team that consistently aims to develop and enhance products with up-to-date technology.
+
+Know More
+
+International Business Group
+
+ International Business Group
+
+This group manages joint ventures in Qatar, Malaysia and Oman, and product exports to the Middle East, SAARC, Africa, and ASEAN regions.
+
+Know More
+
+Professional Electronics &amp; Industrial Systems</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="http://www.prnewswire.com/news/bluestar-alliance,-llc" target="_blank">Bluestar Alliance, LLC News and Press Releases | PR Newswire</a></h3>
+                    <div class="result-url">http://www.prnewswire.com/news/bluestar-alliance,-llc</div>
+                    <div class="result-content">Title: Bluestar Alliance, LLC News and Press Releases | PR Newswire
+ News Releases Overview.  Business Technology.  View All Business Technology.  Financial Services &amp; Investing.  Consumer Technology.  View All Consumer Technology.  Environ­ment.  Telecomm­unications.  Consumer Products &amp; Retail.  Health.  Sports.  Travel.  News from Bluestar Alliance, LLC A wide array of domestic and global news stories; news topics include politics/government, business, technology, religion, sports/entertainment, science/nature, and health/lifestyle. BLUESTAR ALLIANCE ZÍSKAVA V AKVIZÍCII PALM ANGELS®.  Feb 12, 2025, 10:57 ET BLUESTAR ALLIANCE ZÍSKAVA V AKVIZÍCII PALM ANGELS®. BLUESTAR ALLIANCE AKUISISI PALM ANGELS®.  Feb 12, 2025, 10:52 ET BLUESTAR ALLIANCE AKUISISI PALM ANGELS®. BLUESTAR ALLIANCE ПРИОБРЕТАЕТ PALM ANGELS®.  Feb 12, 2025, 10:49 ET BLUESTAR ALLIANCE ПРИОБРЕТАЕТ PALM ANGELS®. Bluestar Alliance 收購 Palm Angels®.  Feb 12, 2025, 07:27 ET Bluestar Alliance 收購 Palm Angels®. Bluestar Alliance przejmuje Palm Angels®.  Feb 12, 2025, 07:23 ET Bluestar Alliance przejmuje Palm Angels®. 세계적인 브랜드 관리 회사인 블루스타 얼라이언스(Bluestar Alliance LLC)가 럭셔리 스트리트웨어 브랜드 팜 엔젤스(Palm Angels®)를 인수했다. Bluestar Alliance adquiere Palm Angels®.  Feb 11, 2025, 13:54 ET Bluestar Alliance adquiere Palm Angels®. BLUESTAR ALLIANCE ACQUIERT LES PALM ANGELS®.  Feb 11, 2025, 12:28 ET BLUESTAR ALLIANCE ACQUIERT LES PALM ANGELS®. BLUESTAR ALLIANCE ERWIRBT PALM ANGELS®.  Feb 11, 2025, 12:26 ET BLUESTAR ALLIANCE ERWIRBT PALM ANGELS®. A BLUESTAR ALLIANCE ADQUIRE A PALM ANGELS®.  Feb 11, 2025, 11:59 ET A BLUESTAR ALLIANCE ADQUIRE A PALM ANGELS®. BLUESTAR ALLIANCE ADQUIERE PALM ANGELS®.  Feb 11, 2025, 11:47 ET BLUESTAR ALLIANCE ADQUIERE PALM ANGELS®. BLUESTAR ALLIANCE ACQUIRES PALM ANGELS®.  Feb 11, 2025, 11:37 ET BLUESTAR ALLIANCE ACQUIRES PALM ANGELS®. Bluestar Alliance LLC, a leading global brand management firm, is pleased to announce the acquisition of Palm Angels® luxury streetwear brand. BLUESTAR ALLIANCE ACQUIRES PALM ANGELS®.  Feb 11, 2025, 11:00 ET BLUESTAR ALLIANCE ACQUIRES PALM ANGELS®. Bluestar Alliance LLC, a leading global brand management firm, is pleased to announce the acquisition of Palm Angels® luxury streetwear brand. BLUESTAR ALLIANCE ACQUIRES PALM ANGELS®.  Feb 11, 2025, 10:29 ET BLUESTAR ALLIANCE ACQUIRES PALM ANGELS®. Bluestar Alliance LLC, a leading global brand management firm, is pleased to announce the acquisition of Palm Angels® luxury streetwear brand.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/blue-star-1/alternatives-competitors" target="_blank">Top Blue Star Alternatives, Competitors</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/blue-star-1/alternatives-competitors</div>
+                    <div class="result-content">Blue Star&#x27;s top competitors include GENERAL, Carrier, and Trane Technologies. India focuses on automation and software solutions</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.comparably.com/companies/blue-star/competitors" target="_blank">Blue Star Competitors</a></h3>
+                    <div class="result-url">https://www.comparably.com/companies/blue-star/competitors</div>
+                    <div class="result-content">Blue Star competitors include Jet Partners, WACKER Chemie AG, Carrier, and Evonik Industries. Blue Star ranks 2nd in CEO Score on Comparably vs its competitors.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/bluestar/alternatives-competitors" target="_blank">Top BlueStar Alternatives, Competitors</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/bluestar/alternatives-competitors</div>
+                    <div class="result-content">Technology Vendors
+ Recent Research
+ Newsletter
+ Media Support
+ Login
+
+CB Insights
+
+BlueStar company logo
+
+ BlueStar
+
+bluestarinc.com
+
+ BlueStar&#x27;s alternatives and competitors
+
+See how BlueStarcompares to similar products. BlueStar&#x27;s top competitors include Westcon-Comstor, Exertis, and Ingram Micro.
+
+Westcon-Comstor Logo
+
+Westcon-Comstor
+
+Westcon-Comstor operates as a global technology distributor specializing in cybersecurity, networking, and hybrid cloud solutions. The company connects technology vendo…
+
+BlueStar vs. Westcon-Comstor
+
+View more in-depth data on:
+
+ Competitors
+ Products
+ Customer References and more
+
+Compare BlueStar and Westcon-Comstor
+
+New call-to-action
+
+ Exertis Logo
+
+  Exertis [...] SHI Logo
+
+SHI
+
+SHI provides information technology (IT) solutions and services focused on organizational needs and employee support. The company offers services including hybrid workplace development, cybersecurity, cloud optimization, software portfolio management, data center integration, device configuration, deployment, and license advisory. SHI was formerly known as Software House International. It was founded in 1989 and is based in Somerset, New Jersey.
+
+ELKO Grupa Logo
+
+ELKO Grupa [...] Intcomex Logo
+
+Intcomex
+
+Intcomex operates as a distributor of information technology (IT) products within the technology sector. It provides a range of products, including computer equipment, components, peripherals, software, computer systems, accessories, networking products, and digital consumer electronics. It primarily serves local customers in the Information Technology (IT) market. The company was founded in 1989 and is based in Medley, Florida.
+
+SHI Logo
+
+SHI</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.g2.com/products/bluestar/competitors/alternatives" target="_blank">Top 10 BlueStar Alternatives &amp; Competitors in 2026</a></h3>
+                    <div class="result-url">https://www.g2.com/products/bluestar/competitors/alternatives</div>
+                    <div class="result-content">IBM Consulting · Stratix Corporation · Capgemini Services · HP Enterprise Consulting · Centric Consulting · Maximo · RSM Consulting · molfar.io.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.owler.com/company/bluestaralliance" target="_blank">Bluestar Alliance&#x27;s Competitors, Revenue, Number of ...</a></h3>
+                    <div class="result-url">https://www.owler.com/company/bluestaralliance</div>
+                    <div class="result-content">Bluestar Alliance&#x27;s primary competitors are Lyft Brands Group, Iconix, Marquee Brands and 11 more. Bluestar Alliance generates $125M in revenue</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

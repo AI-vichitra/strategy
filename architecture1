@@ -1,0 +1,145 @@
+# StratAI Architecture & Technical Documentation
+
+This document provides a comprehensive overview of the StratAI platform's architecture, data flow pipelines, user journeys, and potential avenues for future intelligence enhancements and configuration.
+
+---
+
+### Architecture & Data Flow Diagram
+
+```mermaid
+flowchart TD
+    %% User Inputs
+    subclass[Frontend React/Next.js]
+    subclass -->|Brand Name, URL, Category| A
+    
+    %% API Endpoints
+    A[POST /search-competitors] --> B[tavily_comp.py]
+    B -->|Returns Top 5 Competitors| subclass
+    
+    subclass -->|Confirm Competitors| C[POST /confirm]
+    C --> D[(SQLite DB)]
+    C -->|Background Task| E[pipeline_service.py]
+    
+    %% Background Pipeline
+    subgraph Phase 1 & 2: Data Ingestion & Orchestration
+        E -->|Web Scrape| F[tavily_web.py]
+        E -->|Social Handles| G[tavily_insta.py]
+        G -->|Target URLs| H[insta_agent.py Playwright]
+        
+        F --> I[Raw HTML/JSON]
+        H --> I
+        I --> J[JSON Normalization & Cleanup]
+    end
+    
+    %% Storage
+    J --> K[docs/brand_slug_scrapped/*.json]
+    
+    %% RAG & AI Service
+    subgraph Phase 3: AI Retrieval & Chat
+        subclass -->|Chat Message| L[stream_chat in ai_service.py]
+        K --> M[Chunking 500w / Embeddings]
+        M --> N[In-Memory Index: BM25 + Dense]
+        L --> O[Hybrid Retrieval RRF]
+        O --> N
+        N -->|Top K Context| P[Prompt Builder]
+        P --> Q[LLM: Mistral]
+    end
+    
+    Q -->|SSE Stream| subclass
+```
+
+### Phase 1: Data Ingestion (Scraping & Discovery)
+This phase handles fetching raw external data about the user's brand and their competitors. It relies on standalone Python scripts located in the `web_scrapper` and `social_scrapper` directories.
+
+- **Competitor Discovery (`tavily_comp.py`)**: Uses the Tavily API to query for direct market competitors based on the brand's name, URL, and category. It parses natural language responses to extract clean URLs and names.
+- **Deep Web Research (`tavily_web.py`)**: Uses Tavily Advanced Search to perform a deep dive into 4 specific areas: Company Overview, Products & Services, Latest News, and Competitive Landscape. It generates visually appealing HTML reports and structured JSON files.
+- **Social Handle Discovery (`tavily_insta.py`)**: Automatically finds the official Instagram handles for both the main brand and competitors.
+- **Instagram Scraper (`insta_agent.py`)**: Uses Playwright to navigate Instagram, scraping recent posts, captions, likes, and comments for the discovered handles.
+
+### Phase 2: Data Processing & Orchestration (`pipeline_service.py`)
+When a user initiates research, the FastAPI backend kicks off an asynchronous background task. 
+
+1. **Initialization**: Creates a `docs/{brand_slug}_scrapped` directory to store the knowledge base.
+2. **Execution**: 
+   - Invokes web scraping for the main brand.
+   - Invokes deep web research for the brand and all confirmed competitors.
+   - Discovers social handles for all entities.
+   - Spawns the Playwright `insta_agent` as a subprocess to safely scrape social media data without blocking the main thread.
+3. **Normalization**: The pipeline converts all output files (including stripping CSS/JS from HTML reports and translating emojis like ♥ into words like `Likes:`) into standardized JSON formats: `{ title, url, source_type, brand, content }`.
+4. **Completion**: Updates the SQLite database (`stratai.db`) to mark the pipeline as "complete".
+
+### Phase 3: AI Retrieval & Chat (`ai_service.py`)
+This phase handles answering user queries using the ingested data.
+
+1. **Indexing**: The service reads all JSON files in the `docs` folder. It chunks the text (500 words with 100-word overlap) and embeds them using a local `sentence-transformers` model (`all-MiniLM-L6-v2`).
+2. **Hybrid Retrieval**: When a user asks a question, the system queries the knowledge base using:
+   - **Dense Retrieval**: Cosine similarity matching conceptual meaning.
+   - **Sparse Retrieval**: BM25 matching exact keywords.
+   - Both scores are fused using Reciprocal Rank Fusion (RRF) to get the top 6 most relevant chunks.
+3. **Generation**: The context is injected into a strict System Prompt and passed to the LLM (`mistral-large-latest`). The response is streamed back to the frontend via Server-Sent Events (SSE).
+
+---
+
+## 2. User Journey
+
+1. **Onboarding**: The user signs in and is greeted by a dashboard. They initiate a "New Brand Research" workflow.
+2. **Brand Input**: The user enters their Brand Name, Website URL, and Industry Category.
+3. **Competitor Review**: The backend briefly pauses, using `tavily_comp.py` to suggest the top 5 competitors. The user reviews this list, removes irrelevant ones, manually adds missing ones, and clicks "Confirm & Start".
+4. **Background Processing**: The user is immediately dropped into the Chat UI. A status indicator shows "Building brand knowledge base...". Behind the scenes, the full orchestration pipeline is scraping the web and Instagram.
+5. **Strategic Consultation**: Once the pipeline completes, the user asks strategic questions (e.g., "What are my competitors' latest marketing strategies?" or "What were the likes on my last 5 Instagram posts?").
+6. **Insight Delivery**: StratAI delivers concise, data-backed strategic insights based strictly on the scraped context. 
+
+---
+
+## 3. User Story
+
+**Title**: Market Intelligence Chatbot for Brand Strategists
+
+**As a** brand strategist or marketing manager,
+**I want** to input my brand and automatically discover my top competitors,
+**So that** I don't have to spend hours manually researching who my digital rivals are.
+
+**As a** user,
+**I want** the system to automatically scrape web presence, news, and social media data for my brand and my rivals,
+**So that** I have a centralized, up-to-date knowledge base of the market landscape.
+
+**As a** user,
+**I want** to chat with an AI consultant that has access to this specific scraped data,
+**So that** I can ask precise questions about competitor pricing, recent social media engagement, and market positioning without leaving the application.
+
+---
+
+## 4. Where to Add Intelligence (Future Enhancements)
+
+To elevate StratAI from a basic RAG system to an advanced autonomous agent, intelligence can be injected at the following points:
+
+### A. Pre-Scraping Intelligence
+- **Smart Competitor Curation**: Instead of just listing competitors, the AI can analyze *why* they are a competitor (e.g., overlapping product lines, similar target audience) and present this reasoning to the user during the "Review" step.
+
+### B. In-Pipeline Intelligence (Data Enrichment)
+- **Automated Sentiment Analysis**: While scraping Instagram comments, run a lightweight local NLP model (like VADER or a small HuggingFace model) to assign a sentiment score (Positive/Neutral/Negative) to each post's comments before saving the JSON.
+- **Automated SWOT Analysis**: At the end of the pipeline, automatically trigger a background LLM call to generate a complete SWOT (Strengths, Weaknesses, Opportunities, Threats) analysis comparing the brand to the competitors, and save it as a high-priority document in the knowledge base.
+
+### C. Chat & Retrieval Intelligence
+- **Query Routing**: Use a lightweight LLM router to classify the user's intent before retrieval. 
+  - *Intent = "Visual/Chart"*: Route to a specialized chart-generating prompt.
+  - *Intent = "Numeric Analysis"*: Route to an agent that runs Python code to calculate averages (e.g., average likes).
+  - *Intent = "General Strategy"*: Route to standard RAG.
+- **Self-Reflective RAG (CRAG/Self-RAG)**: If the hybrid retrieval returns low-confidence scores, the AI can decide to trigger a real-time web search to supplement the missing data rather than just saying "Data not available."
+
+---
+
+## 5. How the Flow Can Be Configured
+
+The architecture is highly modular, allowing for several configuration points that can be exposed to the user via a "Settings" UI or configured via `.env` files:
+
+1. **Scraping Depth & Scope**:
+   - *Configurable in `tavily_service.py`*: Allow the user to select the "Research Depth" (Basic vs. Advanced) to trade off between speed and comprehensiveness.
+   - Allow users to toggle specific research modules on/off (e.g., "Skip Instagram Scraping", "Only Scrape News").
+2. **RAG Parameters**:
+   - *Configurable in `ai_service.py`*: Expose Chunk Size (currently 500) and Chunk Overlap (currently 100). Larger chunks provide more context; smaller chunks provide higher precision.
+   - Expose the `TOP_K` variable (currently 6). Increasing this gives the LLM more context but costs more tokens.
+3. **Model Selection**:
+   - Allow dynamic switching of the LLM based on task complexity. For example, use a fast, cheap model (like Llama 3 8B) for query routing, and a large model (Mistral Large or Claude 3.5 Sonnet) for the final strategic answer.
+4. **Cron Scheduling**:
+   - Configure the pipeline to run on a schedule (e.g., Weekly). The `pipeline_service.py` can be triggered by a CRON job to append new data (like new Instagram posts or news articles) to the `docs` folder without requiring manual user intervention.

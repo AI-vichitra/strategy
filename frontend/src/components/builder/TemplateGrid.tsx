@@ -12,10 +12,6 @@ const categories = [
   'All',
   'Research & Intelligence',
   'Branding & Marketing',
-  'Sales & Outreach',
-  'Data & Analytics',
-  'Productivity & Ops',
-  'Support & Success',
 ];
 
 const brandingSubTabs = [
@@ -28,190 +24,39 @@ const brandingSubTabs = [
 
 // Helper to render specific icons
 export const allTemplates = [
-  // -- Sales & Outreach --
-  {
-    category: 'Sales & Outreach',
-    title: 'Competitor Research Agent',
-    desc: 'A research agent that digs into any competitor. Give it a company name or website and it comes back with their...',
-    connectors: ['Firecrawl', 'Exa', 'SerpAPI', 'Reddit'],
-    plusText: '+1'
-  },
-  {
-    category: 'Sales & Outreach',
-    title: 'Cold Outreach Writer',
-    desc: 'A cold email writer that does its homework first. Give it a prospect and it researches their company, finds releva...',
-    connectors: ['LinkedIn', 'Apollo', 'Gmail', 'Exa'],
-    plusText: '+1'
-  },
-  {
-    category: 'Sales & Outreach',
-    title: 'Sales Prospecting Agent',
-    desc: 'A proactive sales agent that helps prospecting and outreach. It resear target accounts, finds the right...',
-    connectors: ['Apollo', 'LinkedIn', 'ZoomInfo', 'Hunter.io API Key', 'Gmail', 'Google Calendar'],
-    plusText: '+1'
-  },
-  {
-    category: 'Sales & Outreach',
-    title: 'Lead Enrichment Agent',
-    desc: 'An agent that enriches lead lists. Give it a spreadsheet of contacts and it fills in company data, verifies emails, and...',
-    connectors: ['Apollo', 'ZoomInfo', 'Hunter.io API Key', 'Findymail', 'Google Sheets'],
-    plusText: ''
-  },
-  {
-    category: 'Sales & Outreach',
-    title: 'CRM Pipeline Reporter',
-    desc: 'A reporting agent that summarizes your Salesforce pipeline. It pulls deal data, breaks it down by stage and owner, an...',
-    connectors: ['Salesforce', 'HubSpot', 'Google Sheets', 'Google Docs'],
-    plusText: '+1'
-  },
-  {
-    category: 'Sales & Outreach',
-    title: 'Meeting Prep Agent',
-    desc: 'A meeting prep agent. Before any external call, it researches the attendees and their companies an...',
-    connectors: ['LinkedIn', 'Apollo', 'ZoomInfo', 'Google Calendar', 'Google Docs', 'Exa', 'Firecrawl'],
-    plusText: '+1'
-  },
-  {
-    category: 'Sales & Outreach',
-    title: 'Sales Pitch Generator',
-    desc: 'A seasoned sales professional that crafts concise, persuasive pitches tailored to each prospect\'s needs and pain points...',
-    connectors: ['HubSpot', 'Salesforce', 'OpenAI API Key'],
-    plusText: ''
-  },
-  {
-    category: 'Sales & Outreach',
-    title: 'Cold Calling Script Generator',
-    desc: 'A skilled copywriter that crafts persuasive cold calling scripts that grab attention, build rapport, and drive conversions...',
-    connectors: ['LinkedIn', 'HubSpot', 'Salesforce', 'OpenAI API Key'],
-    plusText: ''
-  },
-
-  // -- Data & Analytics --
-  {
-    category: 'Data & Analytics',
-    title: 'BigQuery Data Analyst',
-    desc: 'A data analyst for your BigQuery warehouse. Ask it any business question and it writes the SQL, runs the query,...',
-    connectors: ['BigQuery'],
-    plusText: '+1'
-  },
-  {
-    category: 'Data & Analytics',
-    title: 'PostgreSQL Query Agent',
-    desc: 'A query agent for your PostgreSQL database. Ask questions in plain English and it writes safe read-only SQL, runs i...',
-    connectors: ['PostgreSQL'],
-    plusText: ''
-  },
-  {
-    category: 'Data & Analytics',
-    title: 'Data Cleanup Agent',
-    desc: 'A cleanup agent for messy spreadsheets. Give it a Google She and it deduplicates rows, standardi...',
-    connectors: ['Google Sheets', 'Microsoft Excel'],
-    plusText: '+1'
-  },
-  {
-    category: 'Data & Analytics',
-    title: 'Spreadsheet Analyst',
-    desc: 'An analyst for your Google Sheets data. Give it a spreadsheet and ask questions — it finds patterns, creates summaries,...',
-    connectors: ['Google Sheets', 'Microsoft Excel'],
-    plusText: ''
-  },
-  {
-    category: 'Data & Analytics',
-    title: 'Snowflake Data Analyst',
-    desc: 'A data analyst for your Snowflake warehouse. It explores tables, answers questions with SQL, and documents...',
-    connectors: ['Snowflake'],
-    plusText: '+1'
-  },
-  {
-    category: 'Data & Analytics',
-    title: 'Report Generator',
-    desc: 'A report writer connected to your warehouse. Ask a business questio it produces a polished report with...',
-    connectors: ['BigQuery', 'Snowflake', 'Google Docs'],
-    plusText: '+1'
-  },
-
-  // -- Support & Success --
-  {
-    category: 'Support & Success',
-    title: 'Customer Lookup Agent',
-    desc: 'A customer lookup agent. Give it a name and it pulls together everything — account info, open tickets, recent...',
-    connectors: ['HubSpot', 'Salesforce', 'Zendesk'],
-    plusText: '+1'
-  },
-  {
-    category: 'Support & Success',
-    title: 'Feedback Digest Agent',
-    desc: 'A feedback summarizer. It reads through support tickets, groups feedback by theme, and puts together a weekly...',
-    connectors: ['Zendesk', 'Freshdesk', 'Intercom'],
-    plusText: ''
-  },
-  {
-    category: 'Support & Success',
-    title: 'Issue Tracker Agent',
-    desc: 'A triage agent for GitHub issues. It categorizes new issues, finds relate ones, and sends you a daily digest o',
-    connectors: ['GitHub', 'Jira', 'Linear'],
-    plusText: ''
-  },
-  {
-    category: 'Support & Success',
-    title: 'Customer Onboarding Agent',
-    desc: 'An onboarding agent for new customers. It sets up their checklist, schedules a kickoff call, and sends a welcome emai...',
-    connectors: ['HubSpot', 'Salesforce', 'Gmail', 'Google Calendar'],
-    plusText: '+1'
-  },
-  {
-    category: 'Support & Success',
-    title: 'Help Docs Writer',
-    desc: 'A documentation writer. Give it a topic and it researches best practices, checks your existing docs for gaps, and drafts ...',
-    connectors: ['Notion', 'Google Docs', 'Confluence'],
-    plusText: ''
-  },
-  {
-    category: 'Support & Success',
-    title: 'Support Inbox Agent',
-    desc: 'A support agent that handles incon tickets. It reads each one, finds the answer from your knowledge base.',
-    connectors: ['Zendesk', 'Freshdesk', 'Intercom', 'Notion'],
-    plusText: '+1'
-  },
-
-  // -- Branding & Marketing — ordered for ALL tab --
-  // ① Competition Analysis
+  // -- Branding & Marketing --
   {
     category: 'Branding & Marketing',
     subCategory: 'Digital Strategy',
     title: 'Competition Analysis',
-    desc: 'A competitive content analyst. Point it at a competitor\'s website and it breaks down their messaging, content strategy, and gaps...',
+    desc: 'Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.',
     connectors: ['Firecrawl', 'Ahrefs', 'Semrush API Key', 'Exa'],
     plusText: ''
   },
-  // ② GTM Strategy
   {
     category: 'Branding & Marketing',
     subCategory: 'Strategy & Planning',
     title: 'GTM Strategy',
-    desc: 'Builds a go-to-market plan for your product launch. Covers positioning, ICP, channels, pricing, and 90-day action plan...',
+    desc: 'Launch with confidence using a complete Go-To-Market roadmap. Define your target audience, pricing, and distribution channels to maximize market impact.',
     connectors: ['HubSpot', 'Salesforce', 'Google Analytics', 'Exa'],
     plusText: ''
   },
-  // ③ Product Launch Strategy
   {
     category: 'Branding & Marketing',
     subCategory: 'Strategy & Planning',
     title: 'Product Launch Strategy',
-    desc: 'Plans a full product launch from pre-launch buzz to post-launch retention. Covers timelines, channels, and success metrics...',
+    desc: 'Turn your new product idea into a structured, high-impact rollout plan. Map out your pre-launch buzz, launch day execution, and post-launch retention tactics.',
     connectors: ['Google Analytics', 'LinkedIn', 'X', 'Reddit', 'Firecrawl'],
     plusText: ''
   },
-  // ④ Social Media Strategy
   {
     category: 'Branding & Marketing',
     subCategory: 'Digital Strategy',
     title: 'Social Media Strategy',
-    desc: 'Builds a comprehensive social media strategy tailored to your brand, audience, and goals across all major platforms...',
+    desc: 'Build an engaging social presence that converts followers into customers. Get tailored content pillars, posting cadences, and platform-specific growth tactics.',
     connectors: ['LinkedIn', 'X', 'Reddit', 'YouTube'],
     plusText: ''
   },
-  // ⑤ Content Calendar
   {
     category: 'Branding & Marketing',
     subCategory: 'Digital Strategy',
@@ -220,47 +65,28 @@ export const allTemplates = [
     connectors: ['Semrush API Key', 'Reddit', 'YouTube', 'Notion', 'Google Docs'],
     plusText: ''
   },
-  // ⑥ Festival Campaign (renamed from Festival Strategy)
   {
     category: 'Branding & Marketing',
     subCategory: 'Digital Strategy',
-    title: 'Festival Campaign',
-    desc: 'Plans festival-season marketing campaigns with timing, messaging, and channel recommendations aligned to key cultural moments...',
-    connectors: ['Google Calendar', 'Exa', 'Firecrawl'],
+    title: 'Festival/Topical Campaign Strategy',
+    desc: 'Plans festival-season and topical marketing campaigns with timing, messaging, and channel recommendations. Maps out topical authority clusters, pillar topics, and internal linking structures...',
+    connectors: ['Google Calendar', 'Semrush API Key', 'Exa', 'Reddit', 'Firecrawl'],
     plusText: ''
   },
-  // ⑦ Topical Campaign (renamed from Topical Strategy)
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Digital Strategy',
-    title: 'Topical Campaign',
-    desc: 'Maps out topical authority clusters for your niche. Identifies pillar topics, supporting content, and internal linking structures...',
-    connectors: ['Semrush API Key', 'Exa', 'Reddit', 'Firecrawl'],
-    plusText: ''
-  },
-  // --- remaining Digital Strategy agents ---
   {
     category: 'Branding & Marketing',
     subCategory: 'Digital Strategy',
     title: 'GEO/AEO',
-    desc: 'Optimizes your content for Generative Engine Optimization and Answer Engine Optimization — ensuring visibility in AI-powered search results...',
+    desc: 'Optimize your brand to rank higher in AI search engines like ChatGPT and Perplexity. Ensure AI tools accurately understand and recommend your brand to users.',
     connectors: ['Google Search Console', 'Ahrefs', 'Semrush API Key', 'Bing Webmaster', 'Firecrawl', 'SerpAPI'],
     plusText: ''
   },
   {
     category: 'Branding & Marketing',
     subCategory: 'Digital Strategy',
-    title: 'SEO',
-    desc: 'A dedicated SEO agent. Researches keywords, audits on-page factors, analyzes backlinks, and builds an actionable optimization roadmap...',
-    connectors: [],
-    plusText: ''
-  },
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Digital Strategy',
-    title: 'Trend Strategy',
-    desc: 'Spots emerging trends in your industry before they peak and maps them to content and campaign opportunities...',
-    connectors: ['X', 'Reddit', 'YouTube', 'Exa'],
+    title: 'SEO Strategy',
+    desc: 'A comprehensive SEO agent. Give it a website URL and it crawls pages, identifies issues, researches keywords, audits on-page factors, analyzes backlinks, and builds an actionable optimization roadmap...',
+    connectors: ['Google Search Console', 'Ahrefs', 'Semrush API Key', 'Bing Webmaster', 'Firecrawl'],
     plusText: ''
   },
   {
@@ -273,27 +99,9 @@ export const allTemplates = [
   },
   {
     category: 'Branding & Marketing',
-    subCategory: 'Digital Strategy',
-    title: 'SEO Audit',
-    desc: 'An SEO auditor. Give it a website URL and it crawls the pages, identifies issues, and produces an actionable report...',
-    connectors: ['Google Search Console', 'Ahrefs', 'Semrush API Key', 'Bing Webmaster', 'Firecrawl'],
-    plusText: ''
-  },
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Digital Strategy',
-    title: 'Business Plan Generator',
-    desc: 'Transforms business ideas into detailed, actionable plans covering product, marketing, sales, finance, and funding...',
-    connectors: ['Exa', 'Firecrawl', 'Google Docs'],
-    plusText: ''
-  },
-
-  // --- Brand Strategy ---
-  {
-    category: 'Branding & Marketing',
     subCategory: 'Brand Strategy',
     title: 'Brand Audit',
-    desc: 'Reviews your existing brand across all touchpoints — visual identity, messaging, tone, and positioning — and flags inconsistencies...',
+    desc: 'Evaluate your brand\'s current health, consistency, and messaging across all channels. Discover actionable ways to strengthen your identity.',
     connectors: ['Google Analytics', 'Google Search Console', 'Reddit', 'X', 'Firecrawl'],
     plusText: ''
   },
@@ -307,48 +115,12 @@ export const allTemplates = [
   },
   {
     category: 'Branding & Marketing',
-    subCategory: 'Brand Strategy',
-    title: 'Brand Personality and Guidelines',
-    desc: 'Builds your brand\'s personality framework — voice, tone, archetype, and values — and writes a guidelines doc your team can use...',
-    connectors: ['LinkedIn', 'X', 'Firecrawl'],
-    plusText: ''
-  },
-
-  // --- remaining Strategy & Planning ---
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Strategy & Planning',
-    title: 'Market Sizing & Entry',
-    desc: 'Calculates TAM, SAM, and SOM for your market and recommends the best entry strategy based on competitive dynamics...',
-    connectors: ['Exa', 'Firecrawl', 'SerpAPI'],
-    plusText: ''
-  },
-  {
-    category: 'Branding & Marketing',
     subCategory: 'Strategy & Planning',
     title: 'ICP & Personas',
     desc: 'Defines your Ideal Customer Profile and builds detailed buyer personas with firmographics, pain points, and buying triggers...',
     connectors: ['HubSpot', 'Salesforce', 'Apollo'],
     plusText: ''
   },
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Strategy & Planning',
-    title: 'Partnership & Distribution Strategy',
-    desc: 'Identifies high-value partnership opportunities and builds a distribution strategy to scale reach beyond owned channels...',
-    connectors: ['LinkedIn', 'Apollo', 'HubSpot'],
-    plusText: ''
-  },
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Strategy & Planning',
-    title: 'Revenue Model Strategy',
-    desc: 'Analyzes your business model and recommends the optimal revenue structure — pricing tiers, monetization, and upsell paths...',
-    connectors: ['HubSpot', 'Salesforce', 'Google Analytics'],
-    plusText: ''
-  },
-
-  // ⑧⑨⑩⑪ — last four in ALL (as requested)
   {
     category: 'Branding & Marketing',
     subCategory: 'Performance Marketing',
@@ -360,70 +132,10 @@ export const allTemplates = [
   {
     category: 'Branding & Marketing',
     subCategory: 'Performance Marketing',
-    title: 'Attribution & Measurement Agent',
-    desc: 'Audits your current attribution model, identifies gaps in measurement, and recommends the right tracking setup for your funnel...',
-    connectors: ['Google Analytics', 'Google Ads', 'BigQuery'],
-    plusText: ''
-  },
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Performance Marketing',
     title: 'Bidding & Budget Optimizer',
     desc: 'Analyzes your current bidding strategies and budget allocation across campaigns and recommends optimizations for better ROI...',
     connectors: ['Google Ads', 'Google Analytics'],
     plusText: ''
-  },
-  {
-    category: 'Branding & Marketing',
-    subCategory: 'Digital Strategy',
-    title: 'Legal Agreement Drafter',
-    desc: 'An experienced contract lawyer that drafts clear, concise, and legally binding agreements tailored to your needs...',
-    connectors: ['Google Docs', 'Notion'],
-    plusText: ''
-  },
-
-  // -- Productivity & Ops --
-  {
-    category: 'Productivity & Ops',
-    title: 'Meeting Notes Agent',
-    desc: 'A meeting notes agent. It listens to your calls, pulls out the key decisions and action items, writes clean notes, and...',
-    connectors: ['Google Meet', 'Zoom', 'Gong', 'Google Docs'],
-    plusText: '+2'
-  },
-  {
-    category: 'Productivity & Ops',
-    title: 'Executive Assistant',
-    desc: 'A personal assistant that manages your calendar, drafts emails, organizes files, and keeps your docs in order. Proactive...',
-    connectors: ['Gmail', 'Google Calendar', 'Google Drive', 'Google Docs', 'Slack'],
-    plusText: '+2'
-  },
-  {
-    category: 'Productivity & Ops',
-    title: 'Inbox Manager',
-    desc: 'An email manager. It goes through yo inbox, sorts what\'s urgent from what\' not, drafts replies for the routine stuf',
-    connectors: ['Gmail', 'Microsoft Outlook'],
-    plusText: ''
-  },
-  {
-    category: 'Productivity & Ops',
-    title: 'Daily Standup Agent',
-    desc: 'A standup prep agent. Each morning it checks your tickets and calendar and puts together a quick brief — what...',
-    connectors: ['Jira', 'ClickUp', 'Linear', 'Google Calendar'],
-    plusText: '+1'
-  },
-  {
-    category: 'Productivity & Ops',
-    title: 'Weekly Recap Agent',
-    desc: 'A weekly recap agent. Every Friday it looks back at the week\'s tickets, meetings, and accomplishments and...',
-    connectors: ['Jira', 'ClickUp', 'Asana', 'Slack', 'Google Calendar'],
-    plusText: '+2'
-  },
-  {
-    category: 'Productivity & Ops',
-    title: 'Internal Knowledge Agent',
-    desc: 'An internal knowledge agent. Ask it a question and it searches your compa docs and wikis to find the answer....',
-    connectors: ['Notion', 'Google Drive', 'Google Docs', 'Confluence'],
-    plusText: '+1'
   },
 
   // -- Research & Intelligence --
@@ -440,36 +152,9 @@ export const allTemplates = [
     desc: 'A competitive intel agent. It watches competitor websites for changes, tracks their announcements and press...',
     connectors: ['Firecrawl', 'Ahrefs', 'Reddit', 'X'],
     plusText: '+2'
-  },
-  {
-    category: 'Research & Intelligence',
-    title: 'News & Trends Monitor',
-    desc: 'A news monitoring agent. It tracks industry news and emerging trends, filters for what actually matters, and',
-    connectors: ['Exa', 'Reddit', 'X', 'Firecrawl'],
-    plusText: ''
-  },
-  {
-    category: 'Research & Intelligence',
-    title: 'Market Research Agent',
-    desc: 'A market research agent. Give it an industry or category and it maps out the market — size, key players, trends, and...',
-    connectors: ['Exa', 'Firecrawl', 'SerpAPI'],
-    plusText: '+1'
-  },
-  {
-    category: 'Research & Intelligence',
-    title: 'Deep Research Agent',
-    desc: 'A thorough research agent. Give it any question and it searches across multiple sources in parallel, reads through the...',
-    connectors: ['Exa', 'Firecrawl', 'SerpAPI', 'Perplexity API Key'],
-    plusText: '+2'
-  },
-  {
-    category: 'Research & Intelligence',
-    title: 'Recruiting Sourcer',
-    desc: 'A recruiting sourcer. Give it a job description and it finds matching candidates, scores them against th',
-    connectors: ['LinkedIn', 'Greenhouse', 'Ashby'],
-    plusText: '+1'
   }
 ];
+
 
 interface TemplateGridProps {
   onSelectAgent: (title: string) => void;

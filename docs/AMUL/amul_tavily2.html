@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMUL - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AMUL</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="amul.com" target="_blank" class="meta-url">amul.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Amul, founded in 1946, is India's leading dairy cooperative with a diverse product range and a low-cost pricing model. It uses an umbrella marketing strategy and has a strong digital presence. Amul's success is attributed to its extensive distribution network and affordable pricing.. Anand Milk Union Limited  | Trade name | Amul Coop | | Type | Cooperative | | Industry | Dairy | | Founded | 14 December 1946; 79 years ago (1946-12-14) | | Founder | Tribhuvandas Patel | | Headquarters | Anand, Gujarat, India | | Area served | Worldwide | | Key people | Ashok Chaudhary (Chairman) | | Products | Milk Products | | Revenue | ₹90,000 crore (US$9.3 billion) (2025) | | Number of employees | 1,000 (officers and employees)   3.6 million (milk producers) | | Divisions "Division (business)") |  Banas Dairy  Dudhsagar Dairy | | Website | amul.com | [...] The Anand Milk Union Limited, commonly known as Amul, is an Indian dairy brand owned by the cooperative society, Gujarat Cooperative Milk Marketing Federation (GCMMF), based in Anand, Gujarat. GCMMF is controlled by 3.6 million milk producers.  Amul was formally registered on 14 December 1946 as the Kaira District Co-operative Milk Producers' Union Limited (KDCMPUL). The cooperative was founded by Tribhuvandas Kishibhai Patel, who served as its chairman until his retirement in the 1970s. [...] ## History  [edit]  ### Early years (1946-1970)  [edit")]  Amul was founded on 14 December 1946 as a response to the exploitation of small dairy farmers by traders and agents. At the time, milk prices were arbitrarily determined, giving Polson "Polson (brand)") an effective monopoly in milk collection from Kaira and its subsequent supply to Mumbai.  Frustrated with the trade practices (which they perceived as unfair), the farmers of Kaira, led by Tribhuvandas Kishibhai Patel, approached Vallabhbhai Patel, who advised them to form a cooperative. If they did so, they would be able to directly supply their milk to the Bombay Milk Scheme instead of working for Polson. Sardar Patel sent Morarji Desai to organise the farmers.. In this blog, we will take a closer look at the marketing strategies that have helped Amul become one of the most successful dairy brands in India. We will delve into the brand's history, Amul's advertising strategy, Marketing Mix, STP Analysis, Pricing Strategy & more.Whether you are a marketing enthusiast or simply curious about the strategies behind Amul's success, this blog will provide you with a comprehensive overview of Amul's marketing journey.  Amul's Journey to Success  [Amul Marketing Strategy [Infographic]](#Amul_Marketing_Strategy_%5BInfographic%5D)  [Amul Marketing Strategy [Detailed]-](#Amul_Marketing_Strategy_%5BDetailed%5D) [...] StartupTalkyRoshni Tamta  ### Amul Pricing Strategy  Amul’s pricing is economic and affordable.<br/><br/><strong>Product & Service Portfolio:</strong> Amul offers a wide range of dairy products including milk, cheese, ghee, paneer, and ice cream. They also provide non-dairy items like chocolates and frozen snacks. Amul's products are known for their quality and are widely distributed in India and internationally.. Technology Vendors  Recent Research  Newsletter  Media Support  Login  CB Insights  Amul company logo  # Amul  amul.com  ## Revenue  $0000  ## Mosaic Score The Mosaic Score is an algorithm that measures the overall financial health and market potential of private companies.  -40 points in the past 30 days  ## About Amul  Amul is a large Fast-Moving Consumer Goods (FMCG) brand, primarily operating in the food and beverage industry. The company offers a wide range of products including dairy items such as milk, butter, cheese, and ghee, as well as other food products like bread spreads, chocolates, and frozen snacks. Amul primarily serves the consumer goods sector. It is based in Anand, India.  ## Headquarters Location  Amul Dairy Road  Anand, 388001,  India  Loading...  Loading... [...] M  Mother Dairy  Mother Dairy focuses on providing dairy products, edible oils, and fresh fruits and vegetables in the food and beverages sector. The company's main offerings include the processing and distribution of dairy items, edible oils, and value-added products related to dairy and food. It primarily sells to the agricultural sector, supporting both urban and rural communities. The company was founded in 1974 and is based in Noida, India.  C  Chitale Dairy  Chitale Dairy operates in the dairy industry. The company offers products such as milk, dahi, paneer, lassi, ghee, cheese, and more.<br/><br/><strong>Recent Developments & News:</strong> Amul, India's largest FMCG company, achieved a ₹1 trillion turnover in FY 2026, and inaugurated the world's largest curd plant in Bengal. Amul's diverse product range includes dairy and non-dairy items, and it is expanding its presence in international markets.. Amul achieved a major milestone with its brand turnover crossing US$12 billion (Rs 1 lakh crore) in the financial year 2025-2026.  Sales stood at US$7.93 billion (Rs 73,450 crore), up 11.4% from US$7.11 billion (Rs 65,911 crore) in 2024-25. With this growth, GCMMF continues to maintain its standing as India’s largest FMCG organisation.  The expansion has been driven by a diversified portfolio of over 1,200 product packs, an extensive distribution network, and the ability to adapt to changing consumer preferences.  Additionally, the company inaugurated two advanced sexed semen laboratories at its Semen Station in Ode, Gujarat. This development marks a major milestone in improving bovine genetics and enhancing dairy productivity within the Amul milk shed.. ↑ "In pics Fifty years on, Amul's 'utterly butterly' girl is still a delight". Archived from the original on 23 January 2023. Retrieved 23 January 2023. 33. ↑ Archived at Ghostarchive and the Wayback Machine: Amul The Taste of India (10 July 2015), Amul Milk – Aage Badta Hai India, retrieved 9 April 2019 34. ↑ "Amul smears butter on vegan Joaquin Phoenix's face in an ad celebrating Oscar win, gets slammed by PETA". Archived from the original on 12 February 2020. ↑ Baruah, Akashdeep (8 July 2024).<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Amul's key competitors include Mother Dairy, Nestle, Britannia, and Baskin Robbins. These companies compete in the dairy and food product sectors. Amul faces strong competition from these established brands.. - Community driven business intelligence's Logo Owler - Community driven business intelligence's Logo Amul  # Amul  # Amul  Amul Managing Director: Jayen Mehta  Managing Director  Jayen Mehta  CEO Approval Rating  82/100  1946  Private  ### News  ### Amul Competitors  Milky Mist Dairy Mother Dairy Nestle Britannia Vadilal Mondelez Kraft Heinz General Mills Kellogg's Mars  ## Trending Companies  ### ABOUT  ### OFFERINGS  ### SUPPORT  ### LEGAL  ### TOP INDUSTRIES  ### © 2026 Owler, Inc.. The customers are satisfied with their products and the company mainly focuses on the sentiments and demands of Indian customers. Due to their various products in this brand, Mother Dairy is considered one of the top Amul competitors.  ## 7) Arun Ice Cream   Product type:  Ice cream, Frozen desserts and beverages  Industry: Food and beverage  Founded: 1971  Founder: R.G. Chandramogan  Headquarters: Sholinganallur, Chennai, India  Area served: Tamil Nadu, Karnataka, Kerala, and Andhra Pradesh  Current CEO: Not available [...] The ice creams of Baskin Robbins are prepared with great care with good ingredients and flavor that is liked by all. These ice creams stores can be seen easily available and are almost found in many places. Due to their great customer service and keeping up with the trend, Baskin Robbins is considered as a top Amul competitor.  ## 3) Havmor   Product type: Ice cream, Frozen desserts and beverages  Industry: Food and beverage  Founded: 1944  Founder: Satish Chandra Chona  Headquarters: Ahmedabad, Gujarat, India  Area served: India  Current CEO: Ravi Jaipuria [...] ## 2) Baskin Robbins   Product type: Ice cream, Frozen desserts and beverages  Industry: Food and beverage  Founded: 1945  Founders: Burt Baskin and Irv Robbins  Headquarters: Canton, Massachusetts, United States  Area served: Worldwide  Current CEO: David Schneider  A strong Amul competitor, Baskin Robbins was founded in the year 1945. It is the largest specialty store chain and the company is headquartered in Massachusetts, United States. The company has popular for their 31 flavors which are significant in their logo.. Jul 20, 2026  अमित शाह बंगाल में कानून-व्यवस्था की समीक्षा करेंगे, डेयरी परियोजना की आधारशिला रखेंगे  Jul 20, 2026  More than five decades after the White Revolution, India's milk industry's shift towards value-added products  Jul 20, 2026  Amit Shah lays foundation for Amul's world's largest curd plant in Bengal, promises dairy push and cooperative reforms  Jul 20, 2026  Kolkata Gets World's Largest Curd Plant As Amit Shah Performs Bhoomi Pujan For Amul Bengal Dairy Project  ### AmulFrequently Asked Questions (FAQ)   Where is Amul's headquarters?    Amul's headquarters is located at Amul Dairy Road, Anand.  Who are Amul's competitors?    Competitors of Amul include Country Delight, BBDaily, Keventers, Happy Cow Dairy, Keventer Agro and 7 more.  Loading...  ## Compare Amul to Competitors [...] Technology Vendors  Recent Research  Newsletter  Media Support  Login  CB Insights  Amul company logo  # Amul  amul.com  ## Revenue  $0000  ## Mosaic Score The Mosaic Score is an algorithm that measures the overall financial health and market potential of private companies.  -40 points in the past 30 days  ## About Amul  Amul is a large Fast-Moving Consumer Goods (FMCG) brand, primarily operating in the food and beverage industry.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Amul" target="_blank">Amul</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Amul</div>
+                    <div class="result-content">Anand Milk Union Limited
+
+| Trade name | Amul Coop |
+| Type | Cooperative |
+| Industry | Dairy |
+| Founded | 14 December 1946; 79 years ago (1946-12-14) |
+| Founder | Tribhuvandas Patel |
+| Headquarters | Anand, Gujarat, India |
+| Area served | Worldwide |
+| Key people | Ashok Chaudhary (Chairman) |
+| Products | Milk Products |
+| Revenue | ₹90,000 crore (US$9.3 billion) (2025) |
+| Number of employees | 1,000 (officers and employees)   3.6 million (milk producers) |
+| Divisions &quot;Division (business)&quot;) |  Banas Dairy  Dudhsagar Dairy |
+| Website | amul.com | [...] The Anand Milk Union Limited, commonly known as Amul, is an Indian dairy brand owned by the cooperative society, Gujarat Cooperative Milk Marketing Federation (GCMMF), based in Anand, Gujarat. GCMMF is controlled by 3.6 million milk producers.
+
+Amul was formally registered on 14 December 1946 as the Kaira District Co-operative Milk Producers&#x27; Union Limited (KDCMPUL). The cooperative was founded by Tribhuvandas Kishibhai Patel, who served as its chairman until his retirement in the 1970s. [...]  History
+
+[edit]
+
+ Early years (1946-1970)
+
+[edit&quot;)]
+
+Amul was founded on 14 December 1946 as a response to the exploitation of small dairy farmers by traders and agents. At the time, milk prices were arbitrarily determined, giving Polson &quot;Polson (brand)&quot;) an effective monopoly in milk collection from Kaira and its subsequent supply to Mumbai.
+
+Frustrated with the trade practices (which they perceived as unfair), the farmers of Kaira, led by Tribhuvandas Kishibhai Patel, approached Vallabhbhai Patel, who advised them to form a cooperative. If they did so, they would be able to directly supply their milk to the Bombay Milk Scheme instead of working for Polson. Sardar Patel sent Morarji Desai to organise the farmers.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://startuptalky.com/amul-marketing-strategies" target="_blank">Amul Marketing Strategy: Branding, Advertising, Pricing &amp; Promotion Strategies That Made It a Household Name</a></h3>
+                    <div class="result-url">https://startuptalky.com/amul-marketing-strategies</div>
+                    <div class="result-content">In this blog, we will take a closer look at the marketing strategies that have helped Amul become one of the most successful dairy brands in India. We will delve into the brand&#x27;s history, Amul&#x27;s advertising strategy, Marketing Mix, STP Analysis, Pricing Strategy &amp; more.Whether you are a marketing enthusiast or simply curious about the strategies behind Amul&#x27;s success, this blog will provide you with a comprehensive overview of Amul&#x27;s marketing journey.
+
+Amul&#x27;s Journey to Success
+
+[Amul Marketing Strategy [Infographic]](Amul_Marketing_Strategy_%5BInfographic%5D)
+
+[Amul Marketing Strategy [Detailed]-](Amul_Marketing_Strategy_%5BDetailed%5D) [...] StartupTalkyRoshni Tamta
+
+ Amul Pricing Strategy
+
+Amul’s pricing is economic and affordable. The low-cost pricing strategy of Amul may also be termed penetrative pricing. When Amul first started out, there were no Indian players in the market and the company has established itself across India with quality products and affordable prices. Of course, over the years inflation has affected all areas of business and Amul is no exception. The distribution and storage costs of FMCG products are quite high but Amul has made sure it keeps its prices in sync with people’s expectations and even today a majority of consumers’ first choice is always Amul.
+
+ Place and Distribution [...]  Why Amul is a Successful Brand?
+
+Amul has a well-planned and executed logistics and supply chain model. Amul&#x27;s low-cost pricing strategy, which was affordable by any income group, was one of the main reasons for its success. Amul’s tagline- ‘The taste of India’, banished the notion that bread and butter are a staple of only the British breakfast and brought nationalism into it.
+
+ Why was the Amul girl created?
+
+The Amul girl was created as a response to Amul&#x27;s rival brand Polson&#x27;s butter-girl. This sales strategy of Amul was conceived in 1967 once ASP (Advertising, Sales, and Promotion) clinched the brand portfolio from the previous agency FCB Ulka.
+
+ What is the market share of Amul?
+
+Amul is said to have clocked a growth rate of around 30% and has a market share of 86%.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://buildd.co/marketing/amul-marketing-strategy" target="_blank">Amul Marketing Strategy: How it became The Taste of India</a></h3>
+                    <div class="result-url">https://buildd.co/marketing/amul-marketing-strategy</div>
+                    <div class="result-content">By selling Amul products at low cost, they have managed to reach their target audience and provide them with a wide range of products to choose from. Being the first Indian affordable dairy brand to market condensed milk, it has built a significant consumer base among the lower-income groups in the country.
+
+For products with a lot of competition, Amul used a competitive pricing strategy, such as a one-on-one offer. As the income of the audience grows, Amul brand raises the price of its products. Therefore, this pricing strategy enables Amul to retain its great customer experience.
+
+ Promotion: Amul&#x27;s Advertising Strategy [...] Image source: Forbes India
+
+Thanks to the inspirational guidance of Tribhuvandas Patel, the founding Chairman, and the devoted professionalism of Dr. Verghese Kurien, (popularly regarded as the Milkman of India) who was given the responsibility of managing the dairy from 1950, Amul grew steadily and successfully.
+
+Image source: Amul.com
+
+Download buildd app
+
+ Marketing Mix of Amul
+
+Let&#x27;s explore Amul&#x27;s strong marketing strategies, including its pricing strategy, marketing mix, and more.
+
+ Product
+
+When it comes to dairy products in India, Amul is one of the brands with the most product variety and it makes use of the umbrella marketing strategy. In comparison to its rivals, it offers the most variety of quality products. [...]  Targeting Primary Consumers (B2C)
+
+Amul created a line of products for each age group based on their interests and preferences. Here are a few examples of products.
+
+Kids:Amul milk, chocolate, Amul Kool drinks, Nutramul
+
+Youth: Amul cheese spread, Amul Pizza Cheese
+
+Health Conscious: Amul lite butter, Nutramul, Amul Shakti, Sugar/skimmed milk powder
+
+ Targeting Secondary Consumers (B2B)
+
+In most of its Television advertisements, Amul focuses on the B2C market. However, there is a much larger B2B segment within Amul that requires a lot more attention.
+
+Milk: Restaurants, Ice cream manufacturers, Tea &amp; coffee cafes, and local food stalls
+
+Butter, Ghee, Cheese, Paneer:Restaurants, Bakeries, Food stalls, etc.
+
+ Placement and Distribution: Marketing Strategy of Amul</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.marketing91.com/marketing-mix-of-amul" target="_blank">Marketing Mix of Amul and 4Ps (Updated 2026) | Marketing91</a></h3>
+                    <div class="result-url">https://www.marketing91.com/marketing-mix-of-amul</div>
+                    <div class="result-content">Amul’s marketing mix focuses on moment marketing strategy, product innovation, Amul product portfolio, Amul distribution channel strategy, pricing strategy, umbrella marketing strategy, Amul digital marketing strategy, and famous Amul girl campaigns to create brand awareness.
+
+Quality Amul products like Amul Dairy Milk, Amul Paneer, Amul Cheese Spread, Amul Gold, amul Milk powders, Amul Butter, Amul Dahi, Amul Chocolates, Amul Milk Powder and Amul Ice Cream are an integral part of Amul portfolio through which Amul managed to create waves in the dairy industry.
+
+Table of Contents
+
+ Introduction of Amul
+
+Amul or Anand Milk Union Limited is India’s largest dairy cooperative and milk product producer and one of the leading dairy processors worldwide. [...] The Amul Cooperative Society is owned and managed by Gujarat Cooperative Milk Marketing Federation Limited, the Government of Gujarat, and the Department of Cooperation. It is controlled by milk producers within the city.
+
+Amul’s product portfolio includes Amul dairy products like Amul Paneer, Amul Cheese, Amul Dahi, Amul Dairy Milk, Amul Ice Cream, Amul model, and Amul Butter.
+
+ Amul Product Strategy
+
+Amul Marketing StrategyAmul Marketing Strategy
+
+Amul Marketing Strategy
+Amul Marketing Strategy
+
+The product strategy in Amul’s marketing mix is about a vast product portfolio, Amul products, and product innovation. Most Indians are familiar with the catchy tunes of Amul’s advertising strategy campaigns, which signifies quality products from the brand.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.youngurbanproject.com/amul-case-study" target="_blank">Amul Case Study: Business Model, Marketing Lessons &amp; Success Story</a></h3>
+                    <div class="result-url">https://www.youngurbanproject.com/amul-case-study</div>
+                    <div class="result-content">2. Price Strategy: Affordable Yet Profitable
+
+Amul uses a “value-for-money” pricing approach. Products are priced just enough to cover costs and provide fair returns to farmers, but low enough for average families to afford. This strategy helps Amul achieve high sales volumes rather than high profit margins. By keeping prices stable even when market conditions change, Amul builds customer trust.
+
+Also Read: What is Price Mix? Learn How Companies Set Prices
+
+ 3. Place Strategy: Penetrating Urban and Rural Markets [...]  1. Product Mix: How Amul Built a Dairy Empire
+
+Amul’s product mix follows a simple rule: start with basic dairy products, then expand into related categories. The brand began with butter, added milk, then moved into cheese, yogurt, and ice cream. Amul also creates products for different segments – from budget options to premium varieties. This careful expansion allows Amul to use its existing production facilities and distribution channels efficiently.
+
+ 2. Price Strategy: Affordable Yet Profitable [...]  3. Place Strategy: Penetrating Urban and Rural Markets
+
+Amul reaches customers through multiple channels. In cities, Amul products are available in supermarkets, small shops, and through home delivery. In rural areas, Amul works with local shops and village cooperatives. The brand also operates Amul parlors (exclusive brand stores) and has recently expanded to online sales. This flexible distribution strategy ensures products are accessible everywhere.
+
+Also Read: What Is Marketing Mix? The 4 Ps of Marketing
+
+ 4. Promotion Strategy: From Billboards to Digital</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/amul" target="_blank">Amul - Products, Competitors, Financials, Employees, Headquarters Locations</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/amul</div>
+                    <div class="result-content">Technology Vendors
+ Recent Research
+ Newsletter
+ Media Support
+ Login
+
+CB Insights
+
+Amul company logo
+
+ Amul
+
+amul.com
+
+ Revenue
+
+$0000
+
+ Mosaic Score The Mosaic Score is an algorithm that measures the overall financial health and market potential of private companies.
+
+-40 points in the past 30 days
+
+ About Amul
+
+Amul is a large Fast-Moving Consumer Goods (FMCG) brand, primarily operating in the food and beverage industry. The company offers a wide range of products including dairy items such as milk, butter, cheese, and ghee, as well as other food products like bread spreads, chocolates, and frozen snacks. Amul primarily serves the consumer goods sector. It is based in Anand, India.
+
+ Headquarters Location
+
+Amul Dairy Road
+
+Anand, 388001,
+
+India
+
+Loading...
+
+Loading... [...] M
+
+Mother Dairy
+
+Mother Dairy focuses on providing dairy products, edible oils, and fresh fruits and vegetables in the food and beverages sector. The company&#x27;s main offerings include the processing and distribution of dairy items, edible oils, and value-added products related to dairy and food. It primarily sells to the agricultural sector, supporting both urban and rural communities. The company was founded in 1974 and is based in Noida, India.
+
+C
+
+Chitale Dairy
+
+Chitale Dairy operates in the dairy industry. The company offers products such as milk, dahi, paneer, lassi, ghee, cheese, and more. It was founded in 1939 and is based in Bhilawadi, India.
+
+M
+
+MilkLane [...] Loading...
+
+ Compare Amul to Competitors
+
+B
+
+BBDaily
+
+BBDaily is an online platform focusing on the delivery of milk and essential products within the grocery sector. The company offers a subscription service for milk and other necessities. BBDaily primarily caters to consumers seeking delivery of grocery items to their homes. It was founded in 2010 and is based in Bangalore, India.
+
+M
+
+Mother Dairy</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.slideshare.net/slideshow/product-line-of-amul/238485520" target="_blank">Product line of AMUL | PPTX</a></h3>
+                    <div class="result-url">https://www.slideshare.net/slideshow/product-line-of-amul/238485520</div>
+                    <div class="result-content">Parle Products Presentation
+Amul - Business Strategy
+Amul company presentation, slideshare
+Amul Facts
+Parle product..ppt BY AMIT SINGH
+AMUL CASE STUDY
+Amul
+Saffola 
+Amul facility location and layout
+Amul
+A study on Haldiram
+Maggi noodles Case Study
+AMUL marketing strategy
+Amul- Sales Promotion
+Haldirams 
+Starbucks marketing strategy
+Advertorial and Segmentation Targeting Positioning (STP) Analysis of AMUL
+Amul strategy presentation ppt
+SWOT AMUL
+Project &quot;Amul- The Taste Of India&quot;
+Parle Products Presentation
+Amul - Business Strategy
+Amul company presentation, slideshare
+Amul Facts
+Parle product..ppt BY AMIT SINGH
+AMUL CASE STUDY
+Amul
+Saffola 
+Amul facility location and layout
+Amul
+A study on Haldiram
+Maggi noodles Case Study
+AMUL marketing strategy
+Amul- Sales Promotion
+Haldirams [...]  Product line of AMUL
+
+This document lists various dairy products from the brand Amul including milk, cheese, ice cream, paneer, ghee, mithai, breads, and chocolate. It provides details on specific product varieties within each category such as Amul epic ice cream, Amul fresh paneer, Amul ghee, Amul shrikhand, and Amul chocolate. The document serves as a reference of the extensive Amul product portfolio spanning staples to snacks.
+
+Google Drive
+BY-Dnyaneshwar Ugalmugale
+Pallavi Aringale
+(ASHOKA BUSINESS SCHOOL)
+ 
+Brand
+s
+Amul
+milk
+Amul
+camel
+milk
+Chees
+e
+Ice
+cream
+Panee
+r
+Ghee Mithai
+Choco
+late [...]  Recommended
+
+Amul ppt
+Market segmentation amul
+Case study on Amul-2019
+Branding strategies of amul
+Case Study on Amul (1).pptx
+Amul final
+Amul - The Taste of India | Marketing Strategy, Product &amp; Brand Management
+ 4P&#x27;s of Marketing Amul.pptx
+Parle Products Presentation
+Amul - Business Strategy
+Amul company presentation, slideshare
+Amul Facts
+Parle product..ppt BY AMIT SINGH
+AMUL CASE STUDY
+Amul
+Saffola 
+Amul facility location and layout
+Amul
+A study on Haldiram
+Maggi noodles Case Study
+AMUL marketing strategy
+Amul- Sales Promotion
+Haldirams 
+Starbucks marketing strategy
+Advertorial and Segmentation Targeting Positioning (STP) Analysis of AMUL
+Amul strategy presentation ppt
+SWOT AMUL
+Project &quot;Amul- The Taste Of India&quot;
+India’s milkman brings us the Taste of India - AMUL
+Amul</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Amul" target="_blank">Amul</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Amul</div>
+                    <div class="result-content">Processing
+
+[edit]
+
+Amul has several plants for processing dairy products.
+
+In 2025, Amul&#x27;s Sabar Dairy Plant at IMT Rohtak in Haryana state was expanded making it India&#x27;s largest processing plant for curd, buttermilk, and yoghurt catering for the Haryana, Delhi-NCR, and northern India region. In 2025, every day it processes 150 mt (metric ton) curd, 10 mt yoghurt, 10 mt sweets, and 3 mt of buttermilk. In 2025, Haryana was India&#x27;s third largest producer of milk (122.2 lakh tonnes per year) with highest per capita milk availability in India (1,105 grams per day).
+
+ Partnerships
+
+[edit] [...] Anand Milk Union Limited
+
+| Trade name | Amul Coop |
+| Type | Cooperative |
+| Industry | Dairy |
+| Founded | 14 December 1946; 79 years ago (1946-12-14) |
+| Founder | Tribhuvandas Patel |
+| Headquarters | Anand, Gujarat, India |
+| Area served | Worldwide |
+| Key people | Ashok Chaudhary (Chairman) |
+| Products | Milk Products |
+| Revenue | ₹90,000 crore (US$9.3 billion) (2025) |
+| Number of employees | 1,000 (officers and employees)   3.6 million (milk producers) |
+| Divisions &quot;Division (business)&quot;) |  Banas Dairy  Dudhsagar Dairy |
+| Website | amul.com | [...] Hidden categories:
+
+ Articles with short description
+ Short description is different from Wikidata
+ Use Indian English from August 2020
+ All Wikipedia articles written in Indian English
+ Use dmy dates from November 2022
+ CS1 maint: deprecated archival service
+ Commons category link is on Wikidata
+ Official website different in Wikidata and Wikipedia
+
+Add topic</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://amul.com/usa" target="_blank">Amul USA</a></h3>
+                    <div class="result-url">https://amul.com/usa</div>
+                    <div class="result-content">;) 
+
+4.5%  
+ Fat
+
+ Amul Shakti
+
+1 GAL (3.78 L)
+
+Whole milk with 4.5% fat
+
+Extra Cream
+
+Grade A
+
+Vitamin D
+
+Pasteurized
+
+Homogenized
+
+;) 
+
+3.25%  
+ Fat
+
+ Amul Taaza
+
+1 GAL (3.78 L)
+
+Whole milk with 3.25% fat
+
+Milk SNF: 8.6%
+
+Grade A
+
+Vitamin D
+
+Pasteurized
+
+Homogenized
+
+Suitable for Direct Consumption
+
+;) 
+
+2%  
+ Fat
+
+ Amul Slim &#x27;n&#x27; Trim
+
+1 GAL (3.78 L)
+
+Reduced fat milk with 2% fat
+
+37% less fat than whole milk
+
+Milk SNF: 8.7%
+
+Grade A
+
+Vitamin A &amp; D
+
+Pasteurized
+
+Homogenized
+
+Suitable for Direct Consumption [...]  Amul Official Sponsors of USA&#x27;s ICC Men&#x27;s T20 World Cup Team
+
+ Other fresh products launching soon!
+
+ Paneer, Curd and Butter Milk.
+
+ Amul in the news
+
+. This partnership leverages Amul&#x27;s innovative technology with MMPA&#x27;s high-quality milk to bring its premium milk product to the US market.
+
+Extending its legacy of excellence, Amul is committed to meet rigorous quality standards while delivering top-notch products locally to America, ensuring that the consumers have an exceptional experience.
+
+© 2026 Copyright Amul All Rights Reserved
+
+;) 
+
+6%  
+ Fat
+
+ Amul Gold
+
+1 GAL (3.78 L)
+
+Whole Milk With 6% Fat
+
+Double Cream
+
+Grade A
+
+Pasteurized
+
+Homogenized
+
+Contains Vitamin D
+
+Milk SNF: 8.3%
+
+Uses: Preparation of Sweet Meals/Direct Consumption as per Individual choice
+
+;) [...] Home  USA
+
+ 
+
+ Amul Milk Now in USA
+
+  
+
+ Amul Milk Now in USA
+
+  
+
+ Choose your Amul Milk
+
+ Amul Gold
+
+ 6% FAT;)
+
+ Amul Shakti
+
+ 4.5% FAT;)
+
+ Amul Taaza
+
+ 3.25% FAT;)
+
+ Amul Slim &#x27;n&#x27; Trim
+
+ 2% FAT;)
+
+Committed to Freshness
+
+Committed to Sustainability
+
+Committed to Quality Assurance
+
+No artificial Growth Hormones
+
+ Available in all leading Indian grocery stores
+
+Patel Brothers
+
+Sabzi Mandi   
+Supermarket
+
+India Bazaar
+
+Apna Bazaar   
+Farmer Market
+
+ What&#x27;s new with Amul
+
+ Amul Gold Milk is now in Costco, Edison, NJ.
+
+ The Amul partnership announced to internal stakeholders during the 108th MMPA Annual Meeting.
+
+ Announced USA Fresh Milk Launch at the consulate on Gujarat &amp; Maharashtra Day</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.youtube.com/watch?v=nJxqCnpes0I" target="_blank">Amul MD Exclusive On The Foray Into USA, Expansion Plans &amp; More | Exclusive | CNBC TV18</a></h3>
+                    <div class="result-url">https://www.youtube.com/watch?v=nJxqCnpes0I</div>
+                    <div class="result-content">on it and hopefully the growth will be as much as all of us expect okay and ice cream is not the only thing Mr mea that the Summers do watch out for you have V various dairy products as well within your basket whether it&#x27;s about the cold milk beverages uh ch um cold cocoa coffees and Kar and tandai and there&#x27;s a big packet there what is it that you&#x27;re looking for in sense of sales this time around yes amul cool amul buttermilk amul ly the beverages it&#x27;s a portfolio of more than 100 skus including carbonated drinks fruit juices and so on so it&#x27;s a very robust portfolio uh we have looked into every single segment in that space uh from single country origin coffees uh to the Karai dutes and all segments of the market so there also we expecting a bumper growth again last year was a dampner [...] are also rapidly expanding the capacity space butter milk Powers uh ke a variety of key that we have launched including Homa Key C key we recently also launched Buffalo key so not sparing any single opportunity to enter into the space maai is another category where we are doing quite good and um we selling a wide range of fresh mtis through multiple plants and that&#x27;s also giving us a good Edge in the market so overall the portfolio is quite balanced amul P India of course is a story uh which is going strong uh and now spreading to us and now perhaps different parts of the world also and the entire range of dairy products be the milk powders the butter the cheese the ma the shuns the ice creams and the rest of the stuff all right and no conversation really gets done without we [...] that segment doing and of course you told me last time that whether it&#x27;s about the Frozen Foods or uh High proteins uh whether it&#x27;s about Organic Bakery all of those segments have done quite well what are the numbers that you can share the latest ones on these as we discussed earlier uh been all these verticals which we are trying to build on organic space is doing very well we getting very good response and the business is quite good in that the protein space also doing very well and the range of products we want to introduce in that we launched amul high protein d uh after we spoke last time and that&#x27;s also doing very well and we&#x27;re now very soon launching high protein milk and a variety of high protein based products as well uh the other other space which we are into the frozen potato</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://dairybusinessmea.com/2026/06/10/amul-to-establish-us21m-facility-to-strengthen-dairy-sector" target="_blank">Amul to establish US$21M facility to strengthen dairy sector | Dairy Business Middle East &amp; Africa - No.1 Dairy Industry Website &amp; Magazine</a></h3>
+                    <div class="result-url">https://dairybusinessmea.com/2026/06/10/amul-to-establish-us21m-facility-to-strengthen-dairy-sector</div>
+                    <div class="result-content">Amul achieved a major milestone with its brand turnover crossing US$12 billion (Rs 1 lakh crore) in the financial year 2025-2026.
+
+Sales stood at US$7.93 billion (Rs 73,450 crore), up 11.4% from US$7.11 billion (Rs 65,911 crore) in 2024-25. With this growth, GCMMF continues to maintain its standing as India’s largest FMCG organisation.
+
+The expansion has been driven by a diversified portfolio of over 1,200 product packs, an extensive distribution network, and the ability to adapt to changing consumer preferences.
+
+Additionally, the company inaugurated two advanced sexed semen laboratories at its Semen Station in Ode, Gujarat. This development marks a major milestone in improving bovine genetics and enhancing dairy productivity within the Amul milk shed.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://en.wikipedia.org/wiki/Amul" target="_blank">Amul</a></h3>
+                    <div class="result-url">https://en.wikipedia.org/wiki/Amul</div>
+                    <div class="result-content">32. ↑ &quot;In pics Fifty years on, Amul&#x27;s &#x27;utterly butterly&#x27; girl is still a delight&quot;. Hindustan Times. 16 October 2016. Archived from the original on 23 January 2023. Retrieved 23 January 2023.
+33. ↑ Archived at Ghostarchive and the Wayback Machine: Amul The Taste of India (10 July 2015), Amul Milk – Aage Badta Hai India, retrieved 9 April 2019
+34. ↑ &quot;Amul smears butter on vegan Joaquin Phoenix&#x27;s face in an ad celebrating Oscar win, gets slammed by PETA&quot;. Hindustan Times. Indo Asian News Service. 12 February 2020. Archived from the original on 12 February 2020. Retrieved 3 May 2021.
+35. ↑ Baruah, Akashdeep (8 July 2024). &quot;Amul pays tribute to &#x27;Rock Goddess&#x27; Maya Neelakantan - CNBC TV18&quot;. CNBCTV18. Retrieved 23 July 2024. [...] In February 2020, Amul posted a picture of the Amul girl treating Joaquin Phoenix with butter after his academy award win for his role in the 2019 film, Joker &quot;Joker (2019 film)&quot;). Since Phoenix is a vegan, Amul faced criticism from vegans in India and PETA for the poor knowledge of his vegan activism and life.
+
+In July 2024, Amul featured Maya Neelakantan, a ten-year-old guitar prodigy who auditioned for America&#x27;s Got Talent season 19 in June 2024.
+
+ In popular culture
+
+[edit] [...] 27. ↑ Langa, Mahesh (20 May 2024). &quot;Amul goes to U.S., partners Michigan milk producers&#x27; body to sell fresh milk&quot;. The Hindu. Retrieved 28 February 2026.
+28. ↑ &quot;GCMMF launches Amul Milk in Spain&quot;. The Economic Times. 4 June 2025. Retrieved 28 February 2026.
+29. ↑ Varma, Mini. &quot;The moppet who put Amul on India&#x27;s breakfast table&quot;. Amul. Archived from the original on 13 June 2011. Retrieved 2 February 2011.
+30. ↑ Rao, Subha J. (15 December 2007). &quot;Punch guru&quot;. The Hindu. Chennai, India. Archived from the original on 8 November 2012. Retrieved 2 February 2011.
+31. ↑ &quot;Brands peek out of the closet – The Times of India&quot;. The Times of India. Archived from the original on 13 December 2013. Retrieved 28 March 2014.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.facebook.com/girlsCornerByGenmice/posts/have-you-heard-the-news-that-indias-beloved-amul-has-made-history-in-april-2026-/1331991492311804" target="_blank">Girls Corner - Have you heard the news that India’s...</a></h3>
+                    <div class="result-url">https://www.facebook.com/girlsCornerByGenmice/posts/have-you-heard-the-news-that-indias-beloved-amul-has-made-history-in-april-2026-/1331991492311804</div>
+                    <div class="result-content">Girls Corner&#x27;s post
+
+ Girls Corner
+
+9 April  ·
+
+Have you heard the news that India’s beloved Amul has made history? In April 2026, Amul officially became the first Indian FMCG company to cross the ₹1 trillion turnover mark in a single financial year.
+
+For FY26, Amul’s group revenue reached an astounding ₹1.08 trillion, thanks to record sales in fresh dairy products like milk, curd, and buttermilk. The surge was also fueled by its growing range of organic and high-protein foods. This milestone has placed Amul firmly among the top 10 dairy organizations worldwide, proving that a cooperative model can compete with major global corporations.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://amul.com/usa" target="_blank">Amul USA</a></h3>
+                    <div class="result-url">https://amul.com/usa</div>
+                    <div class="result-content">Amul Official Sponsors of USA&#x27;s ICC Men&#x27;s T20 World Cup Team
+
+ Other fresh products launching soon!
+
+ Paneer, Curd and Butter Milk.
+
+ Amul in the news
+
+. This partnership leverages Amul&#x27;s innovative technology with MMPA&#x27;s high-quality milk to bring its premium milk product to the US market.
+
+Extending its legacy of excellence, Amul is committed to meet rigorous quality standards while delivering top-notch products locally to America, ensuring that the consumers have an exceptional experience.
+
+© 2026 Copyright Amul All Rights Reserved
+
+;) 
+
+6%  
+ Fat
+
+ Amul Gold
+
+1 GAL (3.78 L)
+
+Whole Milk With 6% Fat
+
+Double Cream
+
+Grade A
+
+Pasteurized
+
+Homogenized
+
+Contains Vitamin D
+
+Milk SNF: 8.3%
+
+Uses: Preparation of Sweet Meals/Direct Consumption as per Individual choice
+
+;) [...] Home  USA
+
+ 
+
+ Amul Milk Now in USA
+
+  
+
+ Amul Milk Now in USA
+
+  
+
+ Choose your Amul Milk
+
+ Amul Gold
+
+ 6% FAT;)
+
+ Amul Shakti
+
+ 4.5% FAT;)
+
+ Amul Taaza
+
+ 3.25% FAT;)
+
+ Amul Slim &#x27;n&#x27; Trim
+
+ 2% FAT;)
+
+Committed to Freshness
+
+Committed to Sustainability
+
+Committed to Quality Assurance
+
+No artificial Growth Hormones
+
+ Available in all leading Indian grocery stores
+
+Patel Brothers
+
+Sabzi Mandi   
+Supermarket
+
+India Bazaar
+
+Apna Bazaar   
+Farmer Market
+
+ What&#x27;s new with Amul
+
+ Amul Gold Milk is now in Costco, Edison, NJ.
+
+ The Amul partnership announced to internal stakeholders during the 108th MMPA Annual Meeting.
+
+ Announced USA Fresh Milk Launch at the consulate on Gujarat &amp; Maharashtra Day [...] ;) 
+
+4.5%  
+ Fat
+
+ Amul Shakti
+
+1 GAL (3.78 L)
+
+Whole milk with 4.5% fat
+
+Extra Cream
+
+Grade A
+
+Vitamin D
+
+Pasteurized
+
+Homogenized
+
+;) 
+
+3.25%  
+ Fat
+
+ Amul Taaza
+
+1 GAL (3.78 L)
+
+Whole milk with 3.25% fat
+
+Milk SNF: 8.6%
+
+Grade A
+
+Vitamin D
+
+Pasteurized
+
+Homogenized
+
+Suitable for Direct Consumption
+
+;) 
+
+2%  
+ Fat
+
+ Amul Slim &#x27;n&#x27; Trim
+
+1 GAL (3.78 L)
+
+Reduced fat milk with 2% fat
+
+37% less fat than whole milk
+
+Milk SNF: 8.7%
+
+Grade A
+
+Vitamin A &amp; D
+
+Pasteurized
+
+Homogenized
+
+Suitable for Direct Consumption</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/amul" target="_blank">Amul - Products, Competitors, Financials, Employees ...</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/amul</div>
+                    <div class="result-content">Jul 20, 2026
+
+अमित शाह बंगाल में कानून-व्यवस्था की समीक्षा करेंगे, डेयरी परियोजना की आधारशिला रखेंगे
+
+Jul 20, 2026
+
+More than five decades after the White Revolution, India&#x27;s milk industry&#x27;s shift towards value-added products
+
+Jul 20, 2026
+
+Amit Shah lays foundation for Amul&#x27;s world&#x27;s largest curd plant in Bengal, promises dairy push and cooperative reforms
+
+Jul 20, 2026
+
+Kolkata Gets World&#x27;s Largest Curd Plant As Amit Shah Performs Bhoomi Pujan For Amul Bengal Dairy Project
+
+ AmulFrequently Asked Questions (FAQ)
+
+ Where is Amul&#x27;s headquarters?
+
+  Amul&#x27;s headquarters is located at Amul Dairy Road, Anand.
+ Who are Amul&#x27;s competitors?
+
+  Competitors of Amul include Country Delight, BBDaily, Keventers, Happy Cow Dairy, Keventer Agro and 7 more.
+
+Loading...
+
+ Compare Amul to Competitors [...] Anand, 388001,
+
+India
+
+Loading...
+
+Loading...
+
+ LatestAmul News
+
+Suvendu Adhikari appeals to migrant workers to return to Bengal, assures govt to ensure employment opportunities
+
+Jul 27, 2026 [...] Technology Vendors
+ Recent Research
+ Newsletter
+ Media Support
+ Login
+
+CB Insights
+
+Amul company logo
+
+ Amul
+
+amul.com
+
+ Revenue
+
+$0000
+
+ Mosaic Score The Mosaic Score is an algorithm that measures the overall financial health and market potential of private companies.
+
+-40 points in the past 30 days
+
+ About Amul
+
+Amul is a large Fast-Moving Consumer Goods (FMCG) brand, primarily operating in the food and beverage industry. The company offers a wide range of products including dairy items such as milk, butter, cheese, and ghee, as well as other food products like bread spreads, chocolates, and frozen snacks. Amul primarily serves the consumer goods sector. It is based in Anand, India.
+
+ Headquarters Location
+
+Amul Dairy Road
+
+Anand, 388001,
+
+India
+
+Loading...
+
+Loading...</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.owler.com/company/amul" target="_blank">Amul&#x27;s Competitors, Revenue, Number of Employees ...</a></h3>
+                    <div class="result-url">https://www.owler.com/company/amul</div>
+                    <div class="result-content">- Community driven business intelligence&#x27;s Logo
+Owler - Community driven business intelligence&#x27;s Logo
+Amul
+
+ Amul
+
+ Amul
+
+Amul Managing Director: Jayen Mehta
+
+Managing Director
+
+Jayen Mehta
+
+CEO Approval Rating
+
+82/100
+
+1946
+
+Private
+
+ News
+
+ Amul Competitors
+
+Milky Mist Dairy
+Mother Dairy
+Nestle
+Britannia
+Vadilal
+Mondelez
+Kraft Heinz
+General Mills
+Kellogg&#x27;s
+Mars
+
+ Trending Companies
+
+ ABOUT
+
+ OFFERINGS
+
+ SUPPORT
+
+ LEGAL
+
+ TOP INDUSTRIES
+
+ © 2026 Owler, Inc.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.marketing91.com/top-11-amul-competitors" target="_blank">Top 11 Amul Alternatives &amp; Competitors in 2026</a></h3>
+                    <div class="result-url">https://www.marketing91.com/top-11-amul-competitors</div>
+                    <div class="result-content">The customers are satisfied with their products and the company mainly focuses on the sentiments and demands of Indian customers. Due to their various products in this brand, Mother Dairy is considered one of the top Amul competitors.
+
+ 7) Arun Ice Cream
+
+ Product type:  Ice cream, Frozen desserts and beverages
+ Industry: Food and beverage
+ Founded: 1971
+ Founder: R.G. Chandramogan
+ Headquarters: Sholinganallur, Chennai, India
+ Area served: Tamil Nadu, Karnataka, Kerala, and Andhra Pradesh
+ Current CEO: Not available [...] The ice creams of Baskin Robbins are prepared with great care with good ingredients and flavor that is liked by all. These ice creams stores can be seen easily available and are almost found in many places.  Due to their great customer service and keeping up with the trend, Baskin Robbins is considered as a top Amul competitor.
+
+ 3) Havmor
+
+ Product type: Ice cream, Frozen desserts and beverages
+ Industry: Food and beverage
+ Founded: 1944
+ Founder: Satish Chandra Chona
+ Headquarters: Ahmedabad, Gujarat, India
+ Area served: India
+ Current CEO: Ravi Jaipuria [...]  2) Baskin Robbins
+
+ Product type: Ice cream, Frozen desserts and beverages
+ Industry: Food and beverage
+ Founded: 1945
+ Founders: Burt Baskin and Irv Robbins
+ Headquarters: Canton, Massachusetts, United States
+ Area served: Worldwide
+ Current CEO: David Schneider
+
+A strong Amul competitor, Baskin Robbins was founded in the year 1945. It is the largest specialty store chain and the company is headquartered in Massachusetts, United States. The company has popular for their 31 flavors which are significant in their logo.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/amul" target="_blank">Amul - Products, Competitors, Financials, Employees ...</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/amul</div>
+                    <div class="result-content">Jul 20, 2026
+
+अमित शाह बंगाल में कानून-व्यवस्था की समीक्षा करेंगे, डेयरी परियोजना की आधारशिला रखेंगे
+
+Jul 20, 2026
+
+More than five decades after the White Revolution, India&#x27;s milk industry&#x27;s shift towards value-added products
+
+Jul 20, 2026
+
+Amit Shah lays foundation for Amul&#x27;s world&#x27;s largest curd plant in Bengal, promises dairy push and cooperative reforms
+
+Jul 20, 2026
+
+Kolkata Gets World&#x27;s Largest Curd Plant As Amit Shah Performs Bhoomi Pujan For Amul Bengal Dairy Project
+
+ AmulFrequently Asked Questions (FAQ)
+
+ Where is Amul&#x27;s headquarters?
+
+  Amul&#x27;s headquarters is located at Amul Dairy Road, Anand.
+ Who are Amul&#x27;s competitors?
+
+  Competitors of Amul include Country Delight, BBDaily, Keventers, Happy Cow Dairy, Keventer Agro and 7 more.
+
+Loading...
+
+ Compare Amul to Competitors [...] Technology Vendors
+ Recent Research
+ Newsletter
+ Media Support
+ Login
+
+CB Insights
+
+Amul company logo
+
+ Amul
+
+amul.com
+
+ Revenue
+
+$0000
+
+ Mosaic Score The Mosaic Score is an algorithm that measures the overall financial health and market potential of private companies.
+
+-40 points in the past 30 days
+
+ About Amul
+
+Amul is a large Fast-Moving Consumer Goods (FMCG) brand, primarily operating in the food and beverage industry. The company offers a wide range of products including dairy items such as milk, butter, cheese, and ghee, as well as other food products like bread spreads, chocolates, and frozen snacks. Amul primarily serves the consumer goods sector. It is based in Anand, India.
+
+ Headquarters Location
+
+Amul Dairy Road
+
+Anand, 388001,
+
+India
+
+Loading...
+
+Loading... [...] M
+
+Mother Dairy
+
+Mother Dairy focuses on providing dairy products, edible oils, and fresh fruits and vegetables in the food and beverages sector. The company&#x27;s main offerings include the processing and distribution of dairy items, edible oils, and value-added products related to dairy and food. It primarily sells to the agricultural sector, supporting both urban and rural communities. The company was founded in 1974 and is based in Noida, India.
+
+C
+
+Chitale Dairy
+
+Chitale Dairy operates in the dairy industry. The company offers products such as milk, dahi, paneer, lassi, ghee, cheese, and more. It was founded in 1939 and is based in Bhilawadi, India.
+
+M
+
+MilkLane</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mbaskool.com/competitors/companies/18517-amul.html" target="_blank">Top Amul Competitors &amp; Similar Companies</a></h3>
+                    <div class="result-url">https://www.mbaskool.com/competitors/companies/18517-amul.html</div>
+                    <div class="result-content">Top Amul Competitors &amp; Similar Companies
+
+Amul competitors include Britannia, Nestle, Mother Dairy, Cadbury, Baskin Robbins, Kwality Walls, Danone, and Del Monte. This article covers details about these competitors.
+
+Amul is one of the very old Indian companies, which has made its mark since 1946. Now GCMMF has become the largest exporter of dairy products all across the world. Amul was built up in 1950 with the revolution of dairy agriculturists who were inspired by the independence of India.
+
+For a company like Amul to grow, it is not only important for them to improve their own products and services, but to also look at what their competitors are offering.
+
+Quick Glance:
+
+Below we look at the top 8 competitors of Amul.
+
+ 1. Britannia: [...]  3. Mother Dairy:
+
+Mother Dairy is a subsidiary of the Indian organization National Dairy Development Board. It was started in 1974 under the famous initiative Operation Flood. Mother Dairy majorly deals with manufacturing and selling of milk and other dairy products such as paneer, ghee, curd, butter milk, lassi and ice creams.
+
+Read more about Amul
+
+ Amul SWOT Analysis
+ Amul Marketing Mix &amp; Strategy
+ Amul PESTLE Analysis
+
+Read more about Amul
+
+ 4. Cadbury:
+
+Cadbury is a British multinational confectionary which is completely owned by the American company Mondelez International. Cadbury brand is considered as the second largest brand after Wrigley. The company is famous for its Dairy milk chocolates which is renowned all over the world.
+
+ 5. Baskin Robbins: [...]  5. Baskin Robbins:
+
+Baskin Robbins is the largest ice cream speciality store chain. Baskin Robbins is based in Canton, Massachusetts. Baskin Robbins emerged as a firm by merging two of the respective parlors of Burt Baskin and Irv Robbins in Glendale, California.
+
+ 6. Kwality Walls:
+
+A frozen desserts brand, Kwality Walls is owned by the consumer goods company of India, Hindustan Uniliver. An amalgamated name made out of two separate companies that Uniliver had acquired, Wall’s pf UK and Kwality of India. A major producer of ice creams and other frozen desserts, Kwality Walls is the most popular and one of the most respected brands.
+
+ 7. Danone:</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.linkedin.com/posts/palak-dua3005_amul-countrydelight-dairy-activity-7283464100767059968-xh9D" target="_blank">#amul #countrydelight #dairy #business #revenue #marketing #brandstrategy | Palak Dua</a></h3>
+                    <div class="result-url">https://www.linkedin.com/posts/palak-dua3005_amul-countrydelight-dairy-activity-7283464100767059968-xh9D</div>
+                    <div class="result-content">on healthier and sugar-free options 💡 Innovative flavors, colors, and textures 📦 Eco-friendly and convenient packaging solutions 🌎 Expansion into untapped regional markets 🎯 Integration of functional ingredients such as vitamins and caffeine 🏢 𝐋𝐞𝐚𝐝𝐢𝐧𝐠 𝐏𝐥𝐚𝐲𝐞𝐫𝐬: Mars | Perfetti Van Melle | LOTTE Confectionery (S.E.A) Pte Ltd | Wrigley | The Hershey Company | Cloetta | ITC Limited | MEIJI Holdings Co Ltd | Storck USA, L.P. | Amul (GCMMF) | Wrigley | Ferrara | Mondelēz International | HARIBO Germany | Storck | Cloetta | Tootsie Roll Industries | Nestlé | Chupa Chups compañía del Grupo Perfetti Van Melle | Katjes Fassin GmbH + Co. KG | Ferrero Rocher | Gummiwerk KRAIBURG GmbH &amp; Co. KG | Hans Riegelein &amp; Sohn GmbH &amp; Co KG | Gummibereifung.de | HUBBA BUBBA LLC 💡 The BubbleGumIndustry is [...] on healthier and sugar-free options 💡 Innovative flavors, colors, and textures 📦 Eco-friendly and convenient packaging solutions 🌎 Expansion into untapped regional markets 🎯 Integration of functional ingredients such as vitamins and caffeine 🏢 𝐋𝐞𝐚𝐝𝐢𝐧𝐠 𝐏𝐥𝐚𝐲𝐞𝐫𝐬: Mars | Perfetti Van Melle | LOTTE Confectionery (S.E.A) Pte Ltd | Wrigley | The Hershey Company | Cloetta | ITC Limited | MEIJI Holdings Co Ltd | Storck USA, L.P. | Amul (GCMMF) | Wrigley | Ferrara | Mondelēz International | HARIBO Germany | Storck | Cloetta | Tootsie Roll Industries | Nestlé | Chupa Chups compañía del Grupo Perfetti Van Melle | Katjes Fassin GmbH + Co. KG | Ferrero Rocher | Gummiwerk KRAIBURG GmbH &amp; Co. KG | Hans Riegelein &amp; Sohn GmbH &amp; Co KG | Gummibereifung.de | HUBBA BUBBA LLC 💡 The BubbleGumIndustry is [...] &amp; keep doing innovations with the brand. 👉 BREAD - They have introduced more healthier version of the product as it is most used product for breakfast &amp; people are demanding for healthy version. DAIRY BUSINESS: 👉 Relaunch of cheese portfolio under brand &quot; Britannia The laughing cow&quot; brand in FY 24-25. at price point of Rs. 20 which is affordable. ADJACENT BUSINESS : 👉 Cream wafer - In this , Tamil Nadu is the key area where high competition &amp; high consumption is there &amp; to mitigate this they have increased their distribution network there. 👉 Croissant - This category also scaled through using digital medium, immense innovation &amp; maintained premium brand positioning. Brands are &quot;Schezwan &amp; Triple choco&quot;. This is part 1 of covering MDA of Britannia Industries Ltd. Finance Equity Fmcg</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>
