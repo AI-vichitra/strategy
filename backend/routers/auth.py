@@ -69,7 +69,7 @@ async def login(login_data: LoginJSON, db: AsyncSession = Depends(get_db)):
 async def google_auth(request: GoogleAuthRequest, db: AsyncSession = Depends(get_db)):
     try:
         idinfo = id_token.verify_oauth2_token(
-            request.token, requests.Request(), GOOGLE_CLIENT_ID
+            request.token, requests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=10
         )
         email = idinfo.get('email')
         name = idinfo.get('name')
@@ -97,5 +97,7 @@ async def google_auth(request: GoogleAuthRequest, db: AsyncSession = Depends(get
         )
         return {"access_token": access_token, "token_type": "bearer"}
 
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google token")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Google token: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Google auth error: {e}")

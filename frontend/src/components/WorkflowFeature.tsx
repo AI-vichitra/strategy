@@ -72,7 +72,7 @@ export default function WorkflowFeature() {
             ))}
           </div>
 
-          <a href="#" className="btn btn-primary" id="workflow-cta" style={{ marginTop: 32 }}>
+          <a href="/auth" className="btn btn-primary" id="workflow-cta" style={{ marginTop: 32 }}>
             Start Building Now →
           </a>
         </div>

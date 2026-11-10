@@ -16,7 +16,7 @@ export default function Navbar() {
     <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
       <div className={`container ${styles.inner}`}>
         {/* Logo */}
-        <a href="#" className={styles.logo} id="nav-logo">
+        <a href="/" className={styles.logo} id="nav-logo">
           <div className={styles.logoIcon}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -36,8 +36,8 @@ export default function Navbar() {
 
         {/* CTA */}
         <div className={styles.actions}>
-          <a href="#" className={styles.loginLink} id="nav-login">Sign in</a>
-          <a href="#" className="btn btn-primary" id="nav-cta" style={{padding: '10px 20px', fontSize: '14px'}}>
+          <a href="/auth" className={styles.loginLink} id="nav-login">Sign in</a>
+          <a href="/auth" className="btn btn-primary" id="nav-cta" style={{padding: '10px 20px', fontSize: '14px'}}>
             Get Started Free
           </a>
           <button

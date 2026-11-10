@@ -111,8 +111,8 @@ export default function AuthPage() {
         body: JSON.stringify({ token: credentialResponse.credential }),
       });
 
-      if (!res.ok) throw new Error('Google authentication failed');
       const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Google authentication failed');
       localStorage.setItem('access_token', data.access_token);
 
       await routeUserAfterAuth(data.access_token, apiBase);

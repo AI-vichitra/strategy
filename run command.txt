@@ -1,0 +1,16 @@
+# Create & activate a virtual environment (one-time)
+python -m venv venv
+venv\Scripts\activate
+
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# ⚠️ rank_bm25 is missing from requirements.txt but hard-imported — install it manually
+pip install rank_bm25
+
+# Install Playwright's Chromium (needed for Instagram scraper)
+playwright install chromium
+
+# Start the backend — MUST run from repo root (not from backend/)
+uvicorn main:app --reload --port 8000
+
