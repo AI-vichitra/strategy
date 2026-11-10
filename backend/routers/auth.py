@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi.security import OAuth2PasswordRequestForm
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timedelta
 from jose import jwt
 from pydantic import BaseModel
@@ -17,13 +17,18 @@ from backend.schemas.auth import Token, GoogleAuthRequest
 from backend.dependencies import get_db, SECRET_KEY, ALGORITHM
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 class LoginJSON(BaseModel):
     email: str
     password: str
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def verify_password(password: str, password_hash: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -37,7 +42,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Email already registered")
         
-    hashed_password = pwd_context.hash(user.password)
+    hashed_password = hash_password(user.password)
     db_user = User(
         email=user.email,
         password_hash=hashed_password,
@@ -53,7 +58,7 @@ async def login(login_data: LoginJSON, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == login_data.email))
     user = result.scalars().first()
     
-    if not user or not pwd_context.verify(login_data.password, user.password_hash):
+    if not user or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -82,7 +87,7 @@ async def google_auth(request: GoogleAuthRequest, db: AsyncSession = Depends(get
 
         if not user:
             # Create a new user account if they don't exist
-            hashed_password = pwd_context.hash(str(uuid.uuid4())) # Random placeholder password
+            hashed_password = hash_password(str(uuid.uuid4())) # Random placeholder password
             user = User(
                 email=email,
                 password_hash=hashed_password,

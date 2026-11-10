@@ -11,8 +11,8 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: str
-    tier: str
-    credits_remaining: int
+    tier: Optional[str] = "free"
+    credits_remaining: Optional[int] = 0
     created_at: datetime
 
     class Config:

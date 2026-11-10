@@ -60,24 +60,78 @@ function ConnectorCard({
   );
 }
 
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
 export default function ConnectorsPanel({ open, onClose, agentConnectors, agentName }: ConnectorsPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [modalConnector, setModalConnector] = useState<Connector | null>(null);
   const [statuses, setStatuses] = useState<Record<string, ConnectorStatus>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // When agent is selected, filter to only its required connectors (preserving order from agent definition)
   const isFiltered = agentConnectors && agentConnectors.length > 0;
 
   const getStatus = (id: string): ConnectorStatus => statuses[id] || 'not_connected';
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
+    setLoading(true);
+    setError(null);
+    fetch(`${apiBase}/api/connectors`, { headers: authHeaders() })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load connectors (${res.status})`);
+        return res.json();
+      })
+      .then((rows: Array<{ connector_id: string }>) => {
+        if (cancelled) return;
+        const connected = new Set(rows.map((r) => r.connector_id.toLowerCase()));
+        const next: Record<string, ConnectorStatus> = {};
+        connectors.forEach((c) => {
+          next[c.id] = connected.has(c.id.toLowerCase()) ? 'connected' : 'not_connected';
+        });
+        setStatuses(next);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load connectors');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [open]);
+
   const handleConnect = (connectorId: string) => {
     setStatuses((prev) => ({ ...prev, [connectorId]: 'connected' }));
     setModalConnector(null);
   };
 
-  const handleDisconnect = (connectorId: string) => {
-    setStatuses((prev) => ({ ...prev, [connectorId]: 'not_connected' }));
-    setModalConnector(null);
+  const handleDisconnect = async (connectorId: string) => {
+    setError(null);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const res = await fetch(`${apiBase}/api/connectors/${connectorId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok && res.status !== 404) {
+        throw new Error(`Failed to disconnect (${res.status})`);
+      }
+      setStatuses((prev) => ({ ...prev, [connectorId]: 'not_connected' }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to disconnect');
+    } finally {
+      setModalConnector(null);
+    }
   };
 
   // Reset expanded when panel closes or if it becomes filtered
@@ -147,6 +201,16 @@ export default function ConnectorsPanel({ open, onClose, agentConnectors, agentN
           </div>
         </div>
         <div className={styles.scrollArea}>
+          {loading && (
+            <p style={{ fontSize: '12px', color: 'var(--text-tertiary, #888)', margin: '0 0 16px' }}>
+              Loading connectors...
+            </p>
+          )}
+          {error && (
+            <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 16px' }}>
+              {error}
+            </p>
+          )}
           <div className={styles.columns}>
             <div className={styles.column}>
               {col1.map(conn => (

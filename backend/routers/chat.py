@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from backend.dependencies import get_db, get_current_user
 from backend.models.user import User
+from backend.services import registry_service
 
 router = APIRouter()
 
@@ -19,37 +20,10 @@ async def get_questions(
     current_user: User = Depends(get_current_user),
 ):
     """Returns pre-defined onboarding questions for a given agent type."""
-    questions_map = {
-        "Competition Analysis": [
-            {"id": "q1", "text": "Which specific competitors concern you most and why?"},
-            {"id": "q2", "text": "What market or geography should we focus on?"},
-            {"id": "q3", "text": "What differentiators do you believe you have over competitors?"},
-        ],
-        "GTM Strategy": [
-            {"id": "q1", "text": "Who is your primary target customer segment?"},
-            {"id": "q2", "text": "What channels (digital, offline, partnerships) are you prioritising?"},
-            {"id": "q3", "text": "What is your launch timeline and budget range?"},
-        ],
-        "Product Launch Strategy": [
-            {"id": "q1", "text": "What are you launching?"},
-            {"id": "q2", "text": "What is the primary objective of this launch?"},
-            {"id": "q3", "text": "What is your planned launch timeline?"},
-        ],
-        "Social Media Strategy": [
-            {"id": "q1", "text": "Which social platforms are most important for your brand?"},
-            {"id": "q2", "text": "What is your current posting frequency and content mix?"},
-            {"id": "q3", "text": "What specific social media outcomes do you want to improve?"},
-        ],
-        "Brand Audit": [
-            {"id": "q1", "text": "How would you describe your current brand positioning?"},
-            {"id": "q2", "text": "What do customers currently say about your brand?"},
-            {"id": "q3", "text": "Which brand elements feel outdated or misaligned?"},
-        ],
-    }
-    questions = questions_map.get(title, [
+    questions = registry_service.get_questions(title) or [
         {"id": "q1", "text": f"What is your primary goal for the {title} initiative?"},
         {"id": "q2", "text": "What timeline and budget constraints should we consider?"},
-    ])
+    ]
     return {"questions": questions}
 
 

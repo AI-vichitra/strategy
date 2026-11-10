@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
-import TemplateGrid, { allTemplates } from './TemplateGrid';
+import TemplateGrid from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
+import { useAgents } from '../../hooks/useAgents';
 import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
 import ConnectorsPanel from './ConnectorsPanel';
@@ -593,11 +594,6 @@ const getDomain = (connectorName: string) => {
   const c = allConnectorsData.find(c => c.name === connectorName);
   return c ? c.domain : 'google.com';
 };
-
-const homeAgentTitles = ['Competition Analysis', 'GTM Strategy', 'Product Launch Strategy', 'GEO/AEO', 'Social Media Strategy', 'Brand Audit'];
-const homeAgents = homeAgentTitles
-  .map(title => allTemplates.find(t => t.title === title))
-  .filter(Boolean) as typeof allTemplates;
 
 const EXECUTIVE_COLORS = [
   '#2D2A26', // Deep Charcoal
@@ -1334,6 +1330,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [downloadingMsgIdx, setDownloadingMsgIdx] = useState<number | null>(null);
   const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
   const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors'>('builder');
+  const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const latestAssistantIdx = useMemo(() => {
@@ -1493,9 +1490,15 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     return () => window.removeEventListener('projectChanged', handleProjectChanged);
   }, []);
 
-  const filteredHomeSearchAgents = allTemplates.filter(agent =>
+  const filteredHomeSearchAgents = catalogAgents.filter(agent =>
     agent.title.toLowerCase().includes(homeSearchQuery.toLowerCase())
   );
+
+  const catalogCategoryNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    catalogCategories.forEach((c) => { map[c.id] = c.name; });
+    return map;
+  }, [catalogCategories]);
 
 
 
@@ -2186,9 +2189,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
                     {homeSearchQuery.trim() !== '' && filteredHomeSearchAgents.length > 0 && (
                       <div className={styles.searchDropdown}>
-                        {filteredHomeSearchAgents.map((agent, i) => (
+                        {filteredHomeSearchAgents.map((agent) => (
                           <button
-                            key={i}
+                            key={agent.id}
                             type="button"
                             className={styles.dropdownItem}
                             onClick={() => {
@@ -2198,7 +2201,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                           >
                             <div className={styles.dropdownItemContent}>
                               <span className={styles.dropdownItemTitle}>{agent.title}</span>
-                              <span className={styles.dropdownItemCategory}>{agent.category}</span>
+                              <span className={styles.dropdownItemCategory}>
+                                {catalogCategoryNameById[agent.category] || agent.category}
+                              </span>
                             </div>
                           </button>
                         ))}
@@ -2207,24 +2212,37 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   </div>
                 </div>
                 <div className={styles.homeTemplatesGrid}>
-                  {allTemplates.map((agent, i) => (
-                    <div 
-                      key={i} 
+                  {agentsLoading && (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className={`${styles.homeTemplateCard} ${styles.homeGridSkeletonCard}`} aria-hidden="true" />
+                    ))
+                  )}
+                  {!agentsLoading && agentsError && (
+                    <div className={styles.homeGridErrorState}>
+                      <p>Couldn&apos;t load the agent catalog. {agentsError}</p>
+                      <button type="button" className={styles.homeGridRetryBtn} onClick={refetchAgents}>
+                        Retry
+                      </button>
+                    </div>
+                  )}
+                  {!agentsLoading && !agentsError && catalogAgents.map((agent) => (
+                    <div
+                      key={agent.id}
                       className={styles.homeTemplateCard}
                       onClick={() => handleSelectAgent(agent.title)}
                     >
                       <div className={styles.homeCardTop}>
                         <div className={styles.homeCardTitle}>{agent.title}</div>
-                        <div className={styles.homeCardDesc}>{agent.desc}</div>
+                        <div className={styles.homeCardDesc}>{agent.description}</div>
                       </div>
                       <div className={styles.homeCardBottom}>
                         <div className={styles.homeIconGroup}>
                           {agent.connectors.slice(0, 3).map((conn, idx) => (
                             <div key={idx} className={styles.homeMiniIcon}>
-                              <img 
-                                src={getLogoUrl(getDomain(conn))} 
-                                alt={conn} 
-                                className={styles.homeMiniIconImg} 
+                              <img
+                                src={getLogoUrl(getDomain(conn))}
+                                alt={conn}
+                                className={styles.homeMiniIconImg}
                               />
                             </div>
                           ))}

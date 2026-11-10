@@ -1,10 +1,32 @@
 import styles from './Footer.module.css';
 
-const links = {
-  Product: ['Features', 'How It Works', 'Pricing', 'Changelog', 'Roadmap'],
-  Solutions: ['For Startups', 'For Agencies', 'For Enterprise', 'For Consultants'],
-  Resources: ['Documentation', 'Blog', 'Case Studies', 'API Reference'],
-  Company: ['About', 'Careers', 'Press', 'Contact', 'Privacy Policy'],
+const links: Record<string, { label: string; href?: string }[]> = {
+  Product: [
+    { label: 'Features', href: '#features' },
+    { label: 'How It Works', href: '#workflow' },
+    { label: 'Pricing' },
+    { label: 'Changelog' },
+    { label: 'Roadmap' },
+  ],
+  Solutions: [
+    { label: 'For Startups' },
+    { label: 'For Agencies' },
+    { label: 'For Enterprise' },
+    { label: 'For Consultants' },
+  ],
+  Resources: [
+    { label: 'Documentation' },
+    { label: 'Blog' },
+    { label: 'Case Studies' },
+    { label: 'API Reference' },
+  ],
+  Company: [
+    { label: 'About' },
+    { label: 'Careers' },
+    { label: 'Press' },
+    { label: 'Contact' },
+    { label: 'Privacy Policy' },
+  ],
 };
 
 export default function Footer() {
@@ -32,9 +54,9 @@ export default function Footer() {
                 { label: 'LinkedIn', icon: 'in' },
                 { label: 'GitHub', icon: '⌥' },
               ].map((s) => (
-                <a key={s.label} href="#" className={styles.socialLink} aria-label={s.label} id={`footer-social-${s.label.toLowerCase()}`}>
+                <span key={s.label} className={styles.socialLink} aria-label={s.label} id={`footer-social-${s.label.toLowerCase()}`}>
                   {s.icon}
-                </a>
+                </span>
               ))}
             </div>
           </div>
@@ -45,17 +67,22 @@ export default function Footer() {
               <div key={category} className={styles.linkGroup}>
                 <h4 className={styles.linkGroupTitle}>{category}</h4>
                 <ul className={styles.linkList}>
-                  {items.map((item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className={styles.link}
-                        id={`footer-link-${item.toLowerCase().replace(/\s+/g, '-')}`}
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  ))}
+                  {items.map((item) => {
+                    const linkId = `footer-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
+                    return (
+                      <li key={item.label}>
+                        {item.href ? (
+                          <a href={item.href} className={styles.link} id={linkId}>
+                            {item.label}
+                          </a>
+                        ) : (
+                          <span className={styles.link} id={linkId}>
+                            {item.label}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
@@ -69,9 +96,9 @@ export default function Footer() {
             © {new Date().getFullYear()} StratAI, Inc. All rights reserved.
           </p>
           <div className={styles.bottomLinks}>
-            <a href="#" className={styles.link} id="footer-terms">Terms of Service</a>
-            <a href="#" className={styles.link} id="footer-privacy">Privacy Policy</a>
-            <a href="#" className={styles.link} id="footer-cookies">Cookie Preferences</a>
+            <span className={styles.link} id="footer-terms">Terms of Service</span>
+            <span className={styles.link} id="footer-privacy">Privacy Policy</span>
+            <span className={styles.link} id="footer-cookies">Cookie Preferences</span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { connectors, getLogoUrl, type Connector, type ConnectorStatus } from '../../data/connectors';
 import ConnectorModal from './ConnectorModal';
 import styles from './ConnectorsView.module.css';
@@ -97,22 +97,75 @@ function ConnectorCard({
   );
 }
 
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
 export default function ConnectorsView() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [modalConnector, setModalConnector] = useState<Connector | null>(null);
   const [statuses, setStatuses] = useState<Record<string, ConnectorStatus>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const getStatus = (id: string): ConnectorStatus => statuses[id] || 'not_connected';
+
+  useEffect(() => {
+    let cancelled = false;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
+    setLoading(true);
+    setError(null);
+    fetch(`${apiBase}/api/connectors`, { headers: authHeaders() })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load connectors (${res.status})`);
+        return res.json();
+      })
+      .then((rows: Array<{ connector_id: string }>) => {
+        if (cancelled) return;
+        const connected = new Set(rows.map((r) => r.connector_id.toLowerCase()));
+        const next: Record<string, ConnectorStatus> = {};
+        connectors.forEach((c) => {
+          next[c.id] = connected.has(c.id.toLowerCase()) ? 'connected' : 'not_connected';
+        });
+        setStatuses(next);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load connectors');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
 
   const handleConnect = (connectorId: string) => {
     setStatuses((prev) => ({ ...prev, [connectorId]: 'connected' }));
     setModalConnector(null);
   };
 
-  const handleDisconnect = (connectorId: string) => {
-    setStatuses((prev) => ({ ...prev, [connectorId]: 'not_connected' }));
-    setModalConnector(null);
+  const handleDisconnect = async (connectorId: string) => {
+    setError(null);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const res = await fetch(`${apiBase}/api/connectors/${connectorId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok && res.status !== 404) {
+        throw new Error(`Failed to disconnect (${res.status})`);
+      }
+      setStatuses((prev) => ({ ...prev, [connectorId]: 'not_connected' }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to disconnect');
+    } finally {
+      setModalConnector(null);
+    }
   };
 
   const catConnectors = activeTab === 'all'
@@ -135,6 +188,16 @@ export default function ConnectorsView() {
       <div className={styles.header}>
         <h1 className={styles.title}>Connectors Available</h1>
         <p className={styles.subtitle}>Select the connector you would like to authenticate with.</p>
+        {loading && (
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary, #888)', margin: '8px 0 0' }}>
+            Loading connectors...
+          </p>
+        )}
+        {error && (
+          <p style={{ fontSize: '12px', color: '#dc2626', margin: '8px 0 0' }}>
+            {error}
+          </p>
+        )}
       </div>
 
       {/* Search + Tabs row */}
