@@ -579,18 +579,49 @@ def _split_segments(content: str) -> List[Dict[str, str]]:
     return segments
 
 
-def markdown_to_docx(
+async def _resolve_export_content(
+    db,
+    report_id: str,
+    legacy_content: str,
+    content_override: Optional[str],
+) -> str:
+    """
+    Priority order for what markdown gets rendered into the DOCX:
+      a. content_override, when given explicitly (frontend sent finalized section content).
+      b. the visible, ordered sections for report_id reassembled via
+         section_service.get_finalized_content, when sections exist for it.
+      c. legacy_content (the report's raw, immutable content) — reports that were
+         never parsed into sections.
+    """
+    if content_override is not None:
+        return content_override
+
+    from backend.services import section_service
+
+    sections = await section_service.get_sections(db, report_id)
+    if sections:
+        return await section_service.get_finalized_content(db, report_id)
+
+    return legacy_content
+
+
+async def markdown_to_docx(
+    db,
+    report_id: str,
     content: str,
     title: str,
     brand_name: Optional[str] = None,
     agent_name: Optional[str] = None,
+    content_override: Optional[str] = None,
 ) -> bytes:
+    resolved_content = await _resolve_export_content(db, report_id, content, content_override)
+
     doc = Document()
     _set_default_fonts(doc)
     _add_footer(doc)
     _add_cover(doc, title, brand_name, agent_name)
 
-    for seg in _split_segments(content or ""):
+    for seg in _split_segments(resolved_content or ""):
         if seg["type"] == "text":
             _render_markdown_text(doc, seg["text"])
             continue

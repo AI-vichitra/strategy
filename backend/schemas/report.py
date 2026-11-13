@@ -21,6 +21,9 @@ class ReportDetail(ReportMetadata):
 class ShareTokenResponse(BaseModel):
     token: str
 
+class ExportDocxRequest(BaseModel):
+    content: Optional[str] = None
+
 class PublicReport(BaseModel):
     title: str
     content: str

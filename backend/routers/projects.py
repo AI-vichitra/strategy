@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List
+from typing import List, Optional
 from datetime import datetime
+import json
 
 from backend.dependencies import get_db, get_current_user
 from backend.models.user import User
 from backend.models.project import Project
-from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, CompetitorDetail
 from backend.schemas.report import ReportMetadata
 from backend.services import report_service
 
@@ -15,8 +16,23 @@ from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 
+MAX_COMPETITORS = 5
+
+
+def _serialize_competitor_details(competitors: Optional[List[CompetitorDetail]]) -> Optional[str]:
+    """Validates (max 5) and serializes competitor details to a JSON string for storage.
+    None or an empty list both mean "skip" and are stored as None."""
+    if not competitors:
+        return None
+    if len(competitors) > MAX_COMPETITORS:
+        raise HTTPException(status_code=422, detail=f"At most {MAX_COMPETITORS} competitors are allowed")
+    return json.dumps([c.model_dump() for c in competitors])
+
+
 @router.post("/", response_model=ProjectResponse)
 async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    competitor_details_json = _serialize_competitor_details(project.competitor_details)
+
     # Reuse an existing unused project (0 messages) for this brand if available
     existing_result = await db.execute(
         select(Project)
@@ -31,13 +47,15 @@ async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_
             p.agent_type = project.agent_type
             if project.llm_provider:
                 p.llm_provider = project.llm_provider
+            p.competitor_details = competitor_details_json
             p.created_at = datetime.utcnow()
             await db.commit()
             res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == p.id))
             return res.scalars().first()
 
     # Otherwise create a new chat project for this brand
-    db_project = Project(**project.model_dump(), user_id=current_user.id)
+    project_data = project.model_dump(exclude={"competitor_details"})
+    db_project = Project(**project_data, competitor_details=competitor_details_json, user_id=current_user.id)
     db.add(db_project)
     await db.commit()
     res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == db_project.id))
@@ -74,9 +92,11 @@ async def update_project(project_id: str, project_update: ProjectUpdate, db: Asy
         raise HTTPException(status_code=404, detail="Project not found")
     
     update_data = project_update.model_dump(exclude_unset=True)
+    if "competitor_details" in update_data:
+        update_data["competitor_details"] = _serialize_competitor_details(project_update.competitor_details)
     for key, value in update_data.items():
         setattr(project, key, value)
-        
+
     await db.commit()
     res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == project_id))
     return res.scalars().first()

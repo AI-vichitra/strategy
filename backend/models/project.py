@@ -19,6 +19,7 @@ class Project(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     questionnaire_answers = Column(Text, nullable=True)
+    competitor_details = Column(Text, nullable=True)  # JSON string: list of competitor objects
     llm_provider = Column(String(50), nullable=True, default="mistral")
     last_active_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

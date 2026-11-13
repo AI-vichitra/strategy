@@ -1280,41 +1280,6 @@
   overflow-x: auto;
 }
 
-.assistantTextMarkdown h1,
-.assistantTextMarkdown h2,
-.assistantTextMarkdown h3,
-.assistantTextMarkdown h4 {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  font-weight: 600;
-  color: #1A1A1A;
-}
-
-.assistantTextMarkdown h1 { font-size: 1.4em; }
-.assistantTextMarkdown h2 { font-size: 1.25em; border-bottom: 1px solid #E8E4DC; padding-bottom: 4px; }
-.assistantTextMarkdown h3 { font-size: 1.1em; }
-.assistantTextMarkdown h4 { font-size: 1.0em; }
-
-.assistantTextMarkdown p {
-  margin-bottom: 12px;
-}
-
-.assistantTextMarkdown ul,
-.assistantTextMarkdown ol {
-  margin-bottom: 12px;
-  padding-left: 20px;
-}
-
-.assistantTextMarkdown li {
-  margin-bottom: 4px;
-}
-
-.assistantTextMarkdown hr {
-  border: 0;
-  border-top: 1px solid #E8E4DC;
-  margin: 16px 0;
-}
-
 .tableWrapper {
   width: 100%;
   overflow-x: auto;
@@ -1325,7 +1290,122 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
-.assistantTextMarkdown blockquote {
+/* ────────────────────────────────────────────────────────────────────────
+   Report content typography (ReportRenderer.tsx) — self-contained, applied
+   by ReportRenderer itself via .reportContent so heading hierarchy, tables,
+   and lists look identical in every place it renders: the chat report card
+   (nested inside .assistantTextMarkdown), the public share page, and the
+   section editor's preview (none of which supply this styling themselves).
+──────────────────────────────────────────────────────────────────────── */
+.reportContent {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #333333;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.reportContent * {
+  box-sizing: border-box;
+}
+
+.reportContent pre {
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.reportContent h1 {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.reportContent h2 {
+  font-size: 1.25em;
+  font-weight: 700;
+  color: #1A1A1A;
+  border-bottom: 1px solid #E8E4DC;
+  padding-bottom: 4px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+/* Main section headings — also the accordion header's visual target style,
+   see .reportAccordionTitle below. */
+.reportContent h3 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+  padding: 12px 0;
+  margin: 0;
+}
+
+/* Non-accordion view (public share page): sections aren't boxed by an
+   accordion card, so each H3 needs its own top margin for separation. */
+.reportContentFlat h3 {
+  margin-top: 2rem;
+}
+
+/* Subsection headings — differentiated from H3 by weight, size, and an
+   underline for structure. */
+.reportContent h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d2d2d;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 6px;
+}
+
+.reportContent h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #404040;
+  margin-top: 1.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.reportContent p {
+  margin-bottom: 12px;
+}
+
+.reportContent ul,
+.reportContent ol {
+  margin-bottom: 12px;
+  padding-left: 20px;
+}
+
+.reportContent li {
+  margin-bottom: 0.4rem;
+}
+
+.reportContent strong,
+.reportContent b {
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.reportContent hr {
+  border: 0;
+  border-top: 1px solid #E8E4DC;
+  margin: 16px 0;
+}
+
+.reportContent blockquote {
   border-left: 4px solid #D4A843;
   background-color: #FAF8F5;
   margin: 12px 0;
@@ -1334,7 +1414,7 @@
   border-radius: 4px;
 }
 
-.assistantTextMarkdown table {
+.reportContent table {
   width: 100%;
   min-width: 650px;
   border-collapse: collapse;
@@ -1343,10 +1423,10 @@
   background-color: #ffffff;
 }
 
-.assistantTextMarkdown th {
-  background-color: #F8F6F2;
+.reportContent th {
+  background-color: #F8F6F1;
   color: #2D2A26;
-  font-weight: 600;
+  font-weight: 700;
   text-align: left;
   padding: 10px 14px;
   border-bottom: 2px solid #E8E4DC;
@@ -1355,7 +1435,7 @@
   word-break: normal;
 }
 
-.assistantTextMarkdown td {
+.reportContent td {
   padding: 10px 14px;
   border-bottom: 1px solid #F0ECE4;
   border-right: 1px solid #F0ECE4;
@@ -1367,21 +1447,92 @@
   min-width: 130px;
 }
 
-.assistantTextMarkdown th:last-child,
-.assistantTextMarkdown td:last-child {
+.reportContent th:last-child,
+.reportContent td:last-child {
   border-right: none;
 }
 
-.assistantTextMarkdown td:first-child,
-.assistantTextMarkdown th:first-child {
+.reportContent td:first-child,
+.reportContent th:first-child {
   min-width: 160px;
   font-weight: 600;
   white-space: normal;
   word-break: normal;
 }
 
-.assistantTextMarkdown tr:last-child td {
+.reportContent tr:last-child td {
   border-bottom: none;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Report view accordion (ReportRenderer.tsx) — second-H3-onward sections
+──────────────────────────────────────────────────────────────────────── */
+.reportAccordionSection {
+  margin: 14px 0;
+  border: 1px solid #E8E4DC;
+  border-radius: 10px;
+  background: #FFFFFF;
+  overflow: hidden;
+}
+
+.reportAccordionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.reportAccordionHeader:hover {
+  background: #FAF8F5;
+}
+
+/* Subtle bottom border only while the section is expanded, separating the
+   clickable header from its body. */
+.reportAccordionHeaderOpen {
+  border-bottom-color: #F0ECE4;
+}
+
+/* Matches .reportContent h3 — the accordion header's title is the main
+   section heading, just rendered as a <span> instead of an <h3>. */
+.reportAccordionTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.reportAccordionChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  color: #A39E97;
+  transition: transform 0.2s ease;
+}
+
+.reportAccordionChevronOpen {
+  transform: rotate(180deg);
+  color: #B45309;
+}
+
+.reportAccordionBody {
+  padding: 4px 18px 18px;
+  animation: reportAccordionSlideDown 0.2s ease;
+}
+
+@keyframes reportAccordionSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ────────────────────────────────────────────────────────────────────────

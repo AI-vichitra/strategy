@@ -5,6 +5,7 @@ import { connectors as allConnectorsData, getLogoUrl } from '../../data/connecto
 import { useAgents } from '../../hooks/useAgents';
 import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
+import CompetitorForm, { type CompetitorDetail } from '../CompetitorForm';
 import ConnectorsPanel from './ConnectorsPanel';
 import ConnectorsView from './ConnectorsView';
 import FilesView from './FilesView';
@@ -12,6 +13,7 @@ import ProjectsView from './ProjectsView';
 import WorkflowView from './WorkflowView';
 import styles from './MainContent.module.css';
 import ReportRenderer from '../ReportRenderer';
+import SectionEditor from '../SectionEditor';
 import { exportReportToPdf } from '../../utils/pdfExport';
 
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
@@ -596,6 +598,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [qaAnswers, setQaAnswers] = useState<Array<{ question: string; answer: string }>>([]);
+  const [competitors, setCompetitors] = useState<CompetitorDetail[]>([]);
   const [userContext, setUserContext] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
@@ -608,6 +611,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [sharingReportIdx, setSharingReportIdx] = useState<number | null>(null);
   const [shareCopiedIdx, setShareCopiedIdx] = useState<number | null>(null);
   const [shareErrorIdx, setShareErrorIdx] = useState<number | null>(null);
+  const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors'>('builder');
   const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -919,6 +923,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setUserContext('');
     setAttachedFiles([]);
     setQaAnswers([]);
+    setCompetitors([]);
     const prompt = title === 'Competition Analysis'
       ? `Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.`
       : title === 'GTM Strategy'
@@ -938,6 +943,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowQuestionnaire(false);
     setMessages([]);
     setQaAnswers([]);
+    setCompetitors([]);
   };
 
   const handleNewChat = () => {
@@ -950,6 +956,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowQuestionnaire(false);
     setMessages([]);
     setQaAnswers([]);
+    setCompetitors([]);
     setActiveProject(null);
     onNewChat?.();
   };
@@ -981,6 +988,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         if (proj.llm_provider) {
           setSelectedModel(proj.llm_provider);
         }
+        setCompetitors(Array.isArray(proj.competitor_details) ? proj.competitor_details : []);
         if (proj.brand_config_id) {
           const brandName = brandsMap[proj.brand_config_id] || 'Brand Project';
           setActiveProject({
@@ -1107,6 +1115,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               agent_type: selectedAgent || 'StratAI',
               brand_config_id: activeBrandId,
               llm_provider: selectedModel,
+              competitor_details: (() => {
+                const filled = competitors.filter((c) => c.brand_name.trim());
+                return filled.length > 0 ? filled : null;
+              })(),
             })
           });
           if (createRes.ok) {
@@ -1553,12 +1565,29 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                               Failed to create share link
                             </span>
                           )}
+                          {msg.id && reportsByMessageId[msg.id] && (
+                            <button
+                              type="button"
+                              className={styles.reportActionBtn}
+                              onClick={() => setEditingReportId(reportsByMessageId[msg.id!].id)}
+                              title="Edit this report's sections"
+                            >
+                              <span>✏️ Edit Sections</span>
+                            </button>
+                          )}
                         </div>
                       </div>
 
-                      <div id={`report-markdown-${i}`} className={styles.assistantTextMarkdown}>
-                        <ReportRenderer content={msg.content} />
-                      </div>
+                      {msg.id && reportsByMessageId[msg.id] && editingReportId === reportsByMessageId[msg.id].id ? (
+                        <SectionEditor
+                          reportId={editingReportId}
+                          onClose={() => setEditingReportId(null)}
+                        />
+                      ) : (
+                        <div id={`report-markdown-${i}`} className={styles.assistantTextMarkdown}>
+                          <ReportRenderer content={msg.content} />
+                        </div>
+                      )}
 
                       <div className={styles.reportFooterBanner}>
                         <div className={styles.reportFooterLeft}>
@@ -1747,6 +1776,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       {/* Chat Input Fixed at Bottom */}
       {view !== 'files' && view !== 'projects' && view !== 'agents' && (selectedAgent !== null || isChatting) && (
         <div className={styles.chatContainer}>
+          {selectedAgent && messages.length === 0 && (
+            <CompetitorForm competitors={competitors} onChange={setCompetitors} />
+          )}
           {showQuestionnaire && selectedAgent && agentQuestions[selectedAgent] && (
             <AgentQuestionnaire
               questions={agentQuestions[selectedAgent]}

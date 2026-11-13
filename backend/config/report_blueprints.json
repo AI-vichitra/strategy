@@ -1,0 +1,271 @@
+{
+  "common_sections": [
+    {
+      "order": 0,
+      "key": "executive_summary",
+      "title": "Executive Summary",
+      "description": "High-level overview of the analysis scope, key findings, and strategic recommendations",
+      "required": true,
+      "content_guidance": "2-3 paragraph summary covering: what was analyzed, top 3-5 key findings, and primary strategic recommendation"
+    },
+    {
+      "order": 1,
+      "key": "market_context",
+      "title": "Market Context",
+      "description": "Global and local market landscape relevant to the analysis",
+      "required": true,
+      "subsections": ["Industry Overview", "Market Size & Growth", "Key Trends & Drivers"],
+      "content_guidance": "Include relevant data points, market size figures, growth rates. Use tables for comparative data."
+    },
+    {
+      "order": 2,
+      "key": "consumer_landscape",
+      "title": "Consumer Landscape",
+      "description": "Target audience analysis, behavior patterns, and consumer insights",
+      "required": true,
+      "subsections": ["Target Segments", "Consumer Behavior", "Perception & Sentiment"],
+      "content_guidance": "Define 2-4 key consumer segments. Include behavioral data and perception analysis."
+    },
+    {
+      "order": 3,
+      "key": "competitive_landscape",
+      "title": "Competitive Landscape",
+      "description": "Competitor identification, analysis, and positioning",
+      "required": true,
+      "subsections": ["Key Competitors", "Competitive Analysis", "Market Positioning"],
+      "content_guidance": "Identify 4-6 key competitors. Use a comparison TABLE for competitive analysis. Include positioning insights."
+    },
+    {
+      "order": 4,
+      "key": "key_insights",
+      "title": "Key Insights",
+      "description": "Synthesized insights from market, consumer, and competitive analysis",
+      "required": true,
+      "subsections": ["Consumer Insights", "Market & Competitive Insights"],
+      "content_guidance": "3-5 actionable insights derived from the analysis above. Each insight should connect data to strategic implication."
+    }
+  ],
+  "agent_blueprints": {
+    "brand-positioning": {
+      "display_name": "Brand Positioning",
+      "type_specific_sections": [
+        {
+          "order": 5,
+          "key": "strategic_approach",
+          "title": "Strategic Approach",
+          "description": "Recommended strategic direction and positioning options",
+          "subsections": ["Strategic Options", "Recommended Approach", "Rationale"],
+          "content_guidance": "Present 2-3 strategic options. Recommend one with clear rationale."
+        },
+        {
+          "order": 6,
+          "key": "positioning_map",
+          "title": "Positioning Map",
+          "description": "Visual positioning analysis showing brand placement vs competitors",
+          "subsections": ["Positioning Axes", "Current Position", "Target Position", "White Space Opportunities"],
+          "content_guidance": "Define 2 key positioning axes. Describe where the brand and competitors sit. Identify white-space opportunities. Reference a positioning map chart."
+        },
+        {
+          "order": 7,
+          "key": "strategy_build",
+          "title": "Strategy Build",
+          "description": "Detailed strategic implementation plan",
+          "subsections": ["Positioning Statement", "Key Messaging Framework", "Content Strategy", "Channel Strategy"],
+          "content_guidance": "Include a clear positioning statement. Build messaging hierarchy. Outline content pillars and channel recommendations."
+        },
+        {
+          "order": 8,
+          "key": "measurement_roadmap",
+          "title": "Measurement & Roadmap",
+          "description": "KPIs, implementation timeline, and risk assessment",
+          "subsections": ["Key Performance Indicators", "Phased Roadmap", "Budget Considerations", "Risk Assessment"],
+          "content_guidance": "Define 5-8 measurable KPIs in a TABLE. Create a 3-phase roadmap (30/60/90 days or Q1/Q2/Q3). Include budget ranges and top risks."
+        }
+      ]
+    },
+    "competition-analysis": {
+      "display_name": "Competition Analysis",
+      "type_specific_sections": [
+        {
+          "order": 5,
+          "key": "competitor_deep_dive",
+          "title": "Competitor Deep Dive",
+          "subsections": ["Individual Competitor Profiles", "SWOT Analysis", "Competitive Advantages"],
+          "content_guidance": "Detailed profile per competitor in TABLE format. SWOT for top 3. Identify sustainable competitive advantages."
+        },
+        {
+          "order": 6,
+          "key": "competitive_strategy",
+          "title": "Competitive Strategy",
+          "subsections": ["Differentiation Opportunities", "Competitive Response Plan", "Market Entry/Defense Strategy"],
+          "content_guidance": "Map differentiation opportunities. Outline response strategies for competitive threats."
+        },
+        {
+          "order": 7,
+          "key": "action_plan",
+          "title": "Action Plan & Recommendations",
+          "subsections": ["Priority Actions", "Timeline", "Resource Requirements", "Success Metrics"],
+          "content_guidance": "Prioritized action items in TABLE. 90-day timeline. Define measurable success metrics."
+        }
+      ]
+    },
+    "seo-strategy": {
+      "display_name": "SEO Strategy",
+      "type_specific_sections": [
+        {
+          "order": 5,
+          "key": "technical_seo",
+          "title": "Technical SEO Analysis",
+          "subsections": ["Site Health", "Page Speed & Core Web Vitals", "Crawlability & Indexation", "Schema Markup"],
+          "content_guidance": "Include technical metrics in TABLEs. Score each area. Identify critical technical issues."
+        },
+        {
+          "order": 6,
+          "key": "content_seo",
+          "title": "Content & On-Page SEO",
+          "subsections": ["Keyword Analysis", "Content Gap Analysis", "On-Page Optimization", "Content Strategy"],
+          "content_guidance": "Keyword opportunity TABLE. Content gaps vs competitors. Page-level optimization recommendations."
+        },
+        {
+          "order": 7,
+          "key": "offpage_authority",
+          "title": "Off-Page & Authority",
+          "subsections": ["Backlink Profile", "Domain Authority", "Link Building Opportunities"],
+          "content_guidance": "Backlink metrics in TABLE. Authority comparison vs competitors. Prioritized link building tactics."
+        },
+        {
+          "order": 8,
+          "key": "seo_roadmap",
+          "title": "SEO Roadmap & KPIs",
+          "subsections": ["Quick Wins", "Medium-Term Strategy", "Long-Term Goals", "KPI Dashboard"],
+          "content_guidance": "Categorize actions by timeline. Define ranking and traffic KPIs in TABLE."
+        }
+      ]
+    },
+    "social-media-strategy": {
+      "display_name": "Social Media Strategy",
+      "type_specific_sections": [
+        {
+          "order": 5,
+          "key": "platform_strategy",
+          "title": "Platform Strategy & Content Pillars",
+          "subsections": ["Platform Prioritization", "Content Pillars", "Tone & Voice Guidelines"],
+          "content_guidance": "Rank 3-4 priority platforms with rationale. Define 4-5 content pillars with example formats. Establish brand voice guardrails."
+        },
+        {
+          "order": 6,
+          "key": "content_calendar_framework",
+          "title": "Content Calendar Framework",
+          "subsections": ["Posting Cadence", "Content Mix Ratio", "Seasonal/Campaign Tie-ins"],
+          "content_guidance": "Define posting frequency per platform in a TABLE. Specify a content mix ratio (e.g. 40% educational / 30% promotional / 30% engagement). Flag upcoming seasonal moments to tie into."
+        },
+        {
+          "order": 7,
+          "key": "engagement_community",
+          "title": "Engagement & Community Growth",
+          "subsections": ["Community Management Approach", "Influencer/UGC Opportunities", "Growth Tactics"],
+          "content_guidance": "Outline response-time SLAs and engagement tactics. Identify UGC/influencer collaboration opportunities. List 3-5 organic growth tactics."
+        },
+        {
+          "order": 8,
+          "key": "social_measurement",
+          "title": "Measurement & Optimization",
+          "subsections": ["Platform KPIs", "Reporting Cadence", "Testing Roadmap"],
+          "content_guidance": "Define KPIs per platform (reach, engagement rate, follower growth, conversion) in a TABLE. Propose an A/B testing roadmap for content formats."
+        }
+      ]
+    },
+    "market-entry-strategy": {
+      "display_name": "Market Entry Strategy",
+      "type_specific_sections": [
+        {
+          "order": 5,
+          "key": "market_readiness",
+          "title": "Market Readiness Assessment",
+          "subsections": ["Regulatory & Legal Considerations", "Localization Requirements", "Entry Barriers"],
+          "content_guidance": "Assess regulatory/compliance requirements for the target market. Identify localization needs (language, payment methods, cultural fit). Score entry barriers (High/Med/Low) with rationale."
+        },
+        {
+          "order": 6,
+          "key": "entry_model",
+          "title": "Entry Model & Go-To-Market Approach",
+          "subsections": ["Entry Mode Options", "Recommended Model", "Local Partnership Strategy"],
+          "content_guidance": "Compare entry modes (direct, partnership, franchise, acquisition) in a TABLE. Recommend one with rationale. Identify potential local partners/channels."
+        },
+        {
+          "order": 7,
+          "key": "localized_positioning",
+          "title": "Localized Positioning & Pricing",
+          "subsections": ["Local Competitive Landscape", "Price Localization", "Messaging Adaptation"],
+          "content_guidance": "Map local competitors. Recommend price positioning relative to the local market (adjusted for local purchasing power). Flag messaging/cultural adaptations needed."
+        },
+        {
+          "order": 8,
+          "key": "entry_roadmap",
+          "title": "Entry Roadmap & Risk Plan",
+          "subsections": ["Phased Entry Timeline", "Investment Requirements", "Risk Mitigation"],
+          "content_guidance": "90/180/365-day phased entry plan in a TABLE. Estimate investment ranges per phase. Identify the top 3-5 market entry risks with mitigation."
+        }
+      ]
+    },
+    "content-calendar": {
+      "display_name": "Content Calendar",
+      "type_specific_sections": [
+        {
+          "order": 5,
+          "key": "content_pillars_themes",
+          "title": "Content Pillars & Themes",
+          "subsections": ["Core Content Pillars", "Monthly/Seasonal Themes", "Format Mix"],
+          "content_guidance": "Define 4-5 content pillars tied to brand goals. Map upcoming seasonal/cultural moments relevant to the brand. Recommend a format mix (video/carousel/static/blog)."
+        },
+        {
+          "order": 6,
+          "key": "editorial_calendar",
+          "title": "Editorial Calendar",
+          "subsections": ["30-Day Content Grid", "Platform-Specific Adaptations", "Publishing Cadence"],
+          "content_guidance": "Produce a 30-day content grid TABLE (Date, Platform, Pillar, Format, Caption Hook). Note platform-specific adaptations. Specify publishing frequency per channel."
+        },
+        {
+          "order": 7,
+          "key": "production_workflow",
+          "title": "Production Workflow & Resourcing",
+          "subsections": ["Content Production Pipeline", "Approval Workflow", "Resource/Tooling Needs"],
+          "content_guidance": "Outline the content pipeline from ideation to publish. Define an approval workflow with turnaround SLAs. Flag resourcing/tooling gaps."
+        },
+        {
+          "order": 8,
+          "key": "calendar_performance",
+          "title": "Performance Tracking",
+          "subsections": ["Content KPIs", "Top/Bottom Performer Review Cadence", "Iteration Plan"],
+          "content_guidance": "Define per-format KPIs in a TABLE. Set a cadence for reviewing top/bottom performing content. Outline how insights feed back into the next cycle."
+        }
+      ]
+    }
+  },
+  "default_blueprint": {
+    "display_name": "General Analysis",
+    "type_specific_sections": [
+      {
+        "order": 5,
+        "key": "detailed_analysis",
+        "title": "Detailed Analysis",
+        "subsections": ["Primary Findings", "Supporting Data", "Comparative Analysis"],
+        "content_guidance": "Deep dive into the analysis topic. Use TABLEs for data comparison."
+      },
+      {
+        "order": 6,
+        "key": "recommendations",
+        "title": "Strategic Recommendations",
+        "subsections": ["Key Recommendations", "Implementation Approach", "Expected Outcomes"],
+        "content_guidance": "3-5 prioritized recommendations. Each with rationale, effort level, and expected impact."
+      },
+      {
+        "order": 7,
+        "key": "next_steps",
+        "title": "Next Steps & Measurement",
+        "subsections": ["Action Items", "Timeline", "Success Metrics"],
+        "content_guidance": "Actionable next steps in TABLE format. Define measurable outcomes."
+      }
+    ]
+  }
+}

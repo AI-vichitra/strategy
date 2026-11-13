@@ -383,11 +383,60 @@ def _fetch_verified_brand_images(query: str, brand_name: str) -> List[str]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 7: System prompt builder
 # ─────────────────────────────────────────────────────────────────────────────
+def _format_competitor_details(competitor_details: Optional[str]) -> str:
+    """Formats the project's user-provided competitor_details (JSON string of
+    competitor objects) into a prompt block. Returns "" when None/empty/invalid
+    so callers can unconditionally append the result."""
+    if not competitor_details:
+        return ""
+    try:
+        competitors = json.loads(competitor_details)
+    except (json.JSONDecodeError, TypeError):
+        return ""
+    if not isinstance(competitors, list) or not competitors:
+        return ""
+
+    lines = [
+        "## USER-PROVIDED COMPETITOR INFORMATION",
+        "The user has identified the following competitors. Use these as PRIMARY competitors in your analysis.",
+        "Research each competitor using the provided URLs for accurate, current information.",
+        "",
+    ]
+    for idx, competitor in enumerate(competitors, 1):
+        if not isinstance(competitor, dict):
+            continue
+        name = competitor.get("brand_name") or f"Competitor {idx}"
+        lines.append(f"### Competitor {idx}: {name}")
+        website = competitor.get("website_url")
+        if website:
+            lines.append(f"- Website: {website}")
+        social = competitor.get("social_media") or {}
+        social_labels = [
+            ("linkedin", "LinkedIn"),
+            ("instagram", "Instagram"),
+            ("facebook", "Facebook"),
+            ("twitter", "Twitter/X"),
+            ("youtube", "YouTube"),
+        ]
+        for key, label in social_labels:
+            value = social.get(key)
+            if value:
+                lines.append(f"- {label}: {value}")
+        lines.append("")
+
+    lines.append(
+        "IMPORTANT: These user-provided competitors MUST be included in the Competitive Landscape section. "
+        "You may identify additional competitors beyond these, but these are mandatory."
+    )
+    return "\n".join(lines)
+
+
 def build_system_prompt(
     brand_name: str,
     agent_type: str,
     brand_context: Optional[str],
     formatted_context: str,
+    competitor_details: Optional[str] = None,
 ) -> str:
     if agent_type == "Competition Analysis":
         base = """You are a Senior Competitive Intelligence Strategist operating inside an automated strategy tool. You convert raw website and Instagram scrape data into a concise, professional, board-ready competitive analysis document. 
@@ -417,6 +466,14 @@ OUTPUT FORMAT RULES (STRICT)
   ```
 - Use `"type": "bar"` for comparative values across brands (like Pricing, Scale, Momentum).
 - Use `"type": "pie"` for share-based distributions (like Share of Voice).
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 DATA HANDLING RULES
 - Every claim must trace to evidence in the web scan or Instagram scan. Never invent numbers.
@@ -471,6 +528,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 5 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 5 visual parameters:
@@ -534,6 +599,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Pre-Launch", "Revenue": 0, "Waitlist": 500}, ...], "keys": ["Revenue", "Waitlist"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Value Prop", "User Brand": 9, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Teaser Phase", "value": 25}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 5 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 5 visual parameters:
@@ -599,6 +672,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Keyword Opportunity Scores by Cluster (type: "bar", opportunity score 1-10 across keyword clusters)
@@ -651,6 +732,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Platform Performance Score by Channel (type: "bar", score 1-10 across the brand's active/relevant platforms)
@@ -699,6 +788,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Content Pillar Priority Score (type: "bar", priority score 1-10 across proposed content pillars)
@@ -746,6 +843,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -798,6 +903,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Influencer Tier ROI Comparison (type: "bar", estimated ROI score 1-10 across Nano, Micro, Mid-Tier, Macro, and Mega creator tiers)
@@ -845,6 +958,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -894,6 +1015,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Media Opportunity Score by Outlet Category (type: "bar", opportunity score 1-10 across outlet categories e.g. Trade Press, Business Media, Lifestyle, Podcasts)
@@ -942,6 +1071,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Sentiment Score by Platform (type: "bar", sentiment score 1-10 across review and social platforms)
@@ -989,6 +1126,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1041,6 +1186,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Brand Perception vs Competitors Radar (type: "radar", rating 1-10 across Quality, Value, Innovation, Trust, Relevance for User Brand vs Competitors)
@@ -1089,6 +1242,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1139,6 +1300,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Brand Equity Dimensions Radar (type: "radar", rating 1-10 across Awareness, Associations, Perceived Quality, Loyalty, Assets for User Brand vs Competitors)
@@ -1186,6 +1355,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1235,6 +1412,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Funnel Drop-off by Stage (type: "bar", drop-off percentage across funnel stages)
@@ -1282,6 +1467,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1331,6 +1524,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. ICP Fit Scoring Radar (type: "radar", rating 1-10 across Budget, Authority, Need, Timing, Fit for the primary ICP)
@@ -1378,6 +1579,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1427,6 +1636,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Price-Value Positioning vs Competitors (type: "bar", price-value index 1-10 across User Brand and Competitors)
@@ -1475,6 +1692,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Partner Type ROI Potential (type: "bar", ROI potential score 1-10 across channel, tech, co-marketing, and strategic partner types)
@@ -1522,6 +1747,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1573,6 +1806,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Compliance Risk Level by Area (type: "bar", risk level 1-10 across compliance areas such as Advertising, Data Privacy, Consumer Protection)
@@ -1620,6 +1861,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1669,6 +1918,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Festival Opportunity Score by Occasion (type: "bar", opportunity score 1-10 across relevant festivals/occasions)
@@ -1716,6 +1973,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1765,6 +2030,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Budget Distribution by Campaign Type (type: "bar", recommended budget share across campaign types)
@@ -1812,6 +2085,14 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
 
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
@@ -1861,6 +2142,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Company Strength Profile Radar (type: "radar", rating 1-10 across Market Position, Product, Financials, Brand, Innovation)
@@ -1909,6 +2198,14 @@ Chart Format Specifications:
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
 
+CRITICAL CHART DATA RULES:
+- The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
+- Do NOT add units, suffixes, or parenthetical annotations to key names. Put units in "y_label" or "title" instead.
+- WRONG: data: {"Market Size": 950}, keys: ["Market Size (USD Mn)"]
+- RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
+- Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
+- All numeric values must be plain numbers, no formatting.
+
 REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
 You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
 1. Competitive Positioning Matrix (type: "radar", rating 1-10 across key positioning dimensions for User Brand vs Competitors)
@@ -1941,8 +2238,26 @@ Markdown table detailing Monitoring: Competitor, Signal to Track, Source, Freque
 Target Brand: **{brand_name}**
 Role/Mode: **{agent_type}**
 """
+
+    # Appends the agent's section blueprint (common + type-specific sections, in
+    # order) on top of the agent-specific instructions above — adds output
+    # structure without replacing the existing analysis guidance in any branch.
+    # Import works both as part of the real app (backend.services.* on
+    # sys.path) and under `cd backend && python ...` tooling/tests (only
+    # services.* resolvable there, since `backend` itself isn't on sys.path).
+    try:
+        from backend.services.blueprint_service import build_section_prompt
+    except ModuleNotFoundError:
+        from services.blueprint_service import build_section_prompt
+    base += "\n\n" + build_section_prompt(agent_type)
+    base += "\n\nIMPORTANT: When analyzing competitors, ALWAYS use real company/brand names based on the industry and market context provided. NEVER use placeholder names like 'Competitor X', 'Competitor Y', 'Company A', 'Brand B', etc. Research and reference actual market players, their real products, and real market data. If the brand context mentions specific competitors, use those. Otherwise, identify the most relevant real competitors in that industry."
+
     if brand_context:
         base += f"\nBrand Context: {brand_context}\n"
+
+    competitor_block = _format_competitor_details(competitor_details)
+    if competitor_block:
+        base += f"\n{competitor_block}\n"
 
     base += """
 ### STRICT RESPONSE OUTPUT RULES:
@@ -2130,7 +2445,8 @@ async def stream_chat(
             formatted_context += img_section
 
     # ── Build system prompt ───────────────────────────────────────────────────
-    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context)
+    competitor_details = project.competitor_details if project else None
+    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details)
 
     # ── Prepare messages ──────────────────────────────────────────────────────
     chat_history = []

@@ -1,5 +1,5 @@
 'use client';
-import { memo, Component, type ReactNode } from 'react';
+import { memo, Component, useState, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -278,10 +278,56 @@ export class ChartErrorBoundary extends Component<{ children: ReactNode }, { has
 
 export const VALID_CHART_TYPES = ['bar', 'line', 'area', 'radar', 'pie'];
 
+// The LLM occasionally emits unquoted thousands separators inside a recharts
+// JSON block (e.g. "Users": 1,500), which is invalid JSON. Strip commas that
+// sit strictly inside a digit-grouped number following a property colon —
+// never touches the commas that separate object/array entries.
+export function sanitizeChartJson(raw: string): string {
+  return raw.replace(/:\s*(\d{1,3})(,\d{3})+(?=[,\s\}\]])/g, (match) => match.replace(/,/g, ''));
+}
+
+// The LLM sometimes declares a "keys" array with units/annotations
+// ("Market Size (USD Mn)") while the actual data rows use the bare property
+// name ("Market Size"). Recharts' dataKey lookup is an exact string match,
+// so a mismatched key silently plots nothing. Map each declared key back to
+// the real row property when it doesn't exist verbatim in the data.
+export function normalizeChartKeys(
+  chartData: Record<string, any>[],
+  declaredKeys: string[]
+): string[] {
+  if (!chartData.length || !declaredKeys.length) return declaredKeys;
+
+  const sampleRow = chartData[0];
+  const rowKeys = Object.keys(sampleRow).filter(k => k !== 'name' && k !== 'subject');
+
+  const allKeysExist = declaredKeys.every(k => k in sampleRow);
+  if (allKeysExist) return declaredKeys;
+
+  const normalizedKeys: string[] = [];
+  for (const declaredKey of declaredKeys) {
+    if (declaredKey in sampleRow) {
+      normalizedKeys.push(declaredKey);
+      continue;
+    }
+
+    // Strip parenthetical suffixes: "Market Size (USD Mn)" → "Market Size"
+    const stripped = declaredKey.replace(/\s*\(.*?\)\s*$/, '').trim();
+    const match = rowKeys.find(rk =>
+      rk === stripped ||
+      rk.startsWith(stripped) ||
+      stripped.startsWith(rk)
+    );
+
+    normalizedKeys.push(match || declaredKey);
+  }
+
+  return normalizedKeys;
+}
+
 export const RechartsBlock = memo(({ children, className, ...props }: any) => {
   const rawText = String(children).replace(/\n$/, '');
   try {
-    const data = JSON.parse(rawText);
+    const data = JSON.parse(sanitizeChartJson(rawText));
     const COLORS = EXECUTIVE_COLORS;
 
     // Normalize chart type
@@ -316,7 +362,8 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
       return <ChartFallbackCard message="No chart data available" rawContent={rawText} />;
     }
 
-    const keys = data.keys || (chartData.length > 0 ? Object.keys(chartData[0]).filter(k => k !== 'name' && k !== 'subject' && k !== 'category') : ['value']);
+    const rawKeys = data.keys || (chartData.length > 0 ? Object.keys(chartData[0]).filter(k => k !== 'name' && k !== 'subject' && k !== 'category') : ['value']);
+    const keys = normalizeChartKeys(chartData, rawKeys);
     const effectiveKeys = keys.length > 0 ? keys : ['value'];
 
     // Resolve comprehensive axis demonstration, descriptions, and takeaways
@@ -845,20 +892,111 @@ export const markdownComponents = {
   )
 };
 
-export default function ReportRenderer({ content }: { content: string }) {
+// ── Report-view accordion ──────────────────────────────────────────────────
+// Reports from this pipeline always open with two intro H3s — the document
+// title itself, then a short landscape/overview blurb (e.g. "Competitive
+// Landscape Overview") — before the substantive, collapsible sections begin
+// (comparison tables, chart dashboards, SWOT, recommendations, next steps).
+// So "the first H3 heading" everyone keeps visible is really that whole
+// two-heading intro: both stay always-visible, and collapsing starts at the
+// THIRD raw H3 match onward. Content with fewer than 3 H3 headings has
+// nothing to collapse — this is exactly the shape of a single SectionEditor
+// section's content, which is why SectionEditor passes accordion={false}
+// rather than relying on that fallback.
+const _H3_RE = /^###[ \t]+.+$/gm;
+
+function splitIntoAccordionParts(content: string): {
+  always: string;
+  collapsible: { title: string; body: string }[];
+} {
+  const matches = [...content.matchAll(_H3_RE)];
+  if (matches.length <= 2) {
+    return { always: content, collapsible: [] };
+  }
+
+  const always = content.slice(0, matches[2].index!);
+  const collapsible: { title: string; body: string }[] = [];
+
+  for (let i = 2; i < matches.length; i++) {
+    const headingLine = matches[i][0];
+    const bodyStart = matches[i].index! + headingLine.length;
+    const bodyEnd = i + 1 < matches.length ? matches[i + 1].index! : content.length;
+    const title = headingLine.replace(/^###[ \t]+/, '').replace(/\*+/g, '').trim();
+    collapsible.push({ title, body: content.slice(bodyStart, bodyEnd) });
+  }
+
+  return { always, collapsible };
+}
+
+function CollapsibleSection({
+  title,
+  children,
+  defaultExpanded = false,
+}: {
+  title: string;
+  children: ReactNode;
+  defaultExpanded?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw]}
-      components={markdownComponents}
-    >
-      {content
-        .replace(/\(\$\$\$\)/g, '(Premium Tier)')
-        .replace(/\(\$\$\)/g, '(Mid-Tier)')
-        .replace(/\(\$\)/g, '(Budget)')
-        .replace(/\$\$\$/g, 'Premium Tier')
-        .replace(/\$\$/g, 'Mid-Tier')
-      }
-    </ReactMarkdown>
+    <div className={styles.reportAccordionSection}>
+      <button
+        type="button"
+        className={`${styles.reportAccordionHeader} ${expanded ? styles.reportAccordionHeaderOpen : ''}`}
+        onClick={() => setExpanded((e) => !e)}
+        aria-expanded={expanded}
+      >
+        <span className={styles.reportAccordionTitle}>{title}</span>
+        <span className={`${styles.reportAccordionChevron} ${expanded ? styles.reportAccordionChevronOpen : ''}`}>
+          ▼
+        </span>
+      </button>
+      {/* Charts/tables only mount while expanded — collapsed sections never pay render cost. */}
+      {expanded && (
+        <div className={styles.reportAccordionBody}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function normalizeTiers(content: string): string {
+  return content
+    .replace(/\(\$\$\$\)/g, '(Premium Tier)')
+    .replace(/\(\$\$\)/g, '(Mid-Tier)')
+    .replace(/\(\$\)/g, '(Budget)')
+    .replace(/\$\$\$/g, 'Premium Tier')
+    .replace(/\$\$/g, 'Mid-Tier');
+}
+
+export default function ReportRenderer({ content, accordion = true }: { content: string; accordion?: boolean }) {
+  const prepared = normalizeTiers(content);
+
+  if (!accordion) {
+    return (
+      <div className={`${styles.reportContent} ${styles.reportContentFlat}`}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+          {prepared}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
+  const { always, collapsible } = splitIntoAccordionParts(prepared);
+
+  return (
+    <div className={styles.reportContent}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+        {always}
+      </ReactMarkdown>
+      {collapsible.map((section, idx) => (
+        <CollapsibleSection key={idx} title={section.title || 'Untitled Section'}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+            {section.body}
+          </ReactMarkdown>
+        </CollapsibleSection>
+      ))}
+    </div>
   );
 }

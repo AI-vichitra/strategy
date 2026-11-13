@@ -77,6 +77,13 @@ async def create_report_snapshot(
     db.add(report)
     await db.commit()
     await db.refresh(report)
+
+    from backend.services import section_service
+    try:
+        await section_service.parse_report_into_sections(db, report.id, report.content)
+    except Exception as e:
+        logger.warning(f"[report_service] Auto-parse into sections failed for report {report.id}: {e}")
+
     return report
 
 

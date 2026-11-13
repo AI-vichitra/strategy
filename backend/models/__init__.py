@@ -5,6 +5,7 @@ from backend.models.project import Project
 from backend.models.message import Message
 from backend.models.report import Report
 from backend.models.report_share import ReportShare
+from backend.models.report_section import ReportSection
 from backend.models.connector import ConnectorCredential
 
-__all__ = ["Base", "User", "BrandConfig", "Project", "Message", "Report", "ReportShare", "ConnectorCredential"]
+__all__ = ["Base", "User", "BrandConfig", "Project", "Message", "Report", "ReportShare", "ReportSection", "ConnectorCredential"]
