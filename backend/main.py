@@ -27,7 +27,7 @@ if os.path.exists(env_path):
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.routers import auth, brand, projects, chat, agents, connectors
+from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public
 
 app = FastAPI(title="StratAI Backend")
 
@@ -42,6 +42,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(brand.router, prefix="/api/brands", tags=["Brands"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(public.router, prefix="/api/public", tags=["Public"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(agents.router)
 app.include_router(connectors.router)

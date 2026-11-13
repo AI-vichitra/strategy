@@ -36,6 +36,10 @@ TOP_K = 6                 # chunks retrieved per query
 EMBED_MODEL = "all-MiniLM-L6-v2"   # 384-dim, free, local
 MISTRAL_MODEL = "open-mistral-7b"
 
+# Fallback priority order for LLM providers (mistral verified working;
+# groq follows openai as its immediate fallback)
+LLM_PROVIDER_PRIORITY = ["mistral", "qwen", "openai", "groq", "anthropic"]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # In-memory cache: brand_slug → { chunks, embeddings, bm25, mtime_hash }
 # ─────────────────────────────────────────────────────────────────────────────
@@ -59,7 +63,7 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
     """
     Returns tuple of (provider, api_key).
     If requested is specified, attempts that provider first if key exists.
-    Supported: mistral, qwen, openai, anthropic
+    Supported: mistral, qwen, openai, groq, anthropic
     """
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if openai_key.startswith("sk-ant-"):
@@ -69,6 +73,7 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
         "mistral": os.environ.get("MISTRAL_API_KEY", "").strip(),
         "qwen": os.environ.get("QWEN_API_KEY", "").strip(),
         "openai": openai_key,
+        "groq": os.environ.get("GROQ_API_KEY", "").strip(),
         "anthropic": os.environ.get("ANTHROPIC_API_KEY", "").strip(),
     }
 
@@ -76,12 +81,11 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
     if req_clean in keys and keys[req_clean]:
         return (req_clean, keys[req_clean])
 
-    # Default priority fallback order (mistral verified working)
-    for prov in ["mistral", "qwen", "openai", "anthropic"]:
+    for prov in LLM_PROVIDER_PRIORITY:
         if keys[prov]:
             return (prov, keys[prov])
 
-    raise RuntimeError("No valid LLM API key set in environment (MISTRAL_API_KEY, QWEN_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY)")
+    raise RuntimeError("No valid LLM API key set in environment (MISTRAL_API_KEY, QWEN_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, or ANTHROPIC_API_KEY)")
 
 
 
@@ -2189,6 +2193,30 @@ async def stream_chat(
                             full_response += text_chunk
                             yield text_chunk
 
+            elif prov == "groq":
+                logger.info(f"[RAG] Streaming response using Groq API...")
+                from openai import OpenAI
+                client = OpenAI(
+                    api_key=key,
+                    base_url="https://api.groq.com/openai/v1",
+                )
+                model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+                groq_messages = [{"role": "system", "content": system_prompt}] + chat_history
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=groq_messages,
+                    stream=True,
+                    temperature=0.7,
+                    max_tokens=4096,
+                )
+                for chunk in response:
+                    if chunk.choices and len(chunk.choices) > 0:
+                        delta = chunk.choices[0].delta
+                        if delta and delta.content:
+                            text_chunk = delta.content
+                            full_response += text_chunk
+                            yield text_chunk
+
             elif prov == "mistral":
                 logger.info(f"[RAG] Streaming response using Mistral API...")
                 from openai import OpenAI
@@ -2228,15 +2256,26 @@ async def stream_chat(
                         full_response += text_chunk
                         yield text_chunk
 
-        # Try initial provider, fallback to Mistral if it fails
+        # Try initial provider, fallback to the next available provider (by
+        # priority order) if it fails
         try:
             async for token in _run_stream(resolved_provider, api_key):
                 yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
         except Exception as prov_err:
-            if resolved_provider != "mistral" and os.environ.get("MISTRAL_API_KEY"):
-                logger.warning(f"[RAG] Provider '{resolved_provider}' failed ({prov_err}). Falling back to Mistral (open-mistral-7b)...")
-                mistral_key = os.environ.get("MISTRAL_API_KEY", "").strip()
-                async for token in _run_stream("mistral", mistral_key):
+            fallback_provider = None
+            fallback_key = None
+            for prov in LLM_PROVIDER_PRIORITY:
+                if prov == resolved_provider:
+                    continue
+                candidate_key = os.environ.get(f"{prov.upper()}_API_KEY", "").strip()
+                if candidate_key:
+                    fallback_provider = prov
+                    fallback_key = candidate_key
+                    break
+
+            if fallback_provider:
+                logger.warning(f"[RAG] Provider '{resolved_provider}' failed ({prov_err}). Falling back to '{fallback_provider}'...")
+                async for token in _run_stream(fallback_provider, fallback_key):
                     yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
             else:
                 raise prov_err
@@ -2248,6 +2287,7 @@ async def stream_chat(
         return
 
     # ── Save user & assistant messages to DB ONLY on successful generation ───
+    persisted_assistant_msg_id = None
     if full_response and full_response.strip() and project_id and project_id != "dummy":
         try:
             # 1. Save user message
@@ -2264,6 +2304,7 @@ async def stream_chat(
                 project.llm_provider = resolved_provider
 
             await db.commit()
+            persisted_assistant_msg_id = assistant_msg.id
 
             # Auto-update chat title to a 4-6 word summary of starting conversation context
             if project and user_content:
@@ -2277,4 +2318,46 @@ async def stream_chat(
                         await db.commit()
         except Exception as e:
             logger.warning(f"[RAG] Failed to save conversation messages: {e}")
+
+    # ── Observability: validate recharts output (non-blocking, logging only) ──
+    # Never affects streaming (already fully sent above) or the DB commit above —
+    # purely a diagnostic pass over the already-assembled full_response.
+    try:
+        from backend.services import output_validator
+        validation = output_validator.validate_output(full_response, agent_type)
+        log_payload = {
+            "project_id": project_id,
+            "agent_type": agent_type,
+            "chart_count": validation.get("chart_count"),
+            "valid_charts": validation.get("valid_charts"),
+            "invalid_charts": validation.get("invalid_charts"),
+        }
+        if validation.get("invalid_charts"):
+            logger.warning(f"[output_validator] Invalid chart(s) detected: {log_payload}")
+        else:
+            logger.info(f"[output_validator] Output validated: {log_payload}")
+    except Exception as e:
+        logger.warning(f"[output_validator] Validation logging failed (non-fatal): {e}")
+
+    # ── Report snapshot: persist a versioned Report row for genuine reports ──
+    # Fully isolated from streaming, the message save, and validation logging
+    # above — a snapshot failure here must never affect any of them.
+    try:
+        if full_response and full_response.strip() and project and persisted_assistant_msg_id:
+            from backend.services import output_validator as _ov
+            from backend.services import report_service
+
+            snap_validation = _ov.validate_output(full_response, agent_type)
+            qualifies = snap_validation.get("chart_count", 0) >= 1 or snap_validation.get("heading_count", 0) >= 3
+            if qualifies:
+                await report_service.create_report_snapshot(
+                    db=db,
+                    project_id=project_id,
+                    user_id=project.user_id,
+                    agent_type=agent_type,
+                    content=full_response,
+                    message_id=persisted_assistant_msg_id,
+                )
+    except Exception as e:
+        logger.warning(f"[report_service] Report snapshot failed (non-fatal): {e}")
 

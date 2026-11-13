@@ -5,6 +5,10 @@ from backend.database import Base
 import uuid
 from datetime import datetime
 
+# Imported so SQLAlchemy's mapper registry can resolve the "Report" string
+# in the relationship below before any query runs.
+from backend.models.report import Report  # noqa: F401
+
 class Project(Base):
     __tablename__ = "projects"
 
@@ -22,3 +26,4 @@ class Project(Base):
     user = relationship("User", back_populates="projects")
     brand = relationship("BrandConfig", back_populates="projects")
     messages = relationship("Message", back_populates="project", cascade="all, delete-orphan", lazy="selectin")
+    reports = relationship("Report", back_populates="project", cascade="all, delete-orphan", lazy="selectin")

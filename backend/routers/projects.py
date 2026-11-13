@@ -8,6 +8,8 @@ from backend.dependencies import get_db, get_current_user
 from backend.models.user import User
 from backend.models.project import Project
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from backend.schemas.report import ReportMetadata
+from backend.services import report_service
 
 from sqlalchemy.orm import selectinload
 
@@ -78,6 +80,15 @@ async def update_project(project_id: str, project_update: ProjectUpdate, db: Asy
     await db.commit()
     res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == project_id))
     return res.scalars().first()
+
+@router.get("/{project_id}/reports", response_model=List[ReportMetadata])
+async def get_project_reports(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return await report_service.list_reports(db, project_id, current_user.id)
 
 @router.delete("/{project_id}")
 async def delete_project(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
