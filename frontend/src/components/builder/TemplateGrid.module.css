@@ -222,6 +222,38 @@
   opacity: 0.8;
 }
 
+/* Category sections (2-level grouping: group tabs → category sections) */
+.categorySection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.categorySection + .categorySection {
+  margin-top: 8px;
+}
+
+.categorySectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.categorySectionTitle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.categorySectionCount {
+  font-size: 11px;
+  font-weight: 700;
+  color: #A39E97;
+  background: #F5F1EB;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
 /* Templates Grid */
 .grid {
   display: grid;
@@ -252,6 +284,18 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardIcon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .cardTitle {
@@ -327,4 +371,44 @@
   padding: 48px;
   color: #A39E97;
   font-size: 14px;
+}
+
+.cardSkeleton {
+  background: linear-gradient(90deg, #F5F1EB 25%, #FAF8F5 37%, #F5F1EB 63%);
+  background-size: 400% 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+  cursor: default;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 48px;
+  color: #6B6560;
+  font-size: 14px;
+}
+
+.retryBtn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1px solid #D4A843;
+  background: #FAF8F5;
+  color: #1A1A1A;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.retryBtn:hover {
+  background: #D4A843;
+  color: #ffffff;
 }

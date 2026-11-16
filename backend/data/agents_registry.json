@@ -1,0 +1,861 @@
+{
+  "categories": [
+    {
+      "id": "digital-strategy",
+      "name": "Digital Strategy",
+      "group": "Branding & Marketing"
+    },
+    {
+      "id": "brand-strategy",
+      "name": "Brand Strategy",
+      "group": "Branding & Marketing"
+    },
+    {
+      "id": "performance-marketing",
+      "name": "Performance Marketing",
+      "group": "Branding & Marketing"
+    },
+    {
+      "id": "strategy-planning",
+      "name": "Strategy & Planning",
+      "group": "Branding & Marketing"
+    },
+    {
+      "id": "competitive-intelligence",
+      "name": "Competitive Intelligence",
+      "group": "Research & Operations"
+    },
+    {
+      "id": "legal-ops",
+      "name": "Legal & Ops",
+      "group": "Research & Operations"
+    }
+  ],
+  "agents": [
+    {
+      "id": "competition-analysis",
+      "title": "Competition Analysis",
+      "category": "competitive-intelligence",
+      "description": "Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.",
+      "connectors": [
+        "Firecrawl",
+        "Ahrefs",
+        "Semrush API Key",
+        "Exa"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which specific competitors concern you most and why?"
+        },
+        {
+          "id": "q2",
+          "text": "What market or geography should we focus on?"
+        },
+        {
+          "id": "q3",
+          "text": "What differentiators do you believe you have over competitors?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "gtm-strategy",
+      "title": "GTM Strategy",
+      "category": "strategy-planning",
+      "description": "Launch with confidence using a complete Go-To-Market roadmap. Define your target audience, pricing, and distribution channels to maximize market impact.",
+      "connectors": [
+        "HubSpot",
+        "Salesforce",
+        "Google Analytics",
+        "Exa"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Who is your primary target customer segment?"
+        },
+        {
+          "id": "q2",
+          "text": "What channels (digital, offline, partnerships) are you prioritising?"
+        },
+        {
+          "id": "q3",
+          "text": "What is your launch timeline and budget range?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "product-launch-strategy",
+      "title": "Product Launch Strategy",
+      "category": "strategy-planning",
+      "description": "Turn your new product idea into a structured, high-impact rollout plan. Map out your pre-launch buzz, launch day execution, and post-launch retention tactics.",
+      "connectors": [
+        "Google Analytics",
+        "LinkedIn",
+        "X",
+        "Reddit",
+        "Firecrawl"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What are you launching?"
+        },
+        {
+          "id": "q2",
+          "text": "What is the primary objective of this launch?"
+        },
+        {
+          "id": "q3",
+          "text": "What is your planned launch timeline?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "social-media-strategy",
+      "title": "Social Media Strategy",
+      "category": "digital-strategy",
+      "description": "Build an engaging social presence that converts followers into customers. Get tailored content pillars, posting cadences, and platform-specific growth tactics.",
+      "connectors": [
+        "LinkedIn",
+        "X",
+        "Reddit",
+        "YouTube"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which social platforms are most important for your brand?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your current posting frequency and content mix?"
+        },
+        {
+          "id": "q3",
+          "text": "What specific social media outcomes do you want to improve?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "content-calendar",
+      "title": "Content Calendar",
+      "category": "digital-strategy",
+      "description": "A content planner. It researches what's trending, proposes a monthly calendar of topics, and drafts a brief for each piece...",
+      "connectors": [
+        "Semrush API Key",
+        "Reddit",
+        "YouTube",
+        "Notion",
+        "Google Docs"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What are your main content themes or topics, and who is the target audience?"
+        },
+        {
+          "id": "q2",
+          "text": "Which channels will the content run on (blog, social, email, YouTube) and at what frequency?"
+        },
+        {
+          "id": "q3",
+          "text": "What business outcome should the content drive (awareness, leads, SEO, retention)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "festival-topical-campaign-strategy",
+      "title": "Festival/Topical Campaign Strategy",
+      "category": "performance-marketing",
+      "description": "Plans festival-season and topical marketing campaigns with timing, messaging, and channel recommendations. Maps out topical authority clusters, pillar topics, and internal linking structures...",
+      "connectors": [
+        "Google Calendar",
+        "Semrush API Key",
+        "Exa",
+        "Reddit",
+        "Firecrawl"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which festivals, occasions, or topical moments do you want to target?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your product or offer, and how does it connect to these occasions?"
+        },
+        {
+          "id": "q3",
+          "text": "What is your budget range and primary goal (sales, reach, engagement)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "geo-aeo",
+      "title": "GEO/AEO",
+      "category": "digital-strategy",
+      "description": "Optimize your brand to rank higher in AI search engines like ChatGPT and Perplexity. Ensure AI tools accurately understand and recommend your brand to users.",
+      "connectors": [
+        "Google Search Console",
+        "Ahrefs",
+        "Semrush API Key",
+        "Bing Webmaster",
+        "Firecrawl",
+        "SerpAPI"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What questions or topics do you want your brand to show up for in AI answers (ChatGPT, Perplexity, Google AI Overviews)?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your current website and content setup, and do you have structured data or schema in place?"
+        },
+        {
+          "id": "q3",
+          "text": "Which competitors or sources are currently being cited for your topics?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "seo-strategy",
+      "title": "SEO Strategy",
+      "category": "digital-strategy",
+      "description": "A comprehensive SEO agent. Give it a website URL and it crawls pages, identifies issues, researches keywords, audits on-page factors, analyzes backlinks, and builds an actionable optimization roadmap...",
+      "connectors": [
+        "Google Search Console",
+        "Ahrefs",
+        "Semrush API Key",
+        "Bing Webmaster",
+        "Firecrawl"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What are your primary target keywords or topics, and your main geography?"
+        },
+        {
+          "id": "q2",
+          "text": "What is the current state of your site (traffic, rankings, known technical issues)?"
+        },
+        {
+          "id": "q3",
+          "text": "What are your top business goals for organic search (leads, sales, visibility)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "seasonal-campaign",
+      "title": "Seasonal Campaign",
+      "category": "performance-marketing",
+      "description": "Builds seasonal marketing plans covering Q1–Q4 peaks, promotional windows, and content cadences for maximum impact...",
+      "connectors": [
+        "Google Analytics",
+        "Google Search Console",
+        "Semrush API Key"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which seasons or peak periods are most important for your business?"
+        },
+        {
+          "id": "q2",
+          "text": "What products or offers do you run during these periods?"
+        },
+        {
+          "id": "q3",
+          "text": "What is your budget range and primary KPI for seasonal campaigns?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "brand-audit",
+      "title": "Brand Audit",
+      "category": "brand-strategy",
+      "description": "Evaluate your brand's current health, consistency, and messaging across all channels. Discover actionable ways to strengthen your identity.",
+      "connectors": [
+        "Google Analytics",
+        "Google Search Console",
+        "Reddit",
+        "X",
+        "Firecrawl"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "How would you describe your current brand positioning?"
+        },
+        {
+          "id": "q2",
+          "text": "What do customers currently say about your brand?"
+        },
+        {
+          "id": "q3",
+          "text": "Which brand elements feel outdated or misaligned?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "brand-positioning",
+      "title": "Brand Positioning",
+      "category": "brand-strategy",
+      "description": "Defines your unique market position. Analyzes competitors, identifies white space, and crafts a compelling positioning statement...",
+      "connectors": [
+        "Exa",
+        "Firecrawl"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "How would you describe your brand's current positioning and target audience?"
+        },
+        {
+          "id": "q2",
+          "text": "Who are your main competitors, and how do you want to be different from them?"
+        },
+        {
+          "id": "q3",
+          "text": "What core value or promise do you want your brand to stand for?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "icp-and-personas",
+      "title": "ICP & Personas",
+      "category": "strategy-planning",
+      "description": "Defines your Ideal Customer Profile and builds detailed buyer personas with firmographics, pain points, and buying triggers...",
+      "connectors": [
+        "HubSpot",
+        "Salesforce",
+        "Apollo"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Describe your best current customers — who are they and why do they buy?"
+        },
+        {
+          "id": "q2",
+          "text": "What industries, company sizes, or demographics do you want to target?"
+        },
+        {
+          "id": "q3",
+          "text": "What problem does your product solve, and what triggers a purchase?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "campaign-structure-architect",
+      "title": "Campaign Structure Architect",
+      "category": "performance-marketing",
+      "description": "Designs the optimal campaign structure for your paid media. Covers account hierarchy, ad group logic, naming conventions...",
+      "connectors": [
+        "Google Ads",
+        "Google Analytics"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which paid channels are you running or planning (Google, Meta, LinkedIn, etc.)?"
+        },
+        {
+          "id": "q2",
+          "text": "What are your products or services, and your campaign objectives (leads, sales, awareness)?"
+        },
+        {
+          "id": "q3",
+          "text": "What is your total monthly ad budget, and how is it split today?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "bidding-and-budget-optimizer",
+      "title": "Bidding & Budget Optimizer",
+      "category": "performance-marketing",
+      "description": "Analyzes your current bidding strategies and budget allocation across campaigns and recommends optimizations for better ROI...",
+      "connectors": [
+        "Google Ads",
+        "Google Analytics"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What are your primary performance goals (target CPA, ROAS, or volume)?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your current bidding setup and monthly budget across channels?"
+        },
+        {
+          "id": "q3",
+          "text": "What are your current results, and the main performance problem you want to fix?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "company-research-agent",
+      "title": "Company Research Agent",
+      "category": "competitive-intelligence",
+      "description": "A company research agent. Give it a company name and it puts together a one-pager covering their product, team...",
+      "connectors": [
+        "LinkedIn",
+        "Exa",
+        "Firecrawl"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which company or companies do you want researched?"
+        },
+        {
+          "id": "q2",
+          "text": "What do you most want to understand (business model, financials, strategy, products)?"
+        },
+        {
+          "id": "q3",
+          "text": "What decision or goal is this research supporting (sales, partnership, competitive, investment)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "competitive-intelligence-agent",
+      "title": "Competitive Intelligence Agent",
+      "category": "competitive-intelligence",
+      "description": "A competitive intel agent. It watches competitor websites for changes, tracks their announcements and press...",
+      "connectors": [
+        "Firecrawl",
+        "Ahrefs",
+        "Reddit",
+        "X"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which competitors do you want to track or profile?"
+        },
+        {
+          "id": "q2",
+          "text": "What aspects matter most (pricing, messaging, products, campaigns, hiring)?"
+        },
+        {
+          "id": "q3",
+          "text": "How will you use this intelligence (sales battlecards, strategy, positioning)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "email-marketing",
+      "title": "Email Marketing",
+      "category": "digital-strategy",
+      "description": "Lifecycle flows, segmentation, and campaigns to grow email revenue",
+      "connectors": [
+        "Mailchimp",
+        "HubSpot",
+        "Google Analytics",
+        "Exa"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What email platform and list size are you working with?"
+        },
+        {
+          "id": "q2",
+          "text": "What are your current email types and sending frequency?"
+        },
+        {
+          "id": "q3",
+          "text": "What's your primary email goal (revenue, retention, nurture, re-engagement)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "influencer-marketing",
+      "title": "Influencer Marketing",
+      "category": "digital-strategy",
+      "description": "Creator partnerships, tiering, and ROI strategy across platforms",
+      "connectors": [
+        "Instagram",
+        "Exa",
+        "Firecrawl"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which platforms and creator tiers are you targeting (nano, micro, macro)?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your product and budget range for influencer campaigns?"
+        },
+        {
+          "id": "q3",
+          "text": "What outcome matters most (awareness, sales, UGC, credibility)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "affiliate-marketing",
+      "title": "Affiliate Marketing",
+      "category": "digital-strategy",
+      "description": "Program design, commissions, and partner recruitment",
+      "connectors": [
+        "Firecrawl",
+        "Exa",
+        "Google Analytics"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Do you have an existing affiliate program, or starting fresh?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your product, margin, and target commission structure?"
+        },
+        {
+          "id": "q3",
+          "text": "What types of affiliates do you want to recruit (bloggers, coupon, influencers, review sites)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "digital-pr",
+      "title": "Digital PR",
+      "category": "digital-strategy",
+      "description": "Media relations, story angles, and earned-media coverage",
+      "connectors": [
+        "Exa",
+        "Firecrawl",
+        "Tavily"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What newsworthy story, product, or milestone do you want coverage for?"
+        },
+        {
+          "id": "q2",
+          "text": "Which outlets, publications, or journalists matter to your audience?"
+        },
+        {
+          "id": "q3",
+          "text": "What is your PR goal (awareness, SEO backlinks, reputation, launch)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "online-reputation-management",
+      "title": "Online Reputation Management",
+      "category": "digital-strategy",
+      "description": "Review strategy, sentiment monitoring, and reputation building",
+      "connectors": [
+        "Firecrawl",
+        "Exa",
+        "Tavily",
+        "Instagram"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What reputation concern or goal brought you here (reviews, negative content, proactive)?"
+        },
+        {
+          "id": "q2",
+          "text": "Which review platforms and channels matter most for your business?"
+        },
+        {
+          "id": "q3",
+          "text": "What is your current rating/sentiment and the outcome you want?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "e-commerce-strategy",
+      "title": "E-commerce Strategy",
+      "category": "digital-strategy",
+      "description": "Conversion, pricing, and channel strategy for online revenue",
+      "connectors": [
+        "Firecrawl",
+        "Google Analytics",
+        "Exa",
+        "Ahrefs"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What do you sell, and on which channels (own store, marketplaces, both)?"
+        },
+        {
+          "id": "q2",
+          "text": "What are your current revenue, conversion rate, and biggest bottleneck?"
+        },
+        {
+          "id": "q3",
+          "text": "What's your primary growth goal (traffic, conversion, AOV, retention)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "brand-identity",
+      "title": "Brand Identity",
+      "category": "brand-strategy",
+      "description": "Personality, visual and verbal identity, and guidelines",
+      "connectors": [
+        "Firecrawl",
+        "Instagram",
+        "Exa"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "How would you describe your brand's personality and current identity?"
+        },
+        {
+          "id": "q2",
+          "text": "Who is your target audience and what feeling should the brand evoke?"
+        },
+        {
+          "id": "q3",
+          "text": "What's prompting this (rebrand, new brand, inconsistency, refresh)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "ppc-and-paid-ads",
+      "title": "PPC & Paid Ads",
+      "category": "performance-marketing",
+      "description": "Channel mix, targeting, and budget strategy across paid media",
+      "connectors": [
+        "Google Ads",
+        "Meta Ads",
+        "Google Analytics",
+        "Exa"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which paid channels are you running or want to run?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your monthly budget and primary objective (leads, sales, awareness)?"
+        },
+        {
+          "id": "q3",
+          "text": "What are your current results and main challenge (CAC, ROAS, scale)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "conversion-rate-optimization",
+      "title": "Conversion Rate Optimization",
+      "category": "performance-marketing",
+      "description": "Funnel analysis, experimentation, and personalization",
+      "connectors": [
+        "Google Analytics",
+        "Firecrawl",
+        "Exa"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which page or funnel step do you most want to improve?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your current conversion rate and traffic volume?"
+        },
+        {
+          "id": "q3",
+          "text": "What do you think is causing drop-off, and what's your conversion goal?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "marketing-analytics",
+      "title": "Marketing Analytics",
+      "category": "performance-marketing",
+      "description": "Measurement framework, attribution, and reporting",
+      "connectors": [
+        "Google Analytics",
+        "Google Ads",
+        "Meta Ads",
+        "HubSpot"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What channels and tools are you trying to measure across?"
+        },
+        {
+          "id": "q2",
+          "text": "What decisions do you need the analytics to inform?"
+        },
+        {
+          "id": "q3",
+          "text": "What's your biggest measurement gap today (attribution, reporting, data quality)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "market-entry-strategy",
+      "title": "Market Entry Strategy",
+      "category": "strategy-planning",
+      "description": "Opportunity, entry mode, and phased roadmap for new markets",
+      "connectors": [
+        "Exa",
+        "Firecrawl",
+        "Tavily"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Which new market or geography are you considering entering?"
+        },
+        {
+          "id": "q2",
+          "text": "What is your product and current home-market position?"
+        },
+        {
+          "id": "q3",
+          "text": "What's your risk appetite, timeline, and budget for entry?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "pricing-strategy",
+      "title": "Pricing Strategy",
+      "category": "strategy-planning",
+      "description": "Value-based pricing, tiers, and monetization model design",
+      "connectors": [
+        "Firecrawl",
+        "Exa",
+        "Tavily"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What is your current pricing model, and what's prompting a review?"
+        },
+        {
+          "id": "q2",
+          "text": "Who are your main competitors and how do they price?"
+        },
+        {
+          "id": "q3",
+          "text": "What's your goal (raise margin, grow volume, enter new segment, simplify)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "partnership-strategy",
+      "title": "Partnership Strategy",
+      "category": "strategy-planning",
+      "description": "Alliance types, partner profiles, and activation roadmap",
+      "connectors": [
+        "Exa",
+        "Firecrawl",
+        "HubSpot"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What kind of partnerships are you after (channel, tech, co-marketing, strategic)?"
+        },
+        {
+          "id": "q2",
+          "text": "What do you bring to a partner, and what do you need from one?"
+        },
+        {
+          "id": "q3",
+          "text": "What's the business goal these partnerships should drive?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "innovation-strategy",
+      "title": "Innovation Strategy",
+      "category": "strategy-planning",
+      "description": "Opportunity identification, portfolio, and roadmap",
+      "connectors": [
+        "Exa",
+        "Firecrawl",
+        "Tavily"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What area do you want to innovate in (product, service, model, process)?"
+        },
+        {
+          "id": "q2",
+          "text": "What capabilities and resources can you bring to bear?"
+        },
+        {
+          "id": "q3",
+          "text": "What's driving the need (competition, growth stall, new tech, customer shift)?"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "compliance-and-legal",
+      "title": "Compliance & Legal",
+      "category": "legal-ops",
+      "description": "Informational guidance on advertising, privacy, and marketing compliance (not legal advice)",
+      "connectors": [
+        "Exa",
+        "Firecrawl",
+        "Tavily"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What marketing activity or region do you need compliance guidance for?"
+        },
+        {
+          "id": "q2",
+          "text": "What data do you collect, and through what channels?"
+        },
+        {
+          "id": "q3",
+          "text": "What's your main concern (advertising claims, privacy/consent, disclosures, IP)?"
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}

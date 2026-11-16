@@ -1,0 +1,1176 @@
+'use client';
+import { memo, Component, useState, Children, isValidElement, type ReactNode } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  LabelList, ScatterChart, Scatter, ReferenceLine
+} from 'recharts';
+import styles from './builder/MainContent.module.css';
+
+// Extracted from MainContent.tsx so it can be reused by both the chat report
+// cards and the public share page. Pure extraction — behavior is unchanged.
+
+export const EXECUTIVE_COLORS = [
+  '#2D2A26', // Deep Charcoal
+  '#D4A843', // Warm StratAI Gold
+  '#3B82F6', // Corporate Blue
+  '#10B981', // Emerald
+  '#8B5CF6', // Purple
+  '#EC4899', // Rose
+  '#F59E0B', // Amber
+  '#06B6D4', // Cyan
+  '#6366F1', // Indigo
+];
+
+export const resolveChartContext = (data: any, chartData: any[], chartType: string) => {
+  const title = (data.title || '').trim();
+  const lowerTitle = title.toLowerCase();
+
+  // Detect scale types
+  const isTenScale = lowerTitle.includes('1-10') || lowerTitle.includes('1–10') || lowerTitle.includes('index') || lowerTitle.includes('scale');
+  const isPercentage = lowerTitle.includes('share') || lowerTitle.includes('%') || lowerTitle.includes('voice') || lowerTitle.includes('percent');
+
+  // 1. Resolve X-Axis Demonstration
+  let xLabel = data.x_label || '';
+  if (!xLabel) {
+    if (lowerTitle.includes('brand') || lowerTitle.includes('competitor') || lowerTitle.includes('pricing') || lowerTitle.includes('price') || lowerTitle.includes('scale signal')) {
+      xLabel = 'Brands & Competitors Analyzed';
+    } else if (lowerTitle.includes('channel') || lowerTitle.includes('acquisition') || lowerTitle.includes('media')) {
+      xLabel = 'Marketing & Growth Channels';
+    } else if (lowerTitle.includes('segment') || lowerTitle.includes('audience') || lowerTitle.includes('customer')) {
+      xLabel = 'Target Customer Segments';
+    } else if (lowerTitle.includes('timeline') || lowerTitle.includes('month') || lowerTitle.includes('quarter') || lowerTitle.includes('phase')) {
+      xLabel = 'Execution Phase / Timeline';
+    } else if (chartData.length > 0 && chartData[0].subject) {
+      xLabel = 'Strategic Dimensions Evaluated';
+    } else {
+      xLabel = 'Analyzed Categories';
+    }
+  }
+
+  // 2. Resolve Y-Axis Demonstration & Metric Units
+  let yLabel = data.y_label || '';
+  let yShortLabel = '';
+  let metricUnit = data.unit || '';
+  if (!yLabel) {
+    if (lowerTitle.includes('price') || lowerTitle.includes('pricing')) {
+      yLabel = 'Price Index (Scale 1–10: 1 = Budget, 10 = Luxury/Premium)';
+      yShortLabel = 'Price Index (1–10)';
+      metricUnit = 'Price Index';
+    } else if (lowerTitle.includes('scale')) {
+      yLabel = 'Scale Signal (1–10) • Digital Reach & Operational Volume (1 = Niche Challenger, 10 = Market Giant)';
+      yShortLabel = 'Scale Signal (1–10)';
+      metricUnit = 'Scale Score';
+    } else if (isPercentage) {
+      yLabel = 'Share of Voice (%) • Organic & Digital Market Presence';
+      yShortLabel = 'Share (%)';
+      metricUnit = 'Share (%)';
+    } else if (lowerTitle.includes('budget') || lowerTitle.includes('spend') || lowerTitle.includes('allocation')) {
+      yLabel = 'Budget Allocation Weight / Resource Focus';
+      yShortLabel = 'Resource Weight';
+      metricUnit = 'Allocation';
+    } else if (lowerTitle.includes('intensity') || lowerTitle.includes('effort')) {
+      yLabel = 'Execution Intensity (Scale 1–10)';
+      yShortLabel = 'Intensity (1–10)';
+      metricUnit = 'Intensity Score';
+    } else {
+      yLabel = 'Benchmark Performance Score';
+      yShortLabel = 'Score';
+      metricUnit = 'Score';
+    }
+  } else {
+    yShortLabel = yLabel.includes('Scale Signal') ? 'Scale Signal (1–10)' : (yLabel.split('(')[0].trim() || yLabel);
+  }
+
+  // 3. Resolve Descriptive Meaning (What the graph actually measures)
+  let description = data.description || '';
+  if (!description) {
+    if (lowerTitle.includes('price') || lowerTitle.includes('pricing')) {
+      description = 'Benchmarks commercial pricing positioning relative to direct competitors. High scores reflect premium, high-margin brand positioning, whereas lower scores reflect accessibility, economy pricing, or freemium customer acquisition.';
+    } else if (lowerTitle.includes('scale')) {
+      description = 'Evaluates operational scale, content volume, and digital reach signals to compare institutional market weight against agile challenger brands.';
+    } else if (isPercentage) {
+      description = 'Measures estimated brand visibility, search prominence, and social conversation share across competitive alternatives.';
+    } else if (lowerTitle.includes('budget') || lowerTitle.includes('allocation')) {
+      description = 'Illustrates strategic capital and operational focus distribution across customer acquisition and brand awareness channels.';
+    } else if (lowerTitle.includes('segment') || lowerTitle.includes('customer')) {
+      description = 'Maps target audience distribution across core demographic and organizational buying groups.';
+    } else if (chartType === 'radar') {
+      description = 'Multi-dimensional competitive capability matrix highlighting differentiation boundaries, strengths, and market vulnerabilities.';
+    } else {
+      description = `Visual strategic benchmark evaluating ${xLabel.toLowerCase()} against ${yLabel.toLowerCase()}.`;
+    }
+  }
+
+  // 4. Synthesize Strategic Meaning / Takeaway
+  let takeaway = data.takeaway || '';
+  if (!takeaway && Array.isArray(chartData) && chartData.length > 0) {
+    const numericItems = chartData
+      .filter((d: any) => typeof d.value === 'number')
+      .sort((a: any, b: any) => b.value - a.value);
+
+    if (numericItems.length >= 2) {
+      const highest = numericItems[0];
+      const lowest = numericItems[numericItems.length - 1];
+      const sum = numericItems.reduce((acc: number, curr: any) => acc + curr.value, 0);
+      const avg = (sum / numericItems.length).toFixed(1);
+
+      if (lowerTitle.includes('price') || lowerTitle.includes('pricing')) {
+        takeaway = `${highest.name} commands the highest price point (${highest.value}/10), establishing luxury or premium positioning. Conversely, ${lowest.name} (${lowest.value}/10) focuses on value-driven volume. The market benchmark median is ${avg}/10, indicating competitive pricing room for differentiated mid-to-high offerings.`;
+      } else if (lowerTitle.includes('scale')) {
+        takeaway = `${highest.name} leads in aggregate operational scale (${highest.value}/10), whereas ${lowest.name} (${lowest.value}/10) operates as a focused specialist. Peer group average sits at ${avg}/10.`;
+      } else if (isPercentage) {
+        takeaway = `${highest.name} dominates estimated share of voice (${highest.value}%), while the remaining segment is contested among challengers.`;
+      } else {
+        takeaway = `${highest.name} ranks highest with a score of ${highest.value}, compared to the benchmark baseline of ${lowest.value} held by ${lowest.name} (Peer average: ${avg}).`;
+      }
+    }
+  }
+
+  return { xLabel, yLabel, yShortLabel, metricUnit, description, takeaway, isTenScale, isPercentage };
+};
+
+export const CustomChartTooltip = ({ active, payload, label, context }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E8E4DC',
+      borderRadius: '10px',
+      padding: '10px 14px',
+      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+      fontSize: '12px',
+      fontFamily: "'Inter', sans-serif",
+      minWidth: '150px',
+    }}>
+      {label && (
+        <div style={{ fontWeight: 700, color: '#1A1A1A', marginBottom: '6px', borderBottom: '1px solid #F0ECE4', paddingBottom: '4px' }}>
+          {label}
+        </div>
+      )}
+      {payload.map((item: any, i: number) => {
+        let metricName = item.name;
+        if (!metricName || metricName === 'value') {
+          metricName = context?.metricUnit || 'Score';
+        }
+
+        let valText = `${item.value}`;
+        if (context?.isTenScale && typeof item.value === 'number') {
+          const tier = item.value >= 8 ? 'Premium' : item.value >= 5 ? 'Mid-Tier' : 'Budget';
+          valText = `${item.value} / 10 (${tier})`;
+        } else if (context?.isPercentage && typeof item.value === 'number') {
+          valText = `${item.value}%`;
+        }
+
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color || item.fill }} />
+              <span style={{ color: '#57534E', fontWeight: 500 }}>{metricName}</span>
+            </div>
+            <span style={{ fontWeight: 700, color: '#1A1A1A' }}>{valText}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Tooltip for the scatter/positioning-map chart — each point carries an (x, y)
+// pair rather than a single value, so it needs its own two-row layout instead
+// of CustomChartTooltip's single-metric-per-row list.
+export const ScatterChartTooltip = ({ active, payload, context }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  const point = payload[0]?.payload;
+  if (!point) return null;
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E8E4DC',
+      borderRadius: '10px',
+      padding: '10px 14px',
+      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+      fontSize: '12px',
+      fontFamily: "'Inter', sans-serif",
+      minWidth: '150px',
+    }}>
+      <div style={{ fontWeight: 700, color: '#1A1A1A', marginBottom: '6px', borderBottom: '1px solid #F0ECE4', paddingBottom: '4px' }}>
+        {point.name || 'Point'}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '4px' }}>
+        <span style={{ color: '#57534E', fontWeight: 500 }}>{context?.xLabel || 'X'}</span>
+        <span style={{ fontWeight: 700, color: '#1A1A1A' }}>{point.x}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '4px' }}>
+        <span style={{ color: '#57534E', fontWeight: 500 }}>{context?.yShortLabel || context?.yLabel || 'Y'}</span>
+        <span style={{ fontWeight: 700, color: '#1A1A1A' }}>{point.y}</span>
+      </div>
+    </div>
+  );
+};
+
+// Small, visually-consistent fallback shown whenever a `recharts` block can't be
+// trusted enough to render as a chart (malformed JSON, unsupported type, no data).
+export const ChartFallbackCard = ({ message, rawContent }: { message: string; rawContent?: string }) => (
+  <div style={{
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    margin: '22px 0',
+    background: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '20px 24px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+    border: '1px solid #E8E4DC',
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{
+        background: '#FAF8F5',
+        border: '1px solid #E8E4DC',
+        width: 32,
+        height: 32,
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        color: '#6B6560'
+      }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 3v18h18" />
+          <path d="M7 15l3-4 3 2 4-6" />
+        </svg>
+      </div>
+      <span style={{ fontSize: '13px', fontWeight: 700, color: '#6B6560' }}>{message}</span>
+    </div>
+    {rawContent && (
+      <details style={{ marginTop: '12px' }}>
+        <summary style={{ fontSize: '11px', fontWeight: 600, color: '#A39E97', cursor: 'pointer' }}>
+          Show raw block
+        </summary>
+        <pre style={{
+          marginTop: '8px',
+          fontSize: '11px',
+          color: '#6B6560',
+          background: '#FAF8F5',
+          border: '1px solid #E8E4DC',
+          borderRadius: '8px',
+          padding: '10px',
+          overflowX: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          margin: '8px 0 0'
+        }}>{rawContent}</pre>
+      </details>
+    )}
+  </div>
+);
+
+// Error boundary around ONLY the live Recharts render — if Recharts itself throws
+// during its own internal render (bad value type, scale error, etc.) this contains
+// the crash to the one chart instead of taking down the whole page.
+export class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: { componentStack?: string }) {
+    console.error('[ChartErrorBoundary] Chart render failed:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          width: '100%',
+          height: '100%',
+          minHeight: 220,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#FAF8F5',
+          border: '1px solid #E8E4DC',
+          borderRadius: '12px',
+          color: '#6B6560',
+          fontSize: '13px',
+          fontWeight: 600
+        }}>
+          Chart could not be rendered
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export const VALID_CHART_TYPES = ['bar', 'line', 'area', 'radar', 'pie', 'scatter'];
+
+// The LLM occasionally emits malformed JSON inside a recharts block. Each step
+// below fixes one specific, commonly-seen deviation from strict JSON without
+// touching well-formed blocks:
+//  1. Digit-grouped numbers ("Users": 1,500) — strip the grouping commas.
+//  2. Trailing commas before a closing `}`/`]`.
+//  3. Unquoted object keys ({name: "A"} -> {"name": "A"}).
+//  4. NaN / undefined literals (not valid JSON) -> null.
+//  5. Single-quoted strings -> double-quoted, but ONLY when the block uses no
+//     double quotes at all (a JSON5/Python-dict-style emission) — otherwise an
+//     apostrophe inside a normal double-quoted string (e.g. "Brand O'Brien")
+//     would get corrupted.
+export function sanitizeChartJson(raw: string): string {
+  let out = raw.replace(/:\s*(\d{1,3})(,\d{3})+(?=[,\s\}\]])/g, (match) => match.replace(/,/g, ''));
+  out = out.replace(/,(\s*[}\]])/g, '$1');
+  // Checked against the ORIGINAL raw text, before the key-quoting step below
+  // introduces its own double quotes.
+  if (!raw.includes('"')) {
+    out = out.replace(/'([^']*)'/g, '"$1"');
+  }
+  out = out.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3');
+  out = out.replace(/:\s*(NaN|undefined)\b/g, ': null');
+  return out;
+}
+
+// The LLM sometimes declares a "keys" array with units/annotations
+// ("Market Size (USD Mn)") while the actual data rows use the bare property
+// name ("Market Size"). Recharts' dataKey lookup is an exact string match,
+// so a mismatched key silently plots nothing. Map each declared key back to
+// the real row property when it doesn't exist verbatim in the data.
+export function normalizeChartKeys(
+  chartData: Record<string, any>[],
+  declaredKeys: string[]
+): string[] {
+  if (!chartData.length || !declaredKeys.length) return declaredKeys;
+
+  const sampleRow = chartData[0];
+  const rowKeys = Object.keys(sampleRow).filter(k => k !== 'name' && k !== 'subject');
+
+  const allKeysExist = declaredKeys.every(k => k in sampleRow);
+  if (allKeysExist) return declaredKeys;
+
+  const normalizedKeys: string[] = [];
+  for (const declaredKey of declaredKeys) {
+    if (declaredKey in sampleRow) {
+      normalizedKeys.push(declaredKey);
+      continue;
+    }
+
+    // Strip parenthetical suffixes: "Market Size (USD Mn)" → "Market Size"
+    const stripped = declaredKey.replace(/\s*\(.*?\)\s*$/, '').trim();
+    const match = rowKeys.find(rk =>
+      rk === stripped ||
+      rk.startsWith(stripped) ||
+      stripped.startsWith(rk)
+    );
+
+    normalizedKeys.push(match || declaredKey);
+  }
+
+  return normalizedKeys;
+}
+
+export const RechartsBlock = memo(({ children, className, ...props }: any) => {
+  const rawText = String(children).replace(/\n$/, '');
+  try {
+    const data = JSON.parse(sanitizeChartJson(rawText));
+    const COLORS = EXECUTIVE_COLORS;
+
+    // Normalize chart type
+    let chartType = (data.type || '').toString().toLowerCase().trim();
+    if (chartType === 'bar_chart' || chartType === 'column') chartType = 'bar';
+    if (chartType === 'line_chart' || chartType === 'trend') chartType = 'line';
+    if (chartType === 'area_chart') chartType = 'area';
+    if (chartType === 'radar_chart' || chartType === 'spider') chartType = 'radar';
+    if (chartType === 'pie_chart' || chartType === 'donut') chartType = 'pie';
+    if (chartType === 'scatter_chart' || chartType === 'quadrant' || chartType === 'positioning_map' || chartType === 'xy') chartType = 'scatter';
+
+    // Auto-detect missing chart type based on data structure
+    const chartData = Array.isArray(data.data) ? data.data : [];
+    if (!chartType) {
+      const sampleItem = chartData[0] || {};
+      if ('subject' in sampleItem) {
+        chartType = 'radar';
+      } else if (typeof sampleItem.x === 'number' && typeof sampleItem.y === 'number') {
+        chartType = 'scatter';
+      } else if (data.keys && data.keys.length > 0) {
+        chartType = 'line';
+      } else {
+        chartType = 'bar';
+      }
+    }
+
+    // Unknown/unsupported type (typo, future type, etc.) — do NOT fall through to
+    // a PieChart render that doesn't match the data. Show a clear fallback instead.
+    if (!VALID_CHART_TYPES.includes(chartType)) {
+      console.warn('[RechartsBlock] Unsupported chart type — showing fallback.', { chartType, rawText });
+      return <ChartFallbackCard message="Unsupported chart type" rawContent={rawText} />;
+    }
+
+    // No usable data — show an explicit empty state instead of a blank axes shell.
+    if (chartData.length === 0) {
+      console.warn('[RechartsBlock] No chart data found — showing fallback.', { rawText });
+      return <ChartFallbackCard message="No chart data available" rawContent={rawText} />;
+    }
+
+    const rawKeys = data.keys || (chartData.length > 0 ? Object.keys(chartData[0]).filter(k => k !== 'name' && k !== 'subject' && k !== 'category') : ['value']);
+    const keys = normalizeChartKeys(chartData, rawKeys);
+    const effectiveKeys = keys.length > 0 ? keys : ['value'];
+
+    // Resolve comprehensive axis demonstration, descriptions, and takeaways
+    const context = resolveChartContext(data, chartData, chartType);
+
+    // Scatter/positioning-map domain — defaults to a 0-10 scale (the typical
+    // positioning-axis range) but expands to fit the data if it goes further.
+    const scatterXVals = chartType === 'scatter' ? chartData.map((d: any) => typeof d.x === 'number' ? d.x : 0) : [];
+    const scatterYVals = chartType === 'scatter' ? chartData.map((d: any) => typeof d.y === 'number' ? d.y : 0) : [];
+    const scatterXMin = Math.min(0, ...scatterXVals);
+    const scatterXMax = Math.max(10, ...scatterXVals);
+    const scatterYMin = Math.min(0, ...scatterYVals);
+    const scatterYMax = Math.max(10, ...scatterYVals);
+    const scatterXMid = (scatterXMin + scatterXMax) / 2;
+    const scatterYMid = (scatterYMin + scatterYMax) / 2;
+
+    // Compute executive summary stat badges for fullness and immediate insight
+    const kpiSummary = (() => {
+      // Single-value leader/average/baseline badges don't map onto a 2D (x, y)
+      // positioning point, so skip them for scatter charts.
+      if (chartType === 'scatter') return null;
+      if (!Array.isArray(chartData) || chartData.length === 0) return null;
+      const numItems = chartData
+        .map((d: any) => {
+          const key0 = effectiveKeys[0];
+          const val = typeof d[key0] === 'number' 
+            ? d[key0] 
+            : (typeof d.value === 'number' ? d.value : null);
+          return {
+            name: d.name || d.subject || d.category || 'Entity',
+            val
+          };
+        })
+        .filter((d: any) => d.val !== null);
+
+      if (numItems.length === 0) return null;
+
+      const sorted = [...numItems].sort((a, b) => b.val - a.val);
+      const highest = sorted[0];
+      const lowest = sorted[sorted.length - 1];
+      const sum = sorted.reduce((acc, curr) => acc + curr.val, 0);
+      const avg = (sum / sorted.length).toFixed(1);
+      const unit = context.isPercentage ? '%' : (context.isTenScale ? ' / 10' : '');
+
+      return {
+        leader: highest ? { name: highest.name, val: `${highest.val}${unit}` } : null,
+        average: `${avg}${unit}`,
+        baseline: lowest && lowest.name !== highest?.name ? { name: lowest.name, val: `${lowest.val}${unit}` } : null,
+        count: `${chartData.length} Entities Benchmarked`,
+      };
+    })();
+
+    return (
+      <div style={{
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        margin: '22px 0',
+        background: '#FFFFFF',
+        borderRadius: '16px',
+        padding: '24px 26px',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+        border: '1px solid #E8E4DC',
+        overflow: 'hidden'
+      }}>
+        {/* Card Header with Title and Descriptive Subtitle */}
+        <div style={{ marginBottom: '16px', borderBottom: '1px solid #F0ECE4', paddingBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ 
+                background: '#FAF5EC', 
+                border: '1px solid rgba(212, 168, 67, 0.3)', 
+                padding: '3px 9px', 
+                borderRadius: '6px', 
+                fontSize: '10px', 
+                fontWeight: 800, 
+                letterSpacing: '0.06em', 
+                color: '#B45309' 
+              }}>
+                EXECUTIVE VISUAL &bull; {chartType.toUpperCase()}
+              </div>
+              {data.title && <span style={{ fontSize: '15px', fontWeight: 700, color: '#1A1A1A', letterSpacing: '-0.01em' }}>{data.title}</span>}
+            </div>
+          </div>
+          {context.description && (
+            <p style={{ margin: 0, fontSize: '12.5px', color: '#6B6560', lineHeight: 1.55 }}>
+              {context.description}
+            </p>
+          )}
+        </div>
+
+        {/* Clear Axis Demonstration Guide with High-Contrast Bold demonstration */}
+        {chartType !== 'pie' && chartType !== 'radar' && (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            marginBottom: '16px',
+            background: '#FAF7F2',
+            border: '1px solid #EAE3D5',
+            borderRadius: '10px',
+            padding: '10px 14px',
+            fontSize: '12px',
+            boxSizing: 'border-box',
+            width: '100%',
+            maxWidth: '100%'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ 
+                fontWeight: 800, 
+                color: '#B45309', 
+                background: '#F5EFE3', 
+                border: '1px solid rgba(180, 83, 9, 0.25)', 
+                padding: '3px 8px', 
+                borderRadius: '5px', 
+                fontSize: '10px', 
+                letterSpacing: '0.04em' 
+              }}>
+                HORIZONTAL (X-AXIS)
+              </span>
+              <span style={{ fontWeight: 700, color: '#1A1A1A', fontSize: '13px' }}>
+                {context.xLabel}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ 
+                fontWeight: 800, 
+                color: '#FFFFFF', 
+                background: '#1A1A1A', 
+                padding: '3px 8px', 
+                borderRadius: '5px', 
+                fontSize: '10px', 
+                letterSpacing: '0.04em' 
+              }}>
+                VERTICAL (Y-AXIS)
+              </span>
+              <span style={{ 
+                fontWeight: 800, 
+                color: '#0F0E0D', 
+                fontSize: '13px', 
+                background: '#FFF8E6', 
+                padding: '3px 10px', 
+                borderRadius: '6px', 
+                border: '1.5px solid #D4A843' 
+              }}>
+                {context.yLabel}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Executive Summary Stat Badges to visually fill space */}
+        {kpiSummary && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '10px',
+            marginBottom: '18px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box'
+          }}>
+            {kpiSummary.leader && (
+              <div style={{
+                background: 'linear-gradient(135deg, #FAF7F2, #F5EEE1)',
+                border: '1px solid #E5DCCB',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#B45309', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  ★ PEAK BENCHMARK
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={kpiSummary.leader.name}>
+                  {kpiSummary.leader.name}: <span style={{ color: '#B45309' }}>{kpiSummary.leader.val}</span>
+                </div>
+              </div>
+            )}
+            <div style={{
+              background: '#FAF8F5',
+              border: '1px solid #ECE7DE',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: '#57534E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                MARKET AVERAGE
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px' }}>
+                {kpiSummary.average}
+              </div>
+            </div>
+            {kpiSummary.baseline && (
+              <div style={{
+                background: '#FAF8F5',
+                border: '1px solid #ECE7DE',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#57534E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  FOCUSED BASELINE
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={kpiSummary.baseline.name}>
+                  {kpiSummary.baseline.name}: {kpiSummary.baseline.val}
+                </div>
+              </div>
+            )}
+            <div style={{
+              background: '#FAF8F5',
+              border: '1px solid #ECE7DE',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: '#57534E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                PEER COVERAGE
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#1A1A1A', marginTop: '2px' }}>
+                {kpiSummary.count}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ width: '100%', maxWidth: '100%', height: 350, boxSizing: 'border-box', overflow: 'hidden', position: 'relative' }}>
+        <ChartErrorBoundary>
+        <ResponsiveContainer width="100%" height="100%">
+          {chartType === 'line' ? (
+            <LineChart data={chartData} margin={{ top: 22, right: 30, left: 25, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFECE6" />
+              <XAxis 
+                dataKey="name" 
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={{ stroke: '#E8E4DC' }}
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 600 }} 
+              />
+              <YAxis 
+                stroke="#8C857B" 
+                tickLine={false} 
+                axisLine={false} 
+                tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                label={{ 
+                  value: context.yShortLabel, 
+                  angle: -90, 
+                  position: 'insideLeft', 
+                  offset: 2, 
+                  fill: '#1A1A1A', 
+                  fontSize: 12.5, 
+                  fontWeight: 800,
+                  style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' }
+                }}
+              />
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              {effectiveKeys.length > 1 && (
+                <Legend wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }} iconType="circle" iconSize={9} />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Line 
+                  key={key} 
+                  type="monotone" 
+                  dataKey={key} 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  strokeWidth={3} 
+                  dot={{ r: 4.5, fill: '#FFFFFF', stroke: COLORS[idx % COLORS.length], strokeWidth: 2.5 }} 
+                  activeDot={{ r: 7, fill: COLORS[idx % COLORS.length], stroke: '#FFFFFF', strokeWidth: 2.5 }}
+                >
+                  <LabelList dataKey={key} position="top" fill="#1A1A1A" fontSize={11} fontWeight={700} offset={8} />
+                </Line>
+              ))}
+            </LineChart>
+          ) : chartType === 'area' ? (
+            <AreaChart data={chartData} margin={{ top: 22, right: 30, left: 25, bottom: 40 }}>
+              <defs>
+                {effectiveKeys.map((key: string, idx: number) => {
+                  const col = COLORS[idx % COLORS.length];
+                  return (
+                    <linearGradient key={`grad-${key}`} id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={col} stopOpacity={0.35} />
+                      <stop offset="95%" stopColor={col} stopOpacity={0.03} />
+                    </linearGradient>
+                  );
+                })}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFECE6" />
+              <XAxis 
+                dataKey="name" 
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={{ stroke: '#E8E4DC' }}
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 600 }} 
+              />
+              <YAxis 
+                stroke="#8C857B" 
+                tickLine={false} 
+                axisLine={false} 
+                tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                label={{ 
+                  value: context.yShortLabel, 
+                  angle: -90, 
+                  position: 'insideLeft', 
+                  offset: 2, 
+                  fill: '#1A1A1A', 
+                  fontSize: 12.5, 
+                  fontWeight: 800,
+                  style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' }
+                }}
+              />
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              {effectiveKeys.length > 1 && (
+                <Legend wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }} iconType="circle" iconSize={9} />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Area 
+                  key={key} 
+                  type="monotone" 
+                  dataKey={key} 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  strokeWidth={3}
+                  fill={`url(#grad-${key})`} 
+                />
+              ))}
+            </AreaChart>
+          ) : chartType === 'radar' ? (
+            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={chartData}>
+              <PolarGrid stroke="#E8E4DC" />
+              <PolarAngleAxis 
+                dataKey={chartData[0]?.subject !== undefined ? "subject" : (chartData[0]?.name !== undefined ? "name" : "category")} 
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 700 }} 
+              />
+              <PolarRadiusAxis angle={30} domain={[0, 10]} stroke="#D4A843" tick={{ fill: '#57534E', fontSize: 10, fontWeight: 600 }} />
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              {effectiveKeys.length > 1 && (
+                <Legend wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }} iconType="circle" iconSize={9} />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Radar 
+                  key={key} 
+                  name={key} 
+                  dataKey={key} 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  strokeWidth={2.5}
+                  fill={COLORS[idx % COLORS.length]} 
+                  fillOpacity={0.35} 
+                />
+              ))}
+            </RadarChart>
+          ) : chartType === 'bar' ? (
+            <BarChart 
+              data={chartData} 
+              layout={data.layout || 'horizontal'} 
+              margin={data.layout === 'vertical' 
+                ? { top: 12, right: 30, left: 15, bottom: 12 }
+                : { top: 24, right: 25, left: 25, bottom: 45 }
+              }
+              barCategoryGap="16%"
+              barGap={6}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFECE6" />
+              {data.layout === 'vertical' ? (
+                <>
+                  <XAxis type="number" stroke="#8C857B" tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }} tickLine={false} axisLine={{ stroke: '#E8E4DC' }} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={130} 
+                    stroke="#8C857B"
+                    tickLine={false}
+                    axisLine={{ stroke: '#E8E4DC' }}
+                    tick={({ x, y, payload }: any) => {
+                      const text = payload.value || '';
+                      const display = text.length > 20 ? `${text.slice(0, 19)}…` : text;
+                      return (
+                        <text x={x} y={y} dy={4} textAnchor="end" fill="#1A1A1A" fontSize={11.5} fontWeight={600}>
+                          {display}
+                        </text>
+                      );
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#8C857B"
+                    interval={0} 
+                    tickLine={false}
+                    axisLine={{ stroke: '#E8E4DC' }}
+                    tick={({ x, y, payload }: any) => {
+                      const text = payload.value || '';
+                      const isLong = text.length > 16;
+                      const display = isLong ? `${text.slice(0, 15)}…` : text;
+                      return (
+                        <text x={x} y={y + 12} textAnchor="end" transform={`rotate(-18 ${x} ${y + 12})`} fill="#1A1A1A" fontSize={11.5} fontWeight={600}>
+                          {display}
+                        </text>
+                      );
+                    }}
+                  />
+                  <YAxis 
+                    stroke="#8C857B" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                    label={{ 
+                      value: context.yShortLabel, 
+                      angle: -90, 
+                      position: 'insideLeft', 
+                      offset: 2, 
+                      fill: '#1A1A1A', 
+                      fontSize: 12.5, 
+                      fontWeight: 800,
+                      style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' } 
+                    }}
+                  />
+                </>
+              )}
+              <Tooltip content={<CustomChartTooltip context={context} />} cursor={{ fill: 'rgba(212, 168, 67, 0.06)', rx: 6 }} />
+              {effectiveKeys.length > 1 && (
+                <Legend 
+                  wrapperStyle={{ paddingTop: 14, fontSize: 12, fontWeight: 600 }}
+                  iconType="circle"
+                  iconSize={9}
+                />
+              )}
+              {effectiveKeys.map((key: string, idx: number) => (
+                <Bar 
+                  key={key} 
+                  dataKey={key} 
+                  fill={COLORS[idx % COLORS.length]} 
+                  background={{ fill: '#F8F6F2', radius: 6 }}
+                  radius={data.layout === 'vertical' ? [0, 6, 6, 0] : [6, 6, 0, 0]}
+                  maxBarSize={data.layout === 'vertical' ? 26 : 52}
+                >
+                  <LabelList 
+                    dataKey={key} 
+                    position={data.layout === 'vertical' ? 'right' : 'top'} 
+                    fill="#1A1A1A" 
+                    fontSize={12} 
+                    fontWeight={800} 
+                    offset={8} 
+                  />
+                  {!data.keys && chartData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              ))}
+            </BarChart>
+          ) : chartType === 'scatter' ? (
+            <ScatterChart margin={{ top: 22, right: 30, left: 25, bottom: 30 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EFECE6" />
+              <XAxis
+                type="number"
+                dataKey="x"
+                domain={[scatterXMin, scatterXMax]}
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={{ stroke: '#E8E4DC' }}
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 600 }}
+                label={{ value: context.xLabel, position: 'insideBottom', offset: -8, fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+              />
+              <YAxis
+                type="number"
+                dataKey="y"
+                domain={[scatterYMin, scatterYMax]}
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                label={{
+                  value: context.yShortLabel,
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 2,
+                  fill: '#1A1A1A',
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' }
+                }}
+              />
+              <ReferenceLine x={scatterXMid} stroke="#D4A843" strokeDasharray="4 4" />
+              <ReferenceLine y={scatterYMid} stroke="#D4A843" strokeDasharray="4 4" />
+              <Tooltip content={<ScatterChartTooltip context={context} />} cursor={{ strokeDasharray: '3 3' }} />
+              <Scatter data={chartData} fill={COLORS[0]}>
+                {chartData.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+                <LabelList dataKey="name" position="top" fill="#1A1A1A" fontSize={11} fontWeight={700} offset={10} />
+              </Scatter>
+            </ScatterChart>
+          ) : (
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="46%"
+                innerRadius={52}
+                outerRadius={96}
+                paddingAngle={3}
+                cornerRadius={5}
+                labelLine={false}
+                label={({ name, percent }: any) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                dataKey={effectiveKeys[0] || 'value'}
+              >
+                {chartData.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomChartTooltip context={context} />} />
+              <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, fontWeight: 600, color: '#1A1A1A' }} />
+            </PieChart>
+          )}
+        </ResponsiveContainer>
+        </ChartErrorBoundary>
+        </div>
+
+        {/* Strategic Takeaway & Meaning Banner */}
+        {context.takeaway && (
+          <div style={{
+            marginTop: '16px',
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, #FAF8F5, #F5F1EB)',
+            border: '1px solid #E8E4DC',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              marginTop: '2px',
+              width: '22px',
+              height: '22px',
+              borderRadius: '6px',
+              background: 'linear-gradient(135deg, #2D2A26, #D4A843)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: '#FFFFFF'
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#B45309', marginBottom: '3px' }}>
+                STRATEGIC MEANING & EXECUTIVE TAKEAWAY
+              </div>
+              <div style={{ fontSize: '13px', color: '#1A1A1A', lineHeight: 1.55, fontWeight: 500, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                {context.takeaway}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  } catch (e) {
+    console.warn('[RechartsBlock] Failed to parse/render chart — showing fallback.', e, { rawText });
+    return <ChartFallbackCard message="Chart could not be rendered" rawContent={rawText} />;
+  }
+});
+RechartsBlock.displayName = 'RechartsBlock';
+
+export const markdownComponents = {
+  code: ({ node, inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || '');
+    if (!inline && match && match[1] === 'recharts') {
+      return <RechartsBlock className={className} {...props}>{children}</RechartsBlock>;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  },
+  // GFM tables are a well-formed block even when the LLM genuinely emits only
+  // a header + separator row with no data rows. Rather than let that render
+  // as a confusingly blank table body, detect an empty <tbody> here (by
+  // walking the already-built element tree, not the raw markdown) and show
+  // an explicit placeholder instead.
+  table: ({ children, ...props }: any) => {
+    const childArray = Children.toArray(children) as any[];
+    const tbody = childArray.find((c) => isValidElement(c) && (c as any).type === 'tbody');
+    const bodyRows = tbody && isValidElement(tbody) ? Children.toArray((tbody as any).props.children) : null;
+    return (
+      <div className={styles.tableWrapper}>
+        <table {...props}>{children}</table>
+        {bodyRows !== null && bodyRows.length === 0 && (
+          <div style={{ padding: '10px 2px', fontSize: '12.5px', color: '#8C857B', fontStyle: 'italic' }}>
+            No data available for this table.
+          </div>
+        )}
+      </div>
+    );
+  }
+};
+
+// ── Report-view accordion ──────────────────────────────────────────────────
+// Reports from this pipeline always open with two intro H3s — the document
+// title itself, then a short landscape/overview blurb (e.g. "Competitive
+// Landscape Overview") — before the substantive, collapsible sections begin
+// (comparison tables, chart dashboards, SWOT, recommendations, next steps).
+// So "the first H3 heading" everyone keeps visible is really that whole
+// two-heading intro: both stay always-visible, and collapsing starts at the
+// THIRD raw H3 match onward. Content with fewer than 3 H3 headings has
+// nothing to collapse — this is exactly the shape of a single SectionEditor
+// section's content, which is why SectionEditor passes accordion={false}
+// rather than relying on that fallback.
+const _H3_RE = /^###[ \t]+.+$/gm;
+
+function splitIntoAccordionParts(content: string): {
+  always: string;
+  collapsible: { title: string; body: string }[];
+} {
+  const matches = [...content.matchAll(_H3_RE)];
+  if (matches.length <= 2) {
+    return { always: content, collapsible: [] };
+  }
+
+  const always = content.slice(0, matches[2].index!);
+  const collapsible: { title: string; body: string }[] = [];
+
+  for (let i = 2; i < matches.length; i++) {
+    const headingLine = matches[i][0];
+    const bodyStart = matches[i].index! + headingLine.length;
+    const bodyEnd = i + 1 < matches.length ? matches[i + 1].index! : content.length;
+    const title = headingLine.replace(/^###[ \t]+/, '').replace(/\*+/g, '').trim();
+    collapsible.push({ title, body: content.slice(bodyStart, bodyEnd) });
+  }
+
+  return { always, collapsible };
+}
+
+function CollapsibleSection({
+  title,
+  children,
+  defaultExpanded = false,
+}: {
+  title: string;
+  children: ReactNode;
+  defaultExpanded?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  return (
+    <div className={styles.reportAccordionSection}>
+      <button
+        type="button"
+        className={`${styles.reportAccordionHeader} ${expanded ? styles.reportAccordionHeaderOpen : ''}`}
+        onClick={() => setExpanded((e) => !e)}
+        aria-expanded={expanded}
+      >
+        <span className={styles.reportAccordionTitle}>{title}</span>
+        <span className={`${styles.reportAccordionChevron} ${expanded ? styles.reportAccordionChevronOpen : ''}`}>
+          ▼
+        </span>
+      </button>
+      {/* Charts/tables only mount while expanded — collapsed sections never pay render cost. */}
+      {expanded && (
+        <div className={styles.reportAccordionBody}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// GFM pipe tables are terminated by the first blank line — there is no
+// concept of a blank line "inside" one. When the LLM emits a header +
+// separator row followed by a blank line before the data rows (a common
+// formatting slip, likely from treating the separator as its own paragraph),
+// remark-gfm parses a table consisting of ONLY the header, with zero body
+// rows; the real data rows that follow become orphaned, un-rendered text.
+// This mirrors backend/services/export_service.py's _ensure_blank_line_before_tables
+// (which guarantees a blank line BEFORE a table so python-markdown recognizes
+// it at all) but fixes the opposite defect: blank lines WITHIN a table that
+// would otherwise cut it off from its own body.
+function normalizeTableRows(content: string): string {
+  const lines = content.split('\n');
+  const isRowLike = (line: string) => line.includes('|') && line.trim() !== '';
+  const isDelimiterRow = (line: string) => /^[\s|:-]+$/.test(line) && line.includes('-');
+
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (isRowLike(line) && i + 1 < lines.length && isDelimiterRow(lines[i + 1])) {
+      out.push(line, lines[i + 1]);
+      i += 2;
+      while (i < lines.length) {
+        if (lines[i].trim() === '') {
+          let j = i;
+          while (j < lines.length && lines[j].trim() === '') j++;
+          const nextStartsNewTable = j + 1 < lines.length && isDelimiterRow(lines[j + 1]);
+          if (j < lines.length && isRowLike(lines[j]) && !nextStartsNewTable) {
+            // Blank line(s) sandwiched between two rows of THIS table (the
+            // next row-like line isn't itself a new header+delimiter pair)
+            // — drop them so the rows stay part of the same table block.
+            i = j;
+            continue;
+          }
+          break; // Genuine end of the table (or a new table starts next).
+        }
+        if (!isRowLike(lines[i])) break;
+        out.push(lines[i]);
+        i++;
+      }
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+  return out.join('\n');
+}
+
+function normalizeTiers(content: string): string {
+  return content
+    .replace(/\(\$\$\$\)/g, '(Premium Tier)')
+    .replace(/\(\$\$\)/g, '(Mid-Tier)')
+    .replace(/\(\$\)/g, '(Budget)')
+    .replace(/\$\$\$/g, 'Premium Tier')
+    .replace(/\$\$/g, 'Mid-Tier');
+}
+
+export default function ReportRenderer({ content, accordion = true }: { content: string; accordion?: boolean }) {
+  const prepared = normalizeTableRows(normalizeTiers(content));
+
+  if (!accordion) {
+    return (
+      <div className={`${styles.reportContent} ${styles.reportContentFlat}`}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+          {prepared}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
+  const { always, collapsible } = splitIntoAccordionParts(prepared);
+
+  return (
+    <div className={styles.reportContent}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+        {always}
+      </ReactMarkdown>
+      {collapsible.map((section, idx) => (
+        <CollapsibleSection key={idx} title={section.title || 'Untitled Section'}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+            {section.body}
+          </ReactMarkdown>
+        </CollapsibleSection>
+      ))}
+    </div>
+  );
+}

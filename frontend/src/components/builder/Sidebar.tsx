@@ -309,7 +309,7 @@ export default function Sidebar() {
         <div className={styles.userProfile}>
           <div className={styles.avatar}>AS</div>
           <div className={styles.userInfo}>
-            <span className={styles.userName}>Apoorv Srivastava</span>
+            <span className={styles.userName}>Naveen</span>
             <button className={styles.logoutBtn} onClick={handleLogout}>Logout</button>
           </div>
         </div>

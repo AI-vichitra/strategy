@@ -23,8 +23,41 @@ export default function ConnectorModal({ connector, status, onClose, onConnect, 
 
   const [imgError, setImgError] = useState(false);
 
+  // Save state
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const saveCredential = async (credentials: Record<string, string>) => {
+    setSaveError(null);
+    setSaving(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiBase}/api/connectors`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          connector_id: connector.id,
+          connector_type: connector.type,
+          credentials,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to save connector (${res.status})`);
+      }
+      onConnect(connector.id);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to save connector');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleApiConnect = () => {
-    if (apiKey.trim()) onConnect(connector.id);
+    if (apiKey.trim()) saveCredential({ apiKey: apiKey.trim() });
   };
 
   const handleDbTest = () => {
@@ -33,7 +66,11 @@ export default function ConnectorModal({ connector, status, onClose, onConnect, 
   };
 
   const handleDbConnect = () => {
-    if (dbFields.host && dbFields.database) onConnect(connector.id);
+    if (dbFields.host && dbFields.database) saveCredential({ ...dbFields });
+  };
+
+  const handleOAuthConnect = () => {
+    saveCredential({});
   };
 
   return (
@@ -111,10 +148,13 @@ export default function ConnectorModal({ connector, status, onClose, onConnect, 
                 )}
               </button>
             </div>
+            {saveError && (
+              <div className={`${styles.testResult} ${styles.testError}`}>{saveError}</div>
+            )}
             <div className={styles.actions}>
-              <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-              <button className={styles.primaryBtn} onClick={handleApiConnect} disabled={!apiKey.trim()}>
-                Connect Account
+              <button className={styles.cancelBtn} onClick={onClose} disabled={saving}>Cancel</button>
+              <button className={styles.primaryBtn} onClick={handleApiConnect} disabled={!apiKey.trim() || saving}>
+                {saving ? 'Connecting...' : 'Connect Account'}
               </button>
             </div>
           </div>
@@ -137,10 +177,13 @@ export default function ConnectorModal({ connector, status, onClose, onConnect, 
                 <span>OAuth connection flow will be configured later.</span>
               </div>
             </div>
+            {saveError && (
+              <div className={`${styles.testResult} ${styles.testError}`}>{saveError}</div>
+            )}
             <div className={styles.actions}>
-              <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-              <button className={styles.primaryBtn} onClick={() => onConnect(connector.id)}>
-                Continue to Connect
+              <button className={styles.cancelBtn} onClick={onClose} disabled={saving}>Cancel</button>
+              <button className={styles.primaryBtn} onClick={handleOAuthConnect} disabled={saving}>
+                {saving ? 'Connecting...' : 'Continue to Connect'}
               </button>
             </div>
           </div>
@@ -189,10 +232,14 @@ export default function ConnectorModal({ connector, status, onClose, onConnect, 
               </div>
             )}
 
+            {saveError && (
+              <div className={`${styles.testResult} ${styles.testError}`}>{saveError}</div>
+            )}
+
             <div className={styles.actions}>
-              <button className={styles.testBtn} onClick={handleDbTest}>Test Connection</button>
-              <button className={styles.primaryBtn} onClick={handleDbConnect} disabled={!dbFields.host || !dbFields.database}>
-                Connect Database
+              <button className={styles.testBtn} onClick={handleDbTest} disabled={saving}>Test Connection</button>
+              <button className={styles.primaryBtn} onClick={handleDbConnect} disabled={!dbFields.host || !dbFields.database || saving}>
+                {saving ? 'Connecting...' : 'Connect Database'}
               </button>
             </div>
           </div>

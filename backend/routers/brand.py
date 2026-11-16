@@ -87,6 +87,7 @@ async def confirm_brand(
     """
     import json
     from backend.services import pipeline_service
+    from backend.routers.projects import _serialize_brand_kit
 
     # Create BrandConfig
     competitors_json = json.dumps([
@@ -114,6 +115,7 @@ async def confirm_brand(
         agent_type="StratAI",
         title=req.brand_name,
         description="Auto-created project",
+        brand_kit=_serialize_brand_kit(req.brand_kit),
     )
     db.add(db_project)
     await db.commit()
