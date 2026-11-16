@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
+import BrandKitForm, { type BrandKit } from '../../components/BrandKitForm';
 
 function StrategySetupInner() {
   const router = useRouter();
@@ -55,6 +56,10 @@ function StrategySetupInner() {
   const [competitorName, setCompetitorName] = useState('');
   const [competitorUrl, setCompetitorUrl] = useState('');
   const [competitors, setCompetitors] = useState<{ name: string; url?: string }[]>([]);
+  const [brandKit, setBrandKit] = useState<BrandKit>({});
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
 
   // ── Candidates state ──────────────────────────────────────────────────────
   const [discoveredBrandHandle, setDiscoveredBrandHandle] = useState('');
@@ -200,7 +205,11 @@ function StrategySetupInner() {
             name: c.name,
             website_url: c.website_url || '',
             handle: c.handle || ''
-          }))
+          })),
+          brand_kit: (() => {
+            const hasBrandKit = brandKit.logo_url || (brandKit.colors && Object.values(brandKit.colors).some(Boolean));
+            return hasBrandKit ? brandKit : null;
+          })()
         })
       });
 
@@ -330,6 +339,11 @@ function StrategySetupInner() {
                 placeholder="Describe your brand's tone, mission, vision, or the direction in which you want to move forward..."
                 rows={4}
               />
+            </div>
+
+            {/* Brand Kit (logo + colors) */}
+            <div className={styles.formGroup}>
+              <BrandKitForm brandKit={brandKit} onChange={setBrandKit} apiBase={apiBaseUrl} authToken={authToken} />
             </div>
 
             {/* Competitors */}

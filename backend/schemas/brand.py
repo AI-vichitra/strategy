@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+from backend.schemas.project import BrandKit
+
 
 # ── Shared base ─────────────────────────────────────────────────────────────
 class BrandConfigBase(BaseModel):
@@ -57,6 +59,7 @@ class BrandConfirmRequest(BaseModel):
     brand_context: Optional[str] = None
     selected_competitors: List[CompetitorConfirmed]
     brand_handle: Optional[str] = None
+    brand_kit: Optional[BrandKit] = None
 
 
 # ── Status polling ────────────────────────────────────────────────────────────

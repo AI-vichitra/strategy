@@ -20,6 +20,7 @@ class Project(Base):
     description = Column(Text, nullable=True)
     questionnaire_answers = Column(Text, nullable=True)
     competitor_details = Column(Text, nullable=True)  # JSON string: list of competitor objects
+    brand_kit = Column(Text, nullable=True)  # JSON: {logo_url, colors:{primary,secondary,accent}, extracted_palette}
     llm_provider = Column(String(50), nullable=True, default="mistral")
     last_active_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

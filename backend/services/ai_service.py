@@ -2315,6 +2315,7 @@ Example Chart JSON Schemas:
 7. PRESENTATION: Present insights using clean headers, bullet points, markdown tables, and recharts visual blocks. Be concise, direct, strategic, and board-ready.
 8. NO RAW HTML TAGS IN TABLES: Do NOT output raw literal string tags like `<br>` or `<br/>`. Format bullet points cleanly on separate lines or with standard markdown list formatting.
 9. NO DOLLAR SIGN SYMBOLS FOR PRICING: Do NOT use raw `$$` or `$$$` symbols to represent pricing tiers, as double dollar signs trigger KaTeX math rendering errors. Always write clear, professional text labels like 'Budget Tier', 'Mid-Tier', 'Premium Tier', or 'Luxury Tier'.
+10. BRAND PALETTE: At the very END of the report, output a brand palette as a fenced code block with language `brandpalette`, containing ONLY compact JSON with hex colors inferred from the client's actual brand identity (their website, logo, visual language from the research). Format: {"primary":"#RRGGBB","secondary":"#RRGGBB","accent":"#RRGGBB"}. Use the client's real brand colors if known; otherwise choose a professional palette fitting their industry. This block will be removed before display — do not reference it in the narrative.
 """
 
     if formatted_context:
@@ -2602,6 +2603,17 @@ async def stream_chat(
         yield f"data: {json.dumps({'type': 'error', 'content': f'AI error: {str(e)}'})}\n\n"
         return
 
+    # ── Extract + strip the trailing ```brandpalette``` block (see rule 10 in
+    # build_system_prompt) before anything gets persisted — it must never show
+    # up in the saved chat message, a Report snapshot, or any export. The
+    # extracted colors are kept separately as the PPTX theme's fallback when
+    # no manual brand_kit colors are set.
+    extracted_palette = None
+    if full_response:
+        from backend.services import output_validator as _palette_validator
+        extracted_palette = _palette_validator.extract_brand_palette(full_response)
+        full_response = _palette_validator.strip_brand_palette_block(full_response)
+
     # ── Save user & assistant messages to DB ONLY on successful generation ───
     persisted_assistant_msg_id = None
     if full_response and full_response.strip() and project_id and project_id != "dummy":
@@ -2673,6 +2685,7 @@ async def stream_chat(
                     agent_type=agent_type,
                     content=full_response,
                     message_id=persisted_assistant_msg_id,
+                    extracted_palette=extracted_palette,
                 )
     except Exception as e:
         logger.warning(f"[report_service] Report snapshot failed (non-fatal): {e}")

@@ -16,6 +16,7 @@ class Report(Base):
     content = Column(Text, nullable=False)
     version = Column(Integer, nullable=False)
     chart_count = Column(Integer, default=0)
+    extracted_palette = Column(Text, nullable=True)  # JSON: {primary, secondary, accent} inferred by the agent
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="reports")

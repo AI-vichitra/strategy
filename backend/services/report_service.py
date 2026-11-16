@@ -7,9 +7,10 @@ copy of a Message's content taken at generation time, so it survives later
 edits or deletions of the underlying chat history.
 """
 
+import json
 import re
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from sqlalchemy import func
 from sqlalchemy.future import select
@@ -48,6 +49,7 @@ async def create_report_snapshot(
     agent_type: str,
     content: str,
     message_id: Optional[str] = None,
+    extracted_palette: Optional[Dict[str, str]] = None,
 ) -> Report:
     from backend.services import output_validator
 
@@ -73,6 +75,7 @@ async def create_report_snapshot(
         content=content,
         version=next_version,
         chart_count=chart_count,
+        extracted_palette=json.dumps(extracted_palette) if extracted_palette else None,
     )
     db.add(report)
     await db.commit()

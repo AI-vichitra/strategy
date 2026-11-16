@@ -11,11 +11,7 @@ import json
 import re
 import logging
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+from typing import Optional, List, Dict
 
 import markdown as md
 from bs4 import BeautifulSoup, NavigableString
@@ -26,47 +22,41 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.enum.text import WD_TAB_ALIGNMENT, WD_ALIGN_PARAGRAPH
 
-from backend.services.output_validator import _resolve_chart_type
+from backend.utils.chart_renderer import render_chart_image
+from backend.services.brand_theme import (
+    _resolve_theme,
+    _load_logo_asset,
+    logo_fit_dimensions,
+    _is_lead_in_label,
+    _darken,
+)
 
 logger = logging.getLogger(__name__)
 
 _RECHARTS_FENCE_RE = re.compile(r"```recharts[ \t]*\r?\n(.*?)```", re.DOTALL)
+# Tolerant of trailing spaces; matches the same markdown table-separator row
+# shape pptx_service.py's own (regex-based) parser recognizes.
+_TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Brand tokens — mirrors frontend/src/utils/pdfExport.ts's cover/footer colors
-# and frontend/src/components/ReportRenderer.tsx's EXECUTIVE_COLORS chart palette,
-# so the DOCX looks like the same document family as the PDF and on-screen report.
+# Brand tokens — the NEUTRAL ones (StratAI's own wordmark, muted labels,
+# borders) stay fixed; headings/cover title/badge/table header instead pull
+# from the resolved brand theme (see brand_theme.py) so the DOCX echoes the
+# same client colors as the PPTX.
 # ─────────────────────────────────────────────────────────────────────────────
 DOC_FONT = "Calibri"
 
-BRAND_CHARCOAL = RGBColor(0x1A, 0x1A, 0x1A)       # primary text / title
-BRAND_CHARCOAL_DARK = RGBColor(0x2D, 0x2A, 0x26)  # wordmark
-BRAND_GOLD = RGBColor(0xD4, 0xA8, 0x43)           # accent / tagline
-BRAND_AMBER = RGBColor(0xB4, 0x53, 0x09)          # "{AGENT} REPORT" pill text
+BRAND_CHARCOAL = RGBColor(0x1A, 0x1A, 0x1A)       # primary text
+BRAND_CHARCOAL_DARK = RGBColor(0x2D, 0x2A, 0x26)  # StratAI's own wordmark (not client-branded)
 BRAND_GRAY = RGBColor(0x57, 0x53, 0x4E)           # "Prepared for ..." line
 BRAND_MUTED_GRAY = RGBColor(0x78, 0x71, 0x6C)     # "GENERATED DATE" label
 BRAND_FOOTER_GRAY = RGBColor(0x96, 0x91, 0x8C)    # footer text (rgb(150,145,140))
 
 BRAND_BORDER_HEX = "E8E4DC"
-BRAND_BADGE_BG_HEX = "F5F1EB"
-BRAND_TABLE_HEADER_BG_HEX = "F5F1EB"
-
-# Same order as EXECUTIVE_COLORS in frontend/src/components/ReportRenderer.tsx
-EXECUTIVE_COLORS = [
-    "#2D2A26",  # Deep Charcoal
-    "#D4A843",  # Warm StratAI Gold
-    "#3B82F6",  # Corporate Blue
-    "#10B981",  # Emerald
-    "#8B5CF6",  # Purple
-    "#EC4899",  # Rose
-    "#F59E0B",  # Amber
-    "#06B6D4",  # Cyan
-    "#6366F1",  # Indigo
-]
 
 
-def _chart_color(idx: int) -> str:
-    return EXECUTIVE_COLORS[idx % len(EXECUTIVE_COLORS)]
+def _theme_rgb(hex_color: str) -> RGBColor:
+    return RGBColor.from_string(hex_color)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -124,161 +114,14 @@ def _add_field(paragraph, field_code: str):
     return run
 
 
-def _to_num(v: Any) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def _infer_numeric_keys(data: List[Dict[str, Any]], exclude: set) -> List[str]:
-    keys: List[str] = []
-    for item in data:
-        if not isinstance(item, dict):
-            continue
-        for k, v in item.items():
-            if k in exclude or k in keys:
-                continue
-            if isinstance(v, (int, float)):
-                keys.append(k)
-    return keys
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Chart rendering: recharts JSON → PNG bytes (matplotlib, headless)
-# ─────────────────────────────────────────────────────────────────────────────
-def _render_bar(ax, data, keys, x_label, y_label):
-    names = [str(d.get("name", "")) for d in data]
-    if isinstance(keys, list) and keys:
-        n = len(keys)
-        width = 0.8 / max(n, 1)
-        x = list(range(len(names)))
-        for i, k in enumerate(keys):
-            vals = [_to_num(d.get(k)) for d in data]
-            offset = (i - (n - 1) / 2) * width
-            ax.bar([xi + offset for xi in x], vals, width=width, label=str(k), color=_chart_color(i))
-        ax.set_xticks(x)
-        ax.set_xticklabels(names, rotation=30, ha="right")
-        ax.legend()
-    else:
-        vals = [_to_num(d.get("value")) for d in data]
-        x = list(range(len(names)))
-        colors = [_chart_color(i) for i in range(len(names))]
-        ax.bar(x, vals, color=colors)
-        ax.set_xticks(x)
-        ax.set_xticklabels(names, rotation=30, ha="right")
-    if x_label:
-        ax.set_xlabel(x_label)
-    if y_label:
-        ax.set_ylabel(y_label)
-
-
-def _render_line(ax, data, keys, x_label, y_label, filled):
-    names = [str(d.get("name", "")) for d in data]
-    x = list(range(len(names)))
-    series_keys = keys if isinstance(keys, list) and keys else _infer_numeric_keys(data, exclude={"name"})
-    for i, k in enumerate(series_keys):
-        vals = [_to_num(d.get(k)) for d in data]
-        color = _chart_color(i)
-        ax.plot(x, vals, marker="o", label=str(k), color=color)
-        if filled:
-            ax.fill_between(x, vals, alpha=0.3, color=color)
-    ax.set_xticks(x)
-    ax.set_xticklabels(names, rotation=30, ha="right")
-    if len(series_keys) > 1:
-        ax.legend()
-    if x_label:
-        ax.set_xlabel(x_label)
-    if y_label:
-        ax.set_ylabel(y_label)
-
-
-def _render_radar(ax, data, keys):
-    import math
-
-    subjects = [str(d.get("subject", "")) for d in data]
-    n = len(subjects)
-    if n == 0:
-        return
-    angles = [i / n * 2 * math.pi for i in range(n)]
-    angles += angles[:1]
-    series_keys = keys if isinstance(keys, list) and keys else _infer_numeric_keys(data, exclude={"subject"})
-    for i, k in enumerate(series_keys):
-        vals = [_to_num(d.get(k)) for d in data]
-        vals += vals[:1]
-        color = _chart_color(i)
-        ax.plot(angles, vals, label=str(k), color=color)
-        ax.fill(angles, vals, alpha=0.1, color=color)
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(subjects)
-    if series_keys:
-        ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
-
-
-def _render_pie(ax, data):
-    names = [str(d.get("name", "")) for d in data]
-    vals = [_to_num(d.get("value")) for d in data]
-    colors = [_chart_color(i) for i in range(len(names))]
-    ax.pie(vals, labels=names, autopct="%1.0f%%", colors=colors)
-    ax.axis("equal")
-
-
-def render_chart_image(chart_json: Optional[dict]) -> Optional[bytes]:
-    """Renders a single recharts JSON block to a PNG via matplotlib. Never raises."""
-    try:
-        if not isinstance(chart_json, dict):
-            return None
-
-        data = chart_json.get("data")
-        data = data if isinstance(data, list) else []
-        if not data:
-            return None
-
-        keys = chart_json.get("keys")
-        title = chart_json.get("title", "")
-        x_label = chart_json.get("x_label", "")
-        y_label = chart_json.get("y_label", "")
-        chart_type = _resolve_chart_type(chart_json, data)
-
-        if chart_type == "radar":
-            fig = plt.figure(figsize=(6, 4.5))
-            ax = fig.add_subplot(111, polar=True)
-            _render_radar(ax, data, keys)
-        else:
-            fig, ax = plt.subplots(figsize=(6, 4))
-            if chart_type == "bar":
-                _render_bar(ax, data, keys, x_label, y_label)
-            elif chart_type == "line":
-                _render_line(ax, data, keys, x_label, y_label, filled=False)
-            elif chart_type == "area":
-                _render_line(ax, data, keys, x_label, y_label, filled=True)
-            elif chart_type == "pie":
-                _render_pie(ax, data)
-            else:
-                plt.close(fig)
-                return None
-
-        if title:
-            ax.set_title(title, pad=16 if chart_type == "radar" else None)
-
-        fig.tight_layout()
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=150)
-        plt.close(fig)
-        return buf.getvalue()
-    except Exception as e:
-        logger.warning(f"[export_service] render_chart_image failed (non-fatal): {type(e).__name__}: {e}")
-        try:
-            plt.close("all")
-        except Exception:
-            pass
-        return None
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Markdown → docx elements
 # ─────────────────────────────────────────────────────────────────────────────
-def _add_inline_runs(paragraph, el, bold=False, italic=False, code=False):
+def _add_inline_runs(paragraph, el, bold=None, italic=False, code=False):
+    """`bold=None` (the default) leaves a run's bold unset so it inherits
+    from its paragraph style — important for headings, whose style is bold;
+    explicitly passing True/False (as the bullet renderer does) overrides
+    that inheritance for genuine inline/label emphasis."""
     for child in getattr(el, "children", []):
         if isinstance(child, NavigableString):
             text = str(child)
@@ -304,7 +147,43 @@ def _add_inline_runs(paragraph, el, bold=False, italic=False, code=False):
             _add_inline_runs(paragraph, child, bold=bold, italic=italic, code=code)
 
 
-def _render_table(doc, table_el):
+def _render_list_item(doc, li_el, style: str):
+    """Renders one <li> as a paragraph in the given Word list style (List
+    Bullet / List Number). Body text is regular weight by default (color
+    comes from the style itself, already dark — see _set_default_fonts);
+    only a genuine lead-in label (text ending in ":", e.g. "Decision
+    Drivers:") renders bold.
+
+    The common LLM habit of wrapping an ENTIRE bullet sentence in
+    **markdown** produces a single <strong> spanning the whole <li> — left
+    alone, _add_inline_runs would honor that nested <strong> as bold
+    regardless of the base `bold` passed in, which is why every bullet used
+    to come out bold. When that happens and the bullet is NOT a real label,
+    the wrapping <strong> is unwrapped (rendered as if it weren't there) so
+    the sentence reads as regular text; genuine partial inline bold
+    ("a **key** finding") is unaffected either way."""
+    full_text = li_el.get_text().strip()
+    is_label = _is_lead_in_label(full_text)
+
+    children = [c for c in li_el.children if not (isinstance(c, NavigableString) and not str(c).strip())]
+    whole_wrapped = (
+        len(children) == 1
+        and not isinstance(children[0], NavigableString)
+        and children[0].name in ("strong", "b")
+        and children[0].get_text().strip() == full_text
+    )
+
+    para = doc.add_paragraph(style=style)
+    if is_label:
+        _add_inline_runs(para, li_el, bold=True)
+    elif whole_wrapped:
+        _add_inline_runs(para, children[0], bold=False)
+    else:
+        _add_inline_runs(para, li_el, bold=False)
+    return para
+
+
+def _render_table(doc, table_el, theme: dict):
     rows = table_el.find_all("tr")
     if not rows:
         return
@@ -314,35 +193,51 @@ def _render_table(doc, table_el):
         return
 
     # No built-in style (those default to heavy, blue-tinted banding) — borders
-    # and header shading are set explicitly instead, to match the PDF's light
-    # gray header row + thin neutral gridlines.
+    # and header/row shading are set explicitly instead: brand-primary header
+    # (white text) + alternating brand-light-tint body rows, matching the PPTX.
     table = doc.add_table(rows=0, cols=ncols)
 
-    for row, cells in zip(rows, all_cells):
+    for r_idx, (row, cells) in enumerate(zip(rows, all_cells)):
         is_header = any(c.name == "th" for c in cells)
         docx_row = table.add_row()
         for col_idx in range(ncols):
             cell_text = cells[col_idx].get_text().strip() if col_idx < len(cells) else ""
             cell = docx_row.cells[col_idx]
             _set_cell_borders(cell)
-            cell.paragraphs[0].paragraph_format.space_before = Pt(2)
-            cell.paragraphs[0].paragraph_format.space_after = Pt(2)
+            cell.paragraphs[0].paragraph_format.space_before = Pt(3)
+            cell.paragraphs[0].paragraph_format.space_after = Pt(3)
             run = cell.paragraphs[0].add_run(cell_text)
             run.font.name = DOC_FONT
             run.font.size = Pt(10)
             if is_header:
                 run.bold = True
+                run.font.color.rgb = _theme_rgb(theme["text_light"])
+                _set_cell_shading(cell, theme["primary"])
+            else:
                 run.font.color.rgb = BRAND_CHARCOAL
-                _set_cell_shading(cell, BRAND_TABLE_HEADER_BG_HEX)
+                if r_idx % 2 == 0:
+                    _set_cell_shading(cell, theme["bg_light"])
+    return table
 
 
-def _render_block(doc, el):
+def _render_block(doc, el, theme: dict):
     name = getattr(el, "name", None)
 
     if name in ("h1", "h2", "h3", "h4", "h5", "h6"):
         level = min(int(name[1]), 4)
         heading = doc.add_heading("", level=level)
         _add_inline_runs(heading, el)
+        if level == 3:
+            # Thin accent-colored bottom border under each H3 section heading.
+            pPr = heading._p.get_or_add_pPr()
+            pBdr = OxmlElement("w:pBdr")
+            bottom = OxmlElement("w:bottom")
+            bottom.set(qn("w:val"), "single")
+            bottom.set(qn("w:sz"), "8")
+            bottom.set(qn("w:space"), "4")
+            bottom.set(qn("w:color"), theme["accent"])
+            pBdr.append(bottom)
+            pPr.append(pBdr)
     elif name == "p":
         para = doc.add_paragraph()
         _add_inline_runs(para, el)
@@ -352,12 +247,11 @@ def _render_block(doc, el):
             nested_lists = li.find_all(["ul", "ol"], recursive=False)
             for nl in nested_lists:
                 nl.extract()
-            para = doc.add_paragraph(style=style)
-            _add_inline_runs(para, li)
+            _render_list_item(doc, li, style)
             for nl in nested_lists:
-                _render_block(doc, nl)
+                _render_block(doc, nl, theme)
     elif name == "table":
-        _render_table(doc, el)
+        _render_table(doc, el, theme)
     elif name == "blockquote":
         para = doc.add_paragraph()
         para.add_run(el.get_text().strip()).italic = True
@@ -373,9 +267,35 @@ def _render_block(doc, el):
             doc.add_paragraph(text)
 
 
-def _render_markdown_text(doc, text: str):
+def _ensure_blank_line_before_tables(text: str) -> str:
+    """python-markdown's `tables` extension only recognizes a pipe table when
+    it starts its own block — i.e. is preceded by a blank line. When a table
+    immediately follows a non-blank line with no blank line between them
+    (e.g. a "Key Players:" lead-in line directly above the header row), the
+    label and the table get swallowed into ONE paragraph block, and since a
+    plain paragraph never gets pipe-table parsing, the raw `| ... |` syntax
+    leaks out as literal text instead of becoming a real table. This inserts
+    the missing blank line so a table is always recognized as its own block,
+    regardless of what precedes it."""
+    lines = (text or "").splitlines()
+    out: List[str] = []
+    n = len(lines)
+    for i, line in enumerate(lines):
+        is_table_header = (
+            "|" in line.strip()
+            and i + 1 < n
+            and bool(_TABLE_SEP_RE.match(lines[i + 1]))
+        )
+        if is_table_header and out and out[-1].strip() != "":
+            out.append("")
+        out.append(line)
+    return "\n".join(out)
+
+
+def _render_markdown_text(doc, text: str, theme: dict):
     if not text or not text.strip():
         return
+    text = _ensure_blank_line_before_tables(text)
     html = md.markdown(text, extensions=["tables", "fenced_code", "sane_lists"])
     soup = BeautifulSoup(html, "html.parser")
     for el in soup.contents:
@@ -383,7 +303,7 @@ def _render_markdown_text(doc, text: str):
             if el.strip():
                 doc.add_paragraph(el.strip())
             continue
-        _render_block(doc, el)
+        _render_block(doc, el, theme)
 
 
 def _add_chart_fallback_text(doc, chart_data: Optional[dict]):
@@ -395,33 +315,43 @@ def _add_chart_fallback_text(doc, chart_data: Optional[dict]):
     doc.add_paragraph(takeaway if takeaway else "[Chart could not be rendered]")
 
 
-def _add_cover(doc, title: str, brand_name: Optional[str], agent_name: Optional[str]):
+def _add_cover(doc, title: str, brand_name: Optional[str], agent_name: Optional[str],
+                theme: dict, date: Optional[str] = None, logo_asset: Optional[dict] = None):
     """
-    Mirrors the PDF's cover header (frontend/src/utils/pdfExport.ts): wordmark +
-    tagline on the left, generated-date on the right, then an accent-colored
-    "{AGENT} REPORT" label, the title, and the "Prepared for ..." line.
+    Branded cover page — the first page, followed by a page break so the
+    report body always starts on page 2. With a client brand_kit logo, it
+    takes the top-left spot (where the StratAI wordmark normally sits) —
+    "Powered by StratAI" still appears in the "Prepared for ..." line below.
+    Title, badge, and accent rule use the resolved brand theme so the DOCX
+    echoes the same colors as the PPTX.
     """
-    date_str = datetime.now().strftime("%B %d, %Y")
+    date_str = date or datetime.now().strftime("%B %d, %Y")
 
-    # Wordmark/tagline (left) + Generated Date (right) — a borderless 1x2 table
-    # gives the same left/right split the PDF's flex header uses.
+    # Logo (or StratAI wordmark/tagline) on the left, generated-date on the
+    # right — a borderless 1x2 table gives the same left/right split the
+    # PDF's flex header uses.
     header_table = doc.add_table(rows=1, cols=2)
     _remove_table_borders(header_table)
     left_cell, right_cell = header_table.rows[0].cells
 
-    wordmark_p = left_cell.paragraphs[0]
-    wordmark_run = wordmark_p.add_run("StratAI")
-    wordmark_run.font.name = DOC_FONT
-    wordmark_run.font.size = Pt(15)
-    wordmark_run.bold = True
-    wordmark_run.font.color.rgb = BRAND_CHARCOAL_DARK
+    if logo_asset:
+        width_in, _ = logo_fit_dimensions(logo_asset, max_height_in=1.5, max_width_in=3.5)
+        logo_run = left_cell.paragraphs[0].add_run()
+        logo_run.add_picture(io.BytesIO(logo_asset["bytes"]), width=Inches(width_in))
+    else:
+        wordmark_p = left_cell.paragraphs[0]
+        wordmark_run = wordmark_p.add_run("StratAI")
+        wordmark_run.font.name = DOC_FONT
+        wordmark_run.font.size = Pt(15)
+        wordmark_run.bold = True
+        wordmark_run.font.color.rgb = BRAND_CHARCOAL_DARK
 
-    tagline_p = left_cell.add_paragraph()
-    tagline_run = tagline_p.add_run("STRATEGIC MARKET INTELLIGENCE")
-    tagline_run.font.name = DOC_FONT
-    tagline_run.font.size = Pt(9)
-    tagline_run.bold = True
-    tagline_run.font.color.rgb = BRAND_GOLD
+        tagline_p = left_cell.add_paragraph()
+        tagline_run = tagline_p.add_run("STRATEGIC MARKET INTELLIGENCE")
+        tagline_run.font.name = DOC_FONT
+        tagline_run.font.size = Pt(9)
+        tagline_run.bold = True
+        tagline_run.font.color.rgb = _theme_rgb(theme["accent"])
 
     right_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
     label_run = right_cell.paragraphs[0].add_run("GENERATED DATE")
@@ -453,30 +383,41 @@ def _add_cover(doc, title: str, brand_name: Optional[str], agent_name: Optional[
     pBdr.append(bottom)
     pPr.append(pBdr)
 
-    # "{AGENT} REPORT" pill badge — a 1-cell borderless table with accent
-    # shading, matching the PDF's rounded pill (python-docx has no border-radius).
+    # "{AGENT} REPORT" pill badge — brand-accent shaded, matching the PPTX cover.
     badge_text = f"{agent_name.upper()} REPORT" if agent_name else "EXECUTIVE STRATEGY DOCUMENT"
     badge_table = doc.add_table(rows=1, cols=1)
     _remove_table_borders(badge_table)
     badge_cell = badge_table.rows[0].cells[0]
     badge_cell.width = Inches(2.6)
-    _set_cell_shading(badge_cell, BRAND_BADGE_BG_HEX)
+    _set_cell_shading(badge_cell, theme["accent"])
     badge_run = badge_cell.paragraphs[0].add_run(badge_text)
     badge_run.font.name = DOC_FONT
     badge_run.font.size = Pt(9)
     badge_run.bold = True
-    badge_run.font.color.rgb = BRAND_AMBER
+    badge_run.font.color.rgb = _theme_rgb(theme["text_light"])
 
-    doc.add_paragraph()
+    # Accent rule in the brand accent color, between the badge and the title.
+    accent_rule = doc.add_paragraph()
+    accent_rule.paragraph_format.space_before = Pt(10)
+    accent_rule.paragraph_format.space_after = Pt(10)
+    rule_pPr = accent_rule._p.get_or_add_pPr()
+    rule_pBdr = OxmlElement("w:pBdr")
+    rule_bottom = OxmlElement("w:bottom")
+    rule_bottom.set(qn("w:val"), "single")
+    rule_bottom.set(qn("w:sz"), "24")
+    rule_bottom.set(qn("w:space"), "1")
+    rule_bottom.set(qn("w:color"), theme["accent"])
+    rule_pBdr.append(rule_bottom)
+    rule_pPr.append(rule_pBdr)
 
-    # Title
+    # Title — brand primary color.
     title_p = doc.add_paragraph()
     title_p.paragraph_format.space_after = Pt(6)
     title_run = title_p.add_run(title or "Strategic Intelligence Report")
     title_run.font.name = DOC_FONT
-    title_run.font.size = Pt(22)
+    title_run.font.size = Pt(24)
     title_run.bold = True
-    title_run.font.color.rgb = BRAND_CHARCOAL
+    title_run.font.color.rgb = _theme_rgb(theme["primary"])
 
     # "Prepared for {brand} • Powered by StratAI Multi-Agent Strategy Engine"
     meta_p = doc.add_paragraph()
@@ -497,14 +438,28 @@ def _add_cover(doc, title: str, brand_name: Optional[str], agent_name: Optional[
     suffix_run.font.size = Pt(10.5)
     suffix_run.font.color.rgb = BRAND_GRAY
 
+    # Page break — the report body always starts on page 2.
+    doc.add_page_break()
 
-def _set_default_fonts(doc):
-    """Word-safe sans-serif body/heading fonts in brand colors (not Word's default blue)."""
+
+_HEADING_SIZES_PT = {1: 22, 2: 20, 3: 18, 4: 14}
+
+
+def _set_default_fonts(doc, theme: dict):
+    """Word-safe sans-serif body/heading fonts, themed to the resolved brand
+    colors: H3 (section) in brand primary at 18pt, H4 (subsection) in a
+    darker tint of primary at 14pt — same visual family as the PPTX."""
     normal = doc.styles["Normal"]
     normal.font.name = DOC_FONT
-    normal.font.size = Pt(10.5)
+    normal.font.size = Pt(11)
     normal.font.color.rgb = BRAND_CHARCOAL
 
+    heading_color = {
+        1: theme["primary"],
+        2: theme["primary"],
+        3: theme["primary"],
+        4: _darken(theme["primary"], 0.2),
+    }
     for level in range(1, 5):
         try:
             heading_style = doc.styles[f"Heading {level}"]
@@ -512,7 +467,8 @@ def _set_default_fonts(doc):
             continue
         heading_style.font.name = DOC_FONT
         heading_style.font.bold = True
-        heading_style.font.color.rgb = BRAND_CHARCOAL_DARK
+        heading_style.font.size = Pt(_HEADING_SIZES_PT[level])
+        heading_style.font.color.rgb = _theme_rgb(heading_color[level])
 
     try:
         list_bullet = doc.styles["List Bullet"]
@@ -613,17 +569,34 @@ async def markdown_to_docx(
     brand_name: Optional[str] = None,
     agent_name: Optional[str] = None,
     content_override: Optional[str] = None,
+    brand_kit: Optional[dict] = None,
+    extracted_palette: Optional[dict] = None,
 ) -> bytes:
+    """
+    `brand_kit` ({"logo_url": ..., "colors": {...}}) and `extracted_palette`
+    ({"primary"/"secondary"/"accent"}) mirror generate_pptx's inputs — same
+    precedence (manual brand_kit colors > extracted_palette > report-type
+    theme, via _resolve_theme) so the DOCX and PPTX always theme identically.
+    The logo always comes from brand_kit only, same as the PPTX.
+    """
     resolved_content = await _resolve_export_content(db, report_id, content, content_override)
+    theme = _resolve_theme(brand_kit, extracted_palette, agent_name or "default")
+    logo_asset = _load_logo_asset(brand_kit)
 
     doc = Document()
-    _set_default_fonts(doc)
+    section = doc.sections[0]
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
+
+    _set_default_fonts(doc, theme)
     _add_footer(doc)
-    _add_cover(doc, title, brand_name, agent_name)
+    _add_cover(doc, title, brand_name, agent_name, theme, logo_asset=logo_asset)
 
     for seg in _split_segments(resolved_content or ""):
         if seg["type"] == "text":
-            _render_markdown_text(doc, seg["text"])
+            _render_markdown_text(doc, seg["text"], theme)
             continue
 
         chart_data = None

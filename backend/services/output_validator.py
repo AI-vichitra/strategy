@@ -22,6 +22,8 @@ VALID_CHART_TYPES = {"bar", "line", "area", "radar", "pie"}
 
 # Tolerant of leading/trailing whitespace around the language tag and the fence itself.
 _RECHARTS_FENCE_RE = re.compile(r"```recharts[ \t]*\r?\n(.*?)```", re.DOTALL)
+_BRANDPALETTE_FENCE_RE = re.compile(r"```brandpalette[ \t]*\r?\n(.*?)```", re.DOTALL)
+_HEX_COLOR_RE = re.compile(r"^#?[0-9a-fA-F]{3}$|^#?[0-9a-fA-F]{6}$")
 _H2_HEADING_RE = re.compile(r"^##[ \t]+", re.MULTILINE)
 
 
@@ -34,6 +36,45 @@ def extract_recharts_blocks(text: str) -> List[str]:
     except Exception as e:
         logger.warning(f"[output_validator] extract_recharts_blocks failed: {type(e).__name__}: {e}")
         return []
+
+
+def _normalize_hex(value: Any) -> Optional[str]:
+    if not value or not isinstance(value, str) or not _HEX_COLOR_RE.match(value.strip()):
+        return None
+    v = value.strip().lstrip("#")
+    if len(v) == 3:
+        v = "".join(c * 2 for c in v)
+    return v.upper()
+
+
+def extract_brand_palette(text: str) -> Optional[Dict[str, str]]:
+    """Extracts + validates the {"primary"/"secondary"/"accent": "#RRGGBB"} palette
+    the agent is instructed to emit in a trailing ```brandpalette ... ``` fence.
+    Returns None if the fence is missing, isn't valid JSON, or has no usable hex
+    color in it — callers then fall back to the report-type theme."""
+    if not text:
+        return None
+    m = _BRANDPALETTE_FENCE_RE.search(text)
+    if not m:
+        return None
+    try:
+        data = json.loads(m.group(1).strip())
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    palette = {k: _normalize_hex(data.get(k)) for k in ("primary", "secondary", "accent")}
+    palette = {k: v for k, v in palette.items() if v}
+    return palette or None
+
+
+def strip_brand_palette_block(text: str) -> str:
+    """Removes the trailing ```brandpalette ... ``` fence so it never reaches the
+    chat UI, a Report snapshot, or any export (DOCX/PPTX/public share) — the
+    palette itself is captured separately via extract_brand_palette() first."""
+    if not text:
+        return text or ""
+    return _BRANDPALETTE_FENCE_RE.sub("", text).rstrip()
 
 
 def _resolve_chart_type(data: Dict[str, Any], chart_data: List[Any]) -> str:

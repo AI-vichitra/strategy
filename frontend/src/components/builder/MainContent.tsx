@@ -6,6 +6,8 @@ import { useAgents } from '../../hooks/useAgents';
 import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
 import CompetitorForm, { type CompetitorDetail } from '../CompetitorForm';
+import BrandKitForm, { type BrandKit } from '../BrandKitForm';
+import ExportMenu from '../ExportMenu';
 import ConnectorsPanel from './ConnectorsPanel';
 import ConnectorsView from './ConnectorsView';
 import FilesView from './FilesView';
@@ -14,7 +16,6 @@ import WorkflowView from './WorkflowView';
 import styles from './MainContent.module.css';
 import ReportRenderer from '../ReportRenderer';
 import SectionEditor from '../SectionEditor';
-import { exportReportToPdf } from '../../utils/pdfExport';
 
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
 type ReportInfo = { id: string; title: string; agent_type: string };
@@ -599,15 +600,19 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [qaAnswers, setQaAnswers] = useState<Array<{ question: string; answer: string }>>([]);
   const [competitors, setCompetitors] = useState<CompetitorDetail[]>([]);
+  const [brandKit, setBrandKit] = useState<BrandKit>({});
   const [userContext, setUserContext] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [downloadingMsgIdx, setDownloadingMsgIdx] = useState<number | null>(null);
+  const [downloadingPdfIdx, setDownloadingPdfIdx] = useState<number | null>(null);
+  const [pdfErrorIdx, setPdfErrorIdx] = useState<number | null>(null);
   const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
   const [reportsByMessageId, setReportsByMessageId] = useState<Record<string, ReportInfo>>({});
   const [downloadingDocxIdx, setDownloadingDocxIdx] = useState<number | null>(null);
   const [docxErrorIdx, setDocxErrorIdx] = useState<number | null>(null);
+  const [downloadingPptxIdx, setDownloadingPptxIdx] = useState<number | null>(null);
+  const [pptxErrorIdx, setPptxErrorIdx] = useState<number | null>(null);
   const [sharingReportIdx, setSharingReportIdx] = useState<number | null>(null);
   const [shareCopiedIdx, setShareCopiedIdx] = useState<number | null>(null);
   const [shareErrorIdx, setShareErrorIdx] = useState<number | null>(null);
@@ -616,6 +621,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
+
   const latestAssistantIdx = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'assistant') return i;
@@ -623,37 +631,44 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     return -1;
   }, [messages]);
 
-  const handleDownloadPdf = async (idx: number, content: string) => {
+  const handleDownloadPdf = async (idx: number, messageId: string) => {
+    const reportInfo = reportsByMessageId[messageId];
+    if (!reportInfo) return;
     try {
-      setDownloadingMsgIdx(idx);
-      const el = document.getElementById(`report-markdown-${idx}`);
-      if (!el) {
-        alert('Could not find report content to export.');
-        return;
+      setPdfErrorIdx(null);
+      setDownloadingPdfIdx(idx);
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiBase}/api/reports/${reportInfo.id}/export/pdf`, { headers });
+      if (!res.ok) {
+        throw new Error(`Server error (${res.status})`);
       }
-      const headerMatch = content.match(/^#+\s*(.+)$/m);
-      const reportTitle = headerMatch ? headerMatch[1].trim() : `${selectedAgent || 'StratAI'} Strategy Report`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
 
       const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
       const currentBrandId = activeProject?.brand_config_id || savedBrandId;
       const brandName = ((currentBrandId && brandsMap[currentBrandId]) || activeProject?.title || 'Brand').trim();
-      const agentName = (selectedAgent || 'Strategy Report').trim();
-
       const sanitize = (s: string) => s.replace(/[/\\?%*:|"<>]/g, '').trim();
-      const fileName = `${sanitize(brandName)}_${sanitize(agentName)}.pdf`;
+      const fileName = `${sanitize(brandName)}_${sanitize(reportInfo.agent_type || reportInfo.title || 'Report')}.pdf`;
 
-      await exportReportToPdf({
-        element: el,
-        reportTitle,
-        brandName,
-        agentName,
-        fileName,
-      });
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to export PDF:', err);
-      alert('Failed to generate PDF. Please try again.');
+      setPdfErrorIdx(idx);
+      setTimeout(() => setPdfErrorIdx(null), 4000);
     } finally {
-      setDownloadingMsgIdx(null);
+      setDownloadingPdfIdx(null);
     }
   };
 
@@ -727,6 +742,47 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setTimeout(() => setDocxErrorIdx(null), 4000);
     } finally {
       setDownloadingDocxIdx(null);
+    }
+  };
+
+  const handleDownloadPptx = async (idx: number, messageId: string) => {
+    const reportInfo = reportsByMessageId[messageId];
+    if (!reportInfo) return;
+    try {
+      setPptxErrorIdx(null);
+      setDownloadingPptxIdx(idx);
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiBase}/api/reports/${reportInfo.id}/export/pptx`, { headers });
+      if (!res.ok) {
+        throw new Error(`Server error (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+      const currentBrandId = activeProject?.brand_config_id || savedBrandId;
+      const brandName = ((currentBrandId && brandsMap[currentBrandId]) || activeProject?.title || 'Brand').trim();
+      const sanitize = (s: string) => s.replace(/[/\\?%*:|"<>]/g, '').trim();
+      const fileName = `${sanitize(brandName)}_${sanitize(reportInfo.agent_type || reportInfo.title || 'Report')}.pptx`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export PPTX:', err);
+      setPptxErrorIdx(idx);
+      setTimeout(() => setPptxErrorIdx(null), 4000);
+    } finally {
+      setDownloadingPptxIdx(null);
     }
   };
 
@@ -924,6 +980,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setAttachedFiles([]);
     setQaAnswers([]);
     setCompetitors([]);
+    setBrandKit({});
     const prompt = title === 'Competition Analysis'
       ? `Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.`
       : title === 'GTM Strategy'
@@ -944,6 +1001,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setMessages([]);
     setQaAnswers([]);
     setCompetitors([]);
+    setBrandKit({});
   };
 
   const handleNewChat = () => {
@@ -957,6 +1015,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setMessages([]);
     setQaAnswers([]);
     setCompetitors([]);
+    setBrandKit({});
     setActiveProject(null);
     onNewChat?.();
   };
@@ -989,6 +1048,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           setSelectedModel(proj.llm_provider);
         }
         setCompetitors(Array.isArray(proj.competitor_details) ? proj.competitor_details : []);
+        setBrandKit(proj.brand_kit && typeof proj.brand_kit === 'object' ? proj.brand_kit : {});
         if (proj.brand_config_id) {
           const brandName = brandsMap[proj.brand_config_id] || 'Brand Project';
           setActiveProject({
@@ -1118,6 +1178,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               competitor_details: (() => {
                 const filled = competitors.filter((c) => c.brand_name.trim());
                 return filled.length > 0 ? filled : null;
+              })(),
+              brand_kit: (() => {
+                const hasBrandKit = brandKit.logo_url || (brandKit.colors && Object.values(brandKit.colors).some(Boolean));
+                return hasBrandKit ? brandKit : null;
               })(),
             })
           });
@@ -1345,14 +1409,14 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           </div>
         </div>
         <div className={styles.spacer} />
-        {latestAssistantIdx !== -1 && (
-          <button 
-            className={styles.downloadTopBarBtn} 
-            onClick={() => handleDownloadPdf(latestAssistantIdx, messages[latestAssistantIdx].content)}
-            disabled={downloadingMsgIdx !== null}
+        {latestAssistantIdx !== -1 && messages[latestAssistantIdx].id && reportsByMessageId[messages[latestAssistantIdx].id!] && (
+          <button
+            className={styles.downloadTopBarBtn}
+            onClick={() => handleDownloadPdf(latestAssistantIdx, messages[latestAssistantIdx].id!)}
+            disabled={downloadingPdfIdx !== null}
             title="Download latest strategy report as PDF"
           >
-            {downloadingMsgIdx === latestAssistantIdx ? (
+            {downloadingPdfIdx === latestAssistantIdx ? (
               <>
                 <span className={styles.downloadSpinner} />
                 <span>Exporting PDF...</span>
@@ -1475,59 +1539,38 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                               </>
                             )}
                           </button>
-                          <button
-                            type="button"
-                            className={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
-                            onClick={() => handleDownloadPdf(i, msg.content)}
-                            disabled={downloadingMsgIdx === i}
-                            title="Download this report as PDF"
-                          >
-                            {downloadingMsgIdx === i ? (
-                              <>
-                                <span className={styles.downloadSpinner} />
-                                <span>Exporting PDF...</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                  <polyline points="7 10 12 15 17 10" />
-                                  <line x1="12" y1="15" x2="12" y2="3" />
-                                </svg>
-                                <span>Download PDF</span>
-                              </>
-                            )}
-                          </button>
-                          {msg.id && reportsByMessageId[msg.id] && (
-                            <button
-                              type="button"
-                              className={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
-                              onClick={() => handleDownloadDocx(i, msg.id!)}
-                              disabled={downloadingDocxIdx === i}
-                              title="Download this report as DOCX"
-                            >
-                              {downloadingDocxIdx === i ? (
-                                <>
-                                  <span className={styles.downloadSpinner} />
-                                  <span>Exporting DOCX...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="7 10 12 15 17 10" />
-                                    <line x1="12" y1="15" x2="12" y2="3" />
-                                  </svg>
-                                  <span>Download DOCX</span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                          {docxErrorIdx === i && (
-                            <span style={{ color: '#dc2626', fontSize: '11px', marginLeft: '4px' }}>
-                              Failed to export DOCX
-                            </span>
-                          )}
+                          <ExportMenu
+                            buttonClassName={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
+                            formats={[
+                              ...(msg.id && reportsByMessageId[msg.id] ? [{
+                                id: 'pdf',
+                                label: 'PDF',
+                                extension: '.pdf',
+                                chip: 'PDF',
+                                onSelect: () => handleDownloadPdf(i, msg.id!),
+                                loading: downloadingPdfIdx === i,
+                                error: pdfErrorIdx === i,
+                              }] : []),
+                              ...(msg.id && reportsByMessageId[msg.id] ? [{
+                                id: 'docx',
+                                label: 'Word',
+                                extension: '.docx',
+                                chip: 'DOC',
+                                onSelect: () => handleDownloadDocx(i, msg.id!),
+                                loading: downloadingDocxIdx === i,
+                                error: docxErrorIdx === i,
+                              }] : []),
+                              ...(msg.id && reportsByMessageId[msg.id] ? [{
+                                id: 'pptx',
+                                label: 'PowerPoint',
+                                extension: '.pptx',
+                                chip: 'PPT',
+                                onSelect: () => handleDownloadPptx(i, msg.id!),
+                                loading: downloadingPptxIdx === i,
+                                error: pptxErrorIdx === i,
+                              }] : []),
+                            ]}
+                          />
                           {msg.id && reportsByMessageId[msg.id] && (
                             <button
                               type="button"
@@ -1603,11 +1646,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                         <button
                           type="button"
                           className={styles.reportFooterDownloadBtn}
-                          onClick={() => handleDownloadPdf(i, msg.content)}
-                          disabled={downloadingMsgIdx === i}
+                          onClick={() => msg.id && handleDownloadPdf(i, msg.id)}
+                          disabled={downloadingPdfIdx === i || !msg.id || !reportsByMessageId[msg.id]}
                           title="Download full report as PDF"
                         >
-                          {downloadingMsgIdx === i ? (
+                          {downloadingPdfIdx === i ? (
                             <>
                               <span className={styles.downloadSpinner} />
                               <span>Generating PDF...</span>
@@ -1777,14 +1820,21 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       {view !== 'files' && view !== 'projects' && view !== 'agents' && (selectedAgent !== null || isChatting) && (
         <div className={styles.chatContainer}>
           {selectedAgent && messages.length === 0 && (
-            <CompetitorForm competitors={competitors} onChange={setCompetitors} />
-          )}
-          {showQuestionnaire && selectedAgent && agentQuestions[selectedAgent] && (
-            <AgentQuestionnaire
-              questions={agentQuestions[selectedAgent]}
-              onComplete={handleQuestionnaireComplete}
-              onDismiss={handleQuestionnaireDismiss}
-            />
+            <div className={styles.onboardingForms}>
+              <BrandKitForm brandKit={brandKit} onChange={setBrandKit} apiBase={apiBase} authToken={authToken} />
+              <div className={styles.formDivider} />
+              <CompetitorForm competitors={competitors} onChange={setCompetitors} />
+              {showQuestionnaire && agentQuestions[selectedAgent] && (
+                <>
+                  <div className={styles.formDivider} />
+                  <AgentQuestionnaire
+                    questions={agentQuestions[selectedAgent]}
+                    onComplete={handleQuestionnaireComplete}
+                    onDismiss={handleQuestionnaireDismiss}
+                  />
+                </>
+              )}
+            </div>
           )}
           <ChatInput
             value={promptText}

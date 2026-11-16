@@ -220,6 +220,8 @@
   bottom: 0;
   left: 0;
   right: 0;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
   padding: 16px 32px 24px 32px;
   display: flex;
   flex-direction: column;
@@ -227,7 +229,7 @@
   background: linear-gradient(to top, rgba(250, 248, 245, 0.95) 75%, rgba(250, 248, 245, 0) 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  pointer-events: none;
+  pointer-events: auto;
   z-index: 100;
   flex-shrink: 0;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -236,6 +238,39 @@
   pointer-events: auto;
   width: 100%;
   max-width: 960px;
+}
+
+/* Pre-chat setup forms (Brand Kit, Competitors, Agent Questionnaire) — one
+   explicitly scrollable container so a tall stack never pushes an earlier
+   form out of .chatContainer's reachable area (see .chatContainer above,
+   which also caps/scrolls as a second safety net). Always starts scrolled
+   to top, so BrandKitForm is the first thing seen. */
+.onboardingForms {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  pointer-events: auto;
+  width: 100%;
+}
+.onboardingForms::-webkit-scrollbar {
+  width: 6px;
+}
+.onboardingForms::-webkit-scrollbar-track {
+  background: transparent;
+}
+.onboardingForms::-webkit-scrollbar-thumb {
+  background: #D4A843;
+  border-radius: 6px;
+}
+
+.formDivider {
+  height: 1px;
+  background: #E8E4DC;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 
