@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-VALID_CHART_TYPES = {"bar", "line", "area", "radar", "pie"}
+VALID_CHART_TYPES = {"bar", "line", "area", "radar", "pie", "scatter"}
 
 # Tolerant of leading/trailing whitespace around the language tag and the fence itself.
 _RECHARTS_FENCE_RE = re.compile(r"```recharts[ \t]*\r?\n(.*?)```", re.DOTALL)
@@ -91,11 +91,15 @@ def _resolve_chart_type(data: Dict[str, Any], chart_data: List[Any]) -> str:
         chart_type = "radar"
     if chart_type in ("pie_chart", "donut"):
         chart_type = "pie"
+    if chart_type in ("scatter_chart", "quadrant", "positioning_map", "xy"):
+        chart_type = "scatter"
 
     if not chart_type:
         sample_item = chart_data[0] if chart_data else {}
         if isinstance(sample_item, dict) and "subject" in sample_item:
             chart_type = "radar"
+        elif isinstance(sample_item, dict) and isinstance(sample_item.get("x"), (int, float)) and isinstance(sample_item.get("y"), (int, float)):
+            chart_type = "scatter"
         elif isinstance(data.get("keys"), list) and len(data["keys"]) > 0:
             chart_type = "line"
         else:

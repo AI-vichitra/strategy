@@ -1,5 +1,5 @@
 'use client';
-import { memo, Component, useState, type ReactNode } from 'react';
+import { memo, Component, useState, Children, isValidElement, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -7,7 +7,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   AreaChart, Area, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  LabelList
+  LabelList, ScatterChart, Scatter, ReferenceLine
 } from 'recharts';
 import styles from './builder/MainContent.module.css';
 
@@ -180,6 +180,39 @@ export const CustomChartTooltip = ({ active, payload, label, context }: any) => 
   );
 };
 
+// Tooltip for the scatter/positioning-map chart — each point carries an (x, y)
+// pair rather than a single value, so it needs its own two-row layout instead
+// of CustomChartTooltip's single-metric-per-row list.
+export const ScatterChartTooltip = ({ active, payload, context }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  const point = payload[0]?.payload;
+  if (!point) return null;
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E8E4DC',
+      borderRadius: '10px',
+      padding: '10px 14px',
+      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+      fontSize: '12px',
+      fontFamily: "'Inter', sans-serif",
+      minWidth: '150px',
+    }}>
+      <div style={{ fontWeight: 700, color: '#1A1A1A', marginBottom: '6px', borderBottom: '1px solid #F0ECE4', paddingBottom: '4px' }}>
+        {point.name || 'Point'}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '4px' }}>
+        <span style={{ color: '#57534E', fontWeight: 500 }}>{context?.xLabel || 'X'}</span>
+        <span style={{ fontWeight: 700, color: '#1A1A1A' }}>{point.x}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '4px' }}>
+        <span style={{ color: '#57534E', fontWeight: 500 }}>{context?.yShortLabel || context?.yLabel || 'Y'}</span>
+        <span style={{ fontWeight: 700, color: '#1A1A1A' }}>{point.y}</span>
+      </div>
+    </div>
+  );
+};
+
 // Small, visually-consistent fallback shown whenever a `recharts` block can't be
 // trusted enough to render as a chart (malformed JSON, unsupported type, no data).
 export const ChartFallbackCard = ({ message, rawContent }: { message: string; rawContent?: string }) => (
@@ -276,14 +309,30 @@ export class ChartErrorBoundary extends Component<{ children: ReactNode }, { has
   }
 }
 
-export const VALID_CHART_TYPES = ['bar', 'line', 'area', 'radar', 'pie'];
+export const VALID_CHART_TYPES = ['bar', 'line', 'area', 'radar', 'pie', 'scatter'];
 
-// The LLM occasionally emits unquoted thousands separators inside a recharts
-// JSON block (e.g. "Users": 1,500), which is invalid JSON. Strip commas that
-// sit strictly inside a digit-grouped number following a property colon —
-// never touches the commas that separate object/array entries.
+// The LLM occasionally emits malformed JSON inside a recharts block. Each step
+// below fixes one specific, commonly-seen deviation from strict JSON without
+// touching well-formed blocks:
+//  1. Digit-grouped numbers ("Users": 1,500) — strip the grouping commas.
+//  2. Trailing commas before a closing `}`/`]`.
+//  3. Unquoted object keys ({name: "A"} -> {"name": "A"}).
+//  4. NaN / undefined literals (not valid JSON) -> null.
+//  5. Single-quoted strings -> double-quoted, but ONLY when the block uses no
+//     double quotes at all (a JSON5/Python-dict-style emission) — otherwise an
+//     apostrophe inside a normal double-quoted string (e.g. "Brand O'Brien")
+//     would get corrupted.
 export function sanitizeChartJson(raw: string): string {
-  return raw.replace(/:\s*(\d{1,3})(,\d{3})+(?=[,\s\}\]])/g, (match) => match.replace(/,/g, ''));
+  let out = raw.replace(/:\s*(\d{1,3})(,\d{3})+(?=[,\s\}\]])/g, (match) => match.replace(/,/g, ''));
+  out = out.replace(/,(\s*[}\]])/g, '$1');
+  // Checked against the ORIGINAL raw text, before the key-quoting step below
+  // introduces its own double quotes.
+  if (!raw.includes('"')) {
+    out = out.replace(/'([^']*)'/g, '"$1"');
+  }
+  out = out.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3');
+  out = out.replace(/:\s*(NaN|undefined)\b/g, ': null');
+  return out;
 }
 
 // The LLM sometimes declares a "keys" array with units/annotations
@@ -337,6 +386,7 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
     if (chartType === 'area_chart') chartType = 'area';
     if (chartType === 'radar_chart' || chartType === 'spider') chartType = 'radar';
     if (chartType === 'pie_chart' || chartType === 'donut') chartType = 'pie';
+    if (chartType === 'scatter_chart' || chartType === 'quadrant' || chartType === 'positioning_map' || chartType === 'xy') chartType = 'scatter';
 
     // Auto-detect missing chart type based on data structure
     const chartData = Array.isArray(data.data) ? data.data : [];
@@ -344,6 +394,8 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
       const sampleItem = chartData[0] || {};
       if ('subject' in sampleItem) {
         chartType = 'radar';
+      } else if (typeof sampleItem.x === 'number' && typeof sampleItem.y === 'number') {
+        chartType = 'scatter';
       } else if (data.keys && data.keys.length > 0) {
         chartType = 'line';
       } else {
@@ -354,11 +406,13 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
     // Unknown/unsupported type (typo, future type, etc.) — do NOT fall through to
     // a PieChart render that doesn't match the data. Show a clear fallback instead.
     if (!VALID_CHART_TYPES.includes(chartType)) {
+      console.warn('[RechartsBlock] Unsupported chart type — showing fallback.', { chartType, rawText });
       return <ChartFallbackCard message="Unsupported chart type" rawContent={rawText} />;
     }
 
     // No usable data — show an explicit empty state instead of a blank axes shell.
     if (chartData.length === 0) {
+      console.warn('[RechartsBlock] No chart data found — showing fallback.', { rawText });
       return <ChartFallbackCard message="No chart data available" rawContent={rawText} />;
     }
 
@@ -369,8 +423,22 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
     // Resolve comprehensive axis demonstration, descriptions, and takeaways
     const context = resolveChartContext(data, chartData, chartType);
 
+    // Scatter/positioning-map domain — defaults to a 0-10 scale (the typical
+    // positioning-axis range) but expands to fit the data if it goes further.
+    const scatterXVals = chartType === 'scatter' ? chartData.map((d: any) => typeof d.x === 'number' ? d.x : 0) : [];
+    const scatterYVals = chartType === 'scatter' ? chartData.map((d: any) => typeof d.y === 'number' ? d.y : 0) : [];
+    const scatterXMin = Math.min(0, ...scatterXVals);
+    const scatterXMax = Math.max(10, ...scatterXVals);
+    const scatterYMin = Math.min(0, ...scatterYVals);
+    const scatterYMax = Math.max(10, ...scatterYVals);
+    const scatterXMid = (scatterXMin + scatterXMax) / 2;
+    const scatterYMid = (scatterYMin + scatterYMax) / 2;
+
     // Compute executive summary stat badges for fullness and immediate insight
     const kpiSummary = (() => {
+      // Single-value leader/average/baseline badges don't map onto a 2D (x, y)
+      // positioning point, so skip them for scatter charts.
+      if (chartType === 'scatter') return null;
       if (!Array.isArray(chartData) || chartData.length === 0) return null;
       const numItems = chartData
         .map((d: any) => {
@@ -801,6 +869,48 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
                 </Bar>
               ))}
             </BarChart>
+          ) : chartType === 'scatter' ? (
+            <ScatterChart margin={{ top: 22, right: 30, left: 25, bottom: 30 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EFECE6" />
+              <XAxis
+                type="number"
+                dataKey="x"
+                domain={[scatterXMin, scatterXMax]}
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={{ stroke: '#E8E4DC' }}
+                tick={{ fill: '#1A1A1A', fontSize: 11.5, fontWeight: 600 }}
+                label={{ value: context.xLabel, position: 'insideBottom', offset: -8, fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+              />
+              <YAxis
+                type="number"
+                dataKey="y"
+                domain={[scatterYMin, scatterYMax]}
+                stroke="#8C857B"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: '#1A1A1A', fontSize: 12, fontWeight: 700 }}
+                label={{
+                  value: context.yShortLabel,
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 2,
+                  fill: '#1A1A1A',
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  style: { textAnchor: 'middle', fontWeight: 800, fill: '#1A1A1A' }
+                }}
+              />
+              <ReferenceLine x={scatterXMid} stroke="#D4A843" strokeDasharray="4 4" />
+              <ReferenceLine y={scatterYMid} stroke="#D4A843" strokeDasharray="4 4" />
+              <Tooltip content={<ScatterChartTooltip context={context} />} cursor={{ strokeDasharray: '3 3' }} />
+              <Scatter data={chartData} fill={COLORS[0]}>
+                {chartData.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+                <LabelList dataKey="name" position="top" fill="#1A1A1A" fontSize={11} fontWeight={700} offset={10} />
+              </Scatter>
+            </ScatterChart>
           ) : (
             <PieChart>
               <Pie
@@ -872,6 +982,7 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
       </div>
     );
   } catch (e) {
+    console.warn('[RechartsBlock] Failed to parse/render chart — showing fallback.', e, { rawText });
     return <ChartFallbackCard message="Chart could not be rendered" rawContent={rawText} />;
   }
 });
@@ -885,11 +996,26 @@ export const markdownComponents = {
     }
     return <code className={className} {...props}>{children}</code>;
   },
-  table: ({ children, ...props }: any) => (
-    <div className={styles.tableWrapper}>
-      <table {...props}>{children}</table>
-    </div>
-  )
+  // GFM tables are a well-formed block even when the LLM genuinely emits only
+  // a header + separator row with no data rows. Rather than let that render
+  // as a confusingly blank table body, detect an empty <tbody> here (by
+  // walking the already-built element tree, not the raw markdown) and show
+  // an explicit placeholder instead.
+  table: ({ children, ...props }: any) => {
+    const childArray = Children.toArray(children) as any[];
+    const tbody = childArray.find((c) => isValidElement(c) && (c as any).type === 'tbody');
+    const bodyRows = tbody && isValidElement(tbody) ? Children.toArray((tbody as any).props.children) : null;
+    return (
+      <div className={styles.tableWrapper}>
+        <table {...props}>{children}</table>
+        {bodyRows !== null && bodyRows.length === 0 && (
+          <div style={{ padding: '10px 2px', fontSize: '12.5px', color: '#8C857B', fontStyle: 'italic' }}>
+            No data available for this table.
+          </div>
+        )}
+      </div>
+    );
+  }
 };
 
 // ── Report-view accordion ──────────────────────────────────────────────────
@@ -961,6 +1087,54 @@ function CollapsibleSection({
   );
 }
 
+// GFM pipe tables are terminated by the first blank line — there is no
+// concept of a blank line "inside" one. When the LLM emits a header +
+// separator row followed by a blank line before the data rows (a common
+// formatting slip, likely from treating the separator as its own paragraph),
+// remark-gfm parses a table consisting of ONLY the header, with zero body
+// rows; the real data rows that follow become orphaned, un-rendered text.
+// This mirrors backend/services/export_service.py's _ensure_blank_line_before_tables
+// (which guarantees a blank line BEFORE a table so python-markdown recognizes
+// it at all) but fixes the opposite defect: blank lines WITHIN a table that
+// would otherwise cut it off from its own body.
+function normalizeTableRows(content: string): string {
+  const lines = content.split('\n');
+  const isRowLike = (line: string) => line.includes('|') && line.trim() !== '';
+  const isDelimiterRow = (line: string) => /^[\s|:-]+$/.test(line) && line.includes('-');
+
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (isRowLike(line) && i + 1 < lines.length && isDelimiterRow(lines[i + 1])) {
+      out.push(line, lines[i + 1]);
+      i += 2;
+      while (i < lines.length) {
+        if (lines[i].trim() === '') {
+          let j = i;
+          while (j < lines.length && lines[j].trim() === '') j++;
+          const nextStartsNewTable = j + 1 < lines.length && isDelimiterRow(lines[j + 1]);
+          if (j < lines.length && isRowLike(lines[j]) && !nextStartsNewTable) {
+            // Blank line(s) sandwiched between two rows of THIS table (the
+            // next row-like line isn't itself a new header+delimiter pair)
+            // — drop them so the rows stay part of the same table block.
+            i = j;
+            continue;
+          }
+          break; // Genuine end of the table (or a new table starts next).
+        }
+        if (!isRowLike(lines[i])) break;
+        out.push(lines[i]);
+        i++;
+      }
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+  return out.join('\n');
+}
+
 function normalizeTiers(content: string): string {
   return content
     .replace(/\(\$\$\$\)/g, '(Premium Tier)')
@@ -971,7 +1145,7 @@ function normalizeTiers(content: string): string {
 }
 
 export default function ReportRenderer({ content, accordion = true }: { content: string; accordion?: boolean }) {
-  const prepared = normalizeTiers(content);
+  const prepared = normalizeTableRows(normalizeTiers(content));
 
   if (!accordion) {
     return (

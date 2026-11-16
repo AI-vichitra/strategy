@@ -1177,7 +1177,7 @@ OUTPUT FORMAT RULES (STRICT)
 - The vast majority of your output must be standard Markdown text, utilizing headers (H2, H3), bullet points, and Markdown Tables.
 - Do NOT output a master JSON blob for the whole response.
 - Generates RICH DIVERSE VISUAL DASHBOARDS using JSON code blocks tagged with `recharts`. The UI will intercept these blocks and render interactive inline charts.
-- Available chart types: `"bar"`, `"line"`, `"area"`, `"radar"`, `"pie"`.
+- Available chart types: `"bar"`, `"line"`, `"area"`, `"radar"`, `"pie"`, `"scatter"`.
 
 Chart Format Specifications:
 1. BAR CHART: `{"type": "bar", "title": "...", "data": [{"name": "Item", "value": 85}, ...]}`
@@ -1185,6 +1185,7 @@ Chart Format Specifications:
 3. AREA GROWTH CHART: `{"type": "area", "title": "...", "data": [{"name": "Q1", "Revenue": 100, "Users": 400}, ...], "keys": ["Revenue", "Users"]}`
 4. RADAR COMPETITIVE CHART: `{"type": "radar", "title": "...", "data": [{"subject": "Pricing", "User Brand": 8, "Competitor": 6}, ...], "keys": ["User Brand", "Competitor"]}`
 5. PIE SHARE CHART: `{"type": "pie", "title": "...", "data": [{"name": "Segment A", "value": 45}, ...]}`
+6. SCATTER / POSITIONING MAP CHART: `{"type": "scatter", "title": "...", "x_label": "...axis name...", "y_label": "...axis name...", "data": [{"name": "User Brand", "x": 7, "y": 8}, {"name": "Competitor A", "x": 4, "y": 6}, ...]}` — use this for a two-axis positioning map; each data point is ONE brand/competitor plotted by its ("x", "y") coordinate on the two chosen axes (both on a 1-10 scale).
 
 CRITICAL CHART DATA RULES:
 - The strings in the "keys" array MUST be CHARACTER-FOR-CHARACTER IDENTICAL to the property names used in each "data" row object.
@@ -1193,12 +1194,14 @@ CRITICAL CHART DATA RULES:
 - RIGHT: data: {"Market Size": 950}, keys: ["Market Size"], y_label: "USD Mn"
 - Do NOT use thousands separators in numbers. WRONG: 1,500  RIGHT: 1500
 - All numeric values must be plain numbers, no formatting.
+- For the SCATTER chart specifically, every data point MUST have numeric "x" and "y" fields (never "value") — do NOT emit "type": "quadrant" or any other non-listed type for a positioning map.
 
-REQUIRED VISUAL SECTIONS (INCLUDE ALL 3 DIVERSE CHARTS)
-You MUST output a `recharts` JSON block for each of the following 3 visual parameters:
+REQUIRED VISUAL SECTIONS (INCLUDE ALL 4 DIVERSE CHARTS)
+You MUST output a `recharts` JSON block for each of the following 4 visual parameters:
 1. Brand Perception vs Competitors Radar (type: "radar", rating 1-10 across Quality, Value, Innovation, Trust, Relevance for User Brand vs Competitors)
 2. Differentiation Strength by Attribute (type: "bar", strength score 1-10 across key differentiating attributes)
 3. Target Segment Priority (type: "pie", percentage priority distribution across target segments, totaling 100)
+4. Competitive Positioning Map (type: "scatter", plot the User Brand plus 3-5 competitors on the SAME two positioning axes described in the Positioning Map section, each on a 1-10 scale) — place this chart directly in the POSITIONING MAP section, alongside its table.
 Provide exactly one short takeaway sentence in plain markdown text directly below each chart.
 
 REQUIRED REPORT SECTIONS

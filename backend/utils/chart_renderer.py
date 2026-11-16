@@ -124,6 +124,36 @@ def _render_radar(ax, data, keys):
         ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
 
 
+def _render_scatter(ax, data, x_label, y_label):
+    """Positioning-map style scatter: one labeled point per (x, y) data item,
+    plus quadrant reference lines at the domain midpoint — mirrors the
+    frontend's ScatterChart in ReportRenderer.tsx (same 0-10 default domain,
+    expanded to fit the data; same quadrant-line placement)."""
+    names = [str(d.get("name", "")) for d in data]
+    xs = [_to_num(d.get("x")) for d in data]
+    ys = [_to_num(d.get("y")) for d in data]
+    colors = [_chart_color(i) for i in range(len(names))]
+    ax.scatter(xs, ys, c=colors, s=90, zorder=3)
+
+    # Alternate the label offset direction so adjacent points don't stack
+    # their text directly on top of one another — a simple, not exhaustive,
+    # overlap mitigation.
+    for i, (name, x, y) in enumerate(zip(names, xs, ys)):
+        offset = (6, 8) if i % 2 == 0 else (6, -12)
+        ax.annotate(name, (x, y), textcoords="offset points", xytext=offset, fontsize=8)
+
+    x_min, x_max = min([0.0] + xs), max([10.0] + xs)
+    y_min, y_max = min([0.0] + ys), max([10.0] + ys)
+    ax.axhline((y_min + y_max) / 2, color="#D4A843", linestyle="--", linewidth=1, zorder=1)
+    ax.axvline((x_min + x_max) / 2, color="#D4A843", linestyle="--", linewidth=1, zorder=1)
+    ax.set_xlim(x_min - 0.5, x_max + 0.5)
+    ax.set_ylim(y_min - 0.5, y_max + 0.5)
+    if x_label:
+        ax.set_xlabel(x_label)
+    if y_label:
+        ax.set_ylabel(y_label)
+
+
 def _render_pie(ax, data):
     names = [str(d.get("name", "")) for d in data]
     vals = [_to_num(d.get("value")) for d in data]
@@ -165,6 +195,8 @@ def render_chart_image(chart_json: Optional[dict], figsize: Optional[tuple] = No
                 _render_line(ax, data, keys, x_label, y_label, filled=True)
             elif chart_type == "pie":
                 _render_pie(ax, data)
+            elif chart_type == "scatter":
+                _render_scatter(ax, data, x_label, y_label)
             else:
                 plt.close(fig)
                 return None
