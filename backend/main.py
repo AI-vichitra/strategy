@@ -28,7 +28,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections
+from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates
 
 app = FastAPI(title="StratAI Backend")
 
@@ -52,6 +52,7 @@ app.include_router(report_sections.router, prefix="/api/reports", tags=["Report 
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(agents.router)
+app.include_router(pptx_templates.router)
 app.include_router(connectors.router)
 
 @app.get("/")

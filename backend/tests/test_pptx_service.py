@@ -53,18 +53,42 @@ def test_generate_pptx_returns_valid_pptx_bytes():
     assert data[:2] == b"PK"
 
 
-def test_cover_slide_has_correct_title():
+def test_cover_slide_title_prefers_brand_name_over_report_title():
+    # Intentional: the cover's big title shows the brand name, not
+    # report.title (which is derived from the first section heading) —
+    # report.title is still used elsewhere (filenames/TOC/etc.), just not
+    # rendered as the cover title.
     data = _run(generate_pptx({
-        "title": "Cog Culture Brand Strategy",
+        "title": "Executive Summary",
         "content": "### Executive Summary\nSummary text.",
         "brand_name": "Cog Culture",
         "agent_name": "Brand Positioning",
     }))
     prs = Presentation(io.BytesIO(data))
     cover_text = _slide_text(prs.slides[0])
-    assert "Cog Culture Brand Strategy" in cover_text
     assert "Cog Culture" in cover_text
+    assert "Executive Summary" not in cover_text
     assert "BRAND POSITIONING REPORT" in cover_text
+
+
+def test_cover_slide_title_falls_back_to_report_title_without_brand_name():
+    data = _run(generate_pptx({
+        "title": "Cog Culture Brand Strategy",
+        "content": "### Executive Summary\nSummary text.",
+        "agent_name": "Brand Positioning",
+    }))
+    prs = Presentation(io.BytesIO(data))
+    cover_text = _slide_text(prs.slides[0])
+    assert "Cog Culture Brand Strategy" in cover_text
+
+
+def test_cover_slide_title_falls_back_to_art_default_without_title_or_brand():
+    data = _run(generate_pptx({
+        "content": "### Executive Summary\nSummary text.",
+    }))
+    prs = Presentation(io.BytesIO(data))
+    cover_text = _slide_text(prs.slides[0])
+    assert "Strategic Intelligence Report" in cover_text
 
 
 def test_heading_and_bullets_produce_multiple_slides():

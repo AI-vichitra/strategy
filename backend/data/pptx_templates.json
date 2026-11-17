@@ -1,0 +1,445 @@
+{
+  "templates": [
+    {
+      "id": "default",
+      "name": "Default",
+      "description": "StratAI's standard look — Calibri throughout, today's type scale. Kept in sync with template_service.DEFAULT_TEMPLATE.",
+      "enabled": true,
+      "fonts": {
+        "heading": "Calibri",
+        "body": "Calibri"
+      },
+      "type_scale": {
+        "title": 26,
+        "subtitle": 20,
+        "body": 15,
+        "subsection_label": 16,
+        "sub_bullet": 13.5,
+        "subsub_bullet": 12.5,
+        "table_header": 11,
+        "table_body": 10.5,
+        "caption": 12,
+        "slide_number": 9,
+        "cover_title": 32,
+        "divider_title": 40,
+        "closing_headline": 26,
+        "closing_date": 13,
+        "titlebar_subtitle": 16,
+        "toc_item": 16,
+        "divider_number": 16,
+        "cover_wordmark": 18,
+        "cover_tagline": 11,
+        "cover_badge": 11,
+        "cover_date": 11,
+        "cover_meta": 13,
+        "chart_takeaway": 12,
+        "chart_fallback": 16,
+        "chart_fallback_sub": 13,
+        "stat_value": 40,
+        "stat_label": 14,
+        "stat_sublabel": 11,
+        "timeline_phase_label": 12,
+        "timeline_phase_title": 14,
+        "timeline_body": 11,
+        "timeline_deliverable": 11
+      },
+      "palette": null,
+      "backgrounds": {
+        "cover": "bg_dark",
+        "divider": "bg_dark",
+        "closing": "bg_dark",
+        "toc": "bg_light",
+        "content": "bg_white",
+        "table": "bg_white",
+        "chart": "bg_white"
+      },
+      "geometry": {
+        "canvas": { "width": 13.333, "height": 7.5 },
+        "title_bar": {
+          "height": 0.7,
+          "accent_bar": { "on": true, "width": 0.18, "side": "left" },
+          "title_box": { "x": 0.6, "y": 0.35, "w": 12.0 },
+          "subtitle_box": { "x": 0.6, "y": 1.0, "w": 12.0, "h": 0.5 }
+        },
+        "slide_number": {
+          "on": true, "w": 0.8, "h": 0.35,
+          "x_from_right": 1.0, "y_from_bottom": 0.45, "align": "right"
+        },
+        "content_body": { "x": 0.8, "top": 1.35, "w": 11.5, "height": 5.25, "safe_bottom": 6.7 },
+        "bullets": { "indent_step": 0.3, "max_level": 2, "hanging_indent": -0.25 },
+        "spacing": {
+          "label": { "space_after": 10, "line": 1.2 },
+          "bullet": { "space_after": 8, "line": 1.2 },
+          "paragraph": { "space_after": 10, "line": 1.2 }
+        },
+        "table": {
+          "x": 0.8, "top": 1.7, "w": 11.7,
+          "row_height": 0.5, "max_height": 5.1,
+          "cell_margin_h": 0.1, "cell_margin_v": 0.05
+        },
+        "chart": {
+          "width": 8.0, "top": 1.6, "figsize": [9, 5],
+          "takeaway": { "x": 1.2, "y": 6.7, "w": 10.9, "h": 0.6 }
+        },
+        "stat_tile": { "gap": 0.25, "pad": 0.3, "corner_radius": 0.08, "height": 2.4 },
+        "timeline": { "chevron_height": 0.7, "overlap": 0.1, "row_top": 2.3, "body_gap": 0.2, "footer_height": 0.9 }
+      },
+      "fit": { "chars_per_line": 98, "line_height": 0.3 },
+      "slots": {
+        "title": "primary",
+        "titlebar_subtitle": "accent",
+        "accent_bar": "primary",
+        "slide_number": "text_muted",
+        "bullet_marker": "accent",
+        "body_text": "text_dark",
+        "label": "text_dark",
+        "table_header_bg": "primary",
+        "table_header_text": "text_light",
+        "table_row_a": "bg_light",
+        "table_row_b": "bg_white",
+        "chart_takeaway": "text_muted",
+        "chart_fallback": "text_dark",
+        "cover_title": "text_light",
+        "cover_wordmark": "text_light",
+        "cover_tagline": "accent",
+        "cover_date": "secondary",
+        "cover_badge_bg": "accent",
+        "cover_badge_text": "text_light",
+        "cover_rule": "accent",
+        "cover_meta": "secondary",
+        "divider_number": "accent",
+        "divider_title": "text_light",
+        "divider_bar": "accent",
+        "closing_headline": "text_light",
+        "closing_date": "accent",
+        "toc_number": "primary",
+        "toc_title": "text_dark",
+        "cover_meta_brand": "text_light",
+        "toc_separator": "accent",
+        "trailing_note_text": "text_muted",
+        "cover_band_fill": "bg_dark",
+        "cover_band_text": "text_light",
+        "stat_value": "primary",
+        "stat_label": "text_dark",
+        "stat_sublabel": "text_muted",
+        "stat_separator": "accent",
+        "stat_tile_bg": "bg_light",
+        "stat_hero_bg": "primary",
+        "stat_hero_text": "text_light",
+        "timeline_start": "bg_light",
+        "timeline_end": "primary",
+        "timeline_deliverable_label": "accent",
+        "timeline_body": "text_dark",
+        "timeline_footer_bg": "bg_light"
+      },
+      "art": {
+        "date_format": "%B %d, %Y",
+        "cover": {
+          "layout": "classic",
+          "logo": { "x": 0.6, "y": 0.4, "max_h": 1.2, "max_w": 4.0 },
+          "wordmark": { "text": "StratAI", "x": 0.6, "y": 0.5, "w": 4.0, "h": 0.6 },
+          "tagline": { "text": "STRATEGIC MARKET INTELLIGENCE", "x": 0.6, "y": 1.0, "w": 5.0, "h": 0.4 },
+          "date": { "x": 9.0, "y": 0.5, "w": 3.7, "h": 0.6, "align": "right" },
+          "badge": {
+            "x": 0.6, "y": 1.7, "w": 3.8, "h": 0.5, "rounded": true,
+            "label": "EXECUTIVE STRATEGY DOCUMENT",
+            "agent_suffix": "REPORT"
+          },
+          "rule": { "y": 3.0, "thickness_pt": 4, "width": "full" },
+          "title": {
+            "x": 0.6, "y": 3.3, "w": 11.5, "h": 1.6,
+            "align": null,
+            "fallback_text": "Strategic Intelligence Report"
+          },
+          "meta": {
+            "x": 0.6, "y": 4.9, "w": 11.5, "h": 0.5,
+            "prepared_for": "Prepared for ",
+            "brand_fallback": "StratAI Intelligence",
+            "separator": " • ",
+            "powered_by": "Powered by StratAI Multi-Agent Strategy Engine"
+          }
+        },
+        "divider": {
+          "number": { "x": 0.0, "y": 2.5, "w": "full", "h": 0.5, "align": "center" },
+          "title": { "x": 0.6, "y": 3.0, "w": 12.1, "h": 1.4, "align": "center" },
+          "bar": { "y": 4.5, "length": 1.6, "thickness_pt": 4, "align": "center" },
+          "logo": { "max_h": 0.6, "max_w": 2.0, "inset": 0.4, "corner": "bottom-right" }
+        },
+        "closing": {
+          "box": { "x": 1.0, "y": 3.0, "w": 11.3, "h": 1.5, "anchor": "middle", "align": "center" },
+          "headline_text": "Generated by StratAI"
+        },
+        "toc": {
+          "heading_text": "Table of Contents",
+          "list_box": { "x": 1.0, "y": 1.8, "w": 11.3, "h": 5.0 },
+          "item_space_after": 10,
+          "separator": "   •   ",
+          "section_fallback": "Section"
+        }
+      },
+      "chart_palette": [
+        "#2D2A26",
+        "#D4A843",
+        "#3B82F6",
+        "#10B981",
+        "#8B5CF6",
+        "#EC4899",
+        "#F59E0B",
+        "#06B6D4",
+        "#6366F1"
+      ]
+    },
+    {
+      "id": "executive",
+      "name": "Executive",
+      "description": "Light editorial look — serif headings, generous whitespace, one restrained accent.",
+      "enabled": true,
+      "preview": null,
+      "fonts": { "heading": "Georgia", "body": "Calibri" },
+      "palette": {
+        "primary": "1A1A2E",
+        "secondary": "6B6B7B",
+        "accent": "9A7B4F",
+        "bg_dark": "1A1A2E",
+        "bg_light": "F5F3EF",
+        "bg_white": "FFFFFF",
+        "text_dark": "1A1A1A",
+        "text_light": "FFFFFF",
+        "text_muted": "8A8A8A"
+      },
+      "backgrounds": {
+        "cover": "bg_white",
+        "divider": "bg_light",
+        "closing": "bg_white",
+        "toc": "bg_white",
+        "content": "bg_white",
+        "table": "bg_white",
+        "chart": "bg_white"
+      },
+      "type_scale": { "title": 28, "cover_title": 36, "divider_title": 34 },
+      "art": { "cover": { "layout": "centered" } },
+      "slots": {
+        "cover_title": "primary",
+        "cover_wordmark": "text_dark",
+        "cover_tagline": "text_dark",
+        "cover_date": "text_dark",
+        "cover_meta": "text_dark",
+        "cover_meta_brand": "text_dark",
+        "cover_badge_text": "text_dark",
+        "divider_number": "text_dark",
+        "divider_title": "primary",
+        "closing_headline": "primary",
+        "closing_date": "text_dark"
+      },
+      "chart_palette": ["1A1A2E", "9A7B4F", "6B6B7B", "4E6E5D", "A8755C", "8A8AA0"]
+    },
+    {
+      "id": "bold",
+      "name": "Bold",
+      "description": "High-contrast modern look — heavy sans headings, vivid accent, dark cover and dividers.",
+      "enabled": true,
+      "preview": null,
+      "fonts": { "heading": "Trebuchet MS", "body": "Calibri" },
+      "palette": {
+        "primary": "2563EB",
+        "secondary": "1E293B",
+        "accent": "F59E0B",
+        "bg_dark": "0F172A",
+        "bg_light": "EEF2FF",
+        "bg_white": "FFFFFF",
+        "text_dark": "0F172A",
+        "text_light": "FFFFFF",
+        "text_muted": "64748B"
+      },
+      "backgrounds": {
+        "cover": "bg_dark",
+        "divider": "bg_dark",
+        "closing": "bg_dark",
+        "toc": "bg_light",
+        "content": "bg_white",
+        "table": "bg_white",
+        "chart": "bg_white"
+      },
+      "type_scale": { "title": 28, "cover_title": 44, "divider_title": 44 },
+      "art": {
+        "cover": { "layout": "band", "rule": { "thickness_pt": 6 } },
+        "divider": { "bar": { "length": 2.4, "thickness_pt": 6 } }
+      },
+      "slots": {
+        "cover_badge_text": "text_dark",
+        "cover_meta": "text_muted",
+        "cover_date": "text_muted",
+        "cover_band_fill": "primary"
+      },
+      "chart_palette": ["2563EB", "F59E0B", "10B981", "EF4444", "8B5CF6", "06B6D4"]
+    },
+    {
+      "id": "corporate-blue",
+      "name": "Corporate Blue",
+      "description": "Clean corporate look — navy and blue on white, classic and trustworthy.",
+      "enabled": true,
+      "preview": null,
+      "fonts": { "heading": "Arial", "body": "Calibri" },
+      "palette": {
+        "primary": "1F3A5F",
+        "secondary": "5B7A9D",
+        "accent": "2E8BC0",
+        "bg_dark": "1F3A5F",
+        "bg_light": "EEF3F8",
+        "bg_white": "FFFFFF",
+        "text_dark": "1A2330",
+        "text_light": "FFFFFF",
+        "text_muted": "6B7A8D"
+      },
+      "backgrounds": {
+        "cover": "bg_white",
+        "divider": "bg_dark",
+        "closing": "bg_dark",
+        "toc": "bg_light",
+        "content": "bg_white",
+        "table": "bg_white",
+        "chart": "bg_white"
+      },
+      "type_scale": { "cover_title": 34, "divider_title": 38 },
+      "art": { "cover": { "layout": "sidebar" } },
+      "slots": {
+        "cover_title": "primary",
+        "cover_wordmark": "text_dark",
+        "cover_tagline": "text_dark",
+        "cover_date": "text_dark",
+        "cover_meta": "text_dark",
+        "cover_meta_brand": "text_dark",
+        "cover_badge_text": "text_dark",
+        "divider_number": "accent",
+        "divider_title": "text_light",
+        "closing_headline": "text_light",
+        "closing_date": "accent"
+      },
+      "chart_palette": ["1F3A5F", "2E8BC0", "7FB0D9", "5B7A9D", "A9C4DE", "1A2330"]
+    },
+    {
+      "id": "midnight-tech",
+      "name": "Midnight Tech",
+      "description": "Dark modern tech look — near-black with electric cyan.",
+      "enabled": true,
+      "preview": null,
+      "fonts": { "heading": "Trebuchet MS", "body": "Calibri" },
+      "palette": {
+        "primary": "0E7490",
+        "secondary": "334155",
+        "accent": "22D3EE",
+        "bg_dark": "0B1220",
+        "bg_light": "E6F6FA",
+        "bg_white": "FFFFFF",
+        "text_dark": "0B1220",
+        "text_light": "FFFFFF",
+        "text_muted": "7A8CA3"
+      },
+      "backgrounds": {
+        "cover": "bg_dark",
+        "divider": "bg_dark",
+        "closing": "bg_dark",
+        "toc": "bg_light",
+        "content": "bg_white",
+        "table": "bg_white",
+        "chart": "bg_white"
+      },
+      "type_scale": { "cover_title": 44, "divider_title": 44 },
+      "art": { "cover": { "layout": "hero" } },
+      "slots": {
+        "cover_badge_text": "text_dark",
+        "cover_meta": "text_muted",
+        "cover_date": "text_muted"
+      },
+      "chart_palette": ["22D3EE", "0E7490", "67E8F9", "155E75", "38BDF8", "0B1220"]
+    },
+    {
+      "id": "minimalist-mono",
+      "name": "Minimalist Mono",
+      "description": "Ultra-minimal black, white and grey with generous whitespace.",
+      "enabled": true,
+      "preview": null,
+      "fonts": { "heading": "Arial", "body": "Calibri" },
+      "palette": {
+        "primary": "111111",
+        "secondary": "666666",
+        "accent": "111111",
+        "bg_dark": "111111",
+        "bg_light": "F4F4F4",
+        "bg_white": "FFFFFF",
+        "text_dark": "111111",
+        "text_light": "FFFFFF",
+        "text_muted": "8A8A8A"
+      },
+      "backgrounds": {
+        "cover": "bg_white",
+        "divider": "bg_light",
+        "closing": "bg_white",
+        "toc": "bg_white",
+        "content": "bg_white",
+        "table": "bg_white",
+        "chart": "bg_white"
+      },
+      "type_scale": { "cover_title": 40, "divider_title": 40 },
+      "art": { "cover": { "layout": "centered" } },
+      "slots": {
+        "cover_title": "primary",
+        "cover_wordmark": "text_dark",
+        "cover_tagline": "text_dark",
+        "cover_date": "text_dark",
+        "cover_meta": "text_dark",
+        "cover_meta_brand": "text_dark",
+        "divider_number": "text_dark",
+        "divider_title": "primary",
+        "divider_bar": "primary",
+        "closing_headline": "primary",
+        "closing_date": "text_dark"
+      },
+      "chart_palette": ["111111", "666666", "999999", "CCCCCC", "444444", "7F7F7F"]
+    },
+    {
+      "id": "warm-editorial",
+      "name": "Warm Editorial",
+      "description": "Magazine-style warmth — cream, espresso and terracotta with serif headings.",
+      "enabled": true,
+      "preview": null,
+      "fonts": { "heading": "Georgia", "body": "Calibri" },
+      "palette": {
+        "primary": "6B3A2A",
+        "secondary": "A6705E",
+        "accent": "C8743F",
+        "bg_dark": "2E211B",
+        "bg_light": "F7F1E8",
+        "bg_white": "FDFBF7",
+        "text_dark": "2E211B",
+        "text_light": "F7F1E8",
+        "text_muted": "8A7A6B"
+      },
+      "backgrounds": {
+        "cover": "bg_light",
+        "divider": "bg_dark",
+        "closing": "bg_dark",
+        "toc": "bg_light",
+        "content": "bg_white",
+        "table": "bg_white",
+        "chart": "bg_white"
+      },
+      "type_scale": { "cover_title": 36, "divider_title": 36 },
+      "art": { "cover": { "layout": "band" } },
+      "slots": {
+        "cover_title": "primary",
+        "cover_wordmark": "text_dark",
+        "cover_tagline": "text_dark",
+        "cover_date": "text_dark",
+        "cover_meta": "text_dark",
+        "cover_meta_brand": "text_dark",
+        "cover_badge_text": "text_dark",
+        "divider_number": "accent",
+        "divider_title": "text_light",
+        "closing_headline": "text_light",
+        "closing_date": "accent"
+      },
+      "chart_palette": ["6B3A2A", "C8743F", "D9A066", "8A7A6B", "A6705E", "E0C097"]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import TemplateGrid from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
 import { useAgents } from '../../hooks/useAgents';
+import { useTemplates } from '../../hooks/useTemplates';
 import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
 import CompetitorForm, { type CompetitorDetail } from '../CompetitorForm';
@@ -619,6 +620,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors'>('builder');
   const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
+  const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
@@ -745,7 +747,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     }
   };
 
-  const handleDownloadPptx = async (idx: number, messageId: string) => {
+  const handleDownloadPptx = async (idx: number, messageId: string, templateId?: string) => {
     const reportInfo = reportsByMessageId[messageId];
     if (!reportInfo) return;
     try {
@@ -757,7 +759,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(`${apiBase}/api/reports/${reportInfo.id}/export/pptx`, { headers });
+      const exportUrl = `${apiBase}/api/reports/${reportInfo.id}/export/pptx${templateId ? `?template_id=${encodeURIComponent(templateId)}` : ''}`;
+      const res = await fetch(exportUrl, { headers });
       if (!res.ok) {
         throw new Error(`Server error (${res.status})`);
       }
@@ -1566,6 +1569,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                                 extension: '.pptx',
                                 chip: 'PPT',
                                 onSelect: () => handleDownloadPptx(i, msg.id!),
+                                onSelectTemplate: (templateId: string) => handleDownloadPptx(i, msg.id!, templateId),
+                                templates: pptxTemplates,
                                 loading: downloadingPptxIdx === i,
                                 error: pptxErrorIdx === i,
                               }] : []),
