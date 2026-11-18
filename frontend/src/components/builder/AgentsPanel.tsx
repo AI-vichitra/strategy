@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { allTemplates } from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
+import { useAgents } from '../../hooks/useAgents';
 import styles from './AgentsPanel.module.css';
 
 interface AgentsPanelProps {
@@ -39,6 +39,7 @@ function MiniIconImg({ connectorName }: { connectorName: string }) {
 }
 
 export default function AgentsPanel({ open, onClose, onSelectAgent, defaultCategory }: AgentsPanelProps) {
+  const { agents, categories: fetchedCategories, loading, error, refetch } = useAgents();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(defaultCategory || 'All');
 
@@ -54,16 +55,19 @@ export default function AgentsPanel({ open, onClose, onSelectAgent, defaultCateg
 
   // Removed body scroll lock to allow interaction with chatbox
 
+  const categoryNameById: Record<string, string> = {};
+  fetchedCategories.forEach((c) => { categoryNameById[c.id] = c.name; });
+
   // Filter templates
-  const filteredTemplates = allTemplates.filter(agent => {
-    const matchesSearch = agent.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          agent.desc.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredTemplates = agents.filter(agent => {
+    const matchesSearch = agent.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          agent.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || agent.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // Extract unique categories dynamically
-  const categories = ['All', ...Array.from(new Set(allTemplates.map(t => t.category)))];
+  // Category tabs — driven by the fetched categories, in the order the API returns them
+  const categories = ['All', ...fetchedCategories.map((c) => c.id)];
 
   return (
     <>
@@ -97,26 +101,37 @@ export default function AgentsPanel({ open, onClose, onSelectAgent, defaultCateg
           
           <div className={styles.categoriesRow}>
             {categories.map(cat => (
-              <button 
+              <button
                 key={cat}
                 type="button"
                 className={`${styles.categoryTab} ${selectedCategory === cat ? styles.categoryTabActive : ''}`}
                 onClick={() => setSelectedCategory(cat)}
               >
-                {cat}
+                {cat === 'All' ? 'All' : (categoryNameById[cat] || cat)}
               </button>
             ))}
           </div>
         </div>
 
         <div className={styles.scrollArea}>
-          {filteredTemplates.length === 0 ? (
+          {loading ? (
+            <div className={styles.emptyState}>Loading agents…</div>
+          ) : error ? (
+            <div className={styles.emptyState}>
+              Couldn&apos;t load agents. {error}
+              <div style={{ marginTop: 12 }}>
+                <button type="button" className={styles.categoryTab} onClick={refetch}>
+                  Retry
+                </button>
+              </div>
+            </div>
+          ) : filteredTemplates.length === 0 ? (
             <div className={styles.emptyState}>No agents found matching your criteria.</div>
           ) : (
             <div className={styles.grid}>
-              {filteredTemplates.map((agent, i) => (
-                <div 
-                  key={i} 
+              {filteredTemplates.map((agent) => (
+                <div
+                  key={agent.id}
                   className={styles.agentCard}
                   onClick={() => {
                     onSelectAgent(agent.title);
@@ -125,9 +140,9 @@ export default function AgentsPanel({ open, onClose, onSelectAgent, defaultCateg
                 >
                   <div className={styles.cardHeader}>
                     <span className={styles.agentTitle}>{agent.title}</span>
-                    <span className={styles.categoryBadge}>{agent.category}</span>
+                    <span className={styles.categoryBadge}>{categoryNameById[agent.category] || agent.category}</span>
                   </div>
-                  <p className={styles.agentDesc}>{agent.desc}</p>
+                  <p className={styles.agentDesc}>{agent.description}</p>
                   <div className={styles.cardFooter}>
                     <div className={styles.miniIconsGroup}>
                       {agent.connectors.slice(0, 4).map((conn, idx) => (

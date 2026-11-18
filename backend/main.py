@@ -26,8 +26,9 @@ if os.path.exists(env_path):
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from backend.routers import auth, brand, projects, chat
+from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates
 
 app = FastAPI(title="StratAI Backend")
 
@@ -39,10 +40,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_static_dir = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(os.path.join(_static_dir, "uploads", "logos"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(brand.router, prefix="/api/brands", tags=["Brands"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(report_sections.router, prefix="/api/reports", tags=["Report Sections"])
+app.include_router(public.router, prefix="/api/public", tags=["Public"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+app.include_router(agents.router)
+app.include_router(pptx_templates.router)
+app.include_router(connectors.router)
 
 @app.get("/")
 async def root():

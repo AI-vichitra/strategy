@@ -29,9 +29,6 @@ export default function Navbar() {
         <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`} aria-label="Main navigation">
           <a href="#features" className={styles.navLink} id="nav-features">Features</a>
           <a href="#workflow" className={styles.navLink} id="nav-workflow">How it Works</a>
-          <a href="#testimonials" className={styles.navLink} id="nav-testimonials">Testimonials</a>
-          <a href="#pricing" className={styles.navLink} id="nav-pricing">Pricing</a>
-          <a href="#" className={styles.navLink} id="nav-docs">Docs</a>
         </nav>
 
         {/* CTA */}

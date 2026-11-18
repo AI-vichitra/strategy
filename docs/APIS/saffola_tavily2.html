@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAFFOLA - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SAFFOLA</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">D2C (Direct-to-Consumer)</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.saffola.in/" target="_blank" class="meta-url">https://www.saffola.in/</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Saffola, headquartered in New Delhi, India, is a healthcare brand under Marico Limited, offering a range of 'better for you' products including edible oils, honey, oats, and other health and wellness products. Founded in the 1960s, Saffola has evolved from a niche health oil brand to a multi-category preventive wellness brand, leveraging strategic positioning and trust-building. The company operates under a B2C business model and has a strong online presence with significant web traffic and social media following. Saffola's marketing strategy focuses on quality, packaging, and brand distribution, aiming to attract health-conscious consumers. The company has successfully entered the honey market, securing the #1 honey brand title and driving 21% sales growth in two years through direct-to-consumer sales.. # Saffola ID: il8tXw7FZfFl Website: www.saffola.in Headquarters: New Delhi, Delhi, India LinkedIn: www.linkedin.com/company/saffola · 24 followers Industry: Computers and Electronics Manufacturing Industry codes: SIC 82, 822, NAICS 61, 611 Company type: Private Business model: B2C SaaS: no Social profiles: www.facebook.com/saffolalife, www.twitter.com/saffolalife, www.instagram.com/saffolalife/?hl=en, www.youtube.com/channel/ucfw6ls7u3fmq4cmyolyl12g Email: saffolasupport@marico.com Description: Saffola is a healthcare brand that offers a range of 'better for you' products designed to be easy, effective, and easy. [...] ## Products and services Business areas: Food and Beverage Manufacturing, Health and Wellness Products, Packaged Food Retail Products: Edible Oils, Pure Honey, Masala Oats, Plain Oats, Crunchiez Millet Cones, Soya Chunks, Peanut Butter, Mayonnaise, Muesli  ## Headcount - Now: 13 · +3 yearly (30%) · 0 quarterly · 0 monthly   - Southern Asia: 1   - Eastern Europe: 0   - Latin America: 0   - Southern Europe: 0   - Sub Saharan Africa: 0   - Central Asia: 0   - Northern America: 0   - Australia New Zealand: 0   - Northern Europe: 0   - South Eastern Asia: 0   - Polynesia: 0   - Northern Africa: 0   - Melanesia: 0   - Western Europe: 0   - Western Asia: 0  ## Financials - Annual revenue: 7.82M USD [...] ## Financials - Annual revenue: 7.82M USD  ## Web traffic - Monthly visits: 41,168 - Pages per visit: 1.93 - Average visit duration: 43 seconds - Bounce rate: 56% - Global rank: 788,325 - Country rank: 69,625 - Category rank: 78  ## Reputation - Open roles: 0. ## Stay Updated!  New case studies are added every week. Leave your email to get notified.  # Saffola Case Study  Saffola  Category  Foods  Founded  1960s  Head office  Mumbai  ##### Other Categories  ##### Suggested Brands  ##### Brand Overview  ## Secure PDF Download  Enter your email ID to receive a 4-digit security PIN.  ## Download Limit Reached  Thank you for downloading. you have reached the download limit of 3 Case Studies per day. Please come back tomorrow.  #### Market Entry & Context  ## Marketing Mix (4Ps)  #### Product Strategy  #### Pricing Strategy  #### Promotion Strategy  #### Distribution Strategy  ## Competitive Landscape  Key Competitors:  Saffola’s Edge:  ## Consumer Connection  #### Related Case Studies  ## Challenges & Adaptation  ## Current Position (as of 2025) [...] ## Current Position (as of 2025)  ## Key Learnings  ## Summary  ##### Products  Saffola Saffola Saffola  ##### Recent Campaigns  Saffola Honey | Feat. Pankaj Tripathi | Shuddha Honey Saffola Honey | TVC | Hindi 40 Sec  Saffola Masala Oats nudged Sanjay Manjrekar to Behave  Saffola Masala Oats for Sanjay Manjrekar’s masaaledar moments!  AFAQS logo Linkedin Facebook Twitter Instagram Youtube  ## Preparing PDF  Your PDF download will start in 10 seconds.... Like Reply  1 Reaction   2 Reactions  Rishabh K. 6y    Report this comment  Saffola as a brand has always focussed on being taken as a Healthy alternative in its space.<br/><br/><strong>Product & Service Portfolio:</strong> Saffola is a healthcare brand offering a variety of 'better for you' products, including edible oils, pure honey, masala oats, plain oats, crunchiez, soya chunks, peanut butter, mayonnaise, muesli, oodles, and immuniveda. Their edible oils range includes Saffola Gold Refined Oil, Saffola Total Oil, Saffola Active Refined Cooking oil, and Saffola Tasty + Refined Cooking Oil. Each product is designed to be easy, effective, and enjoyable, integrating seamlessly into a healthy lifestyle. Saffola emphasizes heart health and encourages people to embrace a healthy lifestyle for a healthy heart.. # Saffola ID: il8tXw7FZfFl Website: www.saffola.in Headquarters: New Delhi, Delhi, India LinkedIn: www.linkedin.com/company/saffola · 24 followers Industry: Computers and Electronics Manufacturing Industry codes: SIC 82, 822, NAICS 61, 611 Company type: Private Business model: B2C SaaS: no Social profiles: www.facebook.com/saffolalife, www.twitter.com/saffolalife, www.instagram.com/saffolalife/?hl=en, www.youtube.com/channel/ucfw6ls7u3fmq4cmyolyl12g Email: saffolasupport@marico.com Description: Saffola is a healthcare brand that offers a range of 'better for you' products designed to be easy, effective, and easy. [...] ## Products and services Business areas: Food and Beverage Manufacturing, Health and Wellness Products, Packaged Food Retail Products: Edible Oils, Pure Honey, Masala Oats, Plain Oats, Crunchiez Millet Cones, Soya Chunks, Peanut Butter, Mayonnaise, Muesli  ## Headcount - Now: 13 · +3 yearly (30%) · 0 quarterly · 0 monthly   - Southern Asia: 1   - Eastern Europe: 0   - Latin America: 0   - Southern Europe: 0   - Sub Saharan Africa: 0   - Central Asia: 0   - Northern America: 0   - Australia New Zealand: 0   - Northern Europe: 0   - South Eastern Asia: 0   - Polynesia: 0   - Northern Africa: 0   - Melanesia: 0   - Western Europe: 0   - Western Asia: 0  ## Financials - Annual revenue: 7.82M USD [...] ## Financials - Annual revenue: 7.82M USD  ## Web traffic - Monthly visits: 41,168 - Pages per visit: 1.93 - Average visit duration: 43 seconds - Bounce rate: 56% - Global rank: 788,325 - Country rank: 69,625 - Category rank: 78  ## Reputation - Open roles: 0. Saffola has become a lot more than just an edible oil, as it offers its honey, peanut butter, soya chunks, instant noodles, etc. Logo   Logoclose   Products    Logo    Edible Oils    ## Edible Oils  Pure Honey    ## Pure Honey  Masala Oats    ## Masala Oats  Plain oats    ## Plain oats  Crunchiez    ## Crunchiez  Soya Chunks    ## Soya Chunks  Peanut Butter    ## Peanut Butter  Mayonnaise    ## Mayonnaise  Muesli    ## Muesli  Oodles    ## Oodles  Immuniveda    ## Immuniveda  Recipes  Blogs  search  Edible Oils  ## Edible Oils  Pure Honey  ## Pure Honey  Masala Oats  ## Masala Oats  Plain oats  ## Plain oats  Crunchiez  ## Crunchiez  Soya Chunks  ## Soya Chunks  Peanut Butter  ## Peanut Butter  Mayonnaise  ## Mayonnaise  Muesli  ## Muesli  Oodles  ## Oodles  Immuniveda  ## Immuniveda  Logouser  askai askai   hero sticker  # ROZ KA HEALTHY STEP [...] askai askai   hero sticker  # ROZ KA HEALTHY STEP  HEALTH CARE BRAND WHICH BRINGS TO YOU A RANGE OF 'BETTER FOR YOU' PRODUCTS  range of products   Saffola Honey     # About  Saffola is a healthcare brand that offers a range of 'Better for You' products designed to be easy, effective, and enjoyable, seamlessly integrating into your lifestyle. For the last few years, Saffola has been dedicated to creating awareness about heart health and inspiring people to embrace a healthy lifestyle for a healthy heart. At Saffola, we understand that everyone has their unique approach to incorporating health into their lives. We encourage and applaud your efforts to find your own ways of staying fit and heart-healthy, making health not just a journey but a sustainable part of your life.  new launches [...] new launches  saffola muesli   saffola crunchiez   saffola crunchiez   saffola oats   saffola oats   saffola oats   saffola oats     Edible Oils  Edible Oils  # Edible Oils  Honey  Pure Honey  # Honey  Masala Oats  Masala Oats  # Masala Oats  Oats  Plain oats  # Oats  Crunchiez  Crunchiez  # Crunchiez  Soya  Soya Chunks  # Soya  Peanut Butter  Peanut Butter  # Peanut Butter  Mayo  Mayonnaise  # Mayo  Muesli  Muesli  # Muesli  Oodles  Oodles  # Oodles  Immuniveda  Immuniveda  # Immuniveda  What Do Our Customers Say?  saffola  star star star star  review_platform  ## Saffola Cold Pressed Oil  We can purchase this oil without any hesitation. I have been using this for 1 month and I am very much satisfied with the quality.  quote quote  V V Siva Prasad  star star star star  review_platform.<br/><br/><strong>Recent Developments & News:</strong> Saffola, a brand under Marico, has seen sustained growth momentum, with the company raising its FY27 margin outlook. Net profit jumped 31% year-on-year to Rs 550 crore, and revenue rose 12% to Rs 3 billion. Marico aims to grow its Saffola brand through product development, with a focus on value-added offerings in the oats segment. Saffola's oil portfolio includes various products, and the brand was recently launched in Nepal. Marico reported revenues of INR14.3bn, up 28% year-on-year, with EBITDA rising 16% to INR1.95bn. The company has also faced scrutiny from FSSAI over health and packaging claims on Saffola Total cooking oil, though Marico maintains the product is fully compliant. Saffola's transformation from a heart-health oil to a preventive wellness brand exemplifies Marico's strategic positioning and reinvention efforts.. SAFFOLA Marico sees sustained growth momentum, raises FY27 margin outlook. Net profit jumps 31% YoY to Rs 550 crore, revenue rises 12% revenue grew 12% to Rs 3. May 24: Marcio has launched a leading health care cooking oil brand, Saffola, in Nepal on 13 May. “Saffola Oils portfolio includes products like Saffola. Skip to site menu Skip to page content  JF   News  # Marico eyes market share growth with Saffola  Marico, the Indian personal care and food conglomerate, aims to grow its oats-to-premium oils brand Saffola with a focus on adding value through product development.  November 11, 2014  Share   Copy Link  Share on X  Share on Linkedin  Share on Facebook  Marico, the Indian personal care and food conglomerate, aims to grow its oats-to-premium oils brand Saffola with a focus on adding value through product development.  The company booked higher second-quarter sales at its Saffola food business on the back of increased volumes and higher pricing.  #### Discover B2B Marketing That Performs [...] Marico’s Indian premium edible oils franchise, which also trades under the Saffola brand, grew by 9.5% in volume terms during the second quarter.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Saffola's key competitors in the edible oil market include Kaleesuwari, Modi Naturals, Gokul Agro, Puri Oil Mills, and Gulab. In the oats market, Saffola faced competition from Kellogg's and PepsiCo. In the broader preventive health-oriented food choices market, Saffola's main rivals include Dabur Honey and Patanjali in the honey category. Saffola holds a significant market share in the oats segment, with 41 percent value market share as of March 2025, and contributes 26 percent of Marico's India business revenue. The company's success in the oats market was driven by its introduction of the world's first savory oats format, which tapped into a localized consumer insight about savory breakfast preferences.. On the edible oil side, Saffola Oats, which entered the oats market in 2010 as the 21st market entrant competing against Quaker Oats and Kellogg's, eventually achieved category leadership. The consumer insight that drove this outcome was documented: Indians preferred savoury rather than sweet breakfast formats, and no competitor had introduced savoury oats at scale. Saffola introduced the world's first savoury oats format, a product decision that directly translated its understanding of Indian breakfast behavior into a commercially superior innovation. [...] Question 3: Saffola entered the oats market in 2010 as the twenty-first competitor, against brands with global heritage, existing distribution, and established consumer familiarity. Its success was predicated on a single localized consumer insight about savoury breakfast preferences. Critically assess the role of consumer insight as a competitive advantage, and discuss whether insight-driven differentiation is sustainable in the face of rapid competitive imitation. [...] ### Business and Brand Outcomes  Saffola's documented commercial trajectory validates the strategic logic of its preventive health repositioning.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/il8tXw7FZfFl" target="_blank">Saffola</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/il8tXw7FZfFl</div>
+                    <div class="result-content">Saffola
+ID: il8tXw7FZfFl
+Website: www.saffola.in
+Headquarters: New Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/saffola · 24 followers
+Industry: Computers and Electronics Manufacturing
+Industry codes: SIC 82, 822, NAICS 61, 611
+Company type: Private
+Business model: B2C
+SaaS: no
+Social profiles: www.facebook.com/saffolalife, www.twitter.com/saffolalife, www.instagram.com/saffolalife/?hl=en, www.youtube.com/channel/ucfw6ls7u3fmq4cmyolyl12g
+Email: saffolasupport@marico.com
+Description: Saffola is a healthcare brand that offers a range of &#x27;better for you&#x27; products designed to be easy, effective, and easy. [...]  Products and services
+Business areas: Food and Beverage Manufacturing, Health and Wellness Products, Packaged Food Retail
+Products: Edible Oils, Pure Honey, Masala Oats, Plain Oats, Crunchiez Millet Cones, Soya Chunks, Peanut Butter, Mayonnaise, Muesli
+
+ Headcount
+- Now: 13 · +3 yearly (30%) · 0 quarterly · 0 monthly
+  - Southern Asia: 1
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 7.82M USD [...]  Financials
+- Annual revenue: 7.82M USD
+
+ Web traffic
+- Monthly visits: 41,168
+- Pages per visit: 1.93
+- Average visit duration: 43 seconds
+- Bounce rate: 56%
+- Global rank: 788,325
+- Country rank: 69,625
+- Category rank: 78
+
+ Reputation
+- Open roles: 0</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.afaqs.com/casestudy/foods/saffola" target="_blank">Case Study 2026: Marketing Strategy | Distribution &amp; Branding | Downloadable PDF| afaqs!</a></h3>
+                    <div class="result-url">https://www.afaqs.com/casestudy/foods/saffola</div>
+                    <div class="result-content">Stay Updated!
+
+New case studies are added every week.
+Leave your email to get notified.
+
+ Saffola Case Study
+
+Saffola
+
+Category
+
+Foods
+
+Founded
+
+1960s
+
+Head office
+
+Mumbai
+
+ Other Categories
+
+ Suggested Brands
+
+ Brand Overview
+
+ Secure PDF Download
+
+Enter your email ID to receive a 4-digit security PIN.
+
+ Download Limit Reached
+
+Thank you for downloading. you have reached the download limit of 3 Case Studies per day.
+Please come back tomorrow.
+
+ Market Entry &amp; Context
+
+ Marketing Mix (4Ps)
+
+ Product Strategy
+
+ Pricing Strategy
+
+ Promotion Strategy
+
+ Distribution Strategy
+
+ Competitive Landscape
+
+Key Competitors:
+
+Saffola’s Edge:
+
+ Consumer Connection
+
+ Related Case Studies
+
+ Challenges &amp; Adaptation
+
+ Current Position (as of 2025) [...]  Current Position (as of 2025)
+
+ Key Learnings
+
+ Summary
+
+ Products
+
+Saffola
+Saffola
+Saffola
+
+ Recent Campaigns
+
+Saffola Honey | Feat. Pankaj Tripathi | Shuddha Honey Saffola Honey | TVC | Hindi 40 Sec
+
+Saffola Masala Oats nudged Sanjay Manjrekar to Behave
+
+Saffola Masala Oats for Sanjay Manjrekar’s masaaledar moments!
+
+AFAQS logo
+Linkedin
+Facebook
+Twitter
+Instagram
+Youtube
+
+ Preparing PDF
+
+Your PDF download will start in
+10
+seconds...</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.linkedin.com/posts/umanggupta62_saffola-honey-marketing-strategy-activity-6692406160051507200-cwWT" target="_blank">Saffola Honey Marketing Strategy | Umang Gupta | 20 comments</a></h3>
+                    <div class="result-url">https://www.linkedin.com/posts/umanggupta62_saffola-honey-marketing-strategy-activity-6692406160051507200-cwWT</div>
+                    <div class="result-content">Like Reply  1 Reaction   2 Reactions
+
+Rishabh K.   6y 
+
+ Report this comment
+
+Saffola as a brand has always focussed on being taken as a Healthy alternative in its space. Be it edible oil- Focus on heart care, Oats- Healthy food. The Honey market is a great space to enter to build on its healthy product profile.My sense is they would not be undercutting the competition in price,their focus would be on the quality, packaging and brand distribution of the product which has always been their strong point
+
+Like Reply  1 Reaction   2 Reactions
+
+Asif Sayed   6y 
+
+ Report this comment [...] Marico Limited over the period of time has acquired stakes or launched products in different market segments, both tapped and untapped. Your questions are reasonable and I think any strategic mindset would have. Having said that, Saffola as a brand has been successful in making its place in retail racks for different categories. As a consumer, I do not associate Saffola only with oil but I would be lying if I say the thing I can think of it&#x27;s ”green Saffola, the healthy oil”. But like I said, it&#x27;s has been successful moving away from just oil. Saffola honey is an aggressive strategy but ever since Patanjali disrupted daburs market, consumers are not more reluctant to buy a new brand. In fact, the name is going to be a push in my opinion than launching a different segment. In the long [...] Everything said and done, the honey market in India is growing at ~10% since last 10 years and is expected to grow at a similar rate at least for the next 10 years. I feel, Saffola has established a brand that can help them attract health conscious consumers. Given their aggressive marketing strategies, I have no doubt about their ability to penetrate in this highly established market. It will be difficult, but there is still a substantial pie untouched by the existing brands that Marico can target :-) On top of this, take a look at how ITC traditionally being a non-FMCG brand became market leader in a lot of fmcg categories and 2nd or 3rd brand in many others. Given the amount of cash and goodwill, coupled with their amazing distribution, Marico has all the ingredients to make it a</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.hiveminds.in/casestudies/saffola-triumph" target="_blank">Saffola Honey&#x27;s Strategy for Market Leadership</a></h3>
+                    <div class="result-url">https://www.hiveminds.in/casestudies/saffola-triumph</div>
+                    <div class="result-content">Saffola Honey drives a 21% sales growth in 2 years, and secures the 1 honey brand title. Saffola as the 1 honey brand and market leader. D2C Revenue</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://marico.com/media/detail/the_saffola_case_study_from_cooking_oil_to_preventive_wellness_brand?type=spotlight&id=166" target="_blank">Marico - make a difference</a></h3>
+                    <div class="result-url">https://marico.com/media/detail/the_saffola_case_study_from_cooking_oil_to_preventive_wellness_brand?type=spotlight&id=166</div>
+                    <div class="result-content">© 2026 Copyright Marico All Rights Reserved
+
+Spotlight
+
+ The Saffola case study: From cooking oil to preventive wellness brand
+
+How Marico transformed Saffola from a heart-health edible oil into one of India’s most trusted preventive wellness brands across categories.
+
+afaqs! Research Team
+
+not found
+
+Saffola’s India journey is a remarkable example of brand transformation: from a niche health oil to a multi-category preventive wellness brand. Through strategic positioning, trust-building, and timely reinvention, Saffola has not only survived but thrived in an evolving health-conscious India.
+
+Click here to view the complete case study.
+
+ Follow Marico on
+
+fbinstaxinyt
+
+ Recent Posts
+
+ MEDIA CONTACT</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/il8tXw7FZfFl" target="_blank">Saffola</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/il8tXw7FZfFl</div>
+                    <div class="result-content">Saffola
+ID: il8tXw7FZfFl
+Website: www.saffola.in
+Headquarters: New Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/saffola · 24 followers
+Industry: Computers and Electronics Manufacturing
+Industry codes: SIC 82, 822, NAICS 61, 611
+Company type: Private
+Business model: B2C
+SaaS: no
+Social profiles: www.facebook.com/saffolalife, www.twitter.com/saffolalife, www.instagram.com/saffolalife/?hl=en, www.youtube.com/channel/ucfw6ls7u3fmq4cmyolyl12g
+Email: saffolasupport@marico.com
+Description: Saffola is a healthcare brand that offers a range of &#x27;better for you&#x27; products designed to be easy, effective, and easy. [...]  Products and services
+Business areas: Food and Beverage Manufacturing, Health and Wellness Products, Packaged Food Retail
+Products: Edible Oils, Pure Honey, Masala Oats, Plain Oats, Crunchiez Millet Cones, Soya Chunks, Peanut Butter, Mayonnaise, Muesli
+
+ Headcount
+- Now: 13 · +3 yearly (30%) · 0 quarterly · 0 monthly
+  - Southern Asia: 1
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 7.82M USD [...]  Financials
+- Annual revenue: 7.82M USD
+
+ Web traffic
+- Monthly visits: 41,168
+- Pages per visit: 1.93
+- Average visit duration: 43 seconds
+- Bounce rate: 56%
+- Global rank: 788,325
+- Country rank: 69,625
+- Category rank: 78
+
+ Reputation
+- Open roles: 0</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.livemint.com/companies/news/saffola-now-a-rs-2-000-crore-plus-brand-says-marico-ceo-weighs-in-on-inflation-11676800409906.html" target="_blank">Saffola now a ₹2000 crore-plus brand, says Marico CEO</a></h3>
+                    <div class="result-url">https://www.livemint.com/companies/news/saffola-now-a-rs-2-000-crore-plus-brand-says-marico-ceo-weighs-in-on-inflation-11676800409906.html</div>
+                    <div class="result-content">Saffola has become a lot more than just an edible oil, as it offers its honey, peanut butter, soya chunks, instant noodles, etc. The company</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.saffola.in" target="_blank">Saffola</a></h3>
+                    <div class="result-url">https://www.saffola.in</div>
+                    <div class="result-content">Logo 
+
+Logoclose
+
+ Products    Logo
+
+  Edible Oils
+
+   Edible Oils  Pure Honey
+
+   Pure Honey  Masala Oats
+
+   Masala Oats  Plain oats
+
+   Plain oats  Crunchiez
+
+   Crunchiez  Soya Chunks
+
+   Soya Chunks  Peanut Butter
+
+   Peanut Butter  Mayonnaise
+
+   Mayonnaise  Muesli
+
+   Muesli  Oodles
+
+   Oodles  Immuniveda
+
+   Immuniveda
+ Recipes
+ Blogs
+
+search
+
+Edible Oils
+
+ Edible Oils  Pure Honey
+
+ Pure Honey  Masala Oats
+
+ Masala Oats  Plain oats
+
+ Plain oats  Crunchiez
+
+ Crunchiez  Soya Chunks
+
+ Soya Chunks  Peanut Butter
+
+ Peanut Butter  Mayonnaise
+
+ Mayonnaise  Muesli
+
+ Muesli  Oodles
+
+ Oodles  Immuniveda
+
+ Immuniveda
+
+Logouser
+
+askai askai
+
+ hero sticker
+
+ ROZ KA HEALTHY STEP [...] askai askai
+
+ hero sticker
+
+ ROZ KA HEALTHY STEP
+
+HEALTH CARE BRAND WHICH BRINGS TO YOU A RANGE OF &#x27;BETTER FOR YOU&#x27; PRODUCTS
+
+range of products   Saffola Honey
+
+ 
+
+ About
+
+Saffola is a healthcare brand that offers a range of &#x27;Better for You&#x27; products designed to be easy, effective, and enjoyable, seamlessly integrating into your lifestyle. For the last few years, Saffola has been dedicated to creating awareness about heart health and inspiring people to embrace a healthy lifestyle for a healthy heart. At Saffola, we understand that everyone has their unique approach to incorporating health into their lives. We encourage and applaud your efforts to find your own ways of staying fit and heart-healthy, making health not just a journey but a sustainable part of your life.
+
+new launches [...] new launches
+
+saffola muesli   saffola crunchiez   saffola crunchiez   saffola oats   saffola oats   saffola oats   saffola oats
+
+ 
+
+Edible Oils
+
+Edible Oils
+
+ Edible Oils  Honey
+
+Pure Honey
+
+ Honey  Masala Oats
+
+Masala Oats
+
+ Masala Oats  Oats
+
+Plain oats
+
+ Oats  Crunchiez
+
+Crunchiez
+
+ Crunchiez  Soya
+
+Soya Chunks
+
+ Soya  Peanut Butter
+
+Peanut Butter
+
+ Peanut Butter  Mayo
+
+Mayonnaise
+
+ Mayo  Muesli
+
+Muesli
+
+ Muesli  Oodles
+
+Oodles
+
+ Oodles  Immuniveda
+
+Immuniveda
+
+ Immuniveda
+
+What Do Our Customers Say?
+
+saffola
+
+star star star star
+
+review_platform
+
+ Saffola Cold Pressed Oil
+
+We can purchase this oil without any hesitation. I have been using this for 1 month and I am very much satisfied with the quality.
+
+quote quote
+
+V V Siva Prasad
+
+star star star star
+
+review_platform</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.saffola.in/saffola-oils" target="_blank">Saffola Cooking Oils - Up to 20% off at Saffola Store</a></h3>
+                    <div class="result-url">https://www.saffola.in/saffola-oils</div>
+                    <div class="result-content">Saffola gold youtube video 
+
+ Our Range illustrate
+
+Saffola Gold Refined Oil|Blend of Rice Bran Oil &amp; Sunflower Oil|Cooking Oil| Pro Healthy Lifestyle Edible Oil 5L Jar +1L Pouch
+
+Saffola Gold Refined Oil|Blend of Rice Bran Oil &amp; Sunflower Oil|Cooking Oil| Pro Healthy Lifestyle Edible Oil 5L Jar +1L Pouch  buy now
+
+Saffola Total Oil | Heart Pro | Multi source Edible Oil (Blend of Refined Ricebran oil &amp; Refined Sunflower oil) | Power of 6 | Helps Manage Cholesterol | 5 Litre Jar | Power of 6 | Helps Manage Cholesterol | 5 Litre Jar&quot;)
+
+Saffola Total Oil | Heart Pro | Multi source Edible Oil (Blend of Refined Ricebran oil &amp; Refined Sunflower oil) | Power of 6 | Helps Manage Cholesterol | 5 Litre Jar  buy now [...] Logo 
+
+Logoclose
+
+ Products    Logo
+
+  Edible Oils
+
+   Edible Oils  Pure Honey
+
+   Pure Honey  Masala Oats
+
+   Masala Oats  Plain oats
+
+   Plain oats  Crunchiez
+
+   Crunchiez  Soya Chunks
+
+   Soya Chunks  Peanut Butter
+
+   Peanut Butter  Mayonnaise
+
+   Mayonnaise  Muesli
+
+   Muesli  Oodles
+
+   Oodles  Immuniveda
+
+   Immuniveda
+ Recipes
+ Blogs
+
+search
+
+Edible Oils
+
+ Edible Oils  Pure Honey
+
+ Pure Honey  Masala Oats
+
+ Masala Oats  Plain oats
+
+ Plain oats  Crunchiez
+
+ Crunchiez  Soya Chunks
+
+ Soya Chunks  Peanut Butter
+
+ Peanut Butter  Mayonnaise
+
+ Mayonnaise  Muesli
+
+ Muesli  Oodles
+
+ Oodles  Immuniveda
+
+ Immuniveda
+
+Logouser
+
+askai askai
+
+range of oils
+
+left-arrow right-arrow
+
+Saffola gold youtube video 
+
+ Our Range illustrate [...] Saffola Active Refined Cooking oil | Rich in Omega 3 &amp; Oryzanol | Multi-Source Edible Rice Bran &amp; SoyaBean oil | 5 Litre Jar
+
+Saffola Active Refined Cooking oil | Rich in Omega 3 &amp; Oryzanol | Multi-Source Edible Rice Bran &amp; SoyaBean oil | 5 Litre Jar  buy now
+
+Saffola Tasty + Refined Cooking Oil | Multi-Srouce Edible Rice Bran &amp; Corn Oil | 50% More Oryzanol | 5 Litre Jar
+
+Saffola Tasty + Refined Cooking Oil | Multi-Srouce Edible Rice Bran &amp; Corn Oil | 50% More Oryzanol | 5 Litre Jar  buy now
+
+left right
+
+Active    Total    Gold    Tasty 
+
+range of oils
+
+ FAQS illustrate
+
+What is a Multi-Source Edible Oil and what are its benefits?
+
++</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.saffola.in/shop" target="_blank">Shop Saffola Product online at best prices in India.</a></h3>
+                    <div class="result-url">https://www.saffola.in/shop</div>
+                    <div class="result-content">saffolasupport@marico.com. Products. Pure Honey · Oodles · Masala Oats · Oils · Soya Chunks · Peanut Butter · Crunchiez · Mayonnaise · Muesli · Plain Oats</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://economictimes.indiatimes.com/topic/saffola" target="_blank">Saffola - The Economic Times - Indiatimes</a></h3>
+                    <div class="result-url">https://economictimes.indiatimes.com/topic/saffola</div>
+                    <div class="result-content">SAFFOLA Marico sees sustained growth momentum, raises FY27 margin outlook. Net profit jumps 31% YoY to Rs 550 crore, revenue rises 12% revenue grew 12% to Rs 3</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://newbusinessage.com/news/3601/saffola-oil-launched" target="_blank">Saffola Oil Launched - New Business Age</a></h3>
+                    <div class="result-url">https://newbusinessage.com/news/3601/saffola-oil-launched</div>
+                    <div class="result-content">May 24: Marcio has launched a leading health care cooking oil brand, Saffola, in Nepal on 13 May. “Saffola Oils portfolio includes products like Saffola</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.just-food.com/news/marico-eyes-market-share-growth-with-saffola" target="_blank">Marico eyes market share growth with Saffola - Just Food</a></h3>
+                    <div class="result-url">https://www.just-food.com/news/marico-eyes-market-share-growth-with-saffola</div>
+                    <div class="result-content">Skip to site menu Skip to page content
+
+JF
+
+ News
+
+ Marico eyes market share growth with Saffola
+
+Marico, the Indian personal care and food conglomerate, aims to grow its oats-to-premium oils brand Saffola with a focus on adding value through product development.
+
+November 11, 2014
+
+Share
+
+ Copy Link
+ Share on X
+ Share on Linkedin
+ Share on Facebook
+
+Marico, the Indian personal care and food conglomerate, aims to grow its oats-to-premium oils brand Saffola with a focus on adding value through product development.
+
+The company booked higher second-quarter sales at its Saffola food business on the back of increased volumes and higher pricing.
+
+ Discover B2B Marketing That Performs [...] Marico’s Indian premium edible oils franchise, which also trades under the Saffola brand, grew by 9.5% in volume terms during the second quarter. Value sales were also up as the group passed higher input costs along, hiking prices by an average of 3%.
+
+On a group-wide basis, Marico reported revenues of INR14.3bn, up 28% year-on-year. EBITDA rose 16% to INR1.95bn. Net profit totalled INR1.18bn, up 12%.
+
+“Marico has bucked the trend in Q2 with 8% volume growth (6.5% in 1Q) in a challenging environment,” Prabhudas Lilladher analyst Amnish Aggarwal wrote in an investor note. [...]  Discover B2B Marketing That Performs
+
+Combine business intelligence and editorial excellence to reach engaged professionals across 36 leading media platforms.
+
+Find out more
+
+Saffola Oats – the second largest oats brand in India – had a “good run” in the quarter, with value growth of 31%.
+
+Marico is working on developing the value-added oats sector, introducing two sweet flavours with fruit to “compliment” the group’s savoury flavoured oats offering.
+
+“Focus on value added offerings in the oats segment has enabled the company to capture 62% share in the flavoured oats market,” Marico noted. “The franchise is expected to reach a top line of circa INR700m-750m (US$12-13m) in this fiscal and is poised to cross INR100m (US$17m) landmark next year.”</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.etnownews.com/companies/fssai-issues-notice-to-marico-over-saffola-total-claims-company-says-product-is-fully-compliant-article-154686141" target="_blank">FSSAI issues notice to Marico over Saffola Total claims</a></h3>
+                    <div class="result-url">https://www.etnownews.com/companies/fssai-issues-notice-to-marico-over-saffola-total-claims-company-says-product-is-fully-compliant-article-154686141</div>
+                    <div class="result-content">FSSAI has issued a show-cause notice to Marico over health and packaging claims on Saffola Total cooking oil. Marico says the product</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://marico.com/media/detail/the_saffola_case_study_from_cooking_oil_to_preventive_wellness_brand?type=spotlight&id=166" target="_blank">Marico - make a difference</a></h3>
+                    <div class="result-url">https://marico.com/media/detail/the_saffola_case_study_from_cooking_oil_to_preventive_wellness_brand?type=spotlight&id=166</div>
+                    <div class="result-content">© 2026 Copyright Marico All Rights Reserved
+
+Spotlight
+
+ The Saffola case study: From cooking oil to preventive wellness brand
+
+How Marico transformed Saffola from a heart-health edible oil into one of India’s most trusted preventive wellness brands across categories.
+
+afaqs! Research Team
+
+not found
+
+Saffola’s India journey is a remarkable example of brand transformation: from a niche health oil to a multi-category preventive wellness brand. Through strategic positioning, trust-building, and timely reinvention, Saffola has not only survived but thrived in an evolving health-conscious India.
+
+Click here to view the complete case study.
+
+ Follow Marico on
+
+fbinstaxinyt
+
+ Recent Posts
+
+ MEDIA CONTACT</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.markhub24.com/post/saffola-s-insight-into-preventive-health-oriented-food-choices" target="_blank">Saffola’s Insight into Preventive Health-Oriented Food Choices</a></h3>
+                    <div class="result-url">https://www.markhub24.com/post/saffola-s-insight-into-preventive-health-oriented-food-choices</div>
+                    <div class="result-content">On the edible oil side, Saffola Oats, which entered the oats market in 2010 as the 21st market entrant competing against Quaker Oats and Kellogg&#x27;s, eventually achieved category leadership. The consumer insight that drove this outcome was documented: Indians preferred savoury rather than sweet breakfast formats, and no competitor had introduced savoury oats at scale. Saffola introduced the world&#x27;s first savoury oats format, a product decision that directly translated its understanding of Indian breakfast behavior into a commercially superior innovation. [...] Question 3: Saffola entered the oats market in 2010 as the twenty-first competitor, against brands with global heritage, existing distribution, and established consumer familiarity. Its success was predicated on a single localized consumer insight about savoury breakfast preferences. Critically assess the role of consumer insight as a competitive advantage, and discuss whether insight-driven differentiation is sustainable in the face of rapid competitive imitation. [...]  Business and Brand Outcomes
+
+Saffola&#x27;s documented commercial trajectory validates the strategic logic of its preventive health repositioning. According to Marico&#x27;s June 2025 investor presentation, Saffola contributes 26 percent of India business revenue, making it the company&#x27;s most commercially significant single brand in the domestic market. In the oats segment, the same investor presentation reports that Saffola holds approximately 41 percent value market share as of March 2025 MAT, positioning it as the value leader in that category.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/saffola-life/__CyH09u7nqbx0iQauz48PtOVutSnL2MtCvueiGF3VZyI" target="_blank">Saffola Life - 2026 Company Profile, Competitors &amp; Financials - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/saffola-life/__CyH09u7nqbx0iQauz48PtOVutSnL2MtCvueiGF3VZyI</div>
+                    <div class="result-content">| 6th | Logo for KS Oils  KS Oils 1985, Morena  (India), Public | Edible oil manufacturing company | $114M | Citi, NSR Partners  &amp; 1 others | 45/100 |
+| 7th | Logo for Fortune Foods  Fortune Foods 2000, Ahmedabad  (India), Unfunded | Manufacturer of edible oil and processed food products  - | 43/100 |
+| 8th | Logo for Riso Life  Riso Life 2016, Mandya  (India), Acquired | Internet first brand of cooking oil, spices, sugar, and flour  - | 42/100 |
+| 9th | Logo for Aak Kamani  Aak Kamani 1962, Mumbai  (India), Acquired | Vegetable fats and oils manufacturer  Kamani Foods | 42/100 |
+| 10th | Logo for Ricela  Ricela 1992, Sangrur  (India), Early Stage | Manufacturer of oilseed products | $3.84M | Kaveri Shilpkala, Rkb Financers  &amp; 55 others | 41/100 | [...] | Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |
+ ---  ---  --- |
+| 1st | Logo for Kaleesuwari  Kaleesuwari 1973, Chennai  (India), Funding Raised | Provider of health and wellness products  - | 57/100 |
+| 2nd | Logo for Modi Naturals  Modi Naturals 1974, Delhi  (India), Public | Production of edible oils and waxes  - | 53/100 |
+| 3rd | Logo for Gokul Agro  Gokul Agro 2014, Ahmedabad  (India), Unfunded | Manufacturer of edible and non-edible oils, derivatives, and feed meals  - | 53/100 |
+| 4th | Logo for Puri Oil Mills  Puri Oil Mills 1933, Delhi  (India), Unfunded | Brand of mustard oil  - | 45/100 |
+| 5th | Logo for Gulab  Gulab 1966, Ahmedabad  (India), Unfunded | Manufacturer of cold pressed oils  - | 45/100 | [...] Logo for Kaleesuwari
+Logo for Modi Naturals
+Logo for Gokul Agro
+Logo for Puri Oil Mills
+Logo for Gulab
+Logo for KS Oils
+Logo for Fortune Foods
+Logo for Riso Life
+Logo for Aak Kamani_1533182104909.png?devicePixelRatio=2&amp;height=30&amp;width=30)
+Logo for Ricela
+Logo for Saffola Life
+lock
+
+ Financials of Saffola LifeFY 26 Available
+
+ Financial Statement Summary</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://thethinkschool.com/how-saffola-got-80-market-share" target="_blank">How Saffola got 80% market share</a></h3>
+                    <div class="result-url">https://thethinkschool.com/how-saffola-got-80-market-share</div>
+                    <div class="result-content">What exactly was their Business Strategy that enabled them stay ahead of their giant competitors like ITC and Hindustan Unilever? And. What are the business</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/474819620/Saffola-Honey-Marketing-Strategy-1" target="_blank">Saffola&#x27;s Honey Market Strategy Analysis | PDF</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/474819620/Saffola-Honey-Marketing-Strategy-1</div>
+                    <div class="result-content">However, the honey category is highly competitive with established brands like Dabur Honey and new low-cost entrants like Patanjali.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.storyboard18.com/how-it-works/how-maricos-saffola-won-the-battle-for-oats-market-in-india-18930.htm" target="_blank">How Marico&#x27;s Saffola won the battle for Oats market in India</a></h3>
+                    <div class="result-url">https://www.storyboard18.com/how-it-works/how-maricos-saffola-won-the-battle-for-oats-market-in-india-18930.htm</div>
+                    <div class="result-content">It was the 21st entrant in the competitive Oats market in India. Saffola was up against Kellogg&#x27;s at one end and PepsiCo&#x27;s 145-year-old brand</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>
