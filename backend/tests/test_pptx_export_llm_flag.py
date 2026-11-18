@@ -45,7 +45,10 @@ _ROADMAP_PROSE = (
     "Our roadmap runs through Q1 2025 with research, Q2 2025 with strategy "
     "work, Q3 2025 for building the platform, and Q4 2025 to scale usage."
 )
-_LONG_LIST_PROSE = "See the fourteen launch-readiness checks below for this release."
+_LONG_LIST_PROSE = (
+    "See the fourteen launch-readiness checks below for this release: "
+    "items 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, and 14."
+)
 
 _CONTENT = f"""### Key Metrics
 {_METRICS_PROSE}

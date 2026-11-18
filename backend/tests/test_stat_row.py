@@ -144,7 +144,14 @@ def test_stat_row_renders_2_3_and_4_tiles_inside_the_content_body_safe_area():
                 assert "$480M" in text and "MARKET SIZE" in text
                 if context:
                     assert "Snapshot of the category" in text
-                body = [s for s in slide.shapes if s.top >= Inches(cb["top"]) - 10]
+                # Exclude the chrome footer slot (y=chrome.footer.y, e.g. 7.05in) —
+                # it intentionally sits below content_body/safe_bottom, in the
+                # slide-number band; it's chrome, not stat-tile body content.
+                footer_y = tpl.geometry["chrome"]["footer"]["y"]
+                body = [
+                    s for s in slide.shapes
+                    if s.top >= Inches(cb["top"]) - 10 and round(s.top / Inches(1), 2) != footer_y
+                ]
                 assert body
                 for s in body:
                     assert s.left >= Inches(cb["x"]) - 10, (template_id, n)

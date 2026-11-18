@@ -102,9 +102,13 @@ def test_get_template_with_known_default_id_matches_default():
 
 
 def test_get_templates_returns_a_list_with_default_entry():
+    # "default" is disabled in the picker (it stays the code fallback via
+    # get_template(None)/get_template("default") directly) — enabled_only
+    # excludes it, but it's still present in the full, unfiltered registry.
     templates = get_templates(enabled_only=True)
     assert isinstance(templates, list)
-    assert any(t.get("id") == "default" for t in templates)
+    assert not any(t.get("id") == "default" for t in templates)
+    assert any(t.get("id") == "default" for t in get_templates(enabled_only=False))
 
 
 def test_get_registry_returns_templates_key():
@@ -374,10 +378,17 @@ def test_default_geometry_round_trips_to_old_literals():
     }
 
     assert geo["content_body"]["x"] == 0.8
-    assert geo["content_body"]["top"] == CONTENT_BODY_TOP_IN == 1.35
+    assert geo["content_body"]["top"] == CONTENT_BODY_TOP_IN == 1.40
     assert geo["content_body"]["w"] == 11.5
-    assert geo["content_body"]["height"] == CONTENT_BODY_HEIGHT_IN == 5.25
+    assert geo["content_body"]["height"] == CONTENT_BODY_HEIGHT_IN == 5.20
     assert geo["content_body"]["safe_bottom"] == 6.7
+
+    # Step 7 — content-slide chrome (eyebrow/kicker, heading, hairline rule,
+    # source footer), shared by bullets/table/chart/stat_row/timeline.
+    assert geo["chrome"]["eyebrow"] == {"x": 0.8, "y": 0.45, "w": 11.5, "h": 0.22}
+    assert geo["chrome"]["heading"] == {"x": 0.8, "y": 0.70, "w": 11.5, "h": 0.5}
+    assert geo["chrome"]["rule"] == {"x": 0.8, "y": 1.25, "w": 11.5, "thickness_pt": 1}
+    assert geo["chrome"]["footer"] == {"x": 0.8, "y": 7.05, "w": 9.0, "h": 0.3}
 
     assert geo["bullets"] == {"indent_step": 0.3, "max_level": 2, "hanging_indent": -0.25}
     assert geo["spacing"] == {
@@ -397,9 +408,11 @@ def test_default_geometry_round_trips_to_old_literals():
     assert DEFAULT_TEMPLATE.fit == {"chars_per_line": 98, "line_height": 0.3}
 
 
-def test_default_deck_content_body_emu_matches_old_literals():
+def test_default_deck_content_body_emu_matches_spec_literals():
     # The rendered content-body box's actual EMU geometry — not just the
-    # spec's own values — must still equal the old hardcoded coordinates.
+    # spec's own values — must equal DEFAULT_TEMPLATE.geometry["content_body"]
+    # (shifted slightly in Step 7 to make room for the chrome frame above it;
+    # see test_default_geometry_round_trips_to_old_literals).
     data = _run(generate_pptx({"title": "Report", "content": "### Section\n- A bullet.\n"}))
     prs = Presentation(io.BytesIO(data))
 
@@ -409,8 +422,8 @@ def test_default_deck_content_body_emu_matches_old_literals():
             if (
                 shape.has_text_frame
                 and shape.width == Inches(11.5)
-                and round(shape.height / Inches(1), 2) == 5.25
-                and round(shape.top / Inches(1), 2) == 1.35
+                and round(shape.height / Inches(1), 2) == 5.20
+                and round(shape.top / Inches(1), 2) == 1.40
                 and round(shape.left / Inches(1), 2) == 0.8
             ):
                 found = True
@@ -799,6 +812,13 @@ def test_moved_cover_art_template_not_in_shipped_registry():
 # Step 6 — the first two real templates ("executive", "bold") + contrast guard
 # ─────────────────────────────────────────────────────────────────────────────
 _SHIPPED_TEMPLATE_IDS = ("default", "executive", "bold", "corporate-blue", "midnight-tech", "minimalist-mono", "warm-editorial")
+# Step 7 — the chrome pass disabled 3 of the 7 shipped templates in the
+# picker ("default" stays the code fallback via get_template(None)/
+# get_template("default") directly; minimalist-mono/warm-editorial are just
+# off for now). _SHIPPED_TEMPLATE_IDS above still drives every
+# render/contrast loop in this file — the chrome frame must work for EVERY
+# template, not only the ones currently shown in the picker.
+_ENABLED_TEMPLATE_IDS = ("executive", "bold", "corporate-blue", "midnight-tech")
 
 
 def test_executive_and_bold_load_from_shipped_json():
@@ -878,14 +898,14 @@ def test_batch1_templates_load_from_shipped_json():
 
 def test_shipped_registry_returns_all_enabled_templates():
     ids = {t["id"] for t in get_templates(enabled_only=True)}
-    assert ids == set(_SHIPPED_TEMPLATE_IDS)
+    assert ids == set(_ENABLED_TEMPLATE_IDS)
 
 
 def test_pptx_templates_endpoint_lists_all_shipped():
     client = TestClient(app)
     body = client.get("/api/pptx-templates").json()
     ids = {t["id"] for t in body}
-    assert ids == set(_SHIPPED_TEMPLATE_IDS)
+    assert ids == set(_ENABLED_TEMPLATE_IDS)
 
 
 def test_all_shipped_templates_fit_model_unchanged_from_default():

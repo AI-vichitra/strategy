@@ -24,6 +24,7 @@ from backend.services.slide_planner import (
     SlideBlock,
     _is_grounded,
     _resolve_planner_provider_and_model,
+    _takeaway_is_valid,
     plan_report_llm,
     validate_block,
 )
@@ -610,3 +611,154 @@ def test_anthropic_retry_reraises_non_matching_type_error(monkeypatch):
     import pytest
     with pytest.raises(TypeError, match="some unrelated type error"):
         slide_planner._default_llm_completion("sys", "user")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 8 — per-slide headline takeaway + tightened bullets items
+# ─────────────────────────────────────────────────────────────────────────────
+
+_VERBOSE_SECTION = [
+    (
+        "Market Overview",
+        "Our market reached $480M in size this year, growing at a 15% compound "
+        "annual rate, and the competitive field now tracks 12 key players who "
+        "are actively investing in differentiation to defend share.",
+    )
+]
+
+
+def test_verbose_section_yields_tightened_bullets_with_a_grounded_takeaway():
+    response = {
+        "blocks": [
+            {
+                "component": "bullets",
+                "data": {
+                    "title": "Market Overview",
+                    "takeaway": "The $480M market is growing fast with 12 active players",
+                    "items": [
+                        {"text": "Market reached $480M this year", "level": 0, "bullet": True, "is_subsection_label": False},
+                        {"text": "Growing at a 15% compound annual rate", "level": 0, "bullet": True, "is_subsection_label": False},
+                        {"text": "12 key players are investing in differentiation", "level": 0, "bullet": True, "is_subsection_label": False},
+                    ],
+                },
+            }
+        ]
+    }
+    plans = plan_report_llm(_VERBOSE_SECTION, {}, _fake_llm(response))
+    block = plans[0].blocks[0]
+    assert block.component == COMPONENT_BULLETS
+    assert block.data["takeaway"] == "The $480M market is growing fast with 12 active players"
+    assert len(block.data["items"]) == 3
+    for item in block.data["items"]:
+        assert len(item["text"].split()) <= 14
+
+
+def test_takeaway_with_an_ungrounded_number_is_dropped_but_the_bullets_block_survives():
+    response = {
+        "blocks": [
+            {
+                "component": "bullets",
+                "data": {
+                    "title": "Market Overview",
+                    "takeaway": "The market is on track to reach $999M next year",  # 999 not in source
+                    "items": [
+                        {"text": "Market reached $480M this year", "level": 0, "bullet": True, "is_subsection_label": False},
+                    ],
+                },
+            }
+        ]
+    }
+    plans = plan_report_llm(_VERBOSE_SECTION, {}, _fake_llm(response))
+    block = plans[0].blocks[0]
+    assert block.component == COMPONENT_BULLETS
+    assert "takeaway" not in block.data
+    assert block.data["items"][0]["text"] == "Market reached $480M this year"
+
+
+def test_takeaway_with_a_hedge_word_is_dropped_but_the_stat_row_block_survives():
+    response = {
+        "blocks": [
+            {
+                "component": "stat_row",
+                "data": {
+                    "heading": "Market Overview",
+                    "takeaway": "The market is approximately $480M and growing steadily",  # hedge word
+                    "stats": [
+                        {"value": "$480M", "label": "Market size"},
+                        {"value": "15%", "label": "CAGR"},
+                    ],
+                },
+            }
+        ]
+    }
+    plans = plan_report_llm(_VERBOSE_SECTION, {}, _fake_llm(response))
+    block = plans[0].blocks[0]
+    assert block.component == COMPONENT_STAT_ROW
+    assert "takeaway" not in block.data
+    assert block.data["stats"][0]["value"] == "$480M"
+
+
+def test_chart_takeaway_dropped_when_ungrounded_chart_itself_still_substituted():
+    sections = [("Competitive Landscape", "Some prose about pricing across brands.\n")]
+    real_chart = SlideBlock(
+        component=COMPONENT_CHART,
+        data={"title": "Pricing Index", "chart_json": {"type": "bar", "data": [{"name": "A", "value": 9}]}},
+        source_section="Competitive Landscape",
+    )
+    response = {
+        "blocks": [{"component": "chart", "data": {"takeaway": "Brand A leads at a $999M valuation"}}],
+    }
+    plans = plan_report_llm(sections, {"Competitive Landscape": [real_chart]}, _fake_llm(response))
+    block = plans[0].blocks[0]
+    assert block.component == COMPONENT_CHART
+    assert "takeaway" not in block.data
+    assert block.data["chart_json"] == real_chart.data["chart_json"]
+
+
+def test_chart_takeaway_kept_when_grounded():
+    sections = [("Competitive Landscape", "Brand A commands a $480M share of pricing across the category.\n")]
+    real_chart = SlideBlock(
+        component=COMPONENT_CHART,
+        data={"title": "Pricing Index", "chart_json": {"type": "bar", "data": [{"name": "A", "value": 9}]}},
+        source_section="Competitive Landscape",
+    )
+    response = {
+        "blocks": [{"component": "chart", "data": {"takeaway": "Brand A commands a $480M share"}}],
+    }
+    plans = plan_report_llm(sections, {"Competitive Landscape": [real_chart]}, _fake_llm(response))
+    block = plans[0].blocks[0]
+    assert block.component == COMPONENT_CHART
+    assert block.data["takeaway"] == "Brand A commands a $480M share"
+
+
+def test_takeaway_is_valid_rejects_over_cap_hedged_and_ungrounded():
+    source = "Our market reached $480M in size with 15% growth this year."
+    assert _takeaway_is_valid("The $480M market is growing fast", source) is True
+    assert _takeaway_is_valid("approximately $480M and growing", source) is False  # hedge
+    assert _takeaway_is_valid("The market will reach $999M next year", source) is False  # ungrounded
+    assert _takeaway_is_valid("word " * 25, source) is False  # over the word cap
+    assert _takeaway_is_valid("", source) is False
+    assert _takeaway_is_valid(None, source) is False
+
+
+def test_bullets_items_tightening_preserves_every_distinct_point():
+    # A tightened bullets block must keep one item per distinct source claim
+    # — never merge two separate findings into one item.
+    response = {
+        "blocks": [
+            {
+                "component": "bullets",
+                "data": {
+                    "title": "Market Overview",
+                    "items": [
+                        {"text": "Market reached $480M this year", "level": 0, "bullet": True, "is_subsection_label": False},
+                        {"text": "Growing at a 15% compound annual rate", "level": 0, "bullet": True, "is_subsection_label": False},
+                        {"text": "12 key players invest in differentiation", "level": 0, "bullet": True, "is_subsection_label": False},
+                    ],
+                },
+            }
+        ]
+    }
+    plans = plan_report_llm(_VERBOSE_SECTION, {}, _fake_llm(response))
+    block = plans[0].blocks[0]
+    assert len(block.data["items"]) == 3

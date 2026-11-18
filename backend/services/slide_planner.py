@@ -527,6 +527,48 @@ def _is_grounded(component: str, data: Dict[str, Any], source_text: str) -> bool
     return True
 
 
+# Prompt target for a takeaway is <=15 words; this cap is deliberately a bit
+# more generous (catches a wildly long one, not an off-by-one) rather than
+# rejecting an otherwise-good takeaway over a couple extra words.
+_TAKEAWAY_MAX_WORDS = 20
+
+
+def _takeaway_is_valid(takeaway: Any, source_text: str) -> bool:
+    """A takeaway (the slide's one-line "so what") is valid only if it's a
+    non-empty string under the word cap, has no hedge word, and every numeric
+    claim in it already appears in the section's own source text — the same
+    contiguous-normalized-claim check _is_grounded uses for stat_row/
+    timeline, since a takeaway is exactly the kind of place a model might
+    quietly round or invent a number while summarizing."""
+    if not isinstance(takeaway, str) or not takeaway.strip():
+        return False
+    if len(takeaway.split()) > _TAKEAWAY_MAX_WORDS:
+        return False
+    if _has_hedge(takeaway):
+        return False
+    return _numeric_claims(takeaway) <= _numeric_claims(source_text)
+
+
+def _bullets_items_grounded(data: Dict[str, Any], source_text: str) -> bool:
+    """Tightened/compressed bullets items are still prose, not a quantitative
+    claim like a stat_row value — EXCEPT compression itself is a new risk the
+    deterministic planner never had: the model could round or invent a number
+    while condensing a sentence. So, unlike bullets' normal free pass through
+    _is_grounded, every item's text here must carry no hedge word and no
+    numeric claim absent from the section's own source text."""
+    for item in data.get("items", []):
+        if not isinstance(item, dict):
+            continue
+        text = item.get("text")
+        if not isinstance(text, str):
+            continue
+        if _has_hedge(text):
+            return False
+        if not _numeric_claims(text) <= _numeric_claims(source_text):
+            return False
+    return True
+
+
 def _degrade_to_bullets(component: str, data: Dict[str, Any], section_title: str) -> SlideBlock:
     """Un-grounded stat_row/timeline blocks degrade to a plain bullets block
     carrying the same extracted text, rather than being discarded outright."""
@@ -601,19 +643,34 @@ STRICT GROUNDING RULES (critical):
   markdown's structure (one table stays one table block, one chart stays one \
   chart block).
 
+SLIDE SHAPING (the deck should read like a deck, not a document):
+- For each slide, produce a "takeaway": one assertive sentence (the \
+  slide's "so what"), <=15 words, stating only what this section's own text \
+  supports — never a new fact or number, never a hedge word. Omit \
+  "takeaway" entirely if you cannot state one without adding or hedging \
+  anything. Applies to bullets/stat_row/timeline/chart.
+- For "bullets", write each item as a short, scannable point (<=14 words), \
+  COMPRESSED from the source wording — never a full paragraph copied \
+  verbatim. Keep EVERY distinct point from the source as its own item: \
+  never merge two separate claims into one item, and never drop a point \
+  because it seems minor. Compression must not change meaning or introduce/\
+  round a number — if you cannot compress a point without altering a figure \
+  in it, keep that one point closer to its original wording instead.
+
 Respond with ONLY a single JSON object (no prose, no markdown fences), \
-exactly matching this shape — blocks for THIS section only:
+exactly matching this shape — blocks for THIS section only ("takeaway" is \
+optional on every component):
 
 {"blocks": [
-  {"component": "bullets", "data": {"title": str, "items": [
+  {"component": "bullets", "data": {"title": str, "takeaway": str (optional), "items": [
      {"text": str, "level": 0 or 1, "bullet": true, "is_subsection_label": false}
   ]}},
   {"component": "table", "data": {"title": str, "rows": [[str, ...], ...]}},
-  {"component": "chart", "data": {}},
-  {"component": "stat_row", "data": {"heading": str, "stats": [
+  {"component": "chart", "data": {"takeaway": str (optional)}},
+  {"component": "stat_row", "data": {"heading": str, "takeaway": str (optional), "stats": [
      {"value": str, "label": str, "sublabel": str (optional)}
   ]}},
-  {"component": "timeline", "data": {"heading": str, "phases": [
+  {"component": "timeline", "data": {"heading": str, "takeaway": str (optional), "phases": [
      {"label": str, "title": str, "period": str (optional),
       "description": str (optional), "deliverable": str (optional)}
   ]}}
@@ -870,6 +927,13 @@ def plan_report_llm(
             if component == COMPONENT_CHART:
                 nxt = next(chart_iter, None)
                 if nxt is not None:
+                    takeaway = data.get("takeaway")
+                    if takeaway is not None:
+                        if _takeaway_is_valid(takeaway, body):
+                            nxt = SlideBlock(component=nxt.component, data={**nxt.data, "takeaway": takeaway},
+                                              source_section=nxt.source_section)
+                        else:
+                            logger.info("[slide_planner] %s: dropping invalid/ungrounded chart takeaway", title)
                     final_blocks.append(nxt)
                 continue
 
@@ -878,10 +942,28 @@ def plan_report_llm(
                 section_failed, fail_reason = True, reason
                 break
 
-            if not _is_grounded(component, data, body):
+            # Tightened bullets items carry their own grounding risk (a model
+            # could round/invent a number while compressing a sentence) that
+            # validate_block's structural checks don't cover — unlike
+            # stat_row/timeline, an ungrounded item here fails the WHOLE
+            # block (there is no narrower "degrade to bullets" for bullets
+            # itself), same as any other validate_block failure.
+            if component == COMPONENT_BULLETS and not _bullets_items_grounded(data, body):
+                section_failed, fail_reason = True, "bullets: a tightened item is hedged or contains an ungrounded number"
+                break
+
+            if component in (COMPONENT_STAT_ROW, COMPONENT_TIMELINE) and not _is_grounded(component, data, body):
                 logger.info("[slide_planner] %s: ungrounded %s block -> degraded to bullets", title, component)
                 final_blocks.append(_degrade_to_bullets(component, data, title))
                 continue
+
+            # The takeaway is a pure annotation on an otherwise-valid block —
+            # unlike every check above, a bad takeaway only drops the
+            # takeaway itself, never the block it's attached to.
+            takeaway = data.get("takeaway")
+            if takeaway is not None and not _takeaway_is_valid(takeaway, body):
+                logger.info("[slide_planner] %s: dropping invalid/ungrounded %s takeaway", title, component)
+                data = {k: v for k, v in data.items() if k != "takeaway"}
 
             final_blocks.append(SlideBlock(component=component, data=data, source_section=title))
 
@@ -926,7 +1008,11 @@ def paginate_bullets_block(block: SlideBlock, tpl: Any) -> List[SlideBlock]:
     existing content-slide packer. stat_row/timeline/table/chart blocks are
     already single-slide by construction (validator caps enforce that) and
     are never passed here — see paginate_blocks, which routes only bullets
-    blocks through this function."""
+    blocks through this function.
+
+    A takeaway (the section's "so what") is stated once — if present on the
+    original block, it's attached only to the FIRST resulting slide, never
+    repeated on a "(cont'd)" continuation slide."""
     from backend.services.pptx_service import _group_into_clusters, _pack_clusters_to_slides
     from backend.services.template_service import _max_lines_per_slide
 
@@ -936,10 +1022,14 @@ def paginate_bullets_block(block: SlideBlock, tpl: Any) -> List[SlideBlock]:
     chars_per_line = tpl.fit["chars_per_line"]
     max_lines = _max_lines_per_slide(tpl)
     specs = _pack_clusters_to_slides(clusters, block.data.get("title", ""), max_lines, chars_per_line)
-    return [
-        SlideBlock(component=COMPONENT_BULLETS, data={"title": s["title"], "items": s["items"]}, source_section=block.source_section)
-        for s in specs
-    ]
+    takeaway = block.data.get("takeaway")
+    result = []
+    for i, s in enumerate(specs):
+        data = {"title": s["title"], "items": s["items"]}
+        if i == 0 and takeaway:
+            data["takeaway"] = takeaway
+        result.append(SlideBlock(component=COMPONENT_BULLETS, data=data, source_section=block.source_section))
+    return result
 
 
 def paginate_blocks(blocks: List[SlideBlock], tpl: Any) -> List[SlideBlock]:

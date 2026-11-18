@@ -42,6 +42,9 @@ def _run(coro):
 # GET /api/pptx-templates
 # ─────────────────────────────────────────────────────────────────────────────
 def test_list_pptx_templates_returns_200_no_auth():
+    """The picker shows only the 4 kept templates — "default" stays the code
+    fallback for an unset/invalid template_id (see get_template), but is
+    disabled in the registry so it's hidden from this public catalog."""
     client = TestClient(app)
     resp = client.get("/api/pptx-templates")
     assert resp.status_code == 200
@@ -49,14 +52,15 @@ def test_list_pptx_templates_returns_200_no_auth():
     body = resp.json()
     assert isinstance(body, list)
     by_id = {t["id"]: t for t in body}
-    assert "default" in by_id
-    assert by_id["default"]["name"] == "Default"
+    assert set(by_id) == {"executive", "bold", "corporate-blue", "midnight-tech"}
+    assert "default" not in by_id
+    assert by_id["executive"]["name"] == "Executive"
 
 
 def test_list_pptx_templates_dto_never_leaks_the_full_spec():
     client = TestClient(app)
     body = client.get("/api/pptx-templates").json()
-    assert body  # the default template must always be present
+    assert body  # at least the 4 kept templates must be present
 
     leaked_keys = {"fonts", "type_scale", "palette", "backgrounds", "geometry", "fit", "slots", "art", "enabled"}
     for entry in body:

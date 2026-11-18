@@ -121,8 +121,11 @@ SLIDE_HEIGHT = Inches(7.5)
 # CONTENT_SAFE_BOTTOM_IN (6.7in) is the hard floor no content box may cross.
 # ─────────────────────────────────────────────────────────────────────────────
 TITLE_BAR_HEIGHT_IN = 0.7
-CONTENT_BODY_TOP_IN = 1.35
-CONTENT_BODY_HEIGHT_IN = 5.25
+# Content slides now carry the chrome frame (_add_content_chrome): an eyebrow/
+# kicker above the heading pushes CONTENT_BODY_TOP_IN down slightly from the
+# pre-chrome 1.35in; CONTENT_SAFE_BOTTOM_IN (the hard floor) is unchanged.
+CONTENT_BODY_TOP_IN = 1.40
+CONTENT_BODY_HEIGHT_IN = 5.20
 CONTENT_SAFE_BOTTOM_IN = 6.7
 
 # Line-fit estimate used to decide slide splits (see _estimate_item_lines):
@@ -310,6 +313,86 @@ def _add_title_bar(slide, text: str, theme: dict, tpl: TemplateSpec, subtitle: O
         _, sub_tf = _add_textbox(slide, Inches(subtitle_box["x"]), Inches(subtitle_box["y"]), Inches(subtitle_box["w"]), Inches(subtitle_box["h"]))
         sub_tf.auto_size = MSO_AUTO_SIZE.NONE
         _add_inline_runs(sub_tf.paragraphs[0], subtitle, theme, tpl, base_size=tpl.type_scale["titlebar_subtitle"], color=theme[tpl.slots["titlebar_subtitle"]])
+
+
+def _add_content_chrome(slide, tpl: TemplateSpec, theme: dict, section_index: int, section_title: str,
+                         heading: str, source: Optional[str] = None, takeaway: Optional[str] = None):
+    """The shared top/bottom frame for every content-kind slide (bullets,
+    table, chart, stat_row, timeline) — replaces the bare _add_title_bar path
+    for these five renderers only (TOC/divider/cover/closing keep using
+    _add_title_bar/their own art directly):
+      - the same left accent bar as _add_title_bar (same geometry/slot, so it
+        reads as one continuous deck design);
+      - an EYEBROW/kicker: "<NN> · <SECTION TITLE>" (NN = the section's
+        1-based running number, 2-digit, matching the TOC/divider numbering),
+        uppercase and letter-spaced;
+      - the slide's own HEADING, with a thin HAIRLINE RULE beneath it;
+      - an optional headline TAKEAWAY line directly under the rule, when the
+        planner supplied one (the slide's "so what" — bold-ish, a touch
+        larger than body text) — see _content_shift_for_takeaway for how
+        callers push their own content down to clear it;
+      - a small source-FOOTER slot at the bottom — renders `source` when
+        given, else stays blank (real source extraction is a follow-up; this
+        just builds the slot).
+    All geometry comes from tpl.geometry["chrome"] (eyebrow/heading/rule/
+    takeaway/footer boxes), tuned to stack without colliding with
+    content_body (which starts below the rule, or below the takeaway when
+    present) or the slide number (which shares the footer's vertical band
+    but sits at the right edge)."""
+    canvas = tpl.geometry["canvas"]
+    chrome = tpl.geometry["chrome"]
+    accent_bar = tpl.geometry["title_bar"]["accent_bar"]
+
+    bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0), Inches(0), Inches(accent_bar["width"]), Inches(canvas["height"]))
+    bar.fill.solid()
+    bar.fill.fore_color.rgb = _rgb(theme[tpl.slots["accent_bar"]])
+    bar.line.fill.background()
+
+    eb = chrome["eyebrow"]
+    _, eb_tf = _add_textbox(slide, Inches(eb["x"]), Inches(eb["y"]), Inches(eb["w"]), Inches(eb["h"]))
+    eb_tf.auto_size = MSO_AUTO_SIZE.NONE
+    eyebrow_text = f"{section_index:02d}  ·  {(section_title or '').upper()}"
+    eb_run = _apply_text_formatting(eb_tf.paragraphs[0], eyebrow_text, theme, tpl, bold=True,
+                                     font_size=tpl.type_scale["eyebrow"], color=theme[tpl.slots["eyebrow"]])
+    eb_run._r.get_or_add_rPr().set("spc", "100")
+
+    hd = chrome["heading"]
+    _, hd_tf = _add_textbox(slide, Inches(hd["x"]), Inches(hd["y"]), Inches(hd["w"]), Inches(hd["h"]))
+    hd_tf.auto_size = MSO_AUTO_SIZE.NONE
+    _add_inline_runs(hd_tf.paragraphs[0], heading, theme, tpl, base_size=tpl.type_scale["title"], base_bold=True,
+                      color=theme[tpl.slots["title"]], font_role="heading")
+
+    rl = chrome["rule"]
+    rule = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(rl["x"]), Inches(rl["y"]), Inches(rl["w"]), Pt(rl["thickness_pt"]))
+    rule.fill.solid()
+    rule.fill.fore_color.rgb = _rgb(theme[tpl.slots["rule"]])
+    rule.line.fill.background()
+
+    if takeaway:
+        tk = chrome["takeaway"]
+        _, tk_tf = _add_textbox(slide, Inches(tk["x"]), Inches(tk["y"]), Inches(tk["w"]), Inches(tk["h"]))
+        tk_tf.auto_size = MSO_AUTO_SIZE.NONE
+        _add_inline_runs(tk_tf.paragraphs[0], takeaway, theme, tpl, base_size=tpl.type_scale["takeaway"], base_bold=True,
+                          color=theme[tpl.slots["takeaway"]])
+
+    ft = chrome["footer"]
+    _, ft_tf = _add_textbox(slide, Inches(ft["x"]), Inches(ft["y"]), Inches(ft["w"]), Inches(ft["h"]))
+    ft_tf.auto_size = MSO_AUTO_SIZE.NONE
+    _apply_text_formatting(ft_tf.paragraphs[0], source or "", theme, tpl, font_size=tpl.type_scale["footer"], color=theme[tpl.slots["footer"]])
+
+
+def _content_shift_for_takeaway(tpl: TemplateSpec, takeaway: Optional[str]) -> float:
+    """Inches to push a content-kind slide's own body/image down (and shrink
+    its available height/top ceiling by the same amount) when a takeaway
+    line is rendered in the chrome, so the component's own content never
+    collides with it. 0 when no takeaway. bullets/stat_row/chart use this;
+    timeline's chevron row already starts at geometry["timeline"]["row_top"]
+    (2.3in by default), well below the takeaway band, so it never needs it."""
+    if not takeaway:
+        return 0.0
+    tk = tpl.geometry["chrome"]["takeaway"]
+    cb_top = tpl.geometry["content_body"]["top"]
+    return max((tk["y"] + tk["h"] + 0.05) - cb_top, 0.0)
 
 
 def _add_slide_number(slide, number: int, theme: dict, tpl: TemplateSpec):
@@ -670,22 +753,27 @@ def _items_estimated_lines(items: List[Dict[str, Any]], chars_per_line: int) -> 
     return sum(_estimate_item_lines(item.get("text", ""), chars_per_line) for item in items)
 
 
-def _add_content_slide(prs: Presentation, title: str, items: List[Dict[str, Any]], theme: dict, tpl: TemplateSpec):
+def _add_content_slide(prs: Presentation, title: str, items: List[Dict[str, Any]], theme: dict, tpl: TemplateSpec,
+                        section_index: int = 1, section_title: str = "", takeaway: Optional[str] = None):
     """`items`: [{"bullet": bool, "text": <raw markdown>, "level": int,
     "is_subsection_label": bool}, ...]. Body geometry comes from
     tpl.geometry["content_body"] (x/top/w/height) — the body is a FIXED size
-    (MSO_AUTO_SIZE.NONE), clear of the title box above and the slide number
+    (MSO_AUTO_SIZE.NONE), clear of the chrome frame above and the slide number
     below. Callers are expected to have already split `items` to fit within
     _max_lines_per_slide(tpl) (see _pack_clusters_to_slides);
     TEXT_TO_FIT_SHAPE is only a safety net for the rare slide that still
     estimates over budget, so it shrinks rather than overflows.
+
+    `takeaway`, when given, renders in the chrome (see _add_content_chrome)
+    and pushes this body box down/shorter by _content_shift_for_takeaway so
+    it never collides with it.
 
     Text is always dark + regular weight (theme text_dark) — only the bullet
     MARKER glyph and a standalone lead-in label (merged subsection title) use
     bold/accent; a bullet whose own text is a lead-in label (ends in ":",
     e.g. "Decision Drivers:") is bold but still dark, never colored."""
     slide = _new_slide(prs, _rgb(theme[tpl.backgrounds["content"]]))
-    _add_title_bar(slide, title, theme, tpl)
+    _add_content_chrome(slide, tpl, theme, section_index, section_title, title, takeaway=takeaway)
 
     cb = tpl.geometry["content_body"]
     bullets_geo = tpl.geometry["bullets"]
@@ -693,7 +781,12 @@ def _add_content_slide(prs: Presentation, title: str, items: List[Dict[str, Any]
     chars_per_line = tpl.fit["chars_per_line"]
     max_lines = _max_lines_per_slide(tpl)
 
-    _, tf = _add_textbox(slide, Inches(cb["x"]), Inches(cb["top"]), Inches(cb["w"]), Inches(cb["height"]))
+    shift = _content_shift_for_takeaway(tpl, takeaway)
+    body_top, body_height = cb["top"] + shift, cb["height"] - shift
+    if shift:
+        max_lines -= math.ceil(shift / tpl.fit["line_height"])
+
+    _, tf = _add_textbox(slide, Inches(cb["x"]), Inches(body_top), Inches(cb["w"]), Inches(body_height))
     tf.auto_size = (
         MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
         if _items_estimated_lines(items, chars_per_line) > max_lines
@@ -789,9 +882,13 @@ def _add_table_to_slide(slide, table_data: List[List[str]], theme: dict, tpl: Te
     return table
 
 
-def _add_chart_image_to_slide(slide, chart_json: Any, theme: dict, tpl: TemplateSpec):
+def _add_chart_image_to_slide(slide, chart_json: Any, theme: dict, tpl: TemplateSpec, top_shift: float = 0.0):
     """Renders recharts-style JSON to a matplotlib image (shared renderer) and
-    adds it to `slide`, centered, per tpl.geometry["chart"]."""
+    adds it to `slide`, centered, per tpl.geometry["chart"]. `top_shift`
+    (inches) pushes the image down — used when the slide's own chrome-level
+    takeaway (see _content_shift_for_takeaway) is present; the chart's own
+    under-image caption (chart_json's "takeaway" key, a different, older
+    field) stays at its fixed position since it never collides either way."""
     data = chart_json
     if isinstance(chart_json, str):
         try:
@@ -812,7 +909,7 @@ def _add_chart_image_to_slide(slide, chart_json: Any, theme: dict, tpl: Template
 
     pic_width = Inches(chart_geo["width"])
     left = (Inches(tpl.geometry["canvas"]["width"]) - pic_width) // 2
-    top = Inches(chart_geo["top"])
+    top = Inches(chart_geo["top"] + top_shift)
     picture = slide.shapes.add_picture(io.BytesIO(image_bytes), left, top, width=pic_width)
 
     takeaway = (data or {}).get("takeaway") if isinstance(data, dict) else None
@@ -823,15 +920,16 @@ def _add_chart_image_to_slide(slide, chart_json: Any, theme: dict, tpl: Template
     return picture
 
 
-def _chart_note_top_inches(chart_json: Any, tpl: TemplateSpec) -> float:
+def _chart_note_top_inches(chart_json: Any, tpl: TemplateSpec, top_shift: float = 0.0) -> float:
     """Where a short trailing note goes when merged onto a chart's own slide:
-    below the rendered image (chart.top + width scaled by the figsize aspect
-    ratio), or below the chart's own takeaway caption box when it has one,
-    plus a fixed 0.25in gap. Derived from tpl.geometry["chart"] so it can
-    never drift from _add_chart_image_to_slide's own placement."""
+    below the rendered image (chart.top + top_shift + width scaled by the
+    figsize aspect ratio), or below the chart's own takeaway caption box when
+    it has one, plus a fixed 0.25in gap. `top_shift` must match whatever was
+    passed to _add_chart_image_to_slide for this same slide, or this drifts
+    from its actual placement."""
     chart_geo = tpl.geometry["chart"]
     fig_w, fig_h = chart_geo["figsize"]
-    bottom = chart_geo["top"] + (chart_geo["width"] * fig_h / fig_w)  # image top + height at the rendered width
+    bottom = chart_geo["top"] + top_shift + (chart_geo["width"] * fig_h / fig_w)  # image top + height at the rendered width
     data = chart_json
     if isinstance(data, str):
         try:
@@ -1332,18 +1430,19 @@ def _create_section_slides(prs: Presentation, section_title: str, blocks: List[S
     _create_section_title_slide(prs, section_title, theme, tpl, section_index, logo_asset=logo_asset)
 
     for block in blocks:
-        slide = _render_block(prs, block, theme, tpl)
+        slide = _render_block(prs, block, theme, tpl, section_index)
         _add_slide_number(slide, next(slide_counter), theme, tpl)
 
 
-def _render_bullets_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec):
-    return _add_content_slide(prs, block.data["title"], block.data["items"], theme, tpl)
+def _render_bullets_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec, section_index: int = 1):
+    return _add_content_slide(prs, block.data["title"], block.data["items"], theme, tpl, section_index,
+                               block.source_section, takeaway=block.data.get("takeaway"))
 
 
-def _render_table_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec):
+def _render_table_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec, section_index: int = 1):
     data = block.data
     slide = _new_slide(prs, _rgb(theme[tpl.backgrounds["table"]]))
-    _add_title_bar(slide, data["title"], theme, tpl)
+    _add_content_chrome(slide, tpl, theme, section_index, block.source_section, data["title"])
     _add_table_to_slide(slide, data["rows"], theme, tpl)
     if data.get("trailing_items"):
         top = _table_note_top_inches(len(data["rows"]), tpl)
@@ -1351,18 +1450,20 @@ def _render_table_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: 
     return slide
 
 
-def _render_chart_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec):
+def _render_chart_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec, section_index: int = 1):
     data = block.data
+    takeaway = data.get("takeaway")
     slide = _new_slide(prs, _rgb(theme[tpl.backgrounds["chart"]]))
-    _add_title_bar(slide, data["title"], theme, tpl)
-    _add_chart_image_to_slide(slide, data["chart_json"], theme, tpl)
+    _add_content_chrome(slide, tpl, theme, section_index, block.source_section, data["title"], takeaway=takeaway)
+    shift = _content_shift_for_takeaway(tpl, takeaway)
+    _add_chart_image_to_slide(slide, data["chart_json"], theme, tpl, top_shift=shift)
     if data.get("trailing_items"):
-        top = _chart_note_top_inches(data["chart_json"], tpl)
+        top = _chart_note_top_inches(data["chart_json"], tpl, top_shift=shift)
         _add_trailing_note_to_slide(slide, data["trailing_items"], theme, tpl, top)
     return slide
 
 
-def _render_stat_row_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec):
+def _render_stat_row_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec, section_index: int = 1):
     """2-4 KPI tiles as rounded-rect cards. Tile 1 = hero (filled primary,
     light text); tiles 2..N = neutral tile background with normal slot colors.
     Each tile: uppercase label at top, big value center, sublabel at bottom."""
@@ -1377,10 +1478,13 @@ def _render_stat_row_block(prs: Presentation, block: SlideBlock, theme: dict, tp
     corner_r = tg.get("corner_radius", 0.08)
     tile_h = tg.get("height", 2.4)
 
+    takeaway = data.get("takeaway")
     slide = _new_slide(prs, _rgb(theme[tpl.backgrounds["content"]]))
-    _add_title_bar(slide, data.get("heading") or block.source_section, theme, tpl)
+    _add_content_chrome(slide, tpl, theme, section_index, block.source_section, data.get("heading") or block.source_section,
+                         takeaway=takeaway)
 
-    top, avail = cb["top"], cb["height"]
+    takeaway_shift = _content_shift_for_takeaway(tpl, takeaway)
+    top, avail = cb["top"] + takeaway_shift, cb["height"] - takeaway_shift
     if data.get("context"):
         ctx_h = ts["body"] / 72 * 2 * 1.4
         _, ctx_tf = _add_textbox(slide, Inches(cb["x"]), Inches(top + 0.2), Inches(cb["w"]), Inches(ctx_h))
@@ -1451,7 +1555,7 @@ def _render_stat_row_block(prs: Presentation, block: SlideBlock, theme: dict, tp
     return slide
 
 
-def _render_timeline_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec):
+def _render_timeline_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec, section_index: int = 1):
     """3-6 horizontal chevrons graduating from timeline_start to timeline_end,
     with phase title/description/deliverable columns below and an optional
     footer note band."""
@@ -1468,16 +1572,12 @@ def _render_timeline_block(prs: Presentation, block: SlideBlock, theme: dict, tp
     footer_h = tg.get("footer_height", 0.9)
 
     slide = _new_slide(prs, _rgb(theme[tpl.backgrounds["content"]]))
-    _add_title_bar(slide, data.get("heading") or block.source_section, theme, tpl)
+    _add_content_chrome(slide, tpl, theme, section_index, block.source_section, data.get("heading") or block.source_section,
+                         takeaway=data.get("takeaway"))
 
-    if data.get("takeaway"):
-        tk_h = ts.get("timeline_body", 11) / 72 * 2.0
-        _, tf = _add_textbox(slide, Inches(cb["x"]), Inches(cb["top"] + 0.1), Inches(cb["w"]), Inches(tk_h))
-        tf.auto_size = MSO_AUTO_SIZE.NONE
-        _add_inline_runs(tf.paragraphs[0], data["takeaway"], theme, tpl,
-                         base_size=ts.get("timeline_body", 11),
-                         color=theme[tpl.slots.get("timeline_body", "text_dark")])
-
+    # No _content_shift_for_takeaway call here: the chevron row already
+    # starts at row_top (2.3in by default), well below the takeaway band, so
+    # it never needs to move for one.
     chev_w = (cb["w"] + (n - 1) * overlap) / n
     start_rgb = _hex_to_rgb(theme[tpl.slots["timeline_start"]])
     end_rgb = _hex_to_rgb(theme[tpl.slots["timeline_end"]])
@@ -1590,19 +1690,22 @@ def _render_timeline_block(prs: Presentation, block: SlideBlock, theme: dict, tp
     return slide
 
 
-def _render_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec):
+def _render_block(prs: Presentation, block: SlideBlock, theme: dict, tpl: TemplateSpec, section_index: int = 1):
     """Dispatches a planned SlideBlock to its component renderer and returns
     the new slide. An unknown component renders as bullets (forward-safety
-    for components a future planner may emit)."""
+    for components a future planner may emit). `section_index` is the
+    section's 1-based running number (threaded from _create_section_slides,
+    which already iterates sections in order) — every renderer passes it to
+    _add_content_chrome for the eyebrow's "<NN> · <SECTION>" line."""
     if block.component == COMPONENT_TABLE:
-        return _render_table_block(prs, block, theme, tpl)
+        return _render_table_block(prs, block, theme, tpl, section_index)
     if block.component == COMPONENT_CHART:
-        return _render_chart_block(prs, block, theme, tpl)
+        return _render_chart_block(prs, block, theme, tpl, section_index)
     if block.component == COMPONENT_STAT_ROW:
-        return _render_stat_row_block(prs, block, theme, tpl)
+        return _render_stat_row_block(prs, block, theme, tpl, section_index)
     if block.component == COMPONENT_TIMELINE:
-        return _render_timeline_block(prs, block, theme, tpl)
-    return _render_bullets_block(prs, block, theme, tpl)
+        return _render_timeline_block(prs, block, theme, tpl, section_index)
+    return _render_bullets_block(prs, block, theme, tpl, section_index)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@
       "id": "default",
       "name": "Default",
       "description": "StratAI's standard look — Calibri throughout, today's type scale. Kept in sync with template_service.DEFAULT_TEMPLATE.",
-      "enabled": true,
+      "enabled": false,
       "fonts": {
         "heading": "Calibri",
         "body": "Calibri"
@@ -41,7 +41,10 @@
         "timeline_phase_label": 12,
         "timeline_phase_title": 14,
         "timeline_body": 11,
-        "timeline_deliverable": 11
+        "timeline_deliverable": 11,
+        "eyebrow": 10,
+        "footer": 8,
+        "takeaway": 14
       },
       "palette": null,
       "backgrounds": {
@@ -65,7 +68,14 @@
           "on": true, "w": 0.8, "h": 0.35,
           "x_from_right": 1.0, "y_from_bottom": 0.45, "align": "right"
         },
-        "content_body": { "x": 0.8, "top": 1.35, "w": 11.5, "height": 5.25, "safe_bottom": 6.7 },
+        "content_body": { "x": 0.8, "top": 1.40, "w": 11.5, "height": 5.20, "safe_bottom": 6.7 },
+        "chrome": {
+          "eyebrow": { "x": 0.8, "y": 0.45, "w": 11.5, "h": 0.22 },
+          "heading": { "x": 0.8, "y": 0.70, "w": 11.5, "h": 0.5 },
+          "rule": { "x": 0.8, "y": 1.25, "w": 11.5, "thickness_pt": 1 },
+          "takeaway": { "x": 0.8, "y": 1.32, "w": 11.5, "h": 0.3 },
+          "footer": { "x": 0.8, "y": 7.05, "w": 9.0, "h": 0.3 }
+        },
         "bullets": { "indent_step": 0.3, "max_level": 2, "hanging_indent": -0.25 },
         "spacing": {
           "label": { "space_after": 10, "line": 1.2 },
@@ -130,7 +140,11 @@
         "timeline_end": "primary",
         "timeline_deliverable_label": "accent",
         "timeline_body": "text_dark",
-        "timeline_footer_bg": "bg_light"
+        "timeline_footer_bg": "bg_light",
+        "eyebrow": "text_muted",
+        "rule": "primary",
+        "footer": "text_muted",
+        "takeaway": "text_dark"
       },
       "art": {
         "date_format": "%B %d, %Y",
@@ -357,7 +371,7 @@
       "id": "minimalist-mono",
       "name": "Minimalist Mono",
       "description": "Ultra-minimal black, white and grey with generous whitespace.",
-      "enabled": true,
+      "enabled": false,
       "preview": null,
       "fonts": { "heading": "Arial", "body": "Calibri" },
       "palette": {
@@ -401,7 +415,7 @@
       "id": "warm-editorial",
       "name": "Warm Editorial",
       "description": "Magazine-style warmth — cream, espresso and terracotta with serif headings.",
-      "enabled": true,
+      "enabled": false,
       "preview": null,
       "fonts": { "heading": "Georgia", "body": "Calibri" },
       "palette": {

@@ -27,7 +27,6 @@ from backend.services.pptx_service import (
     CONTENT_SAFE_BOTTOM_IN,
     CONTENT_BODY_TOP_IN,
     CONTENT_BODY_HEIGHT_IN,
-    TITLE_BAR_HEIGHT_IN,
 )
 
 _STATIC_LOGOS_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads", "logos")
@@ -459,14 +458,15 @@ def _content_body_boxes(slide):
 
 
 def _title_bar_text(slide):
-    """The slide heading text specifically — width 12.0in AND height
-    TITLE_BAR_HEIGHT_IN distinguishes it from the (same-width) subtitle box
-    and from the 0.18in-wide accent bar."""
+    """The slide heading text specifically — width 11.5in AND height 0.5in
+    (tpl.geometry["chrome"]["heading"] for DEFAULT_TEMPLATE) distinguishes
+    the chrome heading box from the eyebrow/footer textboxes (different
+    heights) and from the 0.18in-wide accent bar."""
     for shape in slide.shapes:
         if (
             shape.has_text_frame
-            and shape.width == Inches(12.0)
-            and round(shape.height / Inches(1), 2) == TITLE_BAR_HEIGHT_IN
+            and shape.width == Inches(11.5)
+            and round(shape.height / Inches(1), 2) == 0.5
         ):
             return shape.text_frame.text
     return None
@@ -494,23 +494,30 @@ def test_content_box_never_overflows_below_safe_area():
 
 
 def test_heading_to_body_gap_reduced():
+    """Content slides now carry the chrome frame (eyebrow + heading + rule),
+    not the bare title bar — this checks the chrome heading box (w=11.5in,
+    h=0.5in, distinct from the TOC's own w=12.0in title box) sits just above
+    the content body with a small, deliberate gap (spanning the hairline
+    rule), not the old title-bar-to-body gap."""
     data = _run(generate_pptx({"title": "Report", "content": "### Section\n- A bullet.\n"}))
     prs = Presentation(io.BytesIO(data))
 
-    found_title = found_body = False
+    found_heading = found_body = False
+    heading_y = None
     for slide in prs.slides:
         for shape in slide.shapes:
             if not shape.has_text_frame:
                 continue
-            if shape.width == Inches(12.0) and round(shape.height / Inches(1), 2) == TITLE_BAR_HEIGHT_IN:
-                found_title = True
+            if shape.width == Inches(11.5) and round(shape.height / Inches(1), 2) == 0.5:
+                found_heading = True
+                heading_y = shape.top / Inches(1)
             if shape.width == Inches(11.5) and round(shape.top / Inches(1), 2) == CONTENT_BODY_TOP_IN:
                 found_body = True
-    assert found_title, f"expected a title bar box of height {TITLE_BAR_HEIGHT_IN}in"
+    assert found_heading, "expected a chrome heading box (w=11.5in, h=0.5in)"
     assert found_body, f"expected a content body box starting at top {CONTENT_BODY_TOP_IN}in"
 
-    gap_in = CONTENT_BODY_TOP_IN - (0.35 + TITLE_BAR_HEIGHT_IN)
-    assert 0.25 <= gap_in <= 0.5
+    gap_in = CONTENT_BODY_TOP_IN - (heading_y + 0.5)
+    assert 0.1 <= gap_in <= 0.4
 
 
 def test_long_prose_section_splits_across_slides():

@@ -140,6 +140,11 @@ DEFAULT_TEMPLATE = TemplateSpec(
         "timeline_phase_title": 14,
         "timeline_body": 11,
         "timeline_deliverable": 11,
+        # content-slide chrome (Step 7): eyebrow/kicker + source footer
+        "eyebrow": 10,
+        "footer": 8,
+        # per-slide headline takeaway (Step 8, planner slide-shaping)
+        "takeaway": 14,
     },
     palette=None,
     backgrounds={
@@ -163,7 +168,28 @@ DEFAULT_TEMPLATE = TemplateSpec(
             "on": True, "w": 0.8, "h": 0.35,
             "x_from_right": 1.0, "y_from_bottom": 0.45, "align": "right",
         },
-        "content_body": {"x": 0.8, "top": 1.35, "w": 11.5, "height": 5.25, "safe_bottom": 6.7},
+        "content_body": {"x": 0.8, "top": 1.40, "w": 11.5, "height": 5.20, "safe_bottom": 6.7},
+        # Content-slide chrome (Step 7, _add_content_chrome): eyebrow/kicker
+        # above the heading, the heading's own box (distinct from
+        # title_bar.title_box — content slides no longer use that), a
+        # hairline rule beneath it, and a source-footer slot above the slide
+        # number. Tuned so eyebrow -> heading -> rule -> content_body.top
+        # stack without collision: eyebrow 0.45-0.67, heading 0.70-1.20, rule
+        # at 1.25, content_body starts 1.40 (see content_body above).
+        "chrome": {
+            "eyebrow": {"x": 0.8, "y": 0.45, "w": 11.5, "h": 0.22},
+            "heading": {"x": 0.8, "y": 0.70, "w": 11.5, "h": 0.5},
+            "rule": {"x": 0.8, "y": 1.25, "w": 11.5, "thickness_pt": 1},
+            # Step 8 — per-slide headline takeaway: rendered only when a block
+            # carries one, directly under the rule. Renderers that show it
+            # (bullets/stat_row/chart) push their own content start down by
+            # (takeaway.y + takeaway.h + 0.05) - content_body.top when present
+            # (see pptx_service._content_shift_for_takeaway); timeline's
+            # chevron row already starts at geometry.timeline.row_top (2.3in),
+            # well below this band, so it never needs the shift.
+            "takeaway": {"x": 0.8, "y": 1.32, "w": 11.5, "h": 0.3},
+            "footer": {"x": 0.8, "y": 7.05, "w": 9.0, "h": 0.3},
+        },
         "bullets": {"indent_step": 0.3, "max_level": 2, "hanging_indent": -0.25},
         "spacing": {
             "label": {"space_after": 10, "line": 1.2},
@@ -236,6 +262,12 @@ DEFAULT_TEMPLATE = TemplateSpec(
         "timeline_deliverable_label": "accent",
         "timeline_body": "text_dark",
         "timeline_footer_bg": "bg_light",
+        # content-slide chrome (Step 7)
+        "eyebrow": "text_muted",
+        "rule": "primary",
+        "footer": "text_muted",
+        # per-slide headline takeaway (Step 8)
+        "takeaway": "text_dark",
     },
     art={
         # Shared by the cover and closing slides' date line.
