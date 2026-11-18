@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams, useRouter as useNextRouter } from 'next/navigation';
 import TemplateGrid from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
 import { useAgents } from '../../hooks/useAgents';
@@ -593,6 +594,8 @@ const getDomain = (connectorName: string) => {
 };
 
 export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
+  const searchParams = useSearchParams();
+  const nextRouter = useNextRouter();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('mistral');
   const [promptText, setPromptText] = useState('');
@@ -851,6 +854,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [brandsList, setBrandsList] = useState<any[]>([]);
   const [brandsMap, setBrandsMap] = useState<Record<string, string>>({});
   const [activeProject, setActiveProject] = useState<{ id: string; title: string; brand_config_id?: string } | null>(null);
+  const [prefilledOnboarding, setPrefilledOnboarding] = useState<{ competitors: boolean; brandKit: boolean }>({ competitors: false, brandKit: false });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
@@ -942,13 +946,25 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   useEffect(() => {
-    loadProjectsAndBrands();
+    // Capture the project param once at mount — do not re-read on re-renders.
+    const projectParam = searchParams.get('project');
+
+    const init = async () => {
+      await loadProjectsAndBrands();
+      if (projectParam) {
+        await loadProjectById(projectParam);
+        // Clear the param so a refresh doesn't force-reload the same chat.
+        nextRouter.replace('/build');
+      }
+    };
+    init();
 
     const handleProjectChanged = () => {
       loadProjectsAndBrands();
     };
     window.addEventListener('projectChanged', handleProjectChanged);
     return () => window.removeEventListener('projectChanged', handleProjectChanged);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredHomeSearchAgents = catalogAgents.filter(agent =>
@@ -984,6 +1000,31 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
+    setPrefilledOnboarding({ competitors: false, brandKit: false });
+
+    // Pre-fill competitor list and brand kit from onboarding data for this brand
+    const currentBrandIdForPrefill = activeProject?.brand_config_id || savedBrandId;
+    if (currentBrandIdForPrefill) {
+      const brand = brandsList.find((b: any) => b.id === currentBrandIdForPrefill);
+      if (brand?.competitors) {
+        try {
+          const onboardingComps = JSON.parse(brand.competitors) as Array<{ name?: string; url?: string; website_url?: string }>;
+          const mapped = onboardingComps
+            .filter((c) => c && typeof c.name === 'string' && c.name.trim())
+            .map((c) => ({ brand_name: c.name!.trim(), website_url: c.url || c.website_url || '', social_media: null }));
+          if (mapped.length > 0) {
+            setCompetitors(mapped);
+            setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
+          }
+        } catch {}
+      }
+      const projWithKit = projectsList.find((p: any) => p.brand_config_id === currentBrandIdForPrefill && p.brand_kit);
+      if (projWithKit?.brand_kit) {
+        setBrandKit(projWithKit.brand_kit);
+        setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
+      }
+    }
+
     const prompt = title === 'Competition Analysis'
       ? `Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.`
       : title === 'GTM Strategy'
@@ -1005,6 +1046,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
+    setPrefilledOnboarding({ competitors: false, brandKit: false });
   };
 
   const handleNewChat = () => {
@@ -1019,6 +1061,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
+    setPrefilledOnboarding({ competitors: false, brandKit: false });
     setActiveProject(null);
     onNewChat?.();
   };
@@ -1050,8 +1093,37 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         if (proj.llm_provider) {
           setSelectedModel(proj.llm_provider);
         }
-        setCompetitors(Array.isArray(proj.competitor_details) ? proj.competitor_details : []);
-        setBrandKit(proj.brand_kit && typeof proj.brand_kit === 'object' ? proj.brand_kit : {});
+        const hasCompetitors = Array.isArray(proj.competitor_details) && proj.competitor_details.length > 0;
+        const hasBrandKit = proj.brand_kit && typeof proj.brand_kit === 'object' &&
+          (proj.brand_kit.logo_url || proj.brand_kit.colors);
+        setCompetitors(hasCompetitors ? proj.competitor_details : []);
+        setBrandKit(hasBrandKit ? proj.brand_kit : {});
+        setPrefilledOnboarding({ competitors: false, brandKit: false });
+
+        // When the form will show (no messages yet) and data is missing, fetch onboarding defaults
+        const willShowForm = !proj.messages || proj.messages.length === 0;
+        if (willShowForm && (!hasCompetitors || !hasBrandKit) && proj.brand_config_id) {
+          try {
+            const detRes = await fetch(`${apiBase}/api/projects/${proj.id}/details`, { headers });
+            if (detRes.ok) {
+              const details = await detRes.json();
+              if (!hasCompetitors && Array.isArray(details.competitors_selected) && details.competitors_selected.length > 0) {
+                const mapped = details.competitors_selected.map((c: any) => ({
+                  brand_name: c.name || '',
+                  website_url: c.website_url || '',
+                  social_media: null,
+                }));
+                setCompetitors(mapped);
+                setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
+              }
+              if (!hasBrandKit && details.brand && (details.brand.logo_url || details.brand.colors)) {
+                setBrandKit({ logo_url: details.brand.logo_url ?? null, colors: details.brand.colors ?? null });
+                setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
+              }
+            }
+          } catch {}
+        }
+
         if (proj.brand_config_id) {
           const brandName = brandsMap[proj.brand_config_id] || 'Brand Project';
           setActiveProject({
@@ -1826,9 +1898,23 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         <div className={styles.chatContainer}>
           {selectedAgent && messages.length === 0 && (
             <div className={styles.onboardingForms}>
-              <BrandKitForm brandKit={brandKit} onChange={setBrandKit} apiBase={apiBase} authToken={authToken} />
+              <BrandKitForm
+                brandKit={brandKit}
+                onChange={(kit) => { setBrandKit(kit); setPrefilledOnboarding(prev => ({ ...prev, brandKit: false })); }}
+                apiBase={apiBase}
+                authToken={authToken}
+              />
+              {prefilledOnboarding.brandKit && (
+                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
+              )}
               <div className={styles.formDivider} />
-              <CompetitorForm competitors={competitors} onChange={setCompetitors} />
+              <CompetitorForm
+                competitors={competitors}
+                onChange={(comps) => { setCompetitors(comps); setPrefilledOnboarding(prev => ({ ...prev, competitors: false })); }}
+              />
+              {prefilledOnboarding.competitors && (
+                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
+              )}
               {showQuestionnaire && agentQuestions[selectedAgent] && (
                 <>
                   <div className={styles.formDivider} />

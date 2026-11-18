@@ -20,6 +20,7 @@ class BrandConfig(Base):
     brand_slug = Column(String, nullable=True)         # Docs folder name: brand_name_id[:8]
     brand_handle = Column(String, nullable=True)       # Discovered Instagram handle
     confirmed_competitor_handles = Column(Text, nullable=True)  # JSON list of handles
+    reference_docs = Column(Text, nullable=True)        # JSON list of {ref_id, filename}
     pipeline_status = Column(String, default="pending", nullable=False)  # pending | running | complete | failed
     created_at = Column(DateTime, default=datetime.utcnow)
 

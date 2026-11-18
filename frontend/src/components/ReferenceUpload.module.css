@@ -1,0 +1,152 @@
+.wrapper {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
+  padding: 12px 16px 10px;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.subtitle {
+  font-size: 0.78rem;
+  color: #6B6560;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.counter {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #B8912E;
+  background: #FAF5EC;
+  border: 1px solid rgba(212, 168, 67, 0.3);
+  padding: 3px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Item list ─────────────────────────────── */
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #E8E2D8;
+  border-radius: 8px;
+  padding: 7px 10px;
+  box-sizing: border-box;
+}
+
+.itemIcon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.itemName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: #1A1A1A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemStatusDone {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #3E8E5A;
+  flex-shrink: 0;
+}
+
+.itemStatusFailed {
+  font-size: 0.72rem;
+  color: #C0564B;
+  flex-shrink: 0;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #E8E4DC;
+  border-top-color: #D4A843;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.removeBtn {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  color: #D4CFC7;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+.removeBtn:hover { color: #ffffff; background: #C0564B; }
+
+/* ── Upload button ─────────────────────────── */
+.addBtn {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px dashed #C8A951;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #B8912E;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.addBtn:hover { background: #FAF5EC; border-color: #B8912E; }
+
+.hiddenInput {
+  display: none;
+}
+
+/* ── Mobile ────────────────────────────────── */
+@media (max-width: 640px) {
+  .header { flex-direction: column; }
+  .counter { align-self: flex-start; }
+  .itemStatusFailed { max-width: 110px; }
+}

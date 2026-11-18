@@ -4,6 +4,7 @@ from sqlalchemy.future import select
 from typing import List, Optional
 from datetime import datetime
 import json
+import logging
 import os
 import uuid
 
@@ -13,10 +14,12 @@ from backend.models.project import Project
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, CompetitorDetail, BrandKit
 from backend.schemas.report import ReportMetadata
 from backend.services import report_service
+from backend.services.brand_theme import extract_palette_from_logo
 
 from sqlalchemy.orm import selectinload
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 MAX_COMPETITORS = 5
 
@@ -33,8 +36,9 @@ _MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024  # 2MB
 
 def _serialize_competitor_details(competitors: Optional[List[CompetitorDetail]]) -> Optional[str]:
     """Validates (max 5) and serializes competitor details to a JSON string for storage.
-    None or an empty list both mean "skip" and are stored as None."""
-    if not competitors:
+    None (field absent) → stored as None, which triggers the onboarding fallback on the report path.
+    Empty list [] → stored as "[]", meaning the user explicitly cleared competitors (no fallback)."""
+    if competitors is None:
         return None
     if len(competitors) > MAX_COMPETITORS:
         raise HTTPException(status_code=422, detail=f"At most {MAX_COMPETITORS} competitors are allowed")
@@ -68,7 +72,15 @@ async def upload_logo(file: UploadFile = File(...), current_user: User = Depends
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    return {"logo_url": f"/static/uploads/logos/{filename}"}
+    logo_url = f"/static/uploads/logos/{filename}"
+    response = {"logo_url": logo_url}
+    try:
+        palette = extract_palette_from_logo(logo_url)
+        if palette:
+            response["palette"] = palette
+    except Exception:
+        logger.warning("Palette extraction failed for %s", logo_url, exc_info=True)
+    return response
 
 
 @router.post("/", response_model=ProjectResponse)
@@ -156,20 +168,164 @@ async def get_project_reports(project_id: str, db: AsyncSession = Depends(get_db
 
     return await report_service.list_reports(db, project_id, current_user.id)
 
+@router.get("/{project_id}/details")
+async def get_project_details(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from backend.models.brand import BrandConfig
+
+    result = await db.execute(
+        select(Project).where(Project.id == project_id, Project.user_id == current_user.id)
+    )
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    brand_result = await db.execute(
+        select(BrandConfig).where(BrandConfig.id == project.brand_config_id)
+    )
+    brand = brand_result.scalars().first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    logo_url = None
+    colors = None
+    if project.brand_kit:
+        try:
+            bk = json.loads(project.brand_kit)
+            logo_url = bk.get("logo_url")
+            colors = bk.get("colors")
+        except Exception:
+            pass
+    # Fallback: look for brand_kit from any sibling project when this one has none
+    if not logo_url and not colors and project.brand_config_id:
+        fb_result = await db.execute(
+            select(Project.brand_kit)
+            .where(
+                Project.brand_config_id == project.brand_config_id,
+                Project.user_id == current_user.id,
+                Project.brand_kit.isnot(None),
+                Project.id != project.id,
+            )
+            .order_by(Project.created_at.asc())
+            .limit(1)
+        )
+        fb_raw = fb_result.scalar_one_or_none()
+        if fb_raw:
+            try:
+                fb_bk = json.loads(fb_raw)
+                logo_url = fb_bk.get("logo_url")
+                colors = fb_bk.get("colors")
+            except Exception:
+                pass
+
+    competitors_selected = []
+    if brand.competitors:
+        try:
+            for c in json.loads(brand.competitors):
+                competitors_selected.append({
+                    "name": c.get("name", ""),
+                    "website_url": c.get("url") or c.get("website_url") or "",
+                })
+        except Exception:
+            pass
+
+    competitors_used = []
+    if brand.brand_slug:
+        _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        kb_path = os.path.join(_root, "KNOWLEDGE_BASE", f"{brand.brand_slug}_KB.json")
+        # Migration fallback: new slugs are {BRAND_SLUG}_{project_id[:8]}; if the new KB
+        # doesn't exist, try the brand-name-only slug for projects created before the fix.
+        if not os.path.exists(kb_path):
+            parts = brand.brand_slug.rsplit('_', 1)
+            if len(parts) == 2 and len(parts[1]) == 8:
+                fallback = os.path.join(_root, "KNOWLEDGE_BASE", f"{parts[0]}_KB.json")
+                if os.path.exists(fallback):
+                    kb_path = fallback
+        if os.path.exists(kb_path):
+            try:
+                with open(kb_path, "r", encoding="utf-8") as f:
+                    kb = json.load(f)
+                for c in kb.get("competitors", []):
+                    competitors_used.append({
+                        "name": c.get("NAME", ""),
+                        "website_url": c.get("URL", ""),
+                    })
+            except Exception:
+                pass
+
+    last_updated = None
+    if project.last_active_at:
+        last_updated = project.last_active_at.isoformat()
+    elif project.created_at:
+        last_updated = project.created_at.isoformat()
+
+    # Collect all chat projects for this brand, ordered newest first
+    chats_result = await db.execute(
+        select(Project)
+        .options(selectinload(Project.messages))
+        .where(Project.brand_config_id == project.brand_config_id, Project.user_id == current_user.id)
+        .order_by(Project.created_at.desc())
+    )
+    all_chats = chats_result.scalars().all()
+    chats = []
+    for c in all_chats:
+        msgs = c.messages or []
+        last_msg_at = max((m.created_at for m in msgs), default=None)
+        chats.append({
+            "id": c.id,
+            "title": c.title,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+            "last_message_at": last_msg_at.isoformat() if last_msg_at else None,
+            "message_count": len(msgs),
+        })
+
+    return {
+        "brand_config_id": project.brand_config_id,
+        "brand": {
+            "name": brand.brand_name,
+            "website_url": brand.website_url,
+            "category": brand.category,
+            "region": None,
+            "brand_context": brand.brand_context,
+            "logo_url": logo_url,
+            "colors": colors,
+        },
+        "competitors_selected": competitors_selected,
+        "competitors_used": competitors_used,
+        "chats": chats,
+        "status": brand.pipeline_status,
+        "created_at": brand.created_at.isoformat() if brand.created_at else None,
+        "last_updated": last_updated,
+    }
+
+
 @router.delete("/{project_id}")
 async def delete_project(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy import delete
     from backend.models.message import Message
+    from backend.models.report import Report
+    from backend.models.report_section import ReportSection
+    from backend.models.report_share import ReportShare
 
     result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # 1. Delete all messages associated with this project from database
+    # 1. Clean up report child rows that have no ORM cascade (ReportSection, ReportShare)
+    report_rows = await db.execute(select(Report.id).where(Report.project_id == project_id))
+    report_ids = [r[0] for r in report_rows.all()]
+    if report_ids:
+        await db.execute(delete(ReportSection).where(ReportSection.report_id.in_(report_ids)))
+        await db.execute(delete(ReportShare).where(ReportShare.report_id.in_(report_ids)))
+
+    # 2. Delete all messages associated with this project
     await db.execute(delete(Message).where(Message.project_id == project_id))
 
-    # 2. Delete the project record itself from database
+    # 3. Delete the project (ORM cascade removes Report rows via Project.reports relationship)
     await db.delete(project)
     await db.commit()
 

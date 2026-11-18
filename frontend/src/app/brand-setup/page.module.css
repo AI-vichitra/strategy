@@ -358,6 +358,39 @@
   box-shadow: 0 8px 24px rgba(45, 42, 38, 0.2);
 }
 
+/* Research Brand button (outlined secondary variant of continueBtn's tone) */
+.contextLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.contextLabelRow .label {
+  margin-bottom: 0;
+}
+
+.researchBtn {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1.5px solid #D4A843;
+  color: #B8912E;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.researchBtn:hover:not(:disabled) {
+  background: #FFFBF0;
+  border-color: #B8912E;
+}
+.researchBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Product/Service Toggle */
 .toggleGroup {
   display: flex;
@@ -607,19 +640,25 @@
 /* Candidate Grid & Card */
 .candidateGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   margin-bottom: 32px;
+}
+@media (max-width: 640px) {
+  .candidateGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .candidateCard {
   background: #ffffff;
   border: 1.5px solid #E8E4DC;
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 64px;
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
   position: relative;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -633,16 +672,15 @@
   background-color: #FAF8F5;
   box-shadow: 0 8px 24px rgba(212, 168, 67, 0.06);
 }
-
 .checkboxInput {
-  margin-top: 4px;
   accent-color: #D4A843;
   width: 16px;
   height: 16px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.candidateDetails {
+.candidateCompactBody {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -650,20 +688,26 @@
   gap: 4px;
 }
 
-.candidateHeader {
+.candidateCompactTop {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.candidateCompactBottom {
+  display: flex;
+  align-items: center;
 }
 
 .candidateName {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #1A1A1A;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 55%;
 }
 
 .candidateSourceBadge {
@@ -682,6 +726,15 @@
 .badgeTavily {
   background: #FAF8F5;
   color: #6B6560;
+  border: 1px solid #E8E4DC;
+}
+.badgeVerified {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+}
+.badgeUnverified {
+  background: #FAF8F5;
+  color: #A39E97;
   border: 1px solid #E8E4DC;
 }
 
@@ -755,6 +808,73 @@
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* discovery_status messaging (hybrid resolver path) */
+.discoveryStatusNote {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.discoveryWarningNote {
+  background: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid #f59e0b;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.retryDiscoveryBtn {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.retryDiscoveryBtn:hover {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+/* Min-competitors helper (confirm step) */
+.minCompetitorsHelper {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: -16px 0 24px 0;
+  transition: color 0.2s, background 0.2s;
+}
+.minCompetitorsHelperFlash {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid #f59e0b;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+/* Disabled states: max-5 cap / min-3 gate */
+.continueBtn:disabled,
+.addBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.continueBtn:disabled:hover {
+  transform: none;
+  box-shadow: 0 6px 16px rgba(45, 42, 38, 0.15);
+}
+.addBtn:disabled:hover {
+  background: white;
+  color: #4A4540;
 }
 
 /* Empty suggestions state */

@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KISSAN - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>KISSAN</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://kissanfood.com" target="_blank" class="meta-url">https://kissanfood.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Kissan, owned by Hindustan Unilever Limited (HUL), is a prominent brand in India's FMCG sector, specializing in jams, ketchups, squashes, and spreads. Established in 1935, Kissan was acquired by UB Group in 1950 and later by Brooke Bond in 1993 before becoming part of HUL in 1994. The brand is recognized as "India’s No. 1 Jams and Preserves brand" and "India’s No. 1 Ketchup brand" according to Euromonitor International Limited. Kissan's strategy focuses on glocalization, adapting its products to meet local tastes while maintaining global convenience. This includes creating chutneys with a coarse texture akin to traditional Indian preparations and introducing region-specific flavors. The brand also emphasizes family-oriented marketing, promoting its products as essential for daily meals and school tiffins. Kissan's pricing model is competitive, aiming to provide value-added processed food items to a broad consumer base.. Scribd  # Kissan Brand Overview and History  The document provides a history and analysis of the Kissan brand owned by Hindustan Unilever Limited (HUL) in India. It discusses how Kissan started as a food brand acquired by Brooke Bond in 1993 and later separated to come under HUL in 1994. The Kissan range initially included products like jam, ketchup, squashes and ready-to-drink items targeted at mothers and children.<br/><br/><strong>Product & Service Portfolio:</strong> Kissan, a popular food brand under Hindustan Unilever Limited, offers a variety of products primarily in three categories: jams, ketchups, and squashes. The jams include flavors like mixed fruit, mango, pineapple, and orange marmalade. The ketchups range from Kissan Fresh tomato ketchup to sweet and spicy sauce, and chilli tomato ketchup. Squashes offer a wider range of flavors such as mixed fruit, mango, orange, pineapple, lemon, and grape. The products are available in various SKUs like pouches, bottles, and squeezes, with packaging designed for visibility and ease of use. Kissan sources ingredients from farms across India, emphasizing sustainable sourcing and support for small farmers. The brand also extends to international markets, offering products like authentic Indian spices, pure ghee, exotic oils, gourmet cooking sauces, and exotic fruit jams.. Kissan is a popular food brand which offers jams, ketchups etc across India. Basically, Kissan has products in three categories as a part of its marketing mix, i.e., Jams, ketchup and squashes. The squash is relatively new category as compared to jam and ketchup categories which have wide range of products available. Under the Ketchup category different flavor variations are available such as Kissan Fresh tomato ketchup, sweet and spicy sauce, chilly tomato sauce etc. while under jams various fruit flavors are available such as mixed fruit, mango, pineapple, orange marmalade etc.<br/><br/><strong>Recent Developments & News:</strong> Kissan, a prominent FMCG & Consumer Goods company, is expanding its role at the dining table by broadening its portfolio from traditional ketchup and jam to new flavour experiences, including chutneys. The company's latest campaign, "Ketchup Paglu ke Daring Pairings," celebrates consumer creativity in pairing ketchup with various foods. Additionally, Hindustan Unilever Limited is launching a new fruit-based drink under the Kissan brand to cater to the health-conscious Indian consumer. Kissan Shopee, founded by entrepreneur Justin Joseph, aims to connect Indian farmers and artisans directly with domestic and global markets, ensuring fair pricing and product quality. The company is also involved in initiatives like SLCM providing loans to the agri community against stored agriculture output. The sources do not provide specific details on the financial performance or market share of Kissan.. Title: Kissan - Latest kissan , Information & Updates - Retail -ET Retail E-commerce Food & Entertainment CDIT Digital Covers Apparel & Fashion Podcasts Health & Beauty Home & Decor More. <em> rural demand down hul yet to see signs of revival in near future. ### The maker of Kissan ketchup and Ponds soap and a bellwether for consumer sentiment in India, said it hopes the recent attempt by the government to stimulate the economy will help boost rural income and demand. </em> ### Hershey puts Indian soy milk on global stage. <em> ### Hindustan Unilever looking for buyers for its atta, rice, salt business. </em> ### Western food chains like Burger King, Pizza Hut tie-up with big brands to step up footfalls.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> The key competitors and market rivals of the FMCG & Consumer Goods company Kissan include Pioneer Foods, Summer Fresh, Blue Monkey Tropical, Hain Celestial, Hindustan Unilever, Organic Traditions, and Real Mushrooms. Pioneer Foods is a multicategory food and beverage company based in South Africa, while Summer Fresh and Blue Monkey Tropical are brands based in Canada offering dips, dressings, hummus, snacks, and meals. Hain Celestial is a multi-category food and beverage company based in the United States. Hindustan Unilever, a major player in the Indian FMCG sector, acquired Kissan in 1993. Organic Traditions and Real Mushrooms are also Canadian brands, focusing on multi-category food and beverage products and mushroom powder & extracts respectively. These companies compete with Kissan across various domains within the food and beverage industry.. | 8th | Logo for Pioneer Foods  Pioneer Foods 1997, Cape Town  (South Africa), Acquired | Multicategory food and beverage company  Identity Partners, Zeder  & 2 others | 39/100 | | 9th | Logo for Summer Fresh  Summer Fresh 1991, Vaughan  (Canada), Unfunded | Brand of dips, dressings, hummus, snacks, and meals  - | 38/100 | | 10th | Logo for Blue Monkey Tropical  Blue Monkey Tropical 2010, Vancouver  (Canada), Late Stage | Multi-category food & beverages brand  Boyne Capital, Fifth Ocean Capital | 38/100 | | 93rd | Logo for Kissan  Kissan 1974, Scarborough  (Canada), Unfunded | Grocery and staples brand  - | 16/100 | [...] | 4th | Logo for Hain Celestial  Hain Celestial 1932, New York City  (United States), Public | Multi-category food and beverage company  Triodos Investment Management, Wells Fargo ... & 5 others | 55/100 | | 5th | Logo for Hindustan Unilever  Hindustan Unilever 1933, Mumbai  (India), Public | Manufacturer of FMCG, packaged food, and consumer goods  Life Insurance Corporation of India | 53/100 | | 6th | Logo for Organic Traditions  Organic Traditions 2000, Toronto  (Canada), Series A | Multi-category food & beverage brand | $10.5M  42/100 | | 7th | Logo for Real Mushrooms  Real Mushrooms 2015, Calgary  (Canada), Unfunded | Internet first brand of mushroom powder & extracts  - | 41/100 | [...] Logo for RJ Corp Logo for Parle Products Logo for Premier Foods Logo for Hain Celestial Logo for Hindustan Unilever Logo for Organic Traditions Logo for Real Mushrooms Logo for Pioneer Foods Logo for Summer Fresh Logo for Blue Monkey Tropical Logo for Kissan_1528096362448.png?devicePixelRatio=2&height=30&width=30) lock  ## Kissan's Investments and acquisitions  ## Reports related to Kissan  An image depicting Food & Beverage Products - Sector Report  Food & Beverage Products - Sector Report  ## FAQs about Kissan  Accel Partners Partech IN-Q-TEL - US Fujitsu Tenity Stanford. Bond, Bru, Knorr, Kissan, Kwality Walls and Pureit. Nestle India is a subsidiary of Nestle S.A. consumer insights and benchmarks Kissan against the spreads industry overall and their competitors.. PESTLE analysis is a valuable framework used by companies like Kissan for examining the broader macro-environmental factors—Political, Economic, Social, Technological, Legal, and Environmental—that influence business operations.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/doc/75347638/Kissan-Brand-Dossiure" target="_blank">Kissan Brand Overview and History | PDF | Survey Methodology | Retail</a></h3>
+                    <div class="result-url">https://www.scribd.com/doc/75347638/Kissan-Brand-Dossiure</div>
+                    <div class="result-content">Scribd
+
+ Kissan Brand Overview and History
+
+The document provides a history and analysis of the Kissan brand owned by Hindustan Unilever Limited (HUL) in India. It discusses how Kissan started as a food brand acquired by Brooke Bond in 1993 and later separated to come under HUL in 1994. The Kissan range initially included products like jam, ketchup, squashes and ready-to-drink items targeted at mothers and children. Over time, Kissan expanded its product portfolio and used various advertising, promotion, and segmentation strategies to market its products and tackle competition in the growing food market in India. Currently, HUL is focusing on growing its foods portfolio under Kissan with value-added processed food items.
+
+ Kissan Brand Overview and History [...]  Kissan Brand Overview and History
+
+Kissan Brand Overview and History
+
+AI-enhanced title and description
+
+ Uploaded by
+
+No thumbnails available
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play
+
+ About
+
+ Legal
+
+ Support
+
+ Social
+
+ Get our free apps
+
+Scribd - Download on the App Store
+Scribd - Get it on Google Play</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.kissan.in/home.html" target="_blank">Ketchup &amp; Sauces, Jam, Peanut Butter, Squash | Kissan | Hindustan Unilever</a></h3>
+                    <div class="result-url">https://www.kissan.in/home.html</div>
+                    <div class="result-content">Skip to:
+
+Main content
+
+Kissan Logo
+
+BUY ONLINE
+
+ Ponds Image
+ Kissan Image
+ Kissan Image
+ Kisaan Image
+
+1. Slide one
+2. Slide Two
+3. Slide Three
+4. Slide Four
+
+ OUR STORY
+
+ OUR STORY
+
+Kissan Image
+
+During the British era, trains passing through Punjab made a stop at a processing unit where farmers sold freshly picked fruits. Locals called this spot Kissan and from there on it became a household name. The UB group, under the Late Vittal Mallya then, acquired Kissan from Mitchell Bros. in the year 1950. In 1993, Kissan was acquired by Brooke Bond India and is now an integral part of Hindustan Unilever Limited (HUL).
+
+READ FULL STORY [...] READ FULL STORY
+
+“India&#x27;s No. 1 Jams and Preserves brand”  
+ “Source: Euromonitor International Limited; Cooking Ingredients and Meals 2026ed, Retail Value Sales (RSP), 2025 data”
+
+Kissan “India’s No. 1 Ketchup brand”  
+ &quot;Source: Euromonitor International Limited; Cooking Ingredients and Meals 2026ed, Retail Value Sales (RSP), 2025 data”
+
+ RECIPES
+
+ Aloo Methi Roll 20 Minutes  recipe
+
+   Aloo Methi Roll
+
+  Fill your kid’s next tiffin with this quick and tasty Aloo roll.
+ Kissan Peanut Butter Cookies 40 Minutes  recipe
+
+   Peanut Butter Cookies
+
+  Nothing like the smell of some freshly baked Peanut Butter Cookies for a quick protein-filled snack!
+ Kissan Quick No-Bake Cookies 5 Minutes  recipe
+
+   Quick No-Bake Cookies [...]  Quick No-Bake Cookies
+
+  Always keep Kissan No-Bake Cookies handy for an instant energy fix.
+ Kissan Oats &amp; Peanut Butter Bar 15 Minutes  recipe
+
+   Oats &amp; Peanut Butter Bar
+
+  Looking for a snack packed with Fiber and Protein?
+ Whole wheat &amp; oats Pancake with Peanut Butter 20 Minutes  recipe
+
+   Whole Wheat &amp; Oats Peanut Butter Pancake
+
+  This popular Pancake breakfast recipe has a Peanut Butter twist to it.
+ Caramelized bananas with peanut butter on toast 8 Minutes  recipe
+
+   Caramelized Bananas with Peanut Butter on Toast
+
+  Start your morning with a crispy toast topped with the delicious combination of Peanut Butter and Caramelized Bananas.
+
+recipe image
+
+View all recipes</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.linkedin.com/posts/jenil-shah-70418623b_marketingstrategy-fmcg-hul-activity-7411265370919006208-Fh_M" target="_blank">Kissan&#x27;s Glocalization Strategy in Indian FMCG Market | Jenil Shah posted on the topic | LinkedIn</a></h3>
+                    <div class="result-url">https://www.linkedin.com/posts/jenil-shah-70418623b_marketingstrategy-fmcg-hul-activity-7411265370919006208-Fh_M</div>
+                    <div class="result-content">Can a Multi-National Brand beat the &quot;Silbatta&quot;? 🪨 How does a heritage brand like Kissan (HUL), known for Western jams and ketchups, win over the Indian household that swears by fresh, homemade chutney? It’s a masterclass in “Glocalization”🌍. Kissan didn’t just launch another sauce; they decoded the Indian palate. Here are 3 key takeaways from their entry into the traditional chutney market: 1️⃣ Texture is a flavour: In India, chutney isn&#x27;t just about taste- it’s about the &quot;coarseness.&quot; Kissan focused on a Silbatta-like texture, moving away from the smooth, artificial pastes that failed in the past🥣 . 2️⃣ Solving the tiffin struggle: By positioning chutney as a daily companion for school tiffins, they turned a &quot;side dish&quot; into an essential solution for busy parents🥗. 3️⃣ Hyper local [...] an essential solution for busy parents🥗. 3️⃣ Hyper local Innovation: From Chatpati hari chutney to Chilli peanut thecha, they are moving beyond general flavors to regional favorites, proving that they understand the diversity of the Indian kitchen🌶️. Success in the Indian FMCG sector isn&#x27;t just about distribution; it’s about respecting local traditions while providing modern convenience. Do you think packaged traditional foods can ever truly replace the &quot;homemade&quot; experience, or will they always remain a &#x27;Plan B&#x27; for convenience? MarketingStrategy FMCG HUL Kissan Glocalization IndianMarket BusinessCaseStudy [...]  Kissan&#x27;s Glocalization Strategy in Indian FMCG Market
+
+This title was summarized by AI from the post below.
+
+Jenil Shah
+
+ Report this post</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.markhub24.com/post/kissan-s-family-oriented-brand-strategy-in-packaged-foods" target="_blank">Kissan&#x27;s Family-Oriented Brand Strategy in Packaged Foods</a></h3>
+                    <div class="result-url">https://www.markhub24.com/post/kissan-s-family-oriented-brand-strategy-in-packaged-foods</div>
+                    <div class="result-content">Kissan competes in India&#x27;s packaged ketchup, sauces, jams and spreads categories. The brand&#x27;s own history, as told on kissan.in, begins in</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/473971402/MM-Assignment" target="_blank">Kissan Brand Analysis and Market Strategy | PDF | Pricing - Scribd</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/473971402/MM-Assignment</div>
+                    <div class="result-content">Kissan is a food brand owned by HUL that primarily offers jams, ketchup, and squashes. It has been operating in India since 1935.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mbaskool.com/marketing-mix/products/17337-kissan.html" target="_blank">Kissan Marketing Mix (4Ps) &amp; Marketing Strategy | MBA Skool</a></h3>
+                    <div class="result-url">https://www.mbaskool.com/marketing-mix/products/17337-kissan.html</div>
+                    <div class="result-content">Kissan is a popular food brand which offers jams, ketchups etc across India. Basically, Kissan has products in three categories as a part of its marketing mix, i.e., Jams, ketchup and squashes. The squash is relatively new category as compared to jam and ketchup categories which have wide range of products available. Under the Ketchup category different flavor variations are available such as Kissan Fresh tomato ketchup, sweet and spicy sauce, chilly tomato sauce etc. while under jams various fruit flavors are available such as mixed fruit, mango, pineapple, orange marmalade etc. The squashes have much wider range of flavors available as compared to other two categories. Thus, Kissan’s primary focus in products has been on wider portfolio in terms of flavors available to the consumer. The [...] in terms of flavors available to the consumer. The products are available in variety of SKUs such as pouch, bottle and sqeezo to suit the consumer needs and the packaging is done such that the customers can see the product inside the storage container as well as have a wide neck for ease of taking the product out of the container. [...] About Kissan:
+
+Kissan was established as a jam brand in India for the British settlers by the Mitchell brothers of UK. Later in 1950, the United Breweries(UB) group, acquired Kissan from Mitchell brothers. In 1993, Kissan was then acquired by Hindustan Unilever Limited under which it continues to grow in the jam and ketchup category under HUL’s processed food segment which makes up 3% of the total revenue of HUL.
+
+While Kissan is a market leader in the jam and ketchup segment in India, it faces tough competition from Nestle Maggi Tomato ketchup and other players in the ketchup category. Further, this brand is also marketed internationally to Indian diaspora by HUL’s subsidiary Unilever India Exports.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.switchtoindia.in/brand/kissan" target="_blank">Is Kissan Indian? Owner &amp; Verified Indian Alternatives | Switch To India</a></h3>
+                    <div class="result-url">https://www.switchtoindia.in/brand/kissan</div>
+                    <div class="result-content">88 own.Mapro
+
+Mapro
+
+Syrups &amp; Concentrates
+
+100 own.Ching’s Secret
+
+Ching’s Secret
+
+Sauces &amp; Condiments
+
+100 own.
+
+Compare Kissan head-to-head
+
+Yoga Bar
+
+Kissanvs Yoga Bar
+
+SpreadsPintola
+
+Kissanvs Pintola
+
+SpreadsCampco
+
+Kissanvs Campco
+
+SpreadsAlpino
+
+Kissanvs Alpino
+
+Spreads
+
+Also in market · 6 foreign brands
+
+Hershey
+
+Hershey
+
+Spreads
+
+13Bonne Maman
+
+Bonne Maman
+
+Spreads
+
+0Smuckers
+
+Smuckers
+
+Spreads
+
+0Hellmann&#x27;s
+
+Hellmann&#x27;s
+
+Sauces &amp; Condiments
+
+44Knorr
+
+Knorr
+
+Sauces &amp; Condiments
+
+44Del Monte
+
+Del Monte
+
+Sauces &amp; Condiments
+
+0
+
+Products
+
+ Products under Kissan
+
+Sauces &amp; Condiments3 products
+
+K
+
+Kissan Tomato Ketchup
+
+Sauces &amp; Condiments
+
+Mixed
+
+K
+
+Kissan Official Range
+
+Sauces &amp; Condiments
+
+Mixed
+
+K
+
+Kissan Tomato Ketchup 500g
+
+Sauces &amp; Condiments
+
+Mixed
+
+Spreads2 products
+
+K [...] Sauces &amp; Condiments
+
+Mixed
+
+Spreads2 products
+
+K
+
+Kissan Jam
+
+Spreads
+
+Mixed
+
+K
+
+Kissan Mixed Fruit Jam 500g
+
+Spreads
+
+Mixed
+
+Syrups &amp; Concentrates1 products
+
+K
+
+Kissan Juicy Orange Squash
+
+Syrups &amp; Concentrates
+
+Mixed
+
+Comparisons
+
+ Head-to-head ownership comparisons
+
+PatanjaliVSKissan
+
+Ownership comparisonKissanVSMapro
+
+Ownership comparisonAmulVSKissan
+
+Ownership comparison
+
+Same parent
+
+ Other brands owned by Unilever PLC
+
+9brandsin the portfolio
+
+When you buy any of these, the same parent benefits. Spotting portfolio overlap is one of the biggest reasons people switch.
+
+Active Wheel 2 in 1
+
+Active Wheel 2 in 1
+
+Foreign-controlled· score 44Axe
+
+Axe
+
+Foreign-controlled· score 44Boost
+
+Boost
+
+Foreign-controlled· score 44Brooke Bond
+
+Brooke Bond
+
+Foreign-controlled· score 44Bru
+
+Bru</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.kissan.in/our-story.html" target="_blank">Kissan Story: Heritage, Farmers, Sustainable Sourcing And Food Innovation | Kissan | Hindustan Unilever</a></h3>
+                    <div class="result-url">https://www.kissan.in/our-story.html</div>
+                    <div class="result-content">Not just Ketchup &amp; Sauces, all our products - Jam, Peanut Butter, Squash are made with ingredients sourced from farms across India. Oranges from Nagpur, Lemons from the Himalayan foothills, Pineapples from Kerala, Grapes from Karnataka and Peanuts from Gujarat. The brand Kissan is because of the dedicated Kisans of India. Our commitment is to stand by them. [...] Kissan’s story of pioneering innovation began with the launch of new formats of food, such as canned fruits and vegetables, baked beans, and the like. From there onwards, the journey has been focusing primarily on enabling small farmers to produce quality sourced ingredients. At Kissan, we keep the farmer&#x27;s interest in mind along every step of the way. In 2019, 76% of Tomatoes used in Kissan ketchup were from sustainable sources. The Public-Private Partnership (PPP) project, which began in 2012 between HUL and Maharashtra Government for sustainable sourcing of Tomatoes, became self-sustaining in 2015.
+
+Kissan Old Compilation
+
+Kissan Old Compilation</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.kissan.ca" target="_blank">Kissan International - Authentic Indian Spices, Pure Ghee, Oils &amp; More</a></h3>
+                    <div class="result-url">https://www.kissan.ca</div>
+                    <div class="result-content">Signature Spices · Premium Ghee · Exotic Oils · Gourmet Cooking Sauces · Dipping Sauces · Exotic Fruit Jams · Authentic Cooking Pastes · Vivid Food Colours.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.slideshare.net/slideshow/kissan-ketchup-pgp30093secb-51975043/51975043" target="_blank">Kissan ketchup_brand extension | PPTX</a></h3>
+                    <div class="result-url">https://www.slideshare.net/slideshow/kissan-ketchup-pgp30093secb-51975043/51975043</div>
+                    <div class="result-content">Sameer Mathur, profile picture
+
+ Kissan ketchup\_brand extension
+
+Kissan was introduced in India in 1935 and was acquired by HUL in 1993. It has since become the leading brand in jams and ketchup in India. Kissan offers various products like jams, ketchup, squashes and juices. It has a strong brand recognition due to its early start and association with Kissan jams. HUL focuses on advertising of Kissan jams which helps other Kissan products. Kissan faces competition from other brands like Maggi and Heinz but maintains the leading market share through variety of flavors, quality ingredients and distribution network. [...] 2002
+•HUL entered into Ayurvedic
+health &amp; beauty centre
+category with the Ayush
+product range n Ayush Therapy
+Centres
+2004
+• HUL launched ‘Pureit’ water
+purifier
+2012
+•The Customer Insight &amp;
+Innovation Centre was
+inaugurated at the HUL campus
+at Andheri, Mumbai
+ 
+Hindustan Unilever Ltd.
+2012
+Rs228.0
+billion
+2013
+Rs.
+258.1
+billion
+2014
+Rs.
+280.1
+billion 2012
+Rs26.9
+billion
+2013
+Rs. 37.9
+billion
+2014
+Rs. 38.6
+billion
+Net sales Net Profit
+ 
+Kissan Product Categories
+Kissan
+Jams
+Mixed Fruit
+Mango
+Pineapple
+Orange Marmalade
+Ketchups
+Fresh Tomato
+No onion No garlic
+Sweet and spicy
+Chilli tomato
+Chatakdhar
+Squashes
+MixedFruit
+Mango
+Orange
+Pineapple
+Lemon
+Grape
+Lime Juice
+cordial
+ 
+Kissan Products
+ 
+![Kissan Brand Extension
+ Kissan Jam never had any national competiton. [...] every single product and
+segmentliberalisation
+1993
+•HUL acquired Kissan from the
+UB Group
+2001
+•HUL launched a new project
+shakti
+2002
+•HUL entered into Ayurvedic
+health &amp; beauty centre
+category with the Ayush
+product range n Ayush Therapy
+Centres
+2004
+• HUL launched ‘Pureit’ water
+purifier
+2012
+•The Customer Insight &amp;
+Innovation Centre was
+inaugurated at the HUL campus
+at Andheri, Mumbai
+ 
+Hindustan Unilever Ltd.
+2012
+Rs228.0
+billion
+2013
+Rs.
+258.1
+billion
+2014
+Rs.
+280.1
+billion 2012
+Rs26.9
+billion
+2013
+Rs. 37.9
+billion
+2014
+Rs. 38.6
+billion
+Net sales Net Profit
+ 
+Kissan Product Categories
+Kissan
+Jams
+Mixed Fruit
+Mango
+Pineapple
+Orange Marmalade
+Ketchups
+Fresh Tomato
+No onion No garlic
+Sweet and spicy
+Chilli tomato
+Chatakdhar
+Squashes
+MixedFruit
+Mango
+Orange
+Pineapple
+Lemon
+Grape</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://retail.economictimes.indiatimes.com/tag/kissan" target="_blank">Kissan - Latest kissan , Information &amp; Updates - Retail -ET Retail</a></h3>
+                    <div class="result-url">https://retail.economictimes.indiatimes.com/tag/kissan</div>
+                    <div class="result-content">Title: Kissan - Latest kissan , Information &amp; Updates - Retail -ET Retail
+E-commerce Food &amp; Entertainment CDIT Digital Covers Apparel &amp; Fashion Podcasts Health &amp; Beauty Home &amp; Decor More.  KISSAN. * rural demand down hul yet to see signs of revival in near future.  The maker of Kissan ketchup and Ponds soap and a bellwether for consumer sentiment in India, said it hopes the recent attempt by the government to stimulate the economy will help boost rural income and demand. *  Hershey puts Indian soy milk on global stage. *  Hindustan Unilever looking for buyers for its atta, rice, salt business. *  Western food chains like Burger King, Pizza Hut tie-up with big brands to step up footfalls. *  Despite Concerns, How Fairness Creams and Packaged Foods Keep Selling in India? *  Pizza Hut and Kissan Ketchup jointly marketing a new ketchup and pizza brand &#x27;Twist&#x27;. *  HUL food business more relevant now: Geetu Verma, ED, Foods &amp; Refreshment. *  FieldFresh aims to take Del Monte’s Italian condiments to Indian homes. *  The Kissan story: From &#x27;appling&#x27; to sapling.  Join the community of 2M+ industry professionals.  Subscribe to our Daily Newsletter. By continuing you agree to our Privacy Policy &amp; Terms &amp; Conditions. Download ETRetail App for Realtime updates.  Download ETRetail App for Realtime updates of content you follow. Get updates on your preferred social platform. Follow us for the latest news, insider access to events and more.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.hul.co.in/news/news-search/2026/kissan-is-expanding-its-role-at-the-dining-table" target="_blank">Kissan is expanding its role at the dining table | Unilever</a></h3>
+                    <div class="result-url">https://www.hul.co.in/news/news-search/2026/kissan-is-expanding-its-role-at-the-dining-table</div>
+                    <div class="result-content">Reimagining ketchup for a new generation
+
+Kissan&#x27;s latest ketchup campaign, Ketchup Paglu ke Daring Pairings, celebrates consumers who see ketchup as more than a side accompaniment.
+
+For these enthusiasts, ketchup is part of the meal itself, paired with foods ranging from traditional snacks to everyday staples.
+
+The campaign reflects an important consumer truth where people are open to experimentation, creating new flavour combinations and making food experiences more personal.
+
+Rather than prescribing how ketchup should be used, Kissan is celebrating the creativity consumers already bring to their plates.
+
+ Entering a category Indians already love
+
+While experimentation drives ketchup consumption, chutney occupies a different place in Indian food culture. [...] Skip to content 
+
+What is a theme? (Opens in new window)
+
+Hindustan Unilever Limited Change location
+
+Unilever logo - go to homepage
+
+ Kissan is expanding its role at the dining table
+
+Published:
+
+Inspired by a simple consumer truth - Indians love customising their food - Kissan is broadening its portfolio from ketchup and jam to new flavour experiences, including chutneys.
+
+ A simple insight is shaping Kissan&#x27;s next chapter
+
+Most Indians do not eat food exactly as it is served.
+
+A spoonful of chutney. A dash of ketchup. A favourite accompaniment that makes a familiar meal more enjoyable. [...] As Indian consumers seek variety, convenience and new taste experiences, Kissan is expanding its portfolio to remain relevant across more meal moments.
+
+ Frequently asked questions
+
+  What is the central idea behind Kissan&#x27;s transformation?
+
+  Kissan is expanding beyond its legacy association with ketchup and jam to become a broader flavour companion for everyday meals. The transformation is rooted in how Indian consumers personalise food through accompaniments, pairings and new flavour combinations.
+  Who is the Chatora?</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://m.economictimes.com/topic/kissan" target="_blank">kissan: Latest News &amp; Videos, Photos about kissan | The Economic Times - Page 1</a></h3>
+                    <div class="result-url">https://m.economictimes.com/topic/kissan</div>
+                    <div class="result-content">Title: kissan: Latest News &amp; Videos, Photos about kissan | The Economic Times - Page 1
+ KISSAN. The official kickoff of the Q4 earnings season happens when a large IT company announces its results, although the quarter’s business updates have already started to roll in. Now, remember this: The Gulf war has affected every business in every country in the world, but the Q4 results will not entirely reflect its impact, as it escalated only in March. It is the Q1 FY27 results that will fully account for the spiked oil prices, the currency fluctuations, and, of course, the disruption in global supply chains. But, as they say, there is never a perfect time to invest; investing is a journey that one has to manage. The probability is high that the earnings of a large majority of sectors will suffer because of the Gulf war. For instance, sectors where natural gas is a key input were taking a hit in the very first days of the war itself. As the war continues, there are clear indications that gas supplies will remain disrupted for some time to come. India faces a potential squeeze as the war in Iran threatens shipments of rice and other agricultural commodities. Launched by agricultural AI startup Kissan AI’s founder Pratik Desai last month, the large language model is named after Kamadhenu, a divine bovine-goddess described in Hinduism as the mother of all cows and is trained on high-quality conversational datasets, specially focused on Indian agriculture practices. FMCG distributors to boycott HUL products in Maharashtra, starting with Taj Mahal Tea. HUL will sell a ketchup with the new brand, while Pizza Hut will add the brand to its menu in the form of a new hot and spicy pizza. SLCM will now provide loans to the entire agri community against their agriculture output stored at the company&#x27;s warehouses through Kissan Dhan. Hindustan Unilever will soon launch its first fruit-based drink under the Kissan brand to cash in on the increasingly health-conscious mindset of the Indian consumer. The growing kids’ health drinks market in India is headed for a big war with the existing biggies like GlaxoSmithKline and Heinz engaging in a no-holds barred war for eyeballs.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.linkedin.com/posts/kissan-justin-192a85182_mr-kissan-shopee-activity-7238732277852086273-wNsE" target="_blank">Kissan Justin: CEO of Kissan Shopee and Mr. Kissan Essentials | kissan Justin (Justin Joseph) posted on the topic | LinkedIn</a></h3>
+                    <div class="result-url">https://www.linkedin.com/posts/kissan-justin-192a85182_mr-kissan-shopee-activity-7238732277852086273-wNsE</div>
+                    <div class="result-content">Kissan Justin is a visionary entrepreneur and the driving force behind Kissan Shopee and Mr. Kissan Essentials Pvt. Ltd. His journey is marked by a deep commitment to transforming the agricultural landscape and empowering local farmers and artisans. Background Kissan Justin founded Kissan Shopee with the mission to create an inclusive and transparent platform that directly connects Indian farmers and rural artisans with both domestic and global markets¹. As the CEO of Mr. Kissan Essentials Pvt. Ltd., he has been instrumental in modernizing the company and expanding its reach in the fast-moving consumer goods (FMCG) and food supplement sectors².  Vision and Mission Under Justin&#x27;s leadership, Kissan Shopee aspires to be the premier online agro shop, bridging the gap between producers and [...] online agro shop, bridging the gap between producers and consumers. The platform supports farmers and artisans by providing free online product listings, real-time market insights, and educational resources to improve productivity and sustainability¹. His vision is to ensure that farmers receive maximum value for their products while promoting traditional crafts and expanding market reach¹. Achievements Direct Farm-to-Consumer Transactions: Ensuring product quality and fair pricing by allowing customers to buy directly from farmers and artisans¹. -Global Market Expansion\\: Connecting Indian farmers and artisans with international buyers, opening new avenues for export¹. - \\Advanced Online Strategies\\: Utilizing artificial intelligence to optimize farming practices and marketing [...] intelligence to optimize farming practices and marketing efforts¹. Personal Traits Kissan Justin is known for his forward-thinking approach, passion for industrial innovation, and dedication to supporting local communities. His leadership style is characterized by inclusivity, transparency, and a relentless drive to uplift the agricultural and artisanal sectors². Future Goals Justin aims to further expand Kissan Shopee&#x27;s product offerings and market reach, ensuring sustained growth and success. His commitment to innovation and excellence continues to propel the company to new heights, making a significant impact on both national and global stages². Kissan Justin&#x27;s story is one of dedication, innovation, and a profound connection to the agricultural roots of his community. His work not</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/kissan/__pSJsMU7Qz9gtfcy9zVivfg1c6v5ioxbJrjb2O3lXhNk" target="_blank">Kissan - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/kissan/__pSJsMU7Qz9gtfcy9zVivfg1c6v5ioxbJrjb2O3lXhNk</div>
+                    <div class="result-content">Logo for Veeba
+Logo for Heinz
+Logo for Cremica
+Logo for Farm Didi
+Logo for Capital Foods
+Logo for Habanero
+Logo for Masterchow
+Logo for Nilons Enterprises
+Logo for Chutnefy
+Logo for Naagin
+Logo for Kissan
+lock
+
+ Kissan&#x27;s Latest cap tables and shareholding
+
+ Kissan&#x27;s Investments and acquisitions
+
+ Reports related to Kissan
+
+An image depicting Food &amp; Beverage Products - Sector Report
+
+Food &amp; Beverage Products - Sector Report
+
+ News related to Kissan
+
+lock
+
+ FAQs about Kissan
+
+Accel Partners
+Partech
+IN-Q-TEL - US
+Fujitsu
+Tenity
+Stanford [...] | 8th | Logo for Nilons Enterprises  Nilons Enterprises 1962, Pune  (India), Late Stage | Internet first brand of pickles, spices, instant mixes, and ready-to-cook food products | $36.5M | BanyanTree Finance, Lesma  &amp; 11 others | 53/100 |
+| 9th | Logo for Chutnefy  Chutnefy 2015, Chengalpattu  (India), Seed | Internet-first brand offering spreads | $1.34M | Rajat Chakra Credit And Holdings  &amp; 3 others | 49/100 |
+| 10th | Logo for Naagin  Naagin 2019, Mumbai  (India), Seed | Online brand offering hot sauces and spice blends | $4.14M | 8i Ventures, 360 One  &amp; 16 others | 49/100 |
+| 26th | Logo for Kissan  Kissan 1933, Mumbai  (India), Acquired | Private label brand for jams, ketchups and squash  - | 34/100 | [...] | 4th | Logo for Farm Didi  Farm Didi 2021, Pune  (India), Seed | Internet first brand homemade Indian pickles and chutneys | $1.4M | SamVed VC, IIMCIP  &amp; 44 others | 59/100 |
+| 5th | Logo for Capital Foods  Capital Foods 1996, Mumbai  (India), Acquired | Manufactures and markets Chinese, Thai, Italian, Indian and European processed food | $40.4M | General Atlantic, Everstone Capital  &amp; 10 others | 59/100 |
+| 6th | Logo for Habanero  Habanero 2010, Bengaluru  (India), Seed | Brand of sauces, dips and restaurant serving pasta | $1.65M | New Asia, Decadent Foods  &amp; 16 others | 55/100 |
+| 7th | Logo for Masterchow  Masterchow 2020, Delhi  (India), Series A | Internet-first brand offering multi-category sauces | $11.6M | WEH Ventures, Anicut Capital  &amp; 20 others | 54/100 |</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/kissan/__MO71fcy1C9WXaYr-LEdDQUZ8vlnI5FJsYH5sgOpUgFQ" target="_blank">Kissan - 2026 Company Profile, Team &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/kissan/__MO71fcy1C9WXaYr-LEdDQUZ8vlnI5FJsYH5sgOpUgFQ</div>
+                    <div class="result-content">| 8th | Logo for Pioneer Foods  Pioneer Foods 1997, Cape Town  (South Africa), Acquired | Multicategory food and beverage company  Identity Partners, Zeder  &amp; 2 others | 39/100 |
+| 9th | Logo for Summer Fresh  Summer Fresh 1991, Vaughan  (Canada), Unfunded | Brand of dips, dressings, hummus, snacks, and meals  - | 38/100 |
+| 10th | Logo for Blue Monkey Tropical  Blue Monkey Tropical 2010, Vancouver  (Canada), Late Stage | Multi-category food &amp; beverages brand  Boyne Capital, Fifth Ocean Capital | 38/100 |
+| 93rd | Logo for Kissan  Kissan 1974, Scarborough  (Canada), Unfunded | Grocery and staples brand  - | 16/100 | [...] | 4th | Logo for Hain Celestial  Hain Celestial 1932, New York City  (United States), Public | Multi-category food and beverage company  Triodos Investment Management, Wells Fargo ... &amp; 5 others | 55/100 |
+| 5th | Logo for Hindustan Unilever  Hindustan Unilever 1933, Mumbai  (India), Public | Manufacturer of FMCG, packaged food, and consumer goods  Life Insurance Corporation of India | 53/100 |
+| 6th | Logo for Organic Traditions  Organic Traditions 2000, Toronto  (Canada), Series A | Multi-category food &amp; beverage brand | $10.5M  42/100 |
+| 7th | Logo for Real Mushrooms  Real Mushrooms 2015, Calgary  (Canada), Unfunded | Internet first brand of mushroom powder &amp; extracts  - | 41/100 | [...] Logo for RJ Corp
+Logo for Parle Products
+Logo for Premier Foods
+Logo for Hain Celestial
+Logo for Hindustan Unilever
+Logo for Organic Traditions
+Logo for Real Mushrooms
+Logo for Pioneer Foods
+Logo for Summer Fresh
+Logo for Blue Monkey Tropical
+Logo for Kissan_1528096362448.png?devicePixelRatio=2&amp;height=30&amp;width=30)
+lock
+
+ Kissan&#x27;s Investments and acquisitions
+
+ Reports related to Kissan
+
+An image depicting Food &amp; Beverage Products - Sector Report
+
+Food &amp; Beverage Products - Sector Report
+
+ FAQs about Kissan
+
+Accel Partners
+Partech
+IN-Q-TEL - US
+Fujitsu
+Tenity
+Stanford</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/260580079/A-Critical-Study-of-Competition-in-India-s-Fmcg-Sector" target="_blank">Competition in India&#x27;s FMCG Sector | PDF | Cosmetics | Beverages</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/260580079/A-Critical-Study-of-Competition-in-India-s-Fmcg-Sector</div>
+                    <div class="result-content">Bond, Bru, Knorr, Kissan, Kwality Walls and Pureit. Nestle Ltd. Nestle India is a subsidiary of Nestle S.A. of Switzerland. With a market cap of. Rs.35, 000</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.statista.com/study/180888/brand-kpis-for-spreads-kissan-in-india" target="_blank">Brand KPIs for spreads: Kissan in India</a></h3>
+                    <div class="result-url">https://www.statista.com/study/180888/brand-kpis-for-spreads-kissan-in-india</div>
+                    <div class="result-content">Consumer Goods &amp; FMCG. Brand KPIs for spreads ... consumer insights and benchmarks Kissan against the spreads industry overall and their competitors.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mbaskool.com/pestle-analysis/companies/18209-kissan.html" target="_blank">Kissan PESTLE Analysis - Detailed PESTEL Factors | MBA Skool</a></h3>
+                    <div class="result-url">https://www.mbaskool.com/pestle-analysis/companies/18209-kissan.html</div>
+                    <div class="result-content">PESTLE analysis is a valuable framework used by companies like Kissan for examining the broader macro-environmental factors—Political, Economic, Social, Technological, Legal, and Environmental—that influence business operations. Kissan was established as a jam brand in India for the British settlers by the Mitchell brothers of UK. Later in 1950, the United Breweries(UB) group, acquired Kissan from Mitchell brothers. By analyzing such dimensions, Kissan can proactively shape strategies, respond to external pressures, and stay resilient in a dynamic global landscape. In 1993, Kissan was then acquired by Hindustan Unilever Limited under which it continues to grow in the jam and ketchup category under HUL’s processed food segment which makes up 3% of the total revenue of HUL. Let us start the [...]  Political Factors:
+
+Kissan is of the largest packaged food companies which offers ketchup, jams &amp; beverages, and several government policies affect the brand. The government of India made a giant step by reducing GST in food and beverages to 5%. It not only has helped various fast-food restaurants in increasing foot fall but also helped the ancillary industries like ketchup industry in India which are well coupled with fast food industry due to its association with the food products. However, government’s recent aim of doubling farmer’s income may come at a cost of increased raw material cost of various food products that Kissan is in. A dedicated web portal by Indian government for food processing industry is also an important in reaching out to the manufacturers. [...]  Technological Factors:
+
+The technological factors in the PESTLE Analysis of Kissan are mentioned below:
+
+Technologically, the ketchup, jam and mayonnaise industry is moving towards chemical free products. Industry is trying to produce products that are free from chemicals but still have higher shelf life. The cloud kitchen concept is also boosting the sales of add on products of mayonnaise and ketch ups as they add taste to the food.
+
+Kissan needs to constantly innovate with its product line and must also focus on investing in research &amp; development to further strengthen its position in the market.
+
+ Legal Factors:
+
+Following are the legal factors in the Kissan PESTLE Analysis:</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/575175005/kissan-jam-project1" target="_blank">Kissan Jam: Overview and Company Profile | PDF | Sampling (Statistics) | Survey Methodology</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/575175005/kissan-jam-project1</div>
+                    <div class="result-content">Scribd
+
+ Kissan Jam: Overview and Company Profile
+
+Hindustan Unilever Limited (HUL) is India&#x27;s largest fast-moving consumer goods company. It was formed in 1956 through the merger of three companies - Hindustan Vanaspati Manufacturing Company, Lever Brothers India Limited, and United Traders Limited. Over the decades, HUL has expanded through mergers and acquisitions of companies like Brooke Bond, Lipton, and Pond&#x27;s. Today it manufactures and markets brands in foods and refreshments, home care, personal care, and water purifiers. HUL remains focused on sustainable growth through rural initiatives, new product launches, and expanding its portfolio in India.
+
+ Kissan Jam: Overview and Company Profile
+
+Kissan Jam: Overview and Company Profile
+
+AI-enhanced title and description</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

@@ -43,6 +43,16 @@ class BrandSearchRequest(BaseModel):
     website_url: str
     category: str
     user_competitors: Optional[List[CompetitorInput]] = []
+    industry: Optional[str] = None  # unused by the frontend as of the Target Market/Research-Brand change; category now carries this signal. Kept for backward compatibility.
+    region: Optional[str] = None  # UI label: "Target Market"
+    reference_ref_ids: Optional[List[str]] = None
+
+
+# ── Research brand context (auto-fill) ───────────────────────────────────────
+class BrandContextResearchRequest(BaseModel):
+    brand_name: str
+    website_url: str
+    category: str
 
 
 # ── Confirm brand + kick off pipeline ────────────────────────────────────────
@@ -60,6 +70,7 @@ class BrandConfirmRequest(BaseModel):
     selected_competitors: List[CompetitorConfirmed]
     brand_handle: Optional[str] = None
     brand_kit: Optional[BrandKit] = None
+    reference_docs: Optional[List[dict]] = None
 
 
 # ── Status polling ────────────────────────────────────────────────────────────
