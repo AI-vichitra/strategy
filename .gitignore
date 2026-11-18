@@ -10,3 +10,7 @@ backend/venv/
 **/__pycache__/
 *.pyc
 backend/.env
+
+# Runtime database
+stratai.db
+*.db

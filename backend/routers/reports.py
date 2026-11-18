@@ -24,13 +24,23 @@ async def _generate_report_docx_bytes(db: AsyncSession, report, content_override
     where `title` is the sanitized "{brand}_{agent}" filename stem shared by
     every export format for this report (docx/pdf/pptx)."""
     brand_result = await db.execute(
-        select(BrandConfig.brand_name, Project.brand_kit)
+        select(BrandConfig.brand_name, Project.brand_kit, BrandConfig.id)
         .join(Project, Project.brand_config_id == BrandConfig.id)
         .where(Project.id == report.project_id)
     )
     brand_row = brand_result.first()
     brand_name = brand_row[0] if brand_row else None
     brand_kit_raw = brand_row[1] if brand_row else None
+    brand_config_id = brand_row[2] if brand_row else None
+    # Fallback: find brand_kit from any sibling project when this project has none
+    if brand_kit_raw is None and brand_config_id:
+        fb = await db.execute(
+            select(Project.brand_kit)
+            .where(Project.brand_config_id == brand_config_id, Project.brand_kit.isnot(None))
+            .order_by(Project.created_at.asc())
+            .limit(1)
+        )
+        brand_kit_raw = fb.scalar_one_or_none()
     brand_kit = json.loads(brand_kit_raw) if brand_kit_raw else None
 
     extracted_palette_raw = getattr(report, "extracted_palette", None)
@@ -63,13 +73,23 @@ async def _build_docx_response(db: AsyncSession, report, content_override: Optio
 
 async def _build_pptx_response(db: AsyncSession, report, template_id: Optional[str] = None) -> Response:
     brand_result = await db.execute(
-        select(BrandConfig.brand_name, Project.brand_kit)
+        select(BrandConfig.brand_name, Project.brand_kit, BrandConfig.id)
         .join(Project, Project.brand_config_id == BrandConfig.id)
         .where(Project.id == report.project_id)
     )
     brand_row = brand_result.first()
     brand_name = brand_row[0] if brand_row else None
     brand_kit_raw = brand_row[1] if brand_row else None
+    brand_config_id = brand_row[2] if brand_row else None
+    # Fallback: find brand_kit from any sibling project when this project has none
+    if brand_kit_raw is None and brand_config_id:
+        fb = await db.execute(
+            select(Project.brand_kit)
+            .where(Project.brand_config_id == brand_config_id, Project.brand_kit.isnot(None))
+            .order_by(Project.created_at.asc())
+            .limit(1)
+        )
+        brand_kit_raw = fb.scalar_one_or_none()
     brand_kit = json.loads(brand_kit_raw) if brand_kit_raw else None
 
     extracted_palette_raw = getattr(report, "extracted_palette", None)

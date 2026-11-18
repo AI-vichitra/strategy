@@ -46,6 +46,7 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [colorDrafts, setColorDrafts] = useState<BrandColors>(safeBrandKit.colors ?? {});
+  const [paletteHint, setPaletteHint] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
 
   const uploadLogo = async (file: File) => {
     setUploadError(null);
+    setPaletteHint(false);
     if (!ALLOWED_TYPES.includes(file.type)) {
       setUploadError('Unsupported file type. Use PNG, JPEG, SVG, or WebP.');
       return;
@@ -108,7 +110,28 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
         return;
       }
       const data = await res.json();
-      onChange({ ...safeBrandKit, logo_url: data.logo_url });
+      const nextBrandKit: BrandKit = { ...safeBrandKit, logo_url: data.logo_url };
+
+      if (data.palette) {
+        const filledColors: BrandColors = { ...(safeBrandKit.colors ?? {}) };
+        let filledAny = false;
+        (Object.keys(data.palette) as (keyof BrandColors)[]).forEach((key) => {
+          const currentDraft = colorDrafts[key];
+          const isEmpty = !currentDraft || currentDraft.trim() === '';
+          const extracted = data.palette[key];
+          if (isEmpty && extracted) {
+            filledColors[key] = extracted.startsWith('#') ? extracted : `#${extracted}`;
+            filledAny = true;
+          }
+        });
+        if (filledAny) {
+          nextBrandKit.colors = filledColors;
+          setColorDrafts((prev) => ({ ...prev, ...filledColors }));
+          setPaletteHint(true);
+        }
+      }
+
+      onChange(nextBrandKit);
     } catch {
       setUploadError('Upload failed. Please try again.');
     } finally {
@@ -131,6 +154,7 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
 
   const handleRemoveLogo = () => {
     const { logo_url, ...rest } = safeBrandKit;
+    setPaletteHint(false);
     onChange(rest);
   };
 
@@ -217,6 +241,19 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
               );
             })}
           </div>
+          {paletteHint && (
+            <div className={styles.paletteHint}>
+              <span>Colors auto-filled from your logo</span>
+              <button
+                type="button"
+                className={styles.paletteHintDismiss}
+                onClick={() => setPaletteHint(false)}
+                aria-label="Dismiss"
+              >
+                &#x2715;
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

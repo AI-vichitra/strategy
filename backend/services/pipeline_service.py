@@ -30,11 +30,15 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 DOCS_DIR = os.path.join(PROJECT_ROOT, "docs")
 
 
-def _make_slug(brand_name: str, brand_id: str) -> str:
-    """Create a filesystem-safe slug for the docs folder."""
+def _make_slug(brand_name: str, project_id: str) -> str:
+    """Create a filesystem-safe slug for the docs folder.
+    Keyed on project_id so each project gets its own isolated folder and KB file.
+    Uses first 8 hex chars of the project_id as a compact, stable suffix.
+    """
     clean = re.sub(r'[^\w\s-]', '', brand_name.upper()).strip()
     clean = re.sub(r'[\s-]+', '_', clean)
-    return clean
+    pid_short = re.sub(r'[^0-9a-fA-F]', '', project_id)[:8]
+    return f"{clean}_{pid_short}" if pid_short else clean
 
 
 def _get_output_dir(brand_slug: str) -> str:
@@ -50,6 +54,7 @@ async def run_brand_research_pipeline(
     category: str,
     selected_competitors: List[dict],
     db_session_factory,
+    project_id: str = "",
 ):
     """
     Full async pipeline. Designed to run as a FastAPI BackgroundTask.
@@ -57,7 +62,7 @@ async def run_brand_research_pipeline(
     """
     from backend.services import tavily_service, connector_service, firecrawl_service, exa_service
 
-    brand_slug = _make_slug(brand_name, brand_config_id)
+    brand_slug = _make_slug(brand_name, project_id or brand_config_id)
     output_dir = _get_output_dir(brand_slug)
 
     logger.info(f"[Pipeline] Starting for brand '{brand_name}' (id={brand_config_id}), docs → {output_dir}")
@@ -219,7 +224,8 @@ async def run_brand_research_pipeline(
 
         # ── Step 6: Compile Knowledge Base ────────────────────────────────────
         logger.info("[Pipeline] Step 6: Compiling Knowledge Base...")
-        await asyncio.to_thread(_compile_knowledge_base, brand_name, brand_slug, output_dir)
+        reference_docs = await _get_brand_reference_docs(db_session_factory, brand_config_id)
+        await asyncio.to_thread(_compile_knowledge_base, brand_name, brand_slug, output_dir, reference_docs, selected_competitors)
 
         # ── Update DB: complete ───────────────────────────────────────────────
         update_data = {
@@ -412,11 +418,16 @@ def _save_exa_doc(output_dir: str, brand_name: str, url: str, content: str) -> N
         logger.error(f"[Pipeline] Failed to save Exa doc for '{brand_name}': {e}")
 
 
-def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str):
+def _normalize_comp_name(name: str) -> str:
+    """Normalize competitor name for comparison: lowercase, strip all non-alphanumeric."""
+    return re.sub(r'[^a-z0-9]', '', name.lower())
+
+
+def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, reference_docs: Optional[List[dict]] = None, selected_competitors: Optional[List[dict]] = None):
     """Compiles all JSON data in output_dir into a single KB file in KNOWLEDGE_BASE/"""
     kb_dir = os.path.join(PROJECT_ROOT, "KNOWLEDGE_BASE")
     os.makedirs(kb_dir, exist_ok=True)
-    
+
     kb_file = os.path.join(kb_dir, f"{brand_slug}_KB.json")
     
     brands_data = {}
@@ -508,8 +519,41 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str):
             "WEB_SCRAPPED": "Deep dive JSON not found",
             "INSTA_SCRAPPED": "Instagram JSON not found"
         }
-        
-    final_output["competitors"] = list(brands_data.values())
+
+    # ── Fold in uploaded reference documents — brand only, highest-trust source,
+    # so they lead WEB_SCRAPPED ahead of the Tavily/Firecrawl/Exa content. ──────
+    if reference_docs:
+        from backend.services import reference_service
+        ref_blocks = []
+        for doc in reference_docs:
+            ref_id = doc.get("ref_id")
+            filename = doc.get("filename", "")
+            if not ref_id:
+                continue
+            text = reference_service.load_reference_text(ref_id)
+            if text:
+                ref_blocks.append(f"[Source: Reference Document — {filename}]\n{text}")
+        if ref_blocks:
+            existing = final_output["brand"].get("WEB_SCRAPPED", "")
+            final_output["brand"]["WEB_SCRAPPED"] = "\n\n".join(ref_blocks) + "\n\n" + existing
+
+    # Filter to only the competitors confirmed for this run; normalised name match
+    # prevents stale files from prior pipeline runs (different competitor set) leaking in.
+    if selected_competitors:
+        selected_norm = {_normalize_comp_name(c.get("name", "")) for c in selected_competitors}
+        kept, dropped = [], []
+        for entry in brands_data.values():
+            norm = _normalize_comp_name(entry.get("NAME", ""))
+            if norm in selected_norm:
+                kept.append(entry)
+            else:
+                dropped.append(entry.get("NAME", "?"))
+        print(f"[KB-COMPILE] {len(kept)} of {len(brands_data)} competitors kept after selection filter")
+        if dropped:
+            print(f"[KB-COMPILE] Dropped stale competitors: {dropped}")
+        final_output["competitors"] = kept
+    else:
+        final_output["competitors"] = list(brands_data.values())
                     
     with open(kb_file, "w", encoding="utf-8") as f:
         json.dump(final_output, f, ensure_ascii=False, indent=2)
@@ -528,6 +572,25 @@ async def _get_brand_user_id(session_factory, brand_config_id: str) -> Optional[
             return row[0] if row else None
     except Exception as e:
         logger.error(f"[Pipeline] Failed to resolve brand user_id: {e}")
+        return None
+
+
+async def _get_brand_reference_docs(session_factory, brand_config_id: str) -> Optional[List[dict]]:
+    """Resolves the brand's uploaded reference_docs (JSON list of {ref_id, filename}),
+    or None if there are none / lookup fails — regression-safe for brands without
+    any uploaded reference documents."""
+    try:
+        from sqlalchemy import select
+        from backend.models.brand import BrandConfig
+        async with session_factory() as session:
+            result = await session.execute(
+                select(BrandConfig.reference_docs).where(BrandConfig.id == brand_config_id)
+            )
+            row = result.first()
+            raw = row[0] if row else None
+            return json.loads(raw) if raw else None
+    except Exception as e:
+        logger.error(f"[Pipeline] Failed to resolve brand reference_docs: {e}")
         return None
 
 

@@ -98,6 +98,14 @@ def _get_docs_paths(brand_slug: str) -> List[str]:
     kb_path = os.path.join(PROJECT_ROOT, "KNOWLEDGE_BASE", f"{brand_slug}_KB.json")
     if os.path.exists(kb_path):
         return [kb_path]
+    # Migration fallback: new slugs are {BRAND_SLUG}_{project_id[:8]}; if the new-format
+    # KB doesn't exist yet (project created before the fix, or pipeline not rerun),
+    # try the brand-name-only slug by stripping the last underscore-delimited segment.
+    parts = brand_slug.rsplit('_', 1)
+    if len(parts) == 2 and len(parts[1]) == 8:
+        old_path = os.path.join(PROJECT_ROOT, "KNOWLEDGE_BASE", f"{parts[0]}_KB.json")
+        if os.path.exists(old_path):
+            return [old_path]
     return []
 
 
@@ -2450,6 +2458,26 @@ async def stream_chat(
 
     # ── Build system prompt ───────────────────────────────────────────────────
     competitor_details = project.competitor_details if project else None
+    # None means "not set on this chat row" → fall back to onboarding-confirmed competitors.
+    # "[]" means "user explicitly cleared" → no fallback.
+    _comp_source = "request"
+    if competitor_details is None and project is not None:
+        try:
+            _brand_competitors = brand.competitors  # brand is in scope from the load block above
+            if _brand_competitors:
+                _onboarding = json.loads(_brand_competitors)
+                _converted = [
+                    {"brand_name": c.get("name", ""), "website_url": c.get("url") or c.get("website_url") or ""}
+                    for c in _onboarding if isinstance(c, dict)
+                ]
+                _filtered = [c for c in _converted if c["brand_name"].strip()]
+                if _filtered:
+                    competitor_details = json.dumps(_filtered)
+                    _comp_source = "onboarding fallback"
+        except Exception:
+            pass
+    _n_comps = len(json.loads(competitor_details)) if competitor_details else 0
+    print(f"[REPORT] competitors from {_comp_source}: {_n_comps} items")
     system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details)
 
     # ── Prepare messages ──────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ Inches are different classes — each caller wraps the float with its own.
 """
 import os
 import re
+import io
 import logging
 from typing import Optional, Dict, Any
 
@@ -285,6 +286,57 @@ def _load_logo_asset(brand_kit: Optional[dict]) -> Optional[Dict[str, Any]]:
             return {"bytes": buf.getvalue(), "width": width, "height": height}
     except Exception:
         logger.warning("Could not read brand logo at %s for export — skipping logo", path, exc_info=True)
+        return None
+
+
+def _color_distance(a: tuple, b: tuple) -> float:
+    return sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5
+
+
+def extract_palette_from_logo(logo_url: Optional[str]) -> Optional[Dict[str, str]]:
+    """Best-effort auto-palette from an uploaded logo: the 3 most frequent,
+    reasonably-distinct non-background colors, as {"primary"/"secondary"/
+    "accent": "#RRGGBB"}. Returns fewer keys if fewer than 3 survive, or None
+    if the logo can't be loaded (incl. SVG, which Pillow can't rasterize) or
+    nothing survives the background filter. Pure function — no I/O beyond the
+    existing guarded logo load."""
+    asset = _load_logo_asset({"logo_url": logo_url})
+    if not asset:
+        return None
+    try:
+        with Image.open(io.BytesIO(asset["bytes"])) as img:
+            rgba = img.convert("RGBA")
+            rgba.thumbnail((150, 150))
+            opaque_pixels = [(r, g, b) for r, g, b, a in rgba.getdata() if a > 0]
+        if not opaque_pixels:
+            return None
+
+        strip = Image.new("RGB", (len(opaque_pixels), 1))
+        strip.putdata(opaque_pixels)
+        quantized = strip.convert("P", palette=Image.ADAPTIVE, colors=8)
+        counts = quantized.getcolors()
+        if not counts:
+            return None
+        palette = quantized.getpalette()
+        counts.sort(key=lambda c: -c[0])
+
+        picked = []
+        for _, idx in counts:
+            rgb = tuple(palette[idx * 3:idx * 3 + 3])
+            if all(c > 240 for c in rgb) or all(c < 15 for c in rgb):
+                continue  # near-white / near-black background or text
+            if any(_color_distance(rgb, p) < 30 for p in picked):
+                continue  # too close to an already-picked color
+            picked.append(rgb)
+            if len(picked) == 3:
+                break
+
+        if not picked:
+            return None
+        keys = ("primary", "secondary", "accent")
+        return {keys[i]: _rgb_to_hex(*picked[i]) for i in range(len(picked))}
+    except Exception:
+        logger.warning("Could not extract palette from logo %s", logo_url, exc_info=True)
         return None
 
 

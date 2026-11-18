@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APIS INDIA - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>APIS INDIA</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://apisindia.com/" target="_blank" class="meta-url">https://apisindia.com/</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Apis India Ltd, established in 1983 and formally venturing into B2C with the brand Apis in 2016, is a leading FMCG player in India. Known for its top-quality sourcing, production, and supply, the company operates 13 state-of-the-art facilities in India and a global unit in Dubai. Apis India Ltd primarily engages in the organized honey market but has diversified into several other food categories, including dates, jam, pickle, green tea, and preserves. The company follows a vertically integrated model for honey, sourcing directly from beekeepers, processing at its own facilities, and distributing through retail, bulk, and export channels. Apis India has a robust distribution network, reaching over 200,000 counters nationwide and exporting to more than 29 countries. The company's strategic communications are managed by Pepper Communications Group (PCG), which aims to highlight Apis India’s legacy of quality and innovation while strengthening its narrative and brand perception across key stakeholders.. # Apis India Ltd  Description: A leading FMCG player with 3 generations of excellence. Known for top-quality Sourcing, Production, and Supply. 13 state-of-the-art facilities in India, plus a global unit in Dubai. Growing retail distribution, 200,000+ counters nationwide. Products for every household, a trusted brand synonymous with well-being. Join us in the journey of growth, innovation, and excellence. LinkedIn:  · 7,939 followers Industry: Food and Beverage Services Type: Public Company Headquarters: New Delhi, New Delhi, India Social Profiles:       ## Employees - Now: 392  ## Leadership - Ankit Nagar, Chief Financial Officer.<br/><br/><strong>Product & Service Portfolio:</strong> Apis India Limited offers a diverse range of products and services in the FMCG and food and beverage sector. Their product portfolio includes premium honey, organic honey, fruit jams, dates, cereals, vermicelli, pickles, and preserves. They are certified Grade A by LRQA under the BRCGS Global Standard for Food Safety. Apis India also provides specialized honey varieties such as ginger, lemon, organic, honey with nuts, and honey with comb. Their products are available in various packaging formats and are accessible through leading supermarkets, grocery stores, health food shops, and major e-commerce platforms. Apis India is committed to bringing freshness and quality to consumers' tables with their flavorful and natural offerings.. # Apis India Ltd ID: gpV5e2Dg1pXm Website: www.apisindia.com Legal name: APIS INDIA LTD Headquarters: New Delhi, New Delhi, India LinkedIn: www.linkedin.com/company/apis-india-ltd · 8,075 followers Industry: Food and Beverage Services Industry codes: SIC 20, 203, NAICS 31, 311 Company type: Public Company Founded: 1925 Business model: B2B, B2C SaaS: no Social profiles: www.facebook.com/apisindialtd, www.twitter.com/apis_india, www.crunchbase.com/organization/apis-india, www.instagram.com/apisindialtd, www.youtube.com/channel/ucbsf_medodshf3qvglvbflq Email: info@apisindia.com Phone: 011-43206666, 011 4320 6666, +91-11-43206666 [...] ## Products and services Business areas: FMCG Manufacturing, Food and Beverage Production, Retail Distribution Products: Honey, Organic Honey, Fruit Jams, Dates, Cereals and Muesli, Vermicelli, Pickles, Green Tea, Preserves  ## Headcount - Now: 394 · +45 yearly (12.9%) · +9 quarterly · +2 monthly   - Southern Asia: 162   - Eastern Europe: 0   - Latin America: 0   - Southern Europe: 0   - Sub Saharan Africa: 0   - Central Asia: 0   - Northern America: 0   - Australia New Zealand: 0   - Northern Europe: 0   - South Eastern Asia: 0   - Polynesia: 0   - Northern Africa: 0   - Melanesia: 0   - Western Europe: 0   - Western Asia: 0  ## Financials - Annual revenue: 10.00M USD [...] Phone: 011-43206666, 011 4320 6666, +91-11-43206666 Description: Apis India Limited is a company that offers premium honey, fruit jams, dates, cereals, and vermicelli. They strive to bring freshness to your table with flavorful products and are highly valued and trusted for their efficacy and superior quality. They are certified grade a by lrqa under the global standard for food safety.. ##### HONEY  from our In-house laboratory and state of art processing plant maintaining its maximum nutritional value  ##### TEA  sourced from the best of gardens blended with the perfect taste and texture.  ##### PRESERVES that are minimally filtered to provide you with maximum goodness and a pleasant aromatic flavors  COOKIES -       that are crisp on the outside and fluffy in the middle  ##### DATES  Dates are a good source of various vitamins and minerals, energy, sugar, and fiber. It also contains calcium, iron, phosphorus, potassium, magnesium and zinc.  Products and services  Octagonal Pet Honey Bottle  Octagonal Pet Honey Bottle  In stock  OCTAGONAL PET BOTTLE Net weight-(1KG, 500G, 250G & 125G)  Group: Honey  Contact supplier  Lid Clip Honey Bottle  Lid Clip Honey Bottle [...] facility spread in over 7 acre in Rorkee with a capacity to process over 100 tonnes of honey per day. With a mission to make pure and natural products a part of consumers everyday life the company has also forayed into Tea; Cookies & Preserves considering the changing purchase dynamics & growing need of the quality branded packaged products.<br/><br/><strong>Recent Developments & News:</strong> Apis India, a homegrown FMCG firm, is making significant strides in its product portfolio and market presence. The company plans to expand its organic range and develop new products, aiming for a topline of Rs 500 crore by FY25. It is also targeting a 25% increase in its distributor network and considering opening a new plant in Roorkee, Uttarakhand. Apis India has reported a revenue of Rs 333.66 crore for the financial year ending March 31, 2023, with nearly equal contributions from B2B and B2C businesses. The company recently announced a 24:1 bonus issue on 5th December as its stock hit its 5% upper circuit, reflecting strong 12-month and five-year returns. The stock price as of 16 Nov 2026 was ₹ 50.82, down by 2.94(-5.47%).. "We are in the right segments. Dates are very good for the health. Honey is very good for the health," he said.  Now, the company is planning to expand its organic range and develop new products around this, which he expects will take the company to the "next level".  Besides, Apis India has plans to expand its distribution network.  "We are targeting to add 25 per cent more distributors," he said.  The company has a plant at Roorkee, Uttarakhand and is considering opening one more.  "We are looking forward to doing further expansion in our manufacturing facilities by opening up a new avenue," Anand said.  In line with the product portfolio expansion, Apis India has launched its range of organic honey. [...] Friday, November 13, 2026 | 03:21 PM ISTहिंदी में पढें  Notification Icon  userprofile IconSearch  Home / Companies / News / Apis India to expand product portfolio, aims Rs 500 cr revenue in FY25  # Apis India to expand product portfolio, aims Rs 500 cr revenue in FY25  ## The listed company, which is present in the food segment with honey, dates, green tea and breakfast products, among others, is looking to expand its product portfolio and distribution footprints  Press Trust of India New Delhi   2 min read Last Updated : Jan 09 2024 | 4:51 PMIST  #### Listen to This Article  Homegrown FMCG firm Apis India plans to expand its product portfolio in the food segment and aims a topline of Rs 500 crore by the end of next fiscal, its Managing Director Amit Anand said on Tuesday. [...] Besides, Apis India has plans to open a new plant to cater to the growing demand and is investing in branding and marketing to make its products more visible in the market.  The listed company, which is present in the food segment with honey, dates, green tea and breakfast products, among others, is looking to expand its product portfolio and distribution footprints across the country.     The Delhi-based company had reported a revenue of Rs 333.66 crore for the financial year that ended on March 31, 2023. The company gets nearly equal contributions from the B2B and B2C businesses..<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Apis India's key competitors in the FMCG and consumer goods industry include Dhunseri Tea, Umang Dairies, Milkfood, Healthy Life, Galaxy Cloud, Tirupati Starch, Ganges Securitie, Sumuka Agro, Jeyyam Global, and ATC Energies. In the broader FMCG market, major players are Amul, Bajaj Consumer Care Ltd., Britannia Industries Ltd., Coca-Cola India, Dabur India Limited, Emami Limited, Godrej Consumer Products Limited (GCPL), Hindustan Unilever Limited (HUL), ITC Limited, Marico Limited, Nestlé India, Parle Products Pvt. Ltd., Patanjali Ayurved Limited, PepsiCo India, Procter & Gamble Hygiene and Health Care Ltd. (P&G), Reckitt Benckiser (India) Pvt. Ltd., and Tata Consumer Products Limited. Apis India is a market leader in honey processing, but faces significant competition from brand-led giants like Dabur and Marico, which have larger distribution networks, more financial resources, and higher profit margins.. Apis India's peers include Dhunseri Tea, Umang Dairies, Milkfood, Healthy Life, Galaxy Cloud, Tirupati Starch, Ganges Securitie, Sumuka Agro, Jeyyam Global, and ATC Energies. Apis India Ltd is a micro-cap company and market leader in honey processing within the FMCG industry, reporting net sales of 902 Cr and a net profit of 81 Cr for the quarter ending March 2025. Apis India Ltd is a market leader in the honey processing business, operating within the FMCG industry and classified as a micro-cap company. As of 23rd July, Apis India Ltd has a market capitalization of 179.00 Cr, classified as a Micro Cap, with recent net sales of 350.35 Cr and net profit of 25.34 Cr over the latest four quarters. Market Cap: Apis India Ltd has a market capitalization of 179.00 Cr, classified as a Micro Cap. Recent Quarterly Performance: The sum of Net Sales for the latest 4 quarters is 350.35 Cr, while the sum of Net Profit for the same period is 25.34 Cr.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/apis-india-ltd" target="_blank">Apis India Ltd</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/apis-india-ltd</div>
+                    <div class="result-content">Apis India Ltd
+
+Description: A leading FMCG player with 3 generations of excellence. Known for top-quality Sourcing, Production, and Supply. 13 state-of-the-art facilities in India, plus a global unit in Dubai. Growing retail distribution, 200,000+ counters nationwide. Products for every household, a trusted brand synonymous with well-being. Join us in the journey of growth, innovation, and excellence.
+LinkedIn:  · 7,939 followers
+Industry: Food and Beverage Services
+Type: Public Company
+Headquarters: New Delhi, New Delhi, India
+Social Profiles:     
+
+ Employees
+- Now: 392
+
+ Leadership
+- Ankit Nagar, Chief Financial Officer</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://trendlyne.com/equity/about/2270/APIS/apis-india-ltd" target="_blank">Apis company information, history, management and director details and CEO salary</a></h3>
+                    <div class="result-url">https://trendlyne.com/equity/about/2270/APIS/apis-india-ltd</div>
+                    <div class="result-content">1. Apis India Ltd.
+2. Company Profile
+
+ About Apis - Company Information, Overview, History and Profile
+
+ About
+
+Website: www.apisindia.com
+
+ About the company - Business Profile
+
+Apis India Ltd. is an Indian company primarily engaged in the organized honey market. The company has evolved from being a honey processor to a diversified multi-product FMCG entity. It operates as a significant player in both domestic and international markets, specializing in the processing and packaging of honey, and has expanded its portfolio into several other food categories.
+
+ Key Points [...] + Domestic Sales: ₹18,137.60 lakhs (approximately 52% of revenue).
+  + The company operates as a single reporting segment under Ind AS-108.
+ Business Model and Strengths:
+  + Business Model: Apis India follows a vertically integrated model for honey, sourcing directly from beekeepers, processing at its own facilities, and distributing through retail, bulk, and export channels.
+  + Core Competency: The company is particularly strong in large-scale honey processing and maintains rigorous quality control through its internal laboratory and testing facilities. It has a significant presence in the export market, supplying bulk and branded honey to various countries.
+ Employee Information: [...] Employee Information:
+  + Employee Benefit Expense: ₹2,707.49 lakhs for FY 2024-25, showing an increase from ₹2,180.14 lakhs in the previous year.
+  + Wages: Manufacturing-related wages stood at ₹876.57 lakhs in FY 2025.
+ Strategic Initiatives and Recent Developments:
+  + Capital Allotment: In December 2025, the company issued and allotted 13,22,41,824 equity shares as bonus shares in a ratio of 24:1. This increased the paid-up share capital to ₹137.75 crores.
+  + Diversification: The company is actively focusing on non-honey categories such as dates and pickles to reduce seasonal dependence and broaden its FMCG footprint.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://yourstory.com/companies/apis-india" target="_blank">Apis India Company Profile Funding &amp; Investors | YourStory</a></h3>
+                    <div class="result-url">https://yourstory.com/companies/apis-india</div>
+                    <div class="result-content">Apis India Limited is a fast-growing FMCG company in India. The company traces its roots back to 1924 in Delhi when it was set up as a trading firm for spices and honey. Since then, the brand has introduced about 10-15 honey variants which include organic honey, raw honey, acacia honey, honey with royal jelly, lychee honey, black forest honey and eucalyptus honey, among others. Several of these specialty honeys are exported to more than 29 countries including US, Canada and Europe. Once the honey procured from beekeepers reaches their facility, it undergoes over 50 tests to ascertain its quality. In terms of their other products, they procure raw materials such as dates, mango, ginger and garlic from all over the world and send them to the factory where grading and quality checks are [...] Apis India Limited is a fast-growing FMCG company in India. The company traces its roots back to 1924 in Delhi when it was set up as a trading firm for spices and honey. Since then, the brand has introduced about 10-15 honey variants which include organic honey, raw honey, acacia honey, honey with royal jelly, lychee honey, black forest honey and eucalyptus honey, among others. Several of these specialty honeys are exported to more than 29 countries including US, Canada and Europe. Once the honey procured from beekeepers reaches their facility, it undergoes over 50 tests to ascertain its quality. In terms of their other products, they procure raw materials such as dates, mango, ginger and garlic from all over the world and send them to the factory where grading and quality checks are [...] Sidebar is Loading...
+
+Founder first
+
+Just In
+
+Brands
+
+Resources
+
+YSTV
+
+close menu bar
+
+ADVERTISEMENT
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+award-logo
+
+Advertise with us
+
+Advertise with us
+
+Apis India Company Profile Funding &amp; Investors | YourStory
+
+ADVERTISEMENT
+
+Advertise with us
+
+ADVERTISEMENT
+
+Advertise with us
+
+Apis India
+
+ Apis India
+
+Apis India is an FMCG company that manufactures natural honey, dates, jam, pickle, green tea and preserves.
+
+Tag IconDirect-To-Consumer Brands,FMCG
+
+facebook icon
+
+twitter icon
+
+linkedin icon
+
+ Basic Information</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.pninews.com/amp/pcg-strengthens-fmcg-portfolio-with-strategic-mandate-for-apis-india-limited" target="_blank">PCG Strengthens FMCG Portfolio with Strategic Mandate for Apis India Limited – PNI</a></h3>
+                    <div class="result-url">https://www.pninews.com/amp/pcg-strengthens-fmcg-portfolio-with-strategic-mandate-for-apis-india-limited</div>
+                    <div class="result-content">Title: PCG Strengthens FMCG Portfolio with Strategic Mandate for Apis India Limited – PNI
+ PCG Strengthens FMCG Portfolio with Strategic Mandate for Apis India Limited. Pepper Communications Group (PCG), a premier integrated communications agency, has been mandated to manage the public relations for Apis India Limited, a company drawing on three generations of trading business experience and an established reputation for sourcing, producing, and supplying quality food products. Apis India (BSE: 506166) has positioned itself as a leading FMCG player in India. Formally established in 1983, the company ventured into B2C with the brand Apis in 2016. Apis India has earned enduring consumer trust through its commitment to delivering consistent quality products, robust distribution networks, and steady expansion in both domestic and international markets. The company continues to innovate within the wellness and natural foods segment, reinforcing its position as a trusted name in India’s competitive FMCG landscape. The engagement will focus on crafting a cohesive communications strategy that highlights Apis India’s four-decade legacy of quality and innovation while strengthening its narrative, consumer connect, and leadership voice across key stakeholders. PCG will drive strategic media relations, brand perception management, and targeted storytelling, and will build a robust, professional presence in the public domain through insightful content, leadership positioning, and stakeholder engagement. “We are delighted to partner with Apis India, a brand that embodies trust, heritage, and quality in the FMCG space. Our strategic communications expertise will help amplify their rich legacy while positioning the brand for the next phase of growth through insightful storytelling and targeted media engagement. We look forward to strengthening Apis India’s voice across business and consumer platforms, including a focused LinkedIn strategy,” said Roshan Mohan, Group MD, PCG. Naagesh Mishra, Head of Marketing, Apis India Ltd, added, “As we expand our footprint and deepen our connection with consumers, a strong and strategic communications partner is essential. We are excited to collaborate with PCG to elevate our corporate narrative, enhance stakeholder interactions, and take our brand communication to the next level.”. This partnership marks another milestone in PCG’s growing expertise in the FMCG sector and underscores its ability to deliver integrated communications solutions that blend heritage storytelling with modern digital positioning.  PNI.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.pninews.com/pcg-strengthens-fmcg-portfolio-with-strategic-mandate-for-apis-india-limited/amp" target="_blank">PCG Strengthens FMCG Portfolio with Strategic Mandate for Apis India Limited – PNI</a></h3>
+                    <div class="result-url">https://www.pninews.com/pcg-strengthens-fmcg-portfolio-with-strategic-mandate-for-apis-india-limited/amp</div>
+                    <div class="result-content">Title: PCG Strengthens FMCG Portfolio with Strategic Mandate for Apis India Limited – PNI
+ PCG Strengthens FMCG Portfolio with Strategic Mandate for Apis India Limited. Pepper Communications Group (PCG), a premier integrated communications agency, has been mandated to manage the public relations for Apis India Limited, a company drawing on three generations of trading business experience and an established reputation for sourcing, producing, and supplying quality food products. Apis India (BSE: 506166) has positioned itself as a leading FMCG player in India. Formally established in 1983, the company ventured into B2C with the brand Apis in 2016. Apis India has earned enduring consumer trust through its commitment to delivering consistent quality products, robust distribution networks, and steady expansion in both domestic and international markets. The company continues to innovate within the wellness and natural foods segment, reinforcing its position as a trusted name in India’s competitive FMCG landscape. The engagement will focus on crafting a cohesive communications strategy that highlights Apis India’s four-decade legacy of quality and innovation while strengthening its narrative, consumer connect, and leadership voice across key stakeholders. PCG will drive strategic media relations, brand perception management, and targeted storytelling, and will build a robust, professional presence in the public domain through insightful content, leadership positioning, and stakeholder engagement. “We are delighted to partner with Apis India, a brand that embodies trust, heritage, and quality in the FMCG space. Our strategic communications expertise will help amplify their rich legacy while positioning the brand for the next phase of growth through insightful storytelling and targeted media engagement. We look forward to strengthening Apis India’s voice across business and consumer platforms, including a focused LinkedIn strategy,” said Roshan Mohan, Group MD, PCG. Naagesh Mishra, Head of Marketing, Apis India Ltd, added, “As we expand our footprint and deepen our connection with consumers, a strong and strategic communications partner is essential. We are excited to collaborate with PCG to elevate our corporate narrative, enhance stakeholder interactions, and take our brand communication to the next level.”. This partnership marks another milestone in PCG’s growing expertise in the FMCG sector and underscores its ability to deliver integrated communications solutions that blend heritage storytelling with modern digital positioning.  PNI.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/gpV5e2Dg1pXm" target="_blank">Apis India Ltd</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/gpV5e2Dg1pXm</div>
+                    <div class="result-content">Apis India Ltd
+ID: gpV5e2Dg1pXm
+Website: www.apisindia.com
+Legal name: APIS INDIA LTD
+Headquarters: New Delhi, New Delhi, India
+LinkedIn: www.linkedin.com/company/apis-india-ltd · 8,075 followers
+Industry: Food and Beverage Services
+Industry codes: SIC 20, 203, NAICS 31, 311
+Company type: Public Company
+Founded: 1925
+Business model: B2B, B2C
+SaaS: no
+Social profiles: www.facebook.com/apisindialtd, www.twitter.com/apis_india, www.crunchbase.com/organization/apis-india, www.instagram.com/apisindialtd, www.youtube.com/channel/ucbsf_medodshf3qvglvbflq
+Email: info@apisindia.com
+Phone: 011-43206666, 011 4320 6666, +91-11-43206666 [...]  Products and services
+Business areas: FMCG Manufacturing, Food and Beverage Production, Retail Distribution
+Products: Honey, Organic Honey, Fruit Jams, Dates, Cereals and Muesli, Vermicelli, Pickles, Green Tea, Preserves
+
+ Headcount
+- Now: 394 · +45 yearly (12.9%) · +9 quarterly · +2 monthly
+  - Southern Asia: 162
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 10.00M USD [...] Phone: 011-43206666, 011 4320 6666, +91-11-43206666
+Description: Apis India Limited is a company that offers premium honey, fruit jams, dates, cereals, and vermicelli. They strive to bring freshness to your table with flavorful products and are highly valued and trusted for their efficacy and superior quality. They are certified grade a by lrqa under the global standard for food safety.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://apisindia.all.biz" target="_blank">Apis India Limited in Delhi | Online-store Apis India Limited Delhi (India)</a></h3>
+                    <div class="result-url">https://apisindia.all.biz</div>
+                    <div class="result-content">HONEY
+
+from our In-house laboratory and state of art processing plant maintaining its maximum nutritional value
+
+ TEA
+
+sourced from the best of gardens blended with the perfect taste and texture.
+
+ PRESERVES that are minimally filtered to provide you with maximum goodness and a pleasant aromatic flavors
+
+COOKIES -   
+  
+that are crisp on the outside and fluffy in the middle
+
+ DATES
+
+Dates are a good source of various vitamins and minerals, energy, sugar, and fiber. It also contains calcium, iron, phosphorus, potassium, magnesium and zinc.
+
+Products and services
+
+Octagonal Pet Honey Bottle
+
+Octagonal Pet Honey Bottle
+
+In stock
+
+OCTAGONAL PET BOTTLE Net weight-(1KG, 500G, 250G &amp; 125G)
+
+Group: Honey
+
+Contact supplier
+
+Lid Clip Honey Bottle
+
+Lid Clip Honey Bottle [...] facility spread in over 7 acre in Rorkee with a capacity to process over 100 tonnes of honey per day. With a mission to make pure and natural products a part of consumers everyday life the company has also forayed into Tea; Cookies &amp; Preserves considering the changing purchase dynamics &amp; growing need of the quality branded packaged products. APIS India also provides specialized honey, which comprises ginger, lemon, organic, honey with nuts, and honey with comb and is the Winner of Numerous International; Industry and Government Honey Exports. APIS India products have been benchmarked to meet all European Union and other International Standards.Limited. [...] Apis Himalaya Honey
+
+Apis Himalaya Honey
+
+In stock
+
+From producing honey off our own hives to marketing the finished retail packs around the globe, we offer the consumer a quality product every time. Our high-quality Apis Honey is minimally filtered to provide you with maximum goodness and a pleasant aromatic flavor in every spoon. So you can...
+
+Group: Honey
+
+Contact supplier
+
+Contacts
+
+ Address
+
+India,  Delhi,  110008,  18/32, East Patel Nagar, Patel Nagar
+
+View map
+
+ Director
+
+Mr. Vimal Anand
+
+ Phones of enterprise
+
+management
+
++91
+
+When placing an order please inform the manager that you&#x27;ve learned the information on Allbiz! Thank you that you buy on Allbiz!
+
++91</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="http://apisindia.com/en" target="_blank">Best Quality Honey, Jams, Dates, Cereals &amp; Vermicelli - Apis India Limited</a></h3>
+                    <div class="result-url">http://apisindia.com/en</div>
+                    <div class="result-content">india
+
+India Unit
+
+dubai
+
+dubai
+
+Dubai Unit
+
+dubai
+
+Always here, always ready
+
+Our Availability
+
+AIL products are widely available to ensure you can enjoy our natural and premium offerings wherever you are. You can find our range of honey, organic honey, muesli, pickles, and more at leading supermarkets, grocery stores, and health food shops across the country. Additionally, our products are conveniently accessible online through major e-commerce platforms, making it easy to have your favorite AIL products delivered right to your doorstep. Whether you prefer shopping in-store or online, AIL is always within reach, ready to bring the goodness of nature to your table. [...] We are proud to be certified Grade A by LRQA under the BRCGS Global Standard for Food Safety, reflecting our unwavering commitment to product quality, hygiene, and safety.  
+Our certification scope covers the processing, melting, evaporation, filtration, and packing of honey into various packaging formats including steel barrels, PET bottles, blister packs, and glass bottles.  
+We operate in full compliance with FSMA (Food Safety Modernization Act) requirements for honey processing and ingredients, ensuring that every drop of our honey meets the highest international food safety standards.
+
+ Taste is What Makes the Difference
+
+header-logoheader-logo
+
+Find Your Favorite Choices Of A Hearty Meals
+
+Products that make a difference
+
+Organic Honey
+
+Nature&#x27;s golden nectar, pure and organic [...] ••••••••
+
+header-logo
+
+Bringing Freshness to Your Table With Flavorful Products
+
+ The Trust Is In AIL
+
+We endeavor to strive together with passion, unity of purpose, and unconventional thinking, to be a dynamic front running brand, which is greatly valued &amp; trusted for its efficacy and superior quality.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/apis-india-ltd" target="_blank">Apis India Ltd</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/apis-india-ltd</div>
+                    <div class="result-content">Products and services
+Keywords: food &amp; beverage, finance/investing, honey productions &amp; exports, bakery, food production, preservers, dates, tea &amp; green tea, jam, pickles, b2b, b2c [...]  Apis India Ltd
+
+Description: A leading FMCG player with 3 generations of excellence. Known for top-quality Sourcing, Production, and Supply. 13 state-of-the-art facilities in India, plus a global unit in Dubai. Growing retail distribution, 200,000+ counters nationwide. Products for every household, a trusted brand synonymous with well-being. Join us in the journey of growth, innovation, and excellence.
+LinkedIn:  · 7,939 followers
+Industry: Food and Beverage Services
+Type: Public Company
+Headquarters: New Delhi, New Delhi, India
+Social Profiles:     
+
+ Employees
+- Now: 392
+
+ Leadership
+- Ankit Nagar, Chief Financial Officer</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://apisindia.s3.ap-south-1.amazonaws.com/Annual+Report+2024-25+(1).pdf" target="_blank">https://apisindia.s3.ap-south-1.amazonaws.com/Annual+Report+2024-25+(1).pdf</a></h3>
+                    <div class="result-url">https://apisindia.s3.ap-south-1.amazonaws.com/Annual+Report+2024-25+(1).pdf</div>
+                    <div class="result-content">Operations This year the Company is planning to expend its product basket in spread category like Honey Almond Cornflakes, Museli with 21% Fruit &amp; Nuts, Jam with added vitamins &amp; minerals, Kahwa, Honey Lemon Green Tea, Soya Chunk with Masala, Masala Dates, Sliced Dates, Classic Seedless Dates, Falooda Premix, Jaljeera Premix, Thandai Premix, Aam Premix, Shikanji Premix. The Company has presence its current category of product basket which includes varies new product added in different category are detailed as follows: a) Honey: The Company product under the brand name of APIS Himalaya have now become an important player in branded Honey segment in India. The Company offers a wide variety in honey like-Acacia, Eucalyptus, Himalaya Honey, Lychee, Sunflower and wild Flower Forest, mainly for [...] Corporate Overview Statutory Report Financial Statements APIS INDIA LIMITED APIS INDIA LIMITED 4 Page c) Preserves Getting a consistent product throughout the year is a must and our quality Control ensures that you get the perfect taste in our preserves all year around. Right from sourcing the right raw product, to proper cleaning and treatment, a stringent process flow is maintained to give you the best product. Kitchen essentials are kept as fresh as they did when plucked. No added flavour or chemicals are used in Apis preserves. The Company has introduced Ginger Garlic Paste in 20gm, 100gm and 200gm pouches to make their presence in the domestic market and knock the door to reach the maximum no of consumers.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.business-standard.com/companies/news/apis-india-to-expand-product-portfolio-aims-rs-500-cr-revenue-in-fy25-124010900680_1.html" target="_blank">Apis India to expand product portfolio, aims Rs 500 cr revenue in FY25 | Company News - Business Standard</a></h3>
+                    <div class="result-url">https://www.business-standard.com/companies/news/apis-india-to-expand-product-portfolio-aims-rs-500-cr-revenue-in-fy25-124010900680_1.html</div>
+                    <div class="result-content">&quot;We are in the right segments. Dates are very good for the health. Honey is very good for the health,&quot; he said.
+
+Now, the company is planning to expand its organic range and develop new products around this, which he expects will take the company to the &quot;next level&quot;.
+
+Besides, Apis India has plans to expand its distribution network.
+
+&quot;We are targeting to add 25 per cent more distributors,&quot; he said.
+
+The company has a plant at Roorkee, Uttarakhand and is considering opening one more.
+
+&quot;We are looking forward to doing further expansion in our manufacturing facilities by opening up a new avenue,&quot; Anand said.
+
+In line with the product portfolio expansion, Apis India has launched its range of organic honey. [...] Friday, November 13, 2026 | 03:21 PM ISTहिंदी में पढें
+
+Notification Icon
+
+userprofile IconSearch
+
+Home / Companies / News / Apis India to expand product portfolio, aims Rs 500 cr revenue in FY25
+
+ Apis India to expand product portfolio, aims Rs 500 cr revenue in FY25
+
+ The listed company, which is present in the food segment with honey, dates, green tea and breakfast products, among others, is looking to expand its product portfolio and distribution footprints
+
+Press Trust of India New Delhi 
+
+2 min read Last Updated : Jan 09 2024 | 4:51 PMIST
+
+ Listen to This Article
+
+Homegrown FMCG firm Apis India plans to expand its product portfolio in the food segment and aims a topline of Rs 500 crore by the end of next fiscal, its Managing Director Amit Anand said on Tuesday. [...] Besides, Apis India has plans to open a new plant to cater to the growing demand and is investing in branding and marketing to make its products more visible in the market.
+
+The listed company, which is present in the food segment with honey, dates, green tea and breakfast products, among others, is looking to expand its product portfolio and distribution footprints across the country.
+
+ 
+
+The Delhi-based company had reported a revenue of Rs 333.66 crore for the financial year that ended on March 31, 2023. The company gets nearly equal contributions from the B2B and B2C businesses.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://scanx.trade/stock-market-news/companies/apis-india-board-approves-nse-main-board-listing-existing-shares/55352569" target="_blank">Apis India board approves NSE Main Board listing for existing shares</a></h3>
+                    <div class="result-url">https://scanx.trade/stock-market-news/companies/apis-india-board-approves-nse-main-board-listing-existing-shares/55352569</div>
+                    <div class="result-content">Apis India board approves NSE Main Board listing for existing shares · Apis India Q1FY27 Results: Net profit up 34% YoY to ₹338.75 lakh.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.tradingview.com/symbols/BSE-APIS" target="_blank">APIS Stock Price and Chart — BSE:APIS — TradingView</a></h3>
+                    <div class="result-url">https://www.tradingview.com/symbols/BSE-APIS</div>
+                    <div class="result-content">Markets don&#x27;t sleep, here&#x27;s what&#x27;s going on with APISat the moment:   
+ – Apis India Appoints Ankit Nagar As Chief Financial Officer   
+ – Apis India Says Manisha Anand Resigns As CFO   
+ – Apis India Recommends Bonus Shares In 241 Ratio   
+  
+See more updates in real-time with our News Flow. [...] Neutral
+
+Summary
+
+Neutral
+
+Moving Averages
+
+Neutral
+
+Moving Averages
+
+Neutral
+
+ Seasonals﻿
+
+﻿
+
+Displays a symbol&#x27;s price movements over previous years to identify recurring trends.
+
+ Frequently asked questions
+
+﻿
+
+Today, APIStrades at 51.85 INR.   
+  
+For broader market analysis, dive into the technicals on the Apis India Ltd stock price chart and read the latest APIS news:   
+ – Apis India Appoints Ankit Nagar As Chief Financial Officer   
+ – Apis India Says Manisha Anand Resigns As CFO   
+ – Apis India Recommends Bonus Shares In 241 Ratio [...] Get started
+
+Apis India LtdApis India LtdApis India Ltd
+
+ Apis India Ltd
+
+No trades
+
+No trades
+
+OverviewFinancialsNewsCommunityTechnicalsSeasonals
+
+Full chart
+
+Full chart
+
+ Peers for comparison
+
+﻿
+
+ Key stats﻿
+
+﻿
+
+Market capitalization
+
+‪7.03 B‬ INRMicro cap
+
+Dividend yield (indicated)
+
+Price to earnings Ratio (TTM)
+
+31.80
+
+Basic EPS (TTM)
+
+1.60 INR
+
+Net income (FY)
+
+‪253.22 M‬ INR
+
+Revenue (FY)
+
+‪3.75 B‬ INR
+
+Shares float
+
+‪23.74 M‬
+
+Beta (1Y)
+
+0.73
+
+ Employees﻿
+
+﻿
+
+Employees (FY)
+
+612
+
+Change (1Y)
+
++55+9.87%
+
+Revenue / Employee (1Y)
+
+‪6.12 M‬ INR
+
+Net income / Employee (1Y)
+
+‪413.75 K‬ INR
+
+ Company info
+
+﻿
+
+Sector
+
+Consumer Non-Durables
+
+Industry
+
+Food: Major Diversified
+
+CEO
+
+Amit Anand
+
+Website
+
+apisindia.com
+
+Headquarters
+
+New Delhi
+
+Founded
+
+1924
+
+IPO date
+
+Oct 28, 2009</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://economictimes.indiatimes.com/apis-india-ltd/stocksupdate/companyid-4065.cms" target="_blank">Apis India Ltd. - Stocks</a></h3>
+                    <div class="result-url">https://economictimes.indiatimes.com/apis-india-ltd/stocksupdate/companyid-4065.cms</div>
+                    <div class="result-content">Apis India announces a 24:1 bonus issue on 5th December as the stock hits its 5% upper circuit amid strong 12-month and five-year returns. The company reported</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://dhan.co/stocks/apis-india-ltd-news" target="_blank">Apis Latest News - Announcements &amp; Live Updates | Dhan</a></h3>
+                    <div class="result-url">https://dhan.co/stocks/apis-india-ltd-news</div>
+                    <div class="result-content">Read Now
+
+ Corporate Actions
+
+| Date | Corporate Action | Information |
+ --- 
+| 14th Nov 2026, Saturday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q2 FY 26-27 Results  info |
+| 27th Oct 2026, Tuesday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q2 FY 26-27 Results  info |
+| 30th May 2026, Saturday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q4 FY 26-27 Results  info |
+| 13th Feb 2026, Friday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q3 FY 25-26 Results  info |
+| 5th Dec 2025, Friday | BONUSBonus | Bonus Ratio 24:1 |
+
+The above dates are ex-dates.
+
+View Allarrow
+
+Check APIS latest Company Filings, Investor Presentation &amp; Conference Call details.
+
+Read Now
+
+ What&#x27;s New In The Market
+
+---
+
+---
+
+---
+
+ APIS Peers
+
+Nestle
+
+N
+
+Nestle
+
+LTP:
+
+1,297.00
+
+M.Cap: [...] logo
+
+searchSearch for Stocks, Mutual Funds, Indices, ETFs
+
+LoginOpen Account
+
+logo
+
+Use App
+
+HomeStocksAPIS
+
+A
+
+Apis
+
+FMCG
+
+BuySell
+
+₹ 50.82
+
+-2.94(-5.47%)
+
+loss
+
+as on 16 Nov 2026 at 03:29 PM
+
+BSE
+
+M.Cap₹700 Cr
+
+PE Ratio30.00
+
+ROCE17.62%
+
+views2
+
+portfolio77
+
+A
+
+Apis
+
+FMCG
+
+₹ 50.82
+
+-2.94(-5.47%)loss
+
+as on 16 Nov 2026 at 03:29 PM
+
+BSE
+
+views2
+
+portfolio77
+
+A
+
+₹ 50.82
+
+-2.94 (-5.47%)
+
+loss
+
+News
+
+Corporate Actions
+
+Latest In The Market
+
+Peers
+
+Go to Overview
+
+img
+
+ ApisLatest News
+
+---
+
+---
+
+Get Recent Announcements &amp; All Past News of APIS.
+
+Read Now
+
+ Corporate Actions [...]  APIS Peers
+
+Nestle
+
+N
+
+Nestle
+
+LTP:
+
+1,297.00
+
+M.Cap:
+
+₹ 2,50,102CrBritannia Industries
+
+B
+
+Britannia Industries
+
+LTP:
+
+4,754.00
+
+M.Cap:
+
+₹ 1,14,509CrMilky Mist Dairy Food
+
+M
+
+Milky Mist Dairy Food
+
+LTP:
+
+307.80
+
+M.Cap:
+
+₹ 23,696CrHatsun Agro Product
+
+H
+
+Hatsun Agro Product
+
+LTP:
+
+1,027.75
+
+M.Cap:
+
+₹ 22,893CrZydus Wellness
+
+Z
+
+Zydus Wellness
+
+LTP:
+
+466.15
+
+M.Cap:
+
+₹ 14,831Cr
+
+View Allarrow
+
+Candle bars with Screen
+
+Invest in APIS
+
+Candle bars with Screen
+
+Pay Zero Brokerage on Delivery
+
+Candle bars with Screen
+
+Open FREE Demat Account
+
+Indian Flag
+
++91
+
+error
+
+Or Scan the QR Code to download the Dhan App
+
+QR code Logo
+
+1 Cr+ App Downloads   
+ on Play Store
+
+TradeStocksOnDhan QR
+
+Google PlayStore Logo
+
+Play Store
+
+4.7
+
+Apple Logo
+
+App Store
+
+4.0
+
+Join our Community
+
+Follow us on</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.marketsmojo.com/stocks-analysis/apis-india-501696-0" target="_blank">Apis India Ltd () Stock Analysis | Price, Returns, Financials &amp; Key Metrics</a></h3>
+                    <div class="result-url">https://www.marketsmojo.com/stocks-analysis/apis-india-501696-0</div>
+                    <div class="result-content">Apis India&#x27;s peers include Dhunseri Tea, Umang Dairies, Milkfood, Healthy Life, Galaxy Cloud, Tirupati Starch, Ganges Securitie, Sumuka Agro, Jeyyam Global, and ATC Energies. Apis India Ltd is a micro-cap company and market leader in honey processing within the FMCG industry, reporting net sales of 902 Cr and a net profit of 81 Cr for the quarter ending March 2025. Apis India Ltd is a market leader in the honey processing business, operating within the FMCG industry and classified as a micro-cap company. As of 23rd July, Apis India Ltd has a market capitalization of 179.00 Cr, classified as a Micro Cap, with recent net sales of 350.35 Cr and net profit of 25.34 Cr over the latest four quarters. Market Cap: Apis India Ltd has a market capitalization of 179.00 Cr, classified as a Micro Cap. Recent Quarterly Performance: The sum of Net Sales for the latest 4 quarters is 350.35 Cr, while the sum of Net Profit for the same period is 25.34 Cr. Balance Sheet Snapshot: The reporting period is the latest annual period, but data for Shareholder&#x27;s Funds and Total Assets is unavailable. Apis India has shown steady growth in net sales and profit from 210.00 Cr in Mar&#x27;20 to 350.35 Cr in Mar&#x27;25, despite some fluctuations, with a healthy operating profit margin of 10.16% and positive cash flow of 5.00 Cr in Mar&#x27;25. The historical performance of Apis India shows a steady increase in net sales and profit over the years, with some fluctuations in expenses and margins. Apis India&#x27;s net sales have shown a consistent upward trend, rising from 210.00 Cr in Mar&#x27;20 to 350.35 Cr in Mar&#x27;25, despite a slight dip in Mar&#x27;23. Furthermore, Apis India Ltd is trading above its 5-day, 20-day, 50-day, 100-day, and 200-day moving averages, suggesting a bullish trend. Overall, the combination of consistent gains, strong historical performance, and reaching a new high contributes to the rising stock price of Apis India Ltd. Read More. As of 19 November 2025, the technical trend for Apis India has changed from bullish to mildly bullish.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://koalagains.com/stocks/BSE/506166" target="_blank">Apis India Ltd (506166) Stock Analysis &amp; Key Metrics (2026)</a></h3>
+                    <div class="result-url">https://koalagains.com/stocks/BSE/506166</div>
+                    <div class="result-content">Positioned against its peers, Apis India&#x27;s growth prospects appear weak. Competitors like Dabur and Marico possess fortress-like moats built on iconic brands, massive distribution networks reaching millions of outlets, and enormous financial resources for advertising and innovation. Apis India has none of these advantages. Its primary risk is being priced out of the market or being unable to secure shelf space against these giants. The opportunity lies in carving out a niche, possibly as a B2B supplier or in specific export markets where it can avoid direct confrontation with the market leaders. However, even in the export niche, a peer like ADF Foods has demonstrated a far superior model with significantly higher profitability. [...] From a financial perspective, Apis India is a high-volume, low-margin business. Its main cost drivers are raw materials, such as raw honey, sugar, and other food ingredients, along with packaging and logistics. Positioned as a price-competitor, its ability to generate profit is heavily dependent on operational efficiency and tight cost control. However, its small scale relative to competitors limits its purchasing power. Its operating profit margin languishes around `~6%`, a stark contrast to the `17-20%` margins enjoyed by brand-led competitors like Dabur and Marico, highlighting its weak position in the value chain and lack of pricing power. [...] Apis India&#x27;s competitive moat is virtually non-existent. The company has failed to build any significant brand equity; in the honey category, consumers overwhelmingly trust established brands like Dabur, which holds over `50%` market share. Apis also lacks economies of scale. With revenues of `~₹400 crores`, it cannot match the manufacturing and distribution cost efficiencies of behemoths like Britannia or Dabur, whose revenues are more than 30 times larger. Furthermore, there are no switching costs for its products, and it possesses no unique network effects or regulatory advantages. Its distribution network is also limited, preventing it from reaching a wide consumer base effectively.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/apis-india/__YXJt4OKdLjyqiQwHcgT5KZQc2jCpHyt38yGBrTzN0iI" target="_blank">Apis India - 2026 Company Profile, Competitors &amp; Financials - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/apis-india/__YXJt4OKdLjyqiQwHcgT5KZQc2jCpHyt38yGBrTzN0iI</div>
+                    <div class="result-content">| 4th | Logo for Cookd  Cookd 2020, Chennai  (India), Seed | Platform offering meal planning solution | $4.04M | Hm Allianc, Lead Angels  &amp; 74 others | 55/100 |
+| 5th | Logo for Madhusudan Masala  Madhusudan Masala 1982, Jamnagar  (India), Public | Manufacturer and processor of a wide range of spices  - | 52/100 |
+| 6th | Logo for Keya Foods  Keya Foods 2009, Mumbai  (India), Acquired | Internet first brand of herbs spices seasonings and various food ingredient products | $209K | View Corporate, True North  &amp; 8 others | 51/100 |
+| 7th | Logo for Vasant Masala  Vasant Masala 1970, Ahmedabad  (India), Unfunded | Brand of spices  - | 48/100 |
+| 8th | Logo for Apis India  Apis India 1924, Delhi  (India), Public | Manufacturer of honey and value-added food products  - | 48/100 | [...] Logo for ZOFF Foods
+Logo for Goldiee Group
+Logo for CurryIt
+Logo for Cookd
+Logo for Madhusudan Masala
+Logo for Keya Foods
+Logo for Vasant Masala
+Logo for Apis India
+Logo for Shyam Spices
+Logo for Snapin
+lock
+
+ Apis India&#x27;s Investments and acquisitions
+
+ Reports related to Apis India
+
+An image depicting Food &amp; Beverage Products - Sector Report
+
+Food &amp; Beverage Products - Sector Report
+
+ News related to Apis India
+
+lock
+lock
+
+ FAQs about Apis India
+
+Accel Partners
+Partech
+IN-Q-TEL - US
+Fujitsu
+Tenity
+Stanford [...] | Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |
+ ---  ---  --- |
+| 1st | Logo for ZOFF Foods  ZOFF Foods 2018, Raipur  (India), Series A | Online retailer of Indian spices, seasonings, dry fruits, and combos | $7.16M | JM Financial Private Equity, Chhattisgarh Investments ... &amp; 7 others | 65/100 |
+| 2nd | Logo for Goldiee Group  Goldiee Group 1980, Kanpur  (India), Unfunded | Manufacturers of spices  - | 58/100 |
+| 3rd | Logo for CurryIt  CurryIt 2020, Delhi  (India), Seed | Internet first brand offering spices and other food products | $1.12M | RPSG Capital Ventures, RK Family Trust  &amp; 15 others | 57/100 |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.screener.in/company/506166/consolidated" target="_blank">Apis India Ltd share price | About Apis India | Key Insights - Screener</a></h3>
+                    <div class="result-url">https://www.screener.in/company/506166/consolidated</div>
+                    <div class="result-content">Edit ratios
+
+Pros
+
+Cons
+
+ Though the company is reporting repeated profits, it is not paying out dividend
+ The company has delivered a poor sales growth of 7.47% over past five years.
+ Earnings include an other income of Rs.15.9 Cr.
+
+\ The pros and cons are machine generated.   Pros / cons are based on a checklist to highlight important points. Please exercise caution and do your own analysis.
+
+ Peer comparison
+
+Fast Moving Consumer Goods Fast Moving Consumer Goods Food Products Other Food Products
+
+Edit Columns
+
+Loading peers table ...
+
+ Quarterly Results
+
+Consolidated Figures in Rs. Crores / View Standalone [...] Key Points
+
+Business Overview:(  
+ The company&#x27;s core business is of   
+ procurement, processing, packing   
+ and sale /export of honey. The raw   
+ honey is sourced through collection representatives/agents across India   
+ and is seasonally procured. The broader   
+ branded portfolio spans conventional,   
+ organic, flavoured and infused honey;   
+ dates and value-added dates; fruit jam/preserves; green tea/Kahwa;   
+ breakfast cereals; vermicelli; kitchen   
+ mixes; saffron; ginger-garlic paste;   
+ macaroni and soya chunks. Brands   
+ include Apis, Misk and Nutrasip.(
+
+Website   BSE
+
+ Market Cap   ₹ 726 Cr.
+ Current Price   ₹ 52.7
+ High / Low  ₹ 110 / 43.9
+ Stock P/E   29.4
+ Book Value   ₹ 14.4
+ Dividend Yield   0.00 %
+ ROCE   14.6 %
+ ROE   13.6 %
+ Face Value   ₹ 10.0
+
+Edit ratios [...]  Apis India Ltd
+
+AI
+
+Apis India Summary  Chart Analysis Peers Quarters Profit &amp; Loss Balance Sheet Cash Flow Ratios Investors Documents
+
+AI
+
+ Apis India Ltd
+
+₹ 52.7  -1.31%
+
+06 Nov - close price
+
+apisindia.com   BSE: 506166
+
+About
+
+Incorporated in 1983, APIS India Ltd is in the honey processing business and manufacturing of other edible products(
+
+Key Points</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://introspectivemarketresearch.com/reports/india-fmcg-market" target="_blank">India FMCG Market Size: In-Depth Analysis</a></h3>
+                    <div class="result-url">https://introspectivemarketresearch.com/reports/india-fmcg-market</div>
+                    <div class="result-content">India FMCG Market Active Players:
+
+ Amul
+ Bajaj Consumer Care Ltd.
+ Britannia Industries Ltd.
+ Coca-Cola India
+ Dabur India Limited
+ Emami Limited
+ Godrej Consumer Products Limited (GCPL)
+ Hindustan Unilever Limited (HUL)
+ ITC Limited
+ Marico Limited
+ Nestlé India
+ Parle Products Pvt. Ltd.
+ Patanjali Ayurved Limited
+ PepsiCo India
+ Procter &amp; Gamble Hygiene and Health Care Ltd. (P&amp;G)
+ Reckitt Benckiser (India) Pvt. Ltd.
+ Tata Consumer Products Limited
+ Other Active Players
+
+ Key Industry Developments in the India FMCG Market: [...]  Frequently Asked Questions :
+
+What would be the forecast period in the India FMCG Market research report?
+
+The forecast period in the India FMCG Market research report is 2024-2032.
+
+Who are the key players in the Indian FMCG Market?
+
+Amul, Bajaj Consumer Care, Britannia Industries, Coca-Cola India, Dabur, Emami, Godrej Consumer Products, HUL, ITC, Marico, Nestlé India, Parle, Patanjali Ayurved, PepsiCo India, P&amp;G, Reckitt Benckiser, and Tata Consumer Products, are major players in the food and beverages, consumer goods, and health sectors in India, contributing significantly to the market&#x27;s growth, and Other Active Players.
+
+What are the segments of the Indian FMCG Market? [...] 9.2.6 Operating Business Segments  
+   9.2.7 Product Portfolio  
+   9.2.8 Business Performance  
+   9.2.9 Key Strategic Moves and Recent Developments  
+   9.2.10 SWOT Analysis  
+  9.3 BAJAJ CONSUMER CARE LTDBRITANNIA INDUSTRIES LTDCOCA-COLA INDIA  
+  9.4 DABUR INDIA LIMITED  
+  9.5 EMAMI LIMITED  
+  9.6 GODREJ CONSUMER PRODUCTS LIMITED (GCPL)  
+  9.7 HINDUSTAN UNILEVER LIMITED (HUL)  
+  9.8 ITC LIMITED  
+  9.9 MARICO LIMITED  
+  9.10 NESTLÉ INDIA  
+  9.11 PARLE PRODUCTS PVT. LTDPATANJALI AYURVED LIMITED  
+  9.12 PEPSICO INDIA  
+  9.13 PROCTER &amp; GAMBLE HYGIENE AND HEALTH CARE LTD. (P&amp;G)  
+  9.14 RECKITT BENCKISER (INDIA) PVT. LTDTATA CONSUMER PRODUCTS LIMITED  
+  9.15  
+   
+ Chapter 10 Analyst Viewpoint and Conclusion  
+ 10.1 Recommendations and Concluding Analysis</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>
