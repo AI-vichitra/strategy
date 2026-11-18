@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APIS - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>APIS</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">D2C (Direct-to-Consumer)</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://apisindia.com" target="_blank" class="meta-url">https://apisindia.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Apis India Limited, founded in 1925, is a prominent player in the Food and Beverage Services industry, primarily known for its honey and diversified FMCG products. The company operates 13 state-of-the-art facilities across India, including a large manufacturing unit in Roorkee. Apis India's business model is vertically integrated, focusing on honey sourcing, processing, and distribution through retail, bulk, and export channels. The company's mission is to inspire consumers with products that promote a healthier lifestyle through continuous innovation. Apis India has a strong presence in both domestic and international markets, exporting bulk and branded honey. The company's financial performance shows steady growth, with a total income of ₹352.08 crores for FY 2024-25, and it maintains a significant market presence with over 200,000 retail outlets nationwide.. Company Profile  # About Apis - Company Information, Overview, History and Profile   About  Website: www.apisindia.com  ## About the company - Business Profile  Apis India Ltd. is an Indian company primarily engaged in the organized honey market. The company has evolved from being a honey processor to a diversified multi-product FMCG entity. It operates as a significant player in both domestic and international markets, specializing in the processing and packaging of honey, and has expanded its portfolio into several other food categories.  ### Key Points [...] + Domestic Sales: ₹18,137.60 lakhs (approximately 52% of revenue).   + The company operates as a single reporting segment under Ind AS-108.  Business Model and Strengths:   + Business Model: Apis India follows a vertically integrated model for honey, sourcing directly from beekeepers, processing at its own facilities, and distributing through retail, bulk, and export channels.   + Core Competency: The company is particularly strong in large-scale honey processing and maintains rigorous quality control through its internal laboratory and testing facilities. It has a significant presence in the export market, supplying bulk and branded honey to various countries.  Employee Information: [...] + Marketing: Ongoing OOH (Out-of-Home) and BTL (Below-the-Line) activities, including participation in major fairs like the Kumbh Mela and Bharat Mahotsav, are used to enhance brand visibility.  Financial Performance Summary (FY 2024-25):   + Total Income: ₹352.08 crores (Growth of 10.77% YoY).   + Profit After Tax (PAT): ₹21.02 crores (Decrease of 5.81% YoY).   + EBITDA: ₹37.44 crores (Growth of 3.63% YoY).   + EPS: ₹38.18 (Post-bonus adjustment reflected in subsequent quarterly reports).. # Apis India Ltd  Description: A leading FMCG player with 3 generations of excellence.<br/><br/><strong>Product & Service Portfolio:</strong> Apis India Limited offers a diverse range of products and services primarily in the food and beverage sector. Their product portfolio includes premium honey varieties such as acacia, eucalyptus, and wild flower forest, under the APIS Himalaya brand, as well as green tea, preserves, masala dates, fruit jams, cereals, vermicelli, and organic honey under the Apis brand. They also provide saffron, peanut butter, ginger garlic paste, and soya chunks. Apis India Limited is a leading FMCG player with a strong focus on R&D, innovation, and market expansion, offering products across hyper markets, e-commerce platforms, and neighborhood convenience stores. The company is one of the largest exporters of honey from India to Gulf, Canada, and the USA, adhering to high quality standards.. # Apis India Ltd ID: gpV5e2Dg1pXm Website: www.apisindia.com Legal name: APIS INDIA LTD Headquarters: New Delhi, New Delhi, India LinkedIn: www.linkedin.com/company/apis-india-ltd · 8,075 followers Industry: Food and Beverage Services Industry codes: SIC 20, 203, NAICS 31, 311 Company type: Public Company Founded: 1925 Business model: B2B, B2C SaaS: no Social profiles: www.facebook.com/apisindialtd, www.twitter.com/apis_india, www.crunchbase.com/organization/apis-india, www.instagram.com/apisindialtd, www.youtube.com/channel/ucbsf_medodshf3qvglvbflq Email: info@apisindia.com Phone: 011-43206666, 011 4320 6666, +91-11-43206666 [...] ## Products and services Business areas: FMCG Manufacturing, Food and Beverage Production, Retail Distribution Products: Honey, Organic Honey, Fruit Jams, Dates, Cereals and Muesli, Vermicelli, Pickles, Green Tea, Preserves  ## Headcount - Now: 394 · +45 yearly (12.9%) · +9 quarterly · +2 monthly   - Southern Asia: 162   - Eastern Europe: 0   - Latin America: 0   - Southern Europe: 0   - Sub Saharan Africa: 0   - Central Asia: 0   - Northern America: 0   - Australia New Zealand: 0   - Northern Europe: 0   - South Eastern Asia: 0   - Polynesia: 0   - Northern Africa: 0   - Melanesia: 0   - Western Europe: 0   - Western Asia: 0  ## Financials - Annual revenue: 10.00M USD [...] Phone: 011-43206666, 011 4320 6666, +91-11-43206666 Description: Apis India Limited is a company that offers premium honey, fruit jams, dates, cereals, and vermicelli. They strive to bring freshness to your table with flavorful products and are highly valued and trusted for their efficacy and superior quality. They are certified grade a by lrqa under the global standard for food safety.. APIS India Limited engages in testing, processing, and filtration of honey in India. The company provides honey, such as acacia, eucalyptus, himalaya honey, lychee, sunflower and wild flower forest, lemon infused, ginger honey, and chilly honey under the APIS Himalaya brand name; green tea; lime, mango tang, mixed veggies, and tomato; preserves; masala dates; mouth freshener; dates, such as premium seeded, royal zahidi, arabian pearls, shahana, deseeded, nayaab, desert bliss, classic, kalmi, and select dates; fruitilicious jam; soya chunks; corn flakes; choco flakes; ginger garlic paste; thin roasted seviyan vermicelli; saffron; peanut butter; and organic honey under the Apis brand. It also exports its products. The company was formerly known as eWeb Univ Limited.<br/><br/><strong>Recent Developments & News:</strong> Apis India Ltd has approved listing its existing equity shares on the NSE Main Board as a second trading platform, pending NSE and regulatory approvals. The company reported Q1 sales of INR 659.7 million, down from INR 865.5 million a year ago, with quarterly revenue at INR 668.8 million compared to INR 872.4 million in the previous year. The board will meet on October 27, 2026, to approve unaudited financial results for the quarter ended June 30, 2026, with the trading window closed until 48 hours after results are declared. Apis India Ltd has also delayed June 30, 2026 quarterly results due to auditor-related matters and revised disclosure under SEBI Takeover Regulations, 2011. The company has plans for a 24:1 bonus share issue and an increase in authorized share capital from ₹13.30 crore to ₹140.00 crore, subject to shareholder approval.. ScoutQuest•  Apis India's board approved listing its existing equity shares on the NSE Main Board as a second trading platform. No fresh shares or funds will be raised; the listing is subject to NSE and regulatory approvals.  MarketScreener India•  APIS India reported Q1 sales of INR 659.7 million, down from INR 865.5 million a year ago. Quarterly revenue stood at INR 668.8 million compared to INR 872.4 million reported in the previous year.  BSE•  Apis India board will meet on October 27, 2026, to approve unaudited financial results for quarter ended June 30, 2026. The trading window for dealing in company securities remains closed until 48 hours after financial results are declared.  ScoutQuest• [...] ScoutQuest•  Apis India Ltd delays June 30, 2026 quarterly results due to auditor-related matters. The company has provided documents, is following up, and remains committed to compliance.  ScoutQuest•  Apis India Ltd shares revised disclosure under SEBI Takeover Regulations, 2011.  BSE•  Apis India Ltd announces board meeting on Aug 13, 2026, to review Q1 financial results. Trading window closed July 1 to 48 hours post results; insiders prohibited from trading.  ScoutQuest•  CARE Ratings reaffirms Apis India's credit ratings; long-term BBB/stable, short-term A3. Apis India's bank facilities total Rs.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> APIS India Limited operates primarily in the apiculture and retail food industry, focusing on honey production and becoming the Master Franchisee of Wetzel’s Pretzels. The sources do not provide a comprehensive list of competitors for APIS in the D2C market, but they mention that traditional players like Unilever are adopting D2C strategies, and platforms like Shopify are used by various D2C brands. The sources also highlight that the D2C market includes companies like Warby Parker, Casper, Dollar Shave Club, Glossier, Allbirds, Everlane, Bonobos, Harry’s, Away, and Rothy’s across different segments such as apparel, beauty, food, and wellness. The potential for growth in the D2C market is noted, especially in India where several players have reported revenues over $15MM annually and valuations exceeding $100MM.. DIS MANAGEMENT DISCUSSION AND ANALYSIS REPORT CUSSION AND ANALYSIS REPORT CUSSION AND ANALYSIS REPORT CUSSION AND ANALYSIS REPORT MANAGEMENT DISCUSSION AND ANALYSIS 1. INDUSTRY STRUCTURE AND DEVELOPMENTS Being into the business of rearing and hiving honey bees for the purpose of generation and export of honey the Company basically carries on the business of apiculture and falls in the Agricultural Industry. The Companies operated in an unexplored apiculture market and focused for bright growth opportunities in future. It has also expanded its operation in Retail Food Industry by becoming the Master Franchisee of USA Based Pretzel chain Wetzel’s Pretzels. OPPOTUNITIES AND THREATS There is a huge opportunities for honey market to grow in India because of availability of raw material and. Direct-to-Consumer (D2C) Brands Market Segments:        According to the report, the Direct-to-Consumer (D2C) Brands Market is segmented in the following ways which fulfill the market data needs of multiple stakeholders across the industry value chain -        The Leading Players involved in the global Direct-to-Consumer (D2C) Brands market are:        Warby Parker    Casper    Dollar Shave Club    Glossier    Allbirds    Everlane    Bonobos    Harry's    Away    Rothy's        Segmentation by Type:        Apparel and Fashion    Beauty and Personal Care    Home and Lifestyle    Food and Beverage    Health and Wellness    Electronics and Gadgets        Segmentation by Applications:        E-commerce platforms    Social media marketing    Influencer collaborations [...] 5. The Direct-to-Consumer (D2C) Brands Market research report gives a thorough analysis of the current status of the Direct-to-Consumer (D2C) Brands Market's major players. FAQ's:        ☛ What is the size of the market in terms of revenue, sales volume, or the number of users/customers?    ☛ Who are the key players in the market, and what are their market shares?    ☛ What are the trends and drivers shaping the market, and what are the challenges and opportunities?    ☛ What are the different segments of the market, and how are they expected to grow?    ☛ What are the key products or services offered in the market, and how do they compare to each other?    ☛ What are the pricing strategies and competitive landscape of the market? [...] The latest research study released by Worldwide Market Reports on "Direct-to-Consumer (D2C) Brands Market 2024" holds tons of experience in offering comprehensive and accurate analysis of global as well as regional markets.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://trendlyne.com/equity/about/2270/APIS/apis-india-ltd" target="_blank">Apis company information, history, management and director details and CEO salary</a></h3>
+                    <div class="result-url">https://trendlyne.com/equity/about/2270/APIS/apis-india-ltd</div>
+                    <div class="result-content">1. Apis India Ltd.
+2. Company Profile
+
+ About Apis - Company Information, Overview, History and Profile
+
+ About
+
+Website: www.apisindia.com
+
+ About the company - Business Profile
+
+Apis India Ltd. is an Indian company primarily engaged in the organized honey market. The company has evolved from being a honey processor to a diversified multi-product FMCG entity. It operates as a significant player in both domestic and international markets, specializing in the processing and packaging of honey, and has expanded its portfolio into several other food categories.
+
+ Key Points [...] + Domestic Sales: ₹18,137.60 lakhs (approximately 52% of revenue).
+  + The company operates as a single reporting segment under Ind AS-108.
+ Business Model and Strengths:
+  + Business Model: Apis India follows a vertically integrated model for honey, sourcing directly from beekeepers, processing at its own facilities, and distributing through retail, bulk, and export channels.
+  + Core Competency: The company is particularly strong in large-scale honey processing and maintains rigorous quality control through its internal laboratory and testing facilities. It has a significant presence in the export market, supplying bulk and branded honey to various countries.
+ Employee Information: [...] + Marketing: Ongoing OOH (Out-of-Home) and BTL (Below-the-Line) activities, including participation in major fairs like the Kumbh Mela and Bharat Mahotsav, are used to enhance brand visibility.
+ Financial Performance Summary (FY 2024-25):
+  + Total Income: ₹352.08 crores (Growth of 10.77% YoY).
+  + Profit After Tax (PAT): ₹21.02 crores (Decrease of 5.81% YoY).
+  + EBITDA: ₹37.44 crores (Growth of 3.63% YoY).
+  + EPS: ₹38.18 (Post-bonus adjustment reflected in subsequent quarterly reports).</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/apis-india-ltd" target="_blank">Apis India Ltd</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/apis-india-ltd</div>
+                    <div class="result-content">Apis India Ltd
+
+Description: A leading FMCG player with 3 generations of excellence. Known for top-quality Sourcing, Production, and Supply. 13 state-of-the-art facilities in India, plus a global unit in Dubai. Growing retail distribution, 200,000+ counters nationwide. Products for every household, a trusted brand synonymous with well-being. Join us in the journey of growth, innovation, and excellence.
+LinkedIn:  · 7,939 followers
+Industry: Food and Beverage Services
+Type: Public Company
+Headquarters: New Delhi, New Delhi, India
+Social Profiles:     
+
+ Employees
+- Now: 392
+
+ Leadership
+- Ankit Nagar, Chief Financial Officer</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/gpV5e2Dg1pXm" target="_blank">Apis India Ltd</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/gpV5e2Dg1pXm</div>
+                    <div class="result-content">Apis India Ltd
+ID: gpV5e2Dg1pXm
+Website: www.apisindia.com
+Legal name: APIS INDIA LTD
+Headquarters: New Delhi, New Delhi, India
+LinkedIn: www.linkedin.com/company/apis-india-ltd · 8,075 followers
+Industry: Food and Beverage Services
+Industry codes: SIC 20, 203, NAICS 31, 311
+Company type: Public Company
+Founded: 1925
+Business model: B2B, B2C
+SaaS: no
+Social profiles: www.facebook.com/apisindialtd, www.twitter.com/apis_india, www.crunchbase.com/organization/apis-india, www.instagram.com/apisindialtd, www.youtube.com/channel/ucbsf_medodshf3qvglvbflq
+Email: info@apisindia.com
+Phone: 011-43206666, 011 4320 6666, +91-11-43206666 [...]  Products and services
+Business areas: FMCG Manufacturing, Food and Beverage Production, Retail Distribution
+Products: Honey, Organic Honey, Fruit Jams, Dates, Cereals and Muesli, Vermicelli, Pickles, Green Tea, Preserves
+
+ Headcount
+- Now: 394 · +45 yearly (12.9%) · +9 quarterly · +2 monthly
+  - Southern Asia: 162
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 10.00M USD [...] Phone: 011-43206666, 011 4320 6666, +91-11-43206666
+Description: Apis India Limited is a company that offers premium honey, fruit jams, dates, cereals, and vermicelli. They strive to bring freshness to your table with flavorful products and are highly valued and trusted for their efficacy and superior quality. They are certified grade a by lrqa under the global standard for food safety.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://finance.yahoo.com/quote/APIS.BO/profile" target="_blank">APIS India Limited (APIS.BO) Company Profile &amp; Facts - Yahoo Finance</a></h3>
+                    <div class="result-url">https://finance.yahoo.com/quote/APIS.BO/profile</div>
+                    <div class="result-content">APIS India Limited engages in testing, processing, and filtration of honey in India. The company provides honey, such as acacia, eucalyptus, himalaya honey, lychee, sunflower and wild flower forest, lemon infused, ginger honey, and chilly honey under the APIS Himalaya brand name; green tea; lime, mango tang, mixed veggies, and tomato; preserves; masala dates; mouth freshener; dates, such as premium seeded, royal zahidi, arabian pearls, shahana, deseeded, nayaab, desert bliss, classic, kalmi, and select dates; fruitilicious jam; soya chunks; corn flakes; choco flakes; ginger garlic paste; thin roasted seviyan vermicelli; saffron; peanut butter; and organic honey under the Apis brand. It also exports its products. The company was formerly known as eWeb Univ Limited. APIS India Limited was [...] | Field | Value |
+ --- |
+| Address1 | 18/32, East Patel Nagar |
+| City | New Delhi |
+| Zip | 110008 |
+| Country | India |
+| Phone | 91 11 4320 6666 |
+| Fax | 91 11 2571 3631 |
+| Website |  |
+| Industry | Packaged Foods |
+| Industry key | packaged-foods |
+| Industry disp | Packaged Foods |
+| Sector | Consumer Defensive |
+| Sector key | consumer-defensive |
+| Sector disp | Consumer Defensive |
+| Full time employees | 612 |
+| Compensation as of epoch date | 2026-12-31 |
+
+ Company officers [...] formerly known as eWeb Univ Limited. APIS India Limited was founded in 1924 and is headquartered in New Delhi, India.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.apisindia.com/en/about-us" target="_blank">Buy Best Organic Honey in India | Apis India Limited</a></h3>
+                    <div class="result-url">https://www.apisindia.com/en/about-us</div>
+                    <div class="result-content">Mission Banner
+
+To inspire consumers with products that enable living a healthier and fitter lifestyle through continuous product innovation.
+
+Curved Bottom
+
+Brands
+
+0+
+
+Product Ranges
+
+0+
+
+Years Of Legacy
+
++
+
+Distributors
+
+0+
+
+Outlets
+
+Our Directors
+
+Mr Vimal Anand
+
+ MR VIMAL ANAND
+
+Director Global Business
+
+Driven by his passion and conviction, Mr. Vimal Anand has received formal training in beekeeping and Honey processing from the University of Warmia Olystyn Poland. Gradually he built a global presence &amp; a robust structure supported by a state-of-the-art production factory to cater to the global markets. His undeterred leadership and vision have led the company to reach its heights today, becoming a leading player in the world&#x27;s organized honey trade.
+
+ MR AMIT ANAND [...]  MR AMIT ANAND
+
+Managing Director
+
+A Delhi University Graduate from Kirori Mal College in Commerce, he spearheads key functions of Overall Plant Management; Human Resources; and Finance. The Managing Director of the company and the younger one of the two siblings, he has played the perfect foil to the elder in initiating the GREEN FIELD initiative of the factory in Roorkee. Leading from the front in all factory operations a person with hands-on expertise in executing all details at the plant level
+
+Mr Amit Anand
+
+Celebrating a Legacy of Quality and Growth
+
+ Journey
+
+From humble beginnings to a leading FMCG brand, Apis India’s journey is defined by a commitment to quality, innovation, and customer satisfaction. Join us as we continue to grow and inspire
+
+Journey
+
+mixed_fruit_jam [...] With a legacy of doing business spanning 100 years, Apis India Limited has been a name synonymous with honeyed quality and modernism in the global market. We are listed one of the pioneer, spanning three generations of bee-loving entrepreneurs, has built an empire of sweetness, transforming into one of the renowned brand leaders in Global organized honey trade. Our dedication to excellence shines through our infrastructure. We boast a formidable network of 13 state-of-the-art manufacturing and supply chain facilities across India, with the crown jewel being our behemoth 7-acre Roorkee manufacturing facility, capable of processing many hundred tonnes of honey daily. From intricate testing labs to state-of-art automation, every step adheres to the highest international standards of Hygiene</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/gpV5e2Dg1pXm" target="_blank">Apis India Ltd</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/gpV5e2Dg1pXm</div>
+                    <div class="result-content">Apis India Ltd
+ID: gpV5e2Dg1pXm
+Website: www.apisindia.com
+Legal name: APIS INDIA LTD
+Headquarters: New Delhi, New Delhi, India
+LinkedIn: www.linkedin.com/company/apis-india-ltd · 8,075 followers
+Industry: Food and Beverage Services
+Industry codes: SIC 20, 203, NAICS 31, 311
+Company type: Public Company
+Founded: 1925
+Business model: B2B, B2C
+SaaS: no
+Social profiles: www.facebook.com/apisindialtd, www.twitter.com/apis_india, www.crunchbase.com/organization/apis-india, www.instagram.com/apisindialtd, www.youtube.com/channel/ucbsf_medodshf3qvglvbflq
+Email: info@apisindia.com
+Phone: 011-43206666, 011 4320 6666, +91-11-43206666 [...]  Products and services
+Business areas: FMCG Manufacturing, Food and Beverage Production, Retail Distribution
+Products: Honey, Organic Honey, Fruit Jams, Dates, Cereals and Muesli, Vermicelli, Pickles, Green Tea, Preserves
+
+ Headcount
+- Now: 394 · +45 yearly (12.9%) · +9 quarterly · +2 monthly
+  - Southern Asia: 162
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 10.00M USD [...] Phone: 011-43206666, 011 4320 6666, +91-11-43206666
+Description: Apis India Limited is a company that offers premium honey, fruit jams, dates, cereals, and vermicelli. They strive to bring freshness to your table with flavorful products and are highly valued and trusted for their efficacy and superior quality. They are certified grade a by lrqa under the global standard for food safety.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://finance.yahoo.com/quote/APIS.BO/profile" target="_blank">APIS India Limited (APIS.BO) Company Profile &amp; Facts - Yahoo Finance</a></h3>
+                    <div class="result-url">https://finance.yahoo.com/quote/APIS.BO/profile</div>
+                    <div class="result-content">APIS India Limited engages in testing, processing, and filtration of honey in India. The company provides honey, such as acacia, eucalyptus, himalaya honey, lychee, sunflower and wild flower forest, lemon infused, ginger honey, and chilly honey under the APIS Himalaya brand name; green tea; lime, mango tang, mixed veggies, and tomato; preserves; masala dates; mouth freshener; dates, such as premium seeded, royal zahidi, arabian pearls, shahana, deseeded, nayaab, desert bliss, classic, kalmi, and select dates; fruitilicious jam; soya chunks; corn flakes; choco flakes; ginger garlic paste; thin roasted seviyan vermicelli; saffron; peanut butter; and organic honey under the Apis brand. It also exports its products. The company was formerly known as eWeb Univ Limited. APIS India Limited was</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://apisindia.all.biz" target="_blank">Apis India Limited in Delhi | Online-store Apis India ... - Allbiz</a></h3>
+                    <div class="result-url">https://apisindia.all.biz</div>
+                    <div class="result-content">A complete range of products and services Apis India Limited. Food ingredients13 Pastry1 Tea, coffee, cocoa1. APIS India is one of leaders in the field of</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://timesofindia.indiatimes.com/business/india-business/after-a-sweet-start-with-apis-honey-apis-india-limited-is-in-expansion-mode-of-its-fmcg-portfolio/articleshow/78905307.cms" target="_blank">After a sweet start with Apis Honey, Apis India Limited is in expansion mode of its FMCG portfolio - Times of India</a></h3>
+                    <div class="result-url">https://timesofindia.indiatimes.com/business/india-business/after-a-sweet-start-with-apis-honey-apis-india-limited-is-in-expansion-mode-of-its-fmcg-portfolio/articleshow/78905307.cms</div>
+                    <div class="result-content">Apis India Limited has leveraged its widespread distribution network and now operates in a portfolio of eight FMCG categories including Apis Honey &amp; Nature’s Potion Honey, Apis Spicilicios Pickles, Apis &amp; Lina Dates, Apis Fruit Blast Jams, Apis Ginger Garlic paste, Apis Green Tea, Apis Macaroni and newly launched Apis Soya Chunks. This step was taken considering the changing purchase dynamics and growing need for branded high-quality packaged products. Recently, the company has partnered with Arcor Group of Argentina, a worldwide leader in confectionaries for exclusive marketing and distribution of its products in India. This partnership has resulted in the introduction of Arcor Butter Toffees, Arcor Bon Bon Chocolates and Arcor Lollipops. Apis India Limited lays great focus on investment [...] clients while domestically it offers a range of Value added Honey under Apis Nature’s Potion (Beefit Honey, Tulsi Honey, Ginger Honey, Lemon Honey, Sitopaladi Honey &amp; Leechee Honey). It believes in offering quality products at affordable price &amp; this has been their winning formula with the consumers’ right since the inception. [...] Apis India Limited lays great focus on investment in R&amp;D, innovation, brand building and market expansion. That’s why, one can see Apis products available across hyper markets, e-commerce platforms (including Amazon, Flipkart, Big basket, Grofers, DMart, Hyper City, More, Big Bazaar etc) and neighbourhood convenience stores across the country. Tapping the digital space for the evolved consumer of today, Apis India Limited is considered a popular honey brand on Flipkart and Amazon. Apis is one of the largest exporters of honey from India to Gulf, Canada and USA. It adheres to high quality standards at par with international regulatory norms. The largest facility located in Roorkee, Uttarakhand is certified by various international organizations accredited for Quality Management Systems-</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/apis-india-ltd" target="_blank">Apis India Ltd</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/apis-india-ltd</div>
+                    <div class="result-content">Products and services
+Keywords: food &amp; beverage, finance/investing, honey productions &amp; exports, bakery, food production, preservers, dates, tea &amp; green tea, jam, pickles, b2b, b2c [...]  Apis India Ltd
+
+Description: A leading FMCG player with 3 generations of excellence. Known for top-quality Sourcing, Production, and Supply. 13 state-of-the-art facilities in India, plus a global unit in Dubai. Growing retail distribution, 200,000+ counters nationwide. Products for every household, a trusted brand synonymous with well-being. Join us in the journey of growth, innovation, and excellence.
+LinkedIn:  · 7,939 followers
+Industry: Food and Beverage Services
+Type: Public Company
+Headquarters: New Delhi, New Delhi, India
+Social Profiles:     
+
+ Employees
+- Now: 392
+
+ Leadership
+- Ankit Nagar, Chief Financial Officer</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://groww.in/stocks/apis-india-ltd" target="_blank">Apis India Share Price, Stock Price, LIVE NSE/BSE - Groww</a></h3>
+                    <div class="result-url">https://groww.in/stocks/apis-india-ltd</div>
+                    <div class="result-content">ScoutQuest•
+
+Apis India&#x27;s board approved listing its existing equity shares on the NSE Main Board as a second trading platform. No fresh shares or funds will be raised; the listing is subject to NSE and regulatory approvals.
+
+MarketScreener India•
+
+APIS India reported Q1 sales of INR 659.7 million, down from INR 865.5 million a year ago. Quarterly revenue stood at INR 668.8 million compared to INR 872.4 million reported in the previous year.
+
+BSE•
+
+Apis India board will meet on October 27, 2026, to approve unaudited financial results for quarter ended June 30, 2026. The trading window for dealing in company securities remains closed until 48 hours after financial results are declared.
+
+ScoutQuest• [...] ScoutQuest•
+
+Apis India Ltd delays June 30, 2026 quarterly results due to auditor-related matters. The company has provided documents, is following up, and remains committed to compliance.
+
+ScoutQuest•
+
+Apis India Ltd shares revised disclosure under SEBI Takeover Regulations, 2011.
+
+BSE•
+
+Apis India Ltd announces board meeting on Aug 13, 2026, to review Q1 financial results. Trading window closed July 1 to 48 hours post results; insiders prohibited from trading.
+
+ScoutQuest•
+
+CARE Ratings reaffirms Apis India&#x27;s credit ratings; long-term BBB/stable, short-term A3. Apis India&#x27;s bank facilities total Rs. 95.1 crore, reflecting stable financial performance.
+
+BSE• [...] BSE•
+
+Apis India Ltd disclosed payment of ₹1.77 lakh for takeover report filing fees. Transaction under SEBI (SAST) Regulation 10(7) was successfully completed.
+
+BSE•
+
+Apis India Ltd disclosed inter-se share transfer among promoters under SEBI rules. Details submitted include disclosures from Mr. Amit Anand and Mrs. Sakshi Anand.
+
+2026
+
+14
+
+Nov
+
+Quarterly Result
+
+Upcoming
+
+Release date
+
+27
+
+Oct
+
+Quarterly Result
+
+Release date
+
+Check latest financial
+
+13
+
+Aug
+
+Quarterly Result
+
+Release date
+
+Check latest financial
+
+30
+
+May
+
+Quarterly &amp; Annual Result
+
+Release date
+
+Check latest financial
+
+14
+
+Feb
+
+Quarterly Result
+
+Release date
+
+Check latest financial
+
+13
+
+Feb
+
+Quarterly Result
+
+Release date
+
+Check latest financial
+
+2025
+
+ 5 Dec Bonus Ex date 1:24 Ratio</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://dhan.co/stocks/apis-india-ltd-news" target="_blank">Apis Latest News - Announcements &amp; Live Updates | Dhan</a></h3>
+                    <div class="result-url">https://dhan.co/stocks/apis-india-ltd-news</div>
+                    <div class="result-content">Read Now
+
+ Corporate Actions
+
+| Date | Corporate Action | Information |
+ --- 
+| 14th Nov 2026, Saturday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q2 FY 26-27 Results  info |
+| 27th Oct 2026, Tuesday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q2 FY 26-27 Results  info |
+| 30th May 2026, Saturday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q4 FY 26-27 Results  info |
+| 13th Feb 2026, Friday | QUARTERLY RESULT ANNOUNCEMENTStock Result | Q3 FY 25-26 Results  info |
+| 5th Dec 2025, Friday | BONUSBonus | Bonus Ratio 24:1 |
+
+The above dates are ex-dates.
+
+View Allarrow
+
+Check APIS latest Company Filings, Investor Presentation &amp; Conference Call details.
+
+Read Now
+
+ What&#x27;s New In The Market
+
+---
+
+---
+
+---
+
+ APIS Peers
+
+Nestle
+
+N
+
+Nestle
+
+LTP:
+
+1,297.00
+
+M.Cap: [...] logo
+
+searchSearch for Stocks, Mutual Funds, Indices, ETFs
+
+LoginOpen Account
+
+logo
+
+Use App
+
+HomeStocksAPIS
+
+A
+
+Apis
+
+FMCG
+
+BuySell
+
+₹ 50.82
+
+-2.94(-5.47%)
+
+loss
+
+as on 16 Nov 2026 at 03:29 PM
+
+BSE
+
+M.Cap₹700 Cr
+
+PE Ratio30.00
+
+ROCE17.62%
+
+views2
+
+portfolio77
+
+A
+
+Apis
+
+FMCG
+
+₹ 50.82
+
+-2.94(-5.47%)loss
+
+as on 16 Nov 2026 at 03:29 PM
+
+BSE
+
+views2
+
+portfolio77
+
+A
+
+₹ 50.82
+
+-2.94 (-5.47%)
+
+loss
+
+News
+
+Corporate Actions
+
+Latest In The Market
+
+Peers
+
+Go to Overview
+
+img
+
+ ApisLatest News
+
+---
+
+---
+
+Get Recent Announcements &amp; All Past News of APIS.
+
+Read Now
+
+ Corporate Actions [...]  APIS Peers
+
+Nestle
+
+N
+
+Nestle
+
+LTP:
+
+1,297.00
+
+M.Cap:
+
+₹ 2,50,102CrBritannia Industries
+
+B
+
+Britannia Industries
+
+LTP:
+
+4,754.00
+
+M.Cap:
+
+₹ 1,14,509CrMilky Mist Dairy Food
+
+M
+
+Milky Mist Dairy Food
+
+LTP:
+
+307.80
+
+M.Cap:
+
+₹ 23,696CrHatsun Agro Product
+
+H
+
+Hatsun Agro Product
+
+LTP:
+
+1,027.75
+
+M.Cap:
+
+₹ 22,893CrZydus Wellness
+
+Z
+
+Zydus Wellness
+
+LTP:
+
+466.15
+
+M.Cap:
+
+₹ 14,831Cr
+
+View Allarrow
+
+Candle bars with Screen
+
+Invest in APIS
+
+Candle bars with Screen
+
+Pay Zero Brokerage on Delivery
+
+Candle bars with Screen
+
+Open FREE Demat Account
+
+Indian Flag
+
++91
+
+error
+
+Or Scan the QR Code to download the Dhan App
+
+QR code Logo
+
+1 Cr+ App Downloads   
+ on Play Store
+
+TradeStocksOnDhan QR
+
+Google PlayStore Logo
+
+Play Store
+
+4.7
+
+Apple Logo
+
+App Store
+
+4.0
+
+Join our Community
+
+Follow us on</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://scanx.trade/stock-news/apis-india-ltd" target="_blank">Apis Share News - Latest Updates, Live News &amp; More</a></h3>
+                    <div class="result-url">https://scanx.trade/stock-news/apis-india-ltd</div>
+                    <div class="result-content">Apis India Limited has announced plans for a 24:1 bonus share issue and an increase in authorized share capital from ₹13.30 crore to ₹140.00 crore, subject to</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.screener.in/company/506166/consolidated" target="_blank">Apis India Ltd share price | About Apis India | Key Insights - Screener</a></h3>
+                    <div class="result-url">https://www.screener.in/company/506166/consolidated</div>
+                    <div class="result-content">- Apis India approved listing existing equity shares on NSE main board, subject to approvals.
+ Announcement under Regulation 30 (LODR)-Newspaper Publication
+ Disclosure Under Regulation 30(5) Of The SEBI (LODR) Regulations, 2015
+
+  - Company updated authorized officials under Regulation 30(5) for determining materiality and disclosures.
+ Results-Financial Results (Standalone And Consolidated) For The Quarter Ended June 30, 2026
+
+ Annual reports
+
+ Annual Report 2026
+
+  from bse
+ Annual Report 2025
+
+  from bse
+ Annual Report 2024
+
+  from bse
+ Annual Report 2023
+
+  from bse
+ Annual Report 2022
+
+  from bse
+ Annual Report 2021
+
+  from bse
+ Annual Report 2020
+
+  from bse
+ Annual Report 2019
+
+  from bse
+ Annual Report 2018
+
+  from bse
+ Annual Report 2017
+
+  from bse
+ Annual Report 2016 [...] | Mar 2016 | Mar 2017 | Mar 2018 | Mar 2019 | Mar 2020 | Mar 2021 | Mar 2022 | Mar 2023 | Mar 2024 | Mar 2025 | Mar 2026 | Sep 2026 |
+ ---  ---  ---  ---  ---  --- |
+|  | 71.08% | 74.72% | 74.72% | 74.72% | 74.72% | 74.72% | 74.72% | 74.72% | 74.72% | 74.72% | 74.72% | 74.72% |
+|  | 28.92% | 25.28% | 25.28% | 25.28% | 25.28% | 25.28% | 25.28% | 25.28% | 25.28% | 25.28% | 25.28% | 25.27% |
+| No. of Shareholders | 25 | 21 | 20 | 19 | 21 | 19 | 18 | 20 | 21 | 23 | 6,997 | 6,331 |
+
+ Documents
+
+ Announcements
+
+All
+
+ Board Meeting Intimation for Financial Results
+
+  - Board meeting on November 14, 2026 to approve Q2 FY27 unaudited results; trading window closed from October 1.
+ Application For Listing Of Existing Equity Shares On NSE Limited [...]  Apis India Ltd
+
+AI
+
+Apis India Summary  Chart Analysis Peers Quarters Profit &amp; Loss Balance Sheet Cash Flow Ratios Investors Documents
+
+AI
+
+ Apis India Ltd
+
+₹ 52.7  -1.31%
+
+06 Nov - close price
+
+apisindia.com   BSE: 506166
+
+About
+
+Incorporated in 1983, APIS India Ltd is in the honey processing business and manufacturing of other edible products(
+
+Key Points</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://x.com/ThanksDeepest/status/2121638503952126281" target="_blank">Post</a></h3>
+                    <div class="result-url">https://x.com/ThanksDeepest/status/2121638503952126281</div>
+                    <div class="result-content">Apis India Limited – Strong Q2 &amp; H1 FY27 Operating Performance https://t.co/ITnewtscuD ✓ Q2 standalone revenue increased 23% YoY to</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://apisindia.s3.ap-south-1.amazonaws.com/apisPdf/annualReport/Final-Annual-Report-2015-16-(1).pdf" target="_blank">APIS INDIA LIMITED</a></h3>
+                    <div class="result-url">https://apisindia.s3.ap-south-1.amazonaws.com/apisPdf/annualReport/Final-Annual-Report-2015-16-(1).pdf</div>
+                    <div class="result-content">DIS MANAGEMENT DISCUSSION AND ANALYSIS REPORT CUSSION AND ANALYSIS REPORT CUSSION AND ANALYSIS REPORT CUSSION AND ANALYSIS REPORT MANAGEMENT DISCUSSION AND ANALYSIS 1. INDUSTRY STRUCTURE AND DEVELOPMENTS Being into the business of rearing and hiving honey bees for the purpose of generation and export of honey the Company basically carries on the business of apiculture and falls in the Agricultural Industry. The Companies operated in an unexplored apiculture market and focused for bright growth opportunities in future. It has also expanded its operation in Retail Food Industry by becoming the Master Franchisee of USA Based Pretzel chain Wetzel’s Pretzels. 2. OPPOTUNITIES AND THREATS There is a huge opportunities for honey market to grow in India because of availability of raw material and</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.openpr.com/news/3793918/insights-on-the-global-direct-to-consumer-d2c-brands-market" target="_blank">Insights on the Global Direct-to-Consumer (D2C) Brands Market</a></h3>
+                    <div class="result-url">https://www.openpr.com/news/3793918/insights-on-the-global-direct-to-consumer-d2c-brands-market</div>
+                    <div class="result-content">Direct-to-Consumer (D2C) Brands Market Segments:  
+   
+ According to the report, the Direct-to-Consumer (D2C) Brands Market is segmented in the following ways which fulfill the market data needs of multiple stakeholders across the industry value chain -  
+   
+ The Leading Players involved in the global Direct-to-Consumer (D2C) Brands market are:  
+   
+ Warby Parker  
+ Casper  
+ Dollar Shave Club  
+ Glossier  
+ Allbirds  
+ Everlane  
+ Bonobos  
+ Harry&#x27;s  
+ Away  
+ Rothy&#x27;s  
+   
+ Segmentation by Type:  
+   
+ Apparel and Fashion  
+ Beauty and Personal Care  
+ Home and Lifestyle  
+ Food and Beverage  
+ Health and Wellness  
+ Electronics and Gadgets  
+   
+ Segmentation by Applications:  
+   
+ E-commerce platforms  
+ Social media marketing  
+ Influencer collaborations [...] 5. The Direct-to-Consumer (D2C) Brands Market research report gives a thorough analysis of the current status of the Direct-to-Consumer (D2C) Brands Market&#x27;s major players.  
+   
+ FAQ&#x27;s:  
+   
+ ☛ What is the size of the market in terms of revenue, sales volume, or the number of users/customers?  
+ ☛ Who are the key players in the market, and what are their market shares?  
+ ☛ What are the trends and drivers shaping the market, and what are the challenges and opportunities?  
+ ☛ What are the different segments of the market, and how are they expected to grow?  
+ ☛ What are the key products or services offered in the market, and how do they compare to each other?  
+ ☛ What are the pricing strategies and competitive landscape of the market? [...] The latest research study released by Worldwide Market Reports on &quot;Direct-to-Consumer (D2C) Brands Market 2024&quot; holds tons of experience in offering comprehensive and accurate analysis of global as well as regional markets. The analysts and researchers authoring the report have provided a deeper competitive analysis of the Direct-to-Consumer (D2C) Brands market along with exhaustive company profiling of leading market players. This research study of the Direct-to-Consumer (D2C) Brands Market involved the extensive usage of both primary and secondary data sources. This includes the study of various parameters affecting the Direct-to-Consumer (D2C) Brands market environment, competitive landscape, historical data, present trends, technological innovation, upcoming technologies, and</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://trendlyne.com/equity/2270/APIS/apis-india-ltd" target="_blank">Apis (APIS) Live
+    
+        Share
+    
+        Price Today on
+    
+        NSE/BSE,
+    
+     Stock Analysis and Price Estimates</a></h3>
+                    <div class="result-url">https://trendlyne.com/equity/2270/APIS/apis-india-ltd</div>
+                    <div class="result-content">About the company - Business Profile
+
+Apis India Ltd. is an Indian company primarily engaged in the organized honey market. The company has evolved from being a honey processor to a diversified multi-product FMCG entity. It operates as a significant player in both domestic and international markets, specializing in the processing and packaging of honey, and has expanded its portfolio into several other food categories.
+
+ Key Points
+
+ References
+
+ Apis FAQ
+
+ How is Apis today?
+
+ Apis today is trading in the green, up by 2.71% at ₹53.76.
+
+ How has Apis performed historically?</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.openpr.com/news/1938039/best-imperial-report-on-direct-to-consumer-d2c-e-commerce" target="_blank">Best Imperial Report on Direct-to-Consumer (D2C) E-Commerce</a></h3>
+                    <div class="result-url">https://www.openpr.com/news/1938039/best-imperial-report-on-direct-to-consumer-d2c-e-commerce</div>
+                    <div class="result-content">This research report is curated for business acumen of investors, business owners, industry experts, and policymakers. Among various distinctive features of the report, the study also analyses several dynamic and static aspects of the businesses.  
+   
+ Some Top Market Key Players:  
+ Amazon, Walmart&#x27;s, JD.com, Alibaba, eBay, Shopify, Rakuten &amp; More.  
+   
+ Early Buyers will Get Upto 50% Discount@:  
+   
+   
+ Global Direct-to-Consumer (D2C) E-Commerce Market: Regional Segment Analysis [...] The report additionally provides a pest analysis of all five along with the SWOT analysis for all companies profiled in the report. The report also consists of various company profiles and their key players; it also includes the competitive scenario, opportunities, and market of geographic regions. The regional outlook on the Direct-to-Consumer (D2C) E-Commerce Market covers areas such as Europe, Asia, China, India, North America, and the rest of the globe.  
+   
+ In-depth analysis of expansion and growth strategies obtained by Key players and their effect on competition market growth. The research report also provides precise information on your competitors and their planning. All of the above will help you to make a clear plan for top-line growth. [...] openPR Logo
+
+ PR-Wiki
+ Imprint
+
+openPR.com openPR.de
+
+openPR Logo
+
+Press release
+
+ Best Imperial Report on Direct-to-Consumer (D2C) E-Commerce Market 2020 | In-Depth Qualitative Analysis on Market Size, Growth, Future Demand &amp; Scope by 2026 |Top Key Players: Amazon, Walmart&#x27;s, JD.com, Alibaba, eBay, Shopify &amp; More.
+
+02-19-2020 02:36 PM CET | Business, Economy, Finances, Banking &amp; Insurance  
+
+ Press release from: IT Intelligence Markets
+
+Best Imperial Report on Direct-to-Consumer (D2C) E-Commerce E-Commerce&quot;)</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://futurex.substack.com/p/the-world-of-d2c-brands-and-the-potential" target="_blank">The world of D2C brands and the potential - by Harry Kapoor</a></h3>
+                    <div class="result-url">https://futurex.substack.com/p/the-world-of-d2c-brands-and-the-potential</div>
+                    <div class="result-content">These industries compound the majority of Indian D2C landscape.
+
+Source: Inc42
+
+With time, the companies are now spearheading into the unconventional D2C verticals — from vehicles (Tesla) to airfare (LinearAir), all the way through to fertility tests (Modern Fertility).
+
+While the United States has spawned Direct-to-Consumer Unicorns, India still has a long road to follow. Though in the nascent stage, Indian players have assured the potential for growth by clocking revenues over $15MM per annum already, and have reported valuations of more than $100MM.
+
+Let&#x27;s study closely the nuts and bolts of the D2C marketplace.
+
+ What are the different models in D2C commerce? [...] Players like Khatabook, OkCredit, Bikayi, Dotpe, Dukaan etc. strive to enable a Direct-to-Consumer existence for small merchants like kirana stores and pan shops. Collectively, the Dukaan-tech players are adding a new dimension to the unorganised D2C market.
+
+ Stumbling Blocks
+
+Speaking of mass adaptation, the glistening reputation of the D2C space often cloaks a danger that lurks in the shadows.
+
+To maintain symmetry in our discussion, we look at the largest stumbling block that brands best avoid - Copycat competitors.
+
+Source: eMarketer.com
+
+Marketers worldwide have echoed this sentiment. 58% of the respondents in a study acknowledge &#x27;copycat competitors&#x27; as the one threat D2C brands may not foresee, claim The CMO Club &amp; Epsilon. Let me elaborate on that. [...] Shopify like platforms enabling D2C brands
+
+  Many D2C companies use platforms like Shopify, Magento etc. on the back-end to power their website, orders, fulfilment and engagement.
+
+  For example, Raymond used Shopify to consolidate its omnichannel strategy where it leveraged from Shopify&#x27;s tools for the fulfilment, delivery, and customer engagement.
+
+  Source: Pattern.com
+ Traditional Players adopting D2C
+
+Of the last sorts are the traditional rich players in the market looking to keep up with the changing times. Unilever, a large legacy retailer made one of the first D2C acquisitions by acquiring the Dollar Shave Club for $1 Billion in 2016.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

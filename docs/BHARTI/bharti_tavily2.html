@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BHARTI - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BHARTI</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">Real Estate</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://bhartirealestate.com/" target="_blank" class="meta-url">https://bhartirealestate.com/</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Bharti Real Estate, established in 2003, is a leading commercial real estate developer in India, specializing in the development, leasing, and management of Grade-A office and retail spaces. With over 5.5 million square feet of commercial real estate developed, the company has built a reputation for quality and innovation. Bharti Real Estate's portfolio includes notable projects such as Worldmark 1.0 in Aerocity, New Delhi, and Worldmark Gurugram. The company's vision is to be the most admired real estate company, driven by core values of quality, innovation, and people-centricity. In 2021, Brookfield acquired a 51% stake in some of Bharti's marquee assets, and in 2024, Brookfield acquired a 100% stake in these properties. The company's headquarters are in Delhi, India, and it has a headcount of 326 employees, with 229 based in Southern Asia. The annual revenue is $62 million USD.. Bharti Real Estate Journey till 2019  Bharti Real Estate Journey till 2020  Who were we in 2022- Bharti Real Estate  Bharti Real Estate Journey till 2023  ## Vision 2030  ## “To be the most admired real estate company"  ## Our Core Values.  ## Our vision and values define who we are  01  Quality  Bharti Real Estate has been founded with trust at its core, and nothing represents this trust as the quality of what we create. From conceptual design to tangible build quality, excellence is our benchmark in everything we do.  02  Innovation  We see innovation as the most vital sign of life for a thriving company. Working towards our vision 2030, we constantly keep track of market dynamics and industry trends to identify challenges and take stock of opportunity.  03  People-centricity [...] With some of the most prestigious addresses in the country, we have developed into one of the most recognisable and well-respected brands in commercial real estate. We have now taken the route less travelled, moving beyond isolated office buildings and retail centres to construct iconic, integrated ecosystems that usher in a new era in commercial real estate in India.  Learn more about Worldmark Aerocity, our marquee project on Wikipedia  Who are we- Bharti Real Estate  Bharti Real Estate Journey till 1976  Who were we in 2003- Bharti Real Estate  Bharti Real Estate Journey till 2015  Bharti Real Estate Journey till 2011  Bharti Real Estate Journey till 2015  Bharti Real Estate Journey till 2016  Bharti Real Estate Journey till 2018  Bharti Real Estate Journey till 2019 [...] ## Who are we  # From land to landmarks  We are Bharti Real Estate. Our journey began in 2003 with the intention of diversifying into new business sectors with the rapidly expanding Indian economy and the resulting demand for Grade-A commercial real estate.<br/><br/><strong>Product & Service Portfolio:</strong> Bharti Real Estate offers commercial real estate development, mixed-use property development, property leasing and management. Their products include Grade-A office space leasing, retail space leasing, mixed-use commercial developments, and commercial property development. They also provide property management services through Bharti Care, which handles facility operations, security, energy management, tenant services, upkeep of common areas, and compliance with safety and sustainability standards. Bharti Real Estate is the developer and master planner behind Worldmark, overseeing the investment, design, development, and operations. Worldmark provides on-lease offices ranging from 2000 to 2,000,000 sq ft on a single floor plate, making it ideal for multinationals targeting India. The company has delivered over 5 million sq. of marquee developments, including Worldmark Aerocity, Worldmark Gurugram, Airtel Centre, and Bharti Crescent.. # Bharti Real Estate ID: ZBhJR5ShEFey Website: www.bhartirealestate.com Headquarters: Delhi, Delhi, India LinkedIn: www.linkedin.com/company/bharti-real-estate · 44,736 followers Industry: Leasing Non-residential Real Estate Company type: Privately Held Founded: 2003 Business model: B2B SaaS: no Social profiles: www.facebook.com/bhartirealty, www.twitter.com/bharti_realty, www.crunchbase.com/organization/bharti-real-estate, www.youtube.com/channel/ucz6dtqvroduvlbklurxup3w Email: info@bhartirealestate.com, leasing@bhartirealestate.com Phone: 124-498-4000, +91 11 4138 4000 Description: Bharti Real Estate is a premier global business district in Delhi NCR that offers state-of-the-art office and retail spaces for top businesses. [...] ## Products and services Business areas: Commercial Real Estate Development, Mixed-Use Property Development, Property Leasing and Management Products: Grade-A Office Space Leasing, Retail Space Leasing, Mixed-Use Commercial Developments, Commercial Property Development, Property Management Services  ## Headcount - Now: 326 · +18 quarterly · +6 monthly   - Southern Asia: 229   - Eastern Europe: 0   - Latin America: 0   - Southern Europe: 0   - Sub Saharan Africa: 0   - Central Asia: 0   - Northern America: 0   - Australia New Zealand: 0   - Northern Europe: 0   - South Eastern Asia: 0   - Polynesia: 0   - Northern Africa: 0   - Melanesia: 0   - Western Europe: 0   - Western Asia: 0  ## Financials - Annual revenue: 62.00M USD. ## Products and services Keywords: real estate, commercial real estate, leasing, world-class infrastructure, marquee locations, best in class 99 experience for mixed use developments, environment friendly green developments, cbd focus, delhi ncr, office spaces, retail spaces, global business district [...] 2003 with the intention of diversifying into new business sectors with the rapidly expanding Indian economy and the resulting demand for Grade-A real estate. Several projects with a GLA of 5.4 million sq. ft, including the renowned Worldmark Aerocity Phase I in New Delhi, Worldmark Gurugram, Airtel Centre, and Bharti Crescent, have been successfully delivered by Bharti Real Estate in the past.<br/><br/><strong>Recent Developments & News:</strong> Bharti Realty has been making significant strides in the real estate sector, particularly in commercial and retail properties. In 2014, Bharti Realty appointed S.K. Sayal as Managing Director & CEO, who has been instrumental in scaling the business. The company has been involved in several high-profile projects, including the development of Worldmark Aerocity, a mixed-use property near Delhi International Airport, and a smart residential project in Surajkund with Eros Group. Bharti Realty has also been in talks to form joint ventures for projects worth over Rs 1,000 crore in NCR. The company plans to invest Rs 3,500 crore on two projects in Delhi-NCR and has leased 60,000 sq ft office space in New Delhi Aerocity. Bharti Realty has also been recognized for its sustainability efforts, earning the Great Place to Work badge and receiving the Harit Ratna Award for excellence in construction. The company is currently planning the third phase of Worldmark, which will encompass nearly 10 million square feet. Additionally, Brookfield India REIT has agreed to buy half-stakes in four Bharti commercial properties for $720M, marking a significant partnership in the real estate sector.. # Bharti  Home/Press Release 2014-2015 / Press Release 2014-2015 Details  ## FY2014-2015  ## Bharti Realty Appoints SK Sayal as MD & CEO  New Delhi, August 4, 2014: Bharti Realty, an emerging real estate company with interests in retail and office segments, today announced the appointment of S.K. Sayal as Managing Director & CEO.  S.K. Sayal will be responsible for conceptualizing and implementing a scalable business strategy and providing overall leadership to the business.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Bharti Realty's key competitors include RMZ Corp, Chalet Hotels, and First Capital Realty, according to Tracxn. RMZ Corp is a provider of real estate development services, Chalet Hotels offers hotel management services, and First Capital Realty develops commercial properties. Other notable competitors mentioned are BioMed Realty, a real estate solutions provider for life science and technology industries, and Las Vegas Sands, a developer and operator of resorts and hotels. Additionally, Godrej Properties Limited, DLF Limited, and Crompton Greaves Consumer Electricals Limited are also listed as competitors in the real estate sector. Bharti Realty, founded in 2003, operates as a developer of commercial properties and has not raised any funding yet.. BioMed Realty  2004, San Diego (United States), Acquired  Real estate solutions provider for life science and technology industries  \-  60/100  5th  Las Vegas Sands  1989, Las Vegas (United States), Public  Developer and operator of resorts & hotels  \-  \-  60/100  6th  Bagmane Group  1996, Bengaluru (India), Unfunded  Chains providing commercial business parks and built-to-suit office spaces  \-  \-  59/100  7th  Online platform for buying and selling fully renovated homes  $10.3M  59/100  8th  Real estate investment company  $77.4M  \-  58/100  9th  Precinct  1997, Auckland (New Zealand), Public  Developer of commercial real estate properties  \-  \-  57/100  10th  Brookfield Properties  1924, New York City (United States), Public  Developer of commercial properties  $15M  57/100 [...] Access Tracxn on any website  Install Tracxn Extension  Our Google Chrome extension lets you view company details while browsing their websites  ## Bharti Realty's Competitors and alternates  Top competitors of Bharti Realty include RMZ Corp, Chalet Hotels and First Capital Realty. Here is the list of Top 10 competitors of Bharti Realty, ranked by Tracxn score:  Rank  Company Details  Short Description  Total Funding  Investors  Tracxn Score  1st  Provider of real estate development services  \-  63/100  2nd  Chalet Hotels  1986, Mumbai (India), Public  Provider of hotel management services  \-  62/100  3rd  First Capital Realty  1994, Canada, Public  Developer of commercial properties  $75M  \-  61/100  4th  BioMed Realty  2004, San Diego (United States), Acquired [...] ## Bharti Realty - About the company  Bharti Realty is an unfunded company based in Delhi (India), founded in 2003. It operates as a Developer of commercial properties. Bharti Realty has not raised any funding yet. The company has 13732 active competitors, including 115 funded and 567 that have exited. Its top competitors include companies like RMZ Corp, Chalet Hotels and First Capital Realty.  ### Company Details  Website  bhartirealty.com  Registered Address  Airtel Centre,Plot No. 16 Udyog Vihar, Phase-IV, Gurgaon, Gurgaon, Haryana, India, 122015  Key Metrics  Founded Year  2003  Location  Delhi, India  Stage  Unfunded  Ranked  2147  thamong 13732 active competitors  Employee Count  200 - 499 as on Mar 01, 2026  Similar Companies  ## Legal entities associated with Bharti Realty.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bhartirealestate.com/who-are-we" target="_blank">Our Story and Vision - Bharti Real Estate</a></h3>
+                    <div class="result-url">https://bhartirealestate.com/who-are-we</div>
+                    <div class="result-content">Bharti Real Estate Journey till 2019
+
+Bharti Real Estate Journey till 2020
+
+Who were we in 2022- Bharti Real Estate
+
+Bharti Real Estate Journey till 2023
+
+ Vision 2030
+
+ “To be the most admired real estate company&quot;
+
+ Our Core Values.
+
+ Our vision and values define who we are
+
+01
+
+Quality
+
+Bharti Real Estate has been founded with trust at its core, and nothing represents this trust as the quality of what we create. From conceptual design to tangible build quality, excellence is our benchmark in everything we do.
+
+02
+
+Innovation
+
+We see innovation as the most vital sign of life for a thriving company. Working towards our vision 2030, we constantly keep track of market dynamics and industry trends to identify challenges and take stock of opportunity.
+
+03
+
+People-centricity [...] With some of the most prestigious addresses in the country, we have developed into one of the most recognisable and well-respected brands in commercial real estate. We have now taken the route less travelled, moving beyond isolated office buildings and retail centres to construct iconic, integrated ecosystems that usher in a new era in commercial real estate in India.
+
+Learn more about Worldmark Aerocity, our marquee project on Wikipedia
+
+Who are we- Bharti Real Estate
+
+Bharti Real Estate Journey till 1976
+
+Who were we in 2003- Bharti Real Estate
+
+Bharti Real Estate Journey till 2015
+
+Bharti Real Estate Journey till 2011
+
+Bharti Real Estate Journey till 2015
+
+Bharti Real Estate Journey till 2016
+
+Bharti Real Estate Journey till 2018
+
+Bharti Real Estate Journey till 2019 [...]  Who are we
+
+ From land to landmarks
+
+We are Bharti Real Estate. Our journey began in 2003 with the intention of diversifying into new business sectors with the rapidly expanding Indian economy and the resulting demand for Grade-A commercial real estate. Several projects, including the renowned Worldmark 1.0 in Aerocity, New Delhi, Worldmark Gurugram, Airtel Centre, and Bharti Crescent, have been successfully completed by Bharti Real Estate in the past.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.prnewswire.com/news-releases/worldmark-by-bharti-real-estate-india-shifts-from-commercial-business-districts-to-global-business-districts-302482752.html" target="_blank">Worldmark by Bharti Real Estate: India Shifts from Commercial Business Districts to Global Business Districts</a></h3>
+                    <div class="result-url">https://www.prnewswire.com/news-releases/worldmark-by-bharti-real-estate-india-shifts-from-commercial-business-districts-to-global-business-districts-302482752.html</div>
+                    <div class="result-content">\Worldmark is a registered trademark of Bharti Realty Ltd.
+
+About Bharti Real Estate: Bharti Real Estate, the real estate arm of Bharti Enterprises, began its journey in 2003 with a vision to meet the growing need for Grade A commercial spaces in a rapidly evolving India. With over 5 million sq. ft. of marquee developments delivered, including Worldmark Aerocity, Worldmark Gurugram, Airtel Centre, and Bharti Crescent, the company has built a strong reputation for quality and innovation. [...] Bharti Real Estate has now entered a new chapter with Worldmark Global Business District in New Delhi, marking a shift from standalone commercial projects to fully integrated, mixed-use ecosystems. These next-generation destinations are designed to blend global business, retail, lifestyle, entertainment, and seamless connectivity, thereby redefining how India works, shops, entertains, and lives. To know more, log in to 
+
+About Bharti Enterprises: Founded in 1976, by Mr. Sunil Bharti Mittal, Bharti Group is one of the largest and most respected business conglomerates, with world-class businesses in telecom, digital infrastructure, space communications, financial services, real estate, manufacturing, hospitality, and agri-processed foods. [...] New Delhi has been yearning for a purpose-built commercial district for quite some time. A lack of contemporary commercial premises, much less business districts, has been out of place in India&#x27;s capital, a city that is rich in history, culture, connectedness, and power. These days, businesses and brands are looking for locations that provide their employees and visitors with great commuting options, access to world-class infrastructure, a sense of safety and security, easy parking, and a social life that promotes happiness and productivity. Bharti aims to fill this gap as an inclusive urban destination as the demand for internationally comparable commercial districts becomes absolutely essential for corporations and retail brands both.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bhartirealestate.com/bharti-reality-limited" target="_blank">Bharti Realty Limited – Commercial Real Estate Developer in India</a></h3>
+                    <div class="result-url">https://bhartirealestate.com/bharti-reality-limited</div>
+                    <div class="result-content">Bharti Reality Limited
+
+ Company Profile
+
+Name: Bharti Realty Limited.
+
+Address: Airtel Centre, Plot No. 16 Udyog Vihar, Phase-IV, Gurgaon, Haryana, 122015, India
+
+Established:December 08, 2003, as a Public Limited Company having CIN U70101HR2003PLC077294
+
+Bharti Realty Limited believes in the principles of Corporate Governance and is committed to ensure sustainable, capital-efficient and long-term growth thereby maximising shareholder value. 
+
+The company’s commitment towards compliance to the highest governance standard is backed by an independent and fully informed board, comprehensive processes, policies and communication. [...] Skip links
+
+ Skip to primary navigation
+ Skip to content
+
+Bharti Real Estate
+
+ About Us
+  + Who are we
+  + What we do
+  + Chairman’s Profile
+  + Bharti Enterprises
+ Portfolio
+  + Worldmark 2.0
+  + Bharti Crescent
+ News
+ Blogs
+ ESG
+  + Environmental
+  + Social
+  + Governance
+ Careers
+  + Life at Bharti
+  + Work with Us
+ Contact Us
+  + Business Enquiry
+  + Leasing Enquiry
+
+ Who are we
+ What we do
+ Chairman’s Profile
+ Bharti Enterprises
+
+Bharti Real Estate
+
+ About Us
+  + Who are we
+  + What we do
+  + Chairman’s Profile
+  + Bharti Enterprises
+ Portfolio
+  + Worldmark 2.0
+  + Bharti Crescent
+ News
+ Blogs
+ ESG
+  + Environmental
+  + Social
+  + Governance
+ Careers
+  + Life at Bharti
+  + Work with Us
+ Contact Us
+  + Business Enquiry
+  + Leasing Enquiry
+
+ Bharti Reality Limited</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bhartirealestate.com/what-we-do" target="_blank">Developing Grade A commercial spaces for lease - Bharti Real Estate</a></h3>
+                    <div class="result-url">https://bhartirealestate.com/what-we-do</div>
+                    <div class="result-content">What we do
+
+ When we build an asset today, we prepare for creating value in the future
+
+As a boutique real estate establishment, we build towards potential future development and value creation. Our business methods provide long-term value for our shareholders by addressing all facets of development, leasing, operations, maintenance and monetization.
+
+Through 14 projects of various sizes, we have contributed over 5.5 million square feet to the nation&#x27;s premier commercial real estate in the last 20 years. Our designs and constructions are renowned for showcasing a user-centric viewpoint that prioritises comfort and experience. [...] In 2021, Brookfield – one of the largest private equity investment firms in the world and leading real estate investors – secured a 51% stake in some of our marquee assets including Worldmark 1, 2 and 3 in Aerocity New Delhi, Worldmark Gurugram, Airtel Centre Gurugram and Pavilion Mall in Ludhiana.
+
+In 2024, Brookfield acquired a 100% stake in these four commercial properties
+
+About Bharti Real Estate
+
+ Specialists in</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/ZBhJR5ShEFey" target="_blank">Bharti Real Estate</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/ZBhJR5ShEFey</div>
+                    <div class="result-content">Bharti Real Estate
+ID: ZBhJR5ShEFey
+Website: www.bhartirealestate.com
+Headquarters: Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/bharti-real-estate · 44,736 followers
+Industry: Leasing Non-residential Real Estate
+Company type: Privately Held
+Founded: 2003
+Business model: B2B
+SaaS: no
+Social profiles: www.facebook.com/bhartirealty, www.twitter.com/bharti_realty, www.crunchbase.com/organization/bharti-real-estate, www.youtube.com/channel/ucz6dtqvroduvlbklurxup3w
+Email: info@bhartirealestate.com, leasing@bhartirealestate.com
+Phone: 124-498-4000, +91 11 4138 4000
+Description: Bharti Real Estate is a premier global business district in Delhi NCR that offers state-of-the-art office and retail spaces for top businesses. [...]  Products and services
+Business areas: Commercial Real Estate Development, Mixed-Use Property Development, Property Leasing and Management
+Products: Grade-A Office Space Leasing, Retail Space Leasing, Mixed-Use Commercial Developments, Commercial Property Development, Property Management Services
+
+ Headcount
+- Now: 326 · +18 quarterly · +6 monthly
+  - Southern Asia: 229
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 62.00M USD</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/ZBhJR5ShEFey" target="_blank">Bharti Real Estate</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/ZBhJR5ShEFey</div>
+                    <div class="result-content">Bharti Real Estate
+ID: ZBhJR5ShEFey
+Website: www.bhartirealestate.com
+Headquarters: Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/bharti-real-estate · 44,736 followers
+Industry: Leasing Non-residential Real Estate
+Company type: Privately Held
+Founded: 2003
+Business model: B2B
+SaaS: no
+Social profiles: www.facebook.com/bhartirealty, www.twitter.com/bharti_realty, www.crunchbase.com/organization/bharti-real-estate, www.youtube.com/channel/ucz6dtqvroduvlbklurxup3w
+Email: info@bhartirealestate.com, leasing@bhartirealestate.com
+Phone: 124-498-4000, +91 11 4138 4000
+Description: Bharti Real Estate is a premier global business district in Delhi NCR that offers state-of-the-art office and retail spaces for top businesses. [...]  Products and services
+Business areas: Commercial Real Estate Development, Mixed-Use Property Development, Property Leasing and Management
+Products: Grade-A Office Space Leasing, Retail Space Leasing, Mixed-Use Commercial Developments, Commercial Property Development, Property Management Services
+
+ Headcount
+- Now: 326 · +18 quarterly · +6 monthly
+  - Southern Asia: 229
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 62.00M USD</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/bharti-real-estate" target="_blank">Bharti Real Estate</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/bharti-real-estate</div>
+                    <div class="result-content">Products and services
+Keywords: real estate, commercial real estate, leasing, world-class infrastructure, marquee locations, best in class 99 experience for mixed use developments, environment friendly green developments, cbd focus, delhi ncr, office spaces, retail spaces, global business district [...] 2003 with the intention of diversifying into new business sectors with the rapidly expanding Indian economy and the resulting demand for Grade-A real estate. Several projects with a GLA of 5.4 million sq. ft, including the renowned Worldmark Aerocity Phase I in New Delhi, Worldmark Gurugram, Airtel Centre, and Bharti Crescent, have been successfully delivered by Bharti Real Estate in the past. While a much larger asset base with GLA of over 9 million sq. ft is under development as an integrated destination with grade-A offices and mega destination retail. Bharti Real Estate has grown to become one of the most recognized and respected names in commercial real estate, with some of the most prestigious addresses in the country. However, the endeavor is to go beyond standalone business or [...] the endeavor is to go beyond standalone business or shopping destinations and create truly iconic mixed used developments that are dynamic and desirable. These assets have been revered by top MNCs for their headquarters and currently have some of the topmost firms as occupants.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bhartirealestate.com" target="_blank">Bharti Real Estate | Grade A Commercial Spaces in Delhi NCR</a></h3>
+                    <div class="result-url">https://bhartirealestate.com</div>
+                    <div class="result-content">How can I contact Bharti Real Estate for Worldmark leasing or inquiries?
+
+For leasing or business inquiries related to Worldmark, you can contact Bharti Real Estate at leasing@bhartirealestate.com
+
+Does Bharti Real Estate provide property management for Worldmark?
+
+Bharti Care, a subsidiary of Bharti Real Estate provides end-to-end asset management for its developments. This includes facility operations, security, energy management, tenant services, upkeep of common areas, and compliance with safety and sustainability standards.
+
+Know more
+
+Thank You Logo 
+
+Thank you for reaching out to Bharti Real Estate.
+
+Your inquiry is important to us and the concerned team member will be in touch with you soon.
+
+Thank you for visiting www.bhartirealestate.com. [...] Upcoming projects at Worldmark Aerocity
+
+ When we build an asset today, we prepare for creating value in the future.
+
+As a boutique real estate establishment, we build towards potential future development and value creation. Our business methods provide long-term value for our shareholders by addressing all facets of development, leasing, operations, maintenance, and monetization. Through 14 projects of various sizes, we have contributed over 5.5 million square feet to the nation&#x27;s premier commercial real estate in the last 20 years. Our designs and constructions are renowned for showcasing a user-centric viewpoint that prioritises comfort and experience.
+
+Know more
+
+ Upcoming projects
+
+Worldmark Aerocity Logo
+
+ Worldmark 2.0
+
+ ~6.3 million sq. ft. GLA under development [...] Bharti Real Estate’s notable developments include Airtel Centre in Gurugram, Pavilion Mall in Ludhiana, and Bharti Crescent in Vasant Kunj, New Delhi. These projects reflect Bharti Real Estate’s continued focus on design-led, efficient, and sustainable commercial environments, aligning with the firm’s long-term vision of shaping world-class urban ecosystems.
+
+What is the relationship between Bharti Real Estate and Worldmark?
+
+Bharti Real Estate is the developer and master planner behind Worldmark, overseeing the investment, design, development, and operations. While select assets like Worldmark 1, 2, and 3, part of Worldmark 1.0, are now part of Brookfield REIT, Bharti Real Estate continues to own and develop Worldmark 2.0, 3.0 and 4.0. The brand is trademarked and owned by the Company.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.crunchbase.com/organization/bharti-realty" target="_blank">Bharti Realty - Crunchbase Company Profile &amp; Funding</a></h3>
+                    <div class="result-url">https://www.crunchbase.com/organization/bharti-realty</div>
+                    <div class="result-content">Bharti Realty is a real estate company that offers commercial property selling, buying, and leasing services. -14 pts in past quarter</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.prnewswire.com/news-releases/worldmark-by-bharti-real-estate-india-shifts-from-commercial-business-districts-to-global-business-districts-302482752.html" target="_blank">Worldmark by Bharti Real Estate: India Shifts from Commercial Business Districts to Global Business Districts</a></h3>
+                    <div class="result-url">https://www.prnewswire.com/news-releases/worldmark-by-bharti-real-estate-india-shifts-from-commercial-business-districts-to-global-business-districts-302482752.html</div>
+                    <div class="result-content">For Offices, the Global Business District, Worldmark provides on-lease offices anywhere from 2000 to 2,000,000 sq ft on a single floor plate, making it ideal for ambitious multinationals targeting India. The offices are campus-style and accessible by a multi modal mobility network. Worldmark&#x27;s proximity to the airport and excitingly the airport being at the centerPoint for New Delhi provides it a unique advantage in the commute to work, one of the world&#x27;s most pressing issues for businesses and people. Worldmark can be reached from anywhere in India or the world via neighbouring airports and adjacent national highways. Rapid metro lines in the multi-mobility network cover 100 km in about an hour. [...] \Worldmark is a registered trademark of Bharti Realty Ltd.
+
+About Bharti Real Estate: Bharti Real Estate, the real estate arm of Bharti Enterprises, began its journey in 2003 with a vision to meet the growing need for Grade A commercial spaces in a rapidly evolving India. With over 5 million sq. ft. of marquee developments delivered, including Worldmark Aerocity, Worldmark Gurugram, Airtel Centre, and Bharti Crescent, the company has built a strong reputation for quality and innovation. [...] While development continues, Offices and the Mega Retail have experienced a surge in pre-leasing enquiries, with several major companies already committing to Worldmark. Worldmark 3.0 and Worldmark 4.0 will add 10 million sq ft to the portfolio over the next three to five years. For this 10 mn square feet Bharti Real Estate is getting several Built-to-Suit campus requests from multinational businesses.
+
+\Worldmark is a registered trademark of Bharti Realty Ltd.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.bharti.com/press-release-2014-2015-bharti-realty-appoints-sk-sayal.html" target="_blank">Bharti Enterprises: Press Release 2014-2015</a></h3>
+                    <div class="result-url">https://www.bharti.com/press-release-2014-2015-bharti-realty-appoints-sk-sayal.html</div>
+                    <div class="result-content">Bharti
+
+Home/Press Release 2014-2015 / Press Release 2014-2015 Details
+
+ FY2014-2015
+
+ Bharti Realty Appoints SK Sayal as MD &amp; CEO
+
+New Delhi, August 4, 2014: Bharti Realty, an emerging real estate company with interests in retail and office segments, today announced the appointment of S.K. Sayal as Managing Director &amp; CEO.
+
+S.K. Sayal will be responsible for conceptualizing and implementing a scalable business strategy and providing overall leadership to the business. He will focus on building high quality capabilities to further strengthen the foundation of Bharti Realty. Additionally, he will explore and seek new business opportunities via joint development models to scale the Realty business to the next level of growth. [...] Commenting on the appointment Manoj Kohli, Managing Director, Bharti Enterprises said, “We are pleased to have SK Sayal on board. I am confident that his rich experience will add immense value to Bharti Realty’s vision of becoming one of the most admired real estate companies in the country with focus on quality, innovation and commitment to customers. I wish him the very best for his new assignment.”</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://realty.economictimes.indiatimes.com/tag/bharti+realty" target="_blank">Bharti realty - Latest bharti realty , Information &amp; Updates - Real Estate -ET Realty</a></h3>
+                    <div class="result-url">https://realty.economictimes.indiatimes.com/tag/bharti+realty</div>
+                    <div class="result-content">bharti realty to build retail complex near delhi international airport strikes over rs 315 crore deal with dial
+  Bharti Realty to set up leisure hub at Delhi&#x27;s Aerocity
+
+  Worldmark will have over 16,000 sq ft of eating-out space that will house several restaurants including Cafe Delhi Heights, Imperfecto, Social and Asia 7, besides an Epicuria food mall with 13 restaurants.
+
+    bharti realty to set up leisure hub at delhi s aerocity
+  Bharti Realty signs agreement with Eros group for smart residential project in Surajkund
+
+  The project has been conceptualised as India’s first vertical smart community with a combination of high quality construction and technology solutions.
+
+    bharti realty signs agreement with eros group for smart residential project in surajkund [...] courts must stop giving judgements based on public perceptions avneesh sood eros group
+  Bharti Realty-led consortium to develop commercial project at Delhi airport
+
+   bharti realty led consortium to develop commercial project at delhi airport
+  Bharti Realty in talks to form JVs for projects worth over Rs 1,000 crore in NCR
+
+   bharti realty in talks to form jvs for projects worth over rs 1 000 crore in ncr
+  Bharti Realty to invest Rs 3,500 crore on two projects in Delhi-NCR
+
+   bharti realty to invest rs 3 500 crore on two projects in delhi ncr
+  NSDC leases 60,000 sq ft office space in New Delhi Aerocity
+
+   nsdc leases 60 000 sq ft office space in new delhi aerocity
+  Bharti Realty&#x27;s growth formula to be light on assets, heavy on execution [...]  The properties include Worldmark Aerocity, a mixed-use property of 1.43 million sq ft in Delhi-NCR, Airtel Center which is a 7 lakh sq ft corporate facility in North Gurugram, Worldmark 65 which is over 7 lakh sq ft mixed-use asset in South Gurugram and Pavillion Mall in Ludhiana.
+
+  Bharti Realty to vaccinate 100% of its workforce by mid-June
+
+   bharti realty to vaccinate 100 of its workforce by mid june
+  Bharti Realty to operate two million sq ft under asset management model
+
+   bharti realty to operate two million sq ft under asset management model
+  Courts must stop giving judgements based on public perceptions: Avneesh Sood, Eros Group</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/bharti-realty/__xoumnvtaiX7ptwL78IKddCjPCEKau0JetLtpwnKKRSE" target="_blank">Bharti Realty - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/bharti-realty/__xoumnvtaiX7ptwL78IKddCjPCEKau0JetLtpwnKKRSE</div>
+                    <div class="result-content">•
+
+Bharti Realty plans to invest over Rs 6,595 crore in Global Business HubIndiatimes•Aug 21, 2023•Bharti Realty
+
+•
+
+•
+
+Brookfield Close To Buying 2 Ncr Assets Of Bharti Realty Near Delhi Airport And Gurgaon For About $1 BillionIndiatimes•Sep 03, 2021•Brookfield Asset Management, Bharti Realty
+
+•
+
+Bharti Realty ties up with Honeywell to improve indoor air quality at office complexIndiatimes•Aug 26, 2021•Bharti Realty, Honeywell
+
+•
+
+Bharti Realty to operate two million sq ft under asset management modelIndiatimes•Mar 14, 2021•Bharti Realty
+
+•
+
+Bharti Realty leases two lakh sq ft of retail space at Worldmark GurugramIndiatimes•Mar 03, 2021•Bharti Realty
+
+• [...] Developer of commercial properties
+
+$15M
+
+57/100
+
+2147th
+
+Bharti Realty
+
+2003, Delhi (India), Unfunded
+
+Developer of commercial properties
+
+\-
+
+\-
+
+20/100
+
+Get insights and benchmarks for competitors of 2M+ companies! Sign up today!
+
+Looking for more details on Bharti Realty&#x27;s competitors? Click here to see the top ones
+
+ Bharti Realty&#x27;s Investments and acquisitions
+
+Bharti Realty has made no investments or acquisitions yet.
+
+ Reports related to Bharti Realty
+
+Here is the latest report on Bharti Realty&#x27;s sector:
+
+ News related to Bharti Realty
+
+Filter this list
+
+•
+
+Bharti Realty to build 17 mn sq ft of office, retail space in DelhiNewsDrum•Feb 27, 2024•Bharti Realty
+
+•
+
+Bharti Real Estate announces expansion of Worldmark Aerocity projectThe Hindu•Feb 17, 2024•Bharti Realty
+
+• [...] •
+
+Canada&#x27;s Brookfield In Final Talks To Buy Assets Of Bharti Realty In NcrBusiness Standard•Dec 24, 2020•Brookfield Asset Management, Bharti Realty
+
+•
+
+Bharti Realty in talks with Brookfield, Blackstone to sell properties in Delhi, GurgaonIndiatimes•Nov 19, 2020•Bharti Realty, Brookfield Asset Management, Blackstone
+
+Get curated news about company updates, funding rounds, M&amp;A deals and others. Sign up today!
+
+Are you a Founder ?
+
+ FAQs about Bharti Realty
+
+Explore our recently published companies
+
+- Himsons - Vadodara based, 1988 founded, Unfunded company
+- Com2uS Platform Corp - Unfunded company
+- Just Print - Unfunded company</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bhartirealestate.com/newsletter/2025/january" target="_blank">IN FOCUS January 2025 : Bharti Real Estate Newsletter</a></h3>
+                    <div class="result-url">https://bhartirealestate.com/newsletter/2025/january</div>
+                    <div class="result-content">I am profoundly appreciative of the unwavering support from each one of you as we embark on this thrilling voyage. I am confident that we will create a sustainable, innovative, and prosperous future for future generations with your continued support, as we are collectively shaping the future of commercial real estate.
+
+Sincerely,
+
+Sayal
+
+CEO&#x27;s message in the newsletter
+
+ KEY HIGHLIGHTS 2024
+
+February 2025 real estate market trends
+
+ Great Place to Work Badge
+
+Bharti Real Estate earns the Great Place to Work badge.
+
+April 2025 upcoming real estate projects
+
+ New Website Launch
+
+Bharti Real Estate unveiled its new website, bhartirealestate.com
+
+GRESB sustainability certification
+
+ GRESB
+
+The first ever participation in GRESB.
+
+November 2024 market performance [...] November 2024 market performance
+
+ Harit ratna award
+
+Bharti Real Estate received the Harit Ratna Award for excellence in construction and clean building practices at The Mall at Worldmark.
+
+December 2024 highlights and reviews
+
+ National awards of excellence
+
+Worldmark won the National Award for Excellence in the category of ‘Excellence in Branding and Marketing, Real Estate Brand of the Year’.
+
+IGBC green building certifications
+
+ IGBC certifications
+
+7 Worldmark - IGBC Platinum pre-certified.   
+ The Mall at Worldmark – IGBC Gold pre-certified.
+
+CSR initiatives and community programs
+
+ ACT Changemaker Awards
+
+Bharti Real Estate won Gold under the ACT Category at the Changemaker Awards.
+
+Great Place to Work Badge
+
+New Website Launch
+
+GRESB
+
+Harit ratna award [...]  WORLDMARK 3.0
+
+ PLANNING UNDERWAY
+
+The third phase of Worldmark at Aerocity, which is referred to as Worldmark 3.0, is currently in the process of being planned and will encompass nearly 10 million square feet. This is the third phase of the Worldmark expansion, which includes the addition of expansive offices and retail to the Global Business District.
+
+ IN THE NEWS
+
+ INDIA’S TRANSFORMATIVE GLOBAL BUSINESS DISTRICT SPREAD OVER 17 MN SQFT
+
+Worldmark 2.0 is transforming New Delhi into a global business hub with cutting-edge office spaces and world-class amenities. Discover how this innovative development is shaping the future of commerce in India.
+
+Visit the Website
+
+HQ27 Gurugram - Exterior Night View
+
+Visit the Website</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.mingtiandi.com/real-estate/finance/brookfield-india-reit-to-buy-half-stakes-in-four-bharti-commercial-properties-for-720m" target="_blank">Brookfield India REIT to Buy Half-Stakes in Bharti Assets for $720M - Mingtiandi</a></h3>
+                    <div class="result-url">https://www.mingtiandi.com/real-estate/finance/brookfield-india-reit-to-buy-half-stakes-in-four-bharti-commercial-properties-for-720m</div>
+                    <div class="result-content">The REIT sponsored by Canadian giant Brookfield will assume debt under the terms of the deal, with the equity consideration to be fulfilled through a preferential allotment of BIRET units to Bharti at INR 300 per unit, the trust’s manager said Thursday in a release. The Delhi-based conglomerate will thus become the second-largest unitholder in BIRET, with an 8.53 percent stake.
+
+Developed by Bharti’s real estate arm and co-owned by Brookfield, the properties include assets in the Aerocity mega-project at New Delhi’s international airport, as well as an office tower and a mall in Gurugram. The four-asset portfolio comprises 3.3 million square feet (306,580 square metres) in total. [...]  New Leasing Strong
+
+BIRET’s manager on Thursday reported a 57 percent increase in adjusted net operating income to INR 15 billion for the fiscal year to the end of March, as new leasing reached its highest level since the trust’s initial public offering in 2021.
+
+Gross leasing during the 12 months totalled 2.8 million square feet, including 1.9 million square feet of new leasing and 900,000 square feet of renewals, the manager said in a release.
+
+“Fiscal 2024 was our best year since our IPO, driven by a broad-based recovery in leasing demand across sectors and a strong preference for our sustainability-focused Grade A assets,” said BIRET CEO Alok Aggarwal. “We have already achieved 40 percent of our new leasing guidance of 2 million to 2.4 million square feet till fiscal 2025.” [...] The target assets at Indira Gandhi International Airport’s Worldmark Aerocity span 1.4 million square feet, according to the companies. Bharti continues to invest in a development pipeline of over 10 million square feet of commercial assets at the multi-phase Aerocity and hopes to grow the partnership through similar transactions, said Harjeet Kohli, joint managing director of Bharti Enterprises.
+
+The Gurugram office tower, known as Airtel Centre, encompasses 700,000 square feet and serves as the headquarters of telecom division Bharti Airtel, while Worldmark Gurugram mall provides more than 700,000 square feet.
+
+BIRET’s latest buys will add to a portfolio consisting of 25.5 million square feet of total leasable area across Gurugram, Mumbai, Noida and Kolkata.
+
+ New Leasing Strong</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/bharti-realty/__xoumnvtaiX7ptwL78IKddCjPCEKau0JetLtpwnKKRSE" target="_blank">Bharti Realty - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/bharti-realty/__xoumnvtaiX7ptwL78IKddCjPCEKau0JetLtpwnKKRSE</div>
+                    <div class="result-content">BioMed Realty
+
+2004, San Diego (United States), Acquired
+
+Real estate solutions provider for life science and technology industries
+
+\-
+
+60/100
+
+5th
+
+Las Vegas Sands
+
+1989, Las Vegas (United States), Public
+
+Developer and operator of resorts &amp; hotels
+
+\-
+
+\-
+
+60/100
+
+6th
+
+Bagmane Group
+
+1996, Bengaluru (India), Unfunded
+
+Chains providing commercial business parks and built-to-suit office spaces
+
+\-
+
+\-
+
+59/100
+
+7th
+
+Online platform for buying and selling fully renovated homes
+
+$10.3M
+
+59/100
+
+8th
+
+Real estate investment company
+
+$77.4M
+
+\-
+
+58/100
+
+9th
+
+Precinct
+
+1997, Auckland (New Zealand), Public
+
+Developer of commercial real estate properties
+
+\-
+
+\-
+
+57/100
+
+10th
+
+Brookfield Properties
+
+1924, New York City (United States), Public
+
+Developer of commercial properties
+
+$15M
+
+57/100 [...] Access Tracxn on any website
+
+Install Tracxn Extension
+
+Our Google Chrome extension lets you view company details while browsing their websites
+
+ Bharti Realty&#x27;s Competitors and alternates
+
+Top competitors of Bharti Realty include RMZ Corp, Chalet Hotels and First Capital Realty. Here is the list of Top 10 competitors of Bharti Realty, ranked by Tracxn score:
+
+Rank
+
+Company Details
+
+Short Description
+
+Total Funding
+
+Investors
+
+Tracxn Score
+
+1st
+
+Provider of real estate development services
+
+\-
+
+63/100
+
+2nd
+
+Chalet Hotels
+
+1986, Mumbai (India), Public
+
+Provider of hotel management services
+
+\-
+
+62/100
+
+3rd
+
+First Capital Realty
+
+1994, Canada, Public
+
+Developer of commercial properties
+
+$75M
+
+\-
+
+61/100
+
+4th
+
+BioMed Realty
+
+2004, San Diego (United States), Acquired [...]  Bharti Realty - About the company
+
+Bharti Realty is an unfunded company based in Delhi (India), founded in 2003. It operates as a Developer of commercial properties. Bharti Realty has not raised any funding yet. The company has 13732 active competitors, including 115 funded and 567 that have exited. Its top competitors include companies like RMZ Corp, Chalet Hotels and First Capital Realty.
+
+ Company Details
+
+Website
+
+bhartirealty.com
+
+Registered Address
+
+Airtel Centre,Plot No. 16 Udyog Vihar, Phase-IV, Gurgaon, Gurgaon, Haryana, India, 122015
+
+Key Metrics
+
+Founded Year
+
+2003
+
+Location
+
+Delhi, India
+
+Stage
+
+Unfunded
+
+Ranked
+
+2147
+
+thamong 13732 active competitors
+
+Employee Count
+
+200 - 499 as on Mar 01, 2026
+
+Similar Companies
+
+ Legal entities associated with Bharti Realty</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://rocketreach.co/bharti-real-estate-competitors_b6c4afc5c7bd9402" target="_blank">Bharti Real Estate Competitors | Companies like Bharti Real Estate</a></h3>
+                    <div class="result-url">https://rocketreach.co/bharti-real-estate-competitors_b6c4afc5c7bd9402</div>
+                    <div class="result-content">Title: Bharti Real Estate Competitors | Companies like Bharti Real Estate
+Image 5: Bharti Real Estate.  Bharti Real Estate Competitors. View More Bharti Real Estate Competitors. View Bharti Real Estate&#x27;s top competitors like Brigade Group, Crompton Greaves Consumer Electricals Limited, and DLF Limited. Godrej Properties Limited See All Employees. Godrej Properties brings the Godrej Group philosophy of innovation, sustainability, and excellence to the real estate industry. In recent years, Godrej Properties has received over 200 awards and recognitions, including the ‘Builder of the Year” at the CNBC-Awaaz Real Estate Awards 2018, &#x27;Real Estate Company of the Year&#x27; at the 8th Annual Construction Week India Awards 2018, India’s Top Builders 2018 at the Construction World Architect and Builder (CWAB) AWARDS 2018 and the Golden Peacock National Quality Award – 2017 at the Institute Of Directors 27th World Congress on Business Excellence and Innovation. DLF Limited See All Employees. Today, DLF is the largest publicly listed real estate company in India, with residential, commercial, and retail properties in 15 states and 24 cities. Crompton Greaves Consumer Electricals Limited See All Employees.  Top **Bharti Real Estate** Employees. Image 9: Bharti Real Estate Employee Pankaj Garg&#x27;s profile photo  Cherryn Dogra  Chief Marketing Officer at Bharti Real Estate New Delhi, DL, IN   View. Image 10: Bharti Real Estate Employee Manoj Nagar&#x27;s profile photo  S.k. Sayal  Managing Director and CEO at Bharti Real Estate New Delhi, DL, IN   View. Image 11: Bharti Real Estate Employee Mohit Pruthi&#x27;s profile photo  Mohit Pruthi  Retail Business Head and Senior Vice President at Bharti Real Estate New Delhi, DL, IN   View. Image 12: Bharti Real Estate Employee Manoj Nagar&#x27;s profile photo  Manoj Nagar  Associate Vice President; (Group Head- MEP) at Bharti Real Estate Delhi, India   View. Image 13: Bharti Real Estate Employee Neeraj Aggarwal&#x27;s profile photo  Neeraj Aggarwal  Vice President - SCM at Bharti Real Estate Delhi, India   View. Image 17: Bharti Real Estate Employee Pankaj Garg&#x27;s profile photo  Pankaj Garg  GM - Planning and Project Controls at Bharti Real Estate New Delhi, DL, IN   View. Image 18: Bharti Real Estate Employee Ravinder Arora&#x27;s profile photo  Ravinder Arora  Director and COO at Bharti Real Estate New Delhi, DL, IN   View.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/ZBhJR5ShEFey" target="_blank">Bharti Real Estate</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/ZBhJR5ShEFey</div>
+                    <div class="result-content">Bharti Real Estate
+ID: ZBhJR5ShEFey
+Website: www.bhartirealestate.com
+Headquarters: Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/bharti-real-estate · 44,736 followers
+Industry: Leasing Non-residential Real Estate
+Company type: Privately Held
+Founded: 2003
+Business model: B2B
+SaaS: no
+Social profiles: www.facebook.com/bhartirealty, www.twitter.com/bharti_realty, www.crunchbase.com/organization/bharti-real-estate, www.youtube.com/channel/ucz6dtqvroduvlbklurxup3w
+Email: info@bhartirealestate.com, leasing@bhartirealestate.com
+Phone: 124-498-4000, +91 11 4138 4000
+Description: Bharti Real Estate is a premier global business district in Delhi NCR that offers state-of-the-art office and retail spaces for top businesses. [...]  Financials
+- Annual revenue: 62.00M USD
+
+ Technology
+- Detected: 9
+- ariba contract management · last seen 2026-09-21
+- sap ariba · last seen 2026-09-21
+- oracle · last seen 2026-09-21
+- tds · last seen 2026-09-21
+- oracle database · last seen 2026-09-21
+- helpdesk · last seen 2025-11-24
+- microsoft · last seen 2025-11-24
+- amp · last seen 2025-08-11
+
+ Web traffic
+- Monthly visits: 4,583 (-15.4% change)
+- Pages per visit: 1.63
+- Average visit duration: 27 seconds
+- Bounce rate: 38%
+- Global rank: 3,999,111
+- Country rank: 301,805
+
+ Reputation
+- Open roles: 0
+
+ Similar companies
+- dlf
+- db realty
+- l&amp;t
+- prestige group
+- sobha
+- unitech
+- omaxe
+- officespacegurgaon [...]  Products and services
+Business areas: Commercial Real Estate Development, Mixed-Use Property Development, Property Leasing and Management
+Products: Grade-A Office Space Leasing, Retail Space Leasing, Mixed-Use Commercial Developments, Commercial Property Development, Property Management Services
+
+ Headcount
+- Now: 326 · +18 quarterly · +6 monthly
+  - Southern Asia: 229
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 62.00M USD</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/bharti-real-estate" target="_blank">Bharti Real Estate - LinkedIn</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/bharti-real-estate</div>
+                    <div class="result-content">Description: From the House of Bharti. Founded in 1976, by Mr. Sunil Bharti Mittal, Bharti group has grown from being a manufacturer of bicycle parts to one of the largest &amp; most respected business conglomerates with business interests in diverse fields including telecom, space communications, digital infrastructure, financial services, real estate, and agri-processed foods. Bharti Airtel, the group’s flagship company, is among the top listed entities in India having operations in 17 countries across Asia &amp; Africa. Airtel is India’s largest integrated communications solutions provider and Africa’s second-largest mobile operator, serving nearly 500 million customers across its operations. Bharti Real Estate was established in 2003 with the intention of diversifying into new business [...] 2003 with the intention of diversifying into new business sectors with the rapidly expanding Indian economy and the resulting demand for Grade-A real estate. Several projects with a GLA of 5.4 million sq. ft, including the renowned Worldmark Aerocity Phase I in New Delhi, Worldmark Gurugram, Airtel Centre, and Bharti Crescent, have been successfully delivered by Bharti Real Estate in the past. While a much larger asset base with GLA of over 9 million sq. ft is under development as an integrated destination with grade-A offices and mega destination retail. Bharti Real Estate has grown to become one of the most recognized and respected names in commercial real estate, with some of the most prestigious addresses in the country. However, the endeavor is to go beyond standalone business or [...]  Products and services
+Keywords: real estate, commercial real estate, leasing, world-class infrastructure, marquee locations, best in class 99 experience for mixed use developments, environment friendly green developments, cbd focus, delhi ncr, office spaces, retail spaces, global business district</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bhartirealestate.com/who-are-we" target="_blank">Our Story and Vision - Bharti Real Estate</a></h3>
+                    <div class="result-url">https://bhartirealestate.com/who-are-we</div>
+                    <div class="result-content">Mark Menon
+
+Head – Office Leasing
+
+Mark Menon has been associated with the real estate business for over 23 years, in various sectors such as hospitality, industrial and commercial. During his association with global conglomerates like Oberoi Hotels, JLL, Wyndham Hotel Group, Indospace (Everstone Capital) and DLF, he has accomplished some remarkable real estate transactions, thanks to a customer-centric and solution-oriented approach. Menon is a staunch advocate of evolving technology and has been utilizing its transformative advantages at work.
+
+Neeraj Aggarwal- Head of Supply Chain Management
+
+ Neeraj Aggarwal
+
+Head – Supply Chain Management [...]  Who are we
+
+ From land to landmarks
+
+We are Bharti Real Estate. Our journey began in 2003 with the intention of diversifying into new business sectors with the rapidly expanding Indian economy and the resulting demand for Grade-A commercial real estate. Several projects, including the renowned Worldmark 1.0 in Aerocity, New Delhi, Worldmark Gurugram, Airtel Centre, and Bharti Crescent, have been successfully completed by Bharti Real Estate in the past.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

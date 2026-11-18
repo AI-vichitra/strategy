@@ -214,25 +214,34 @@ def _theme_from_brand_kit(brand_kit: Optional[dict], agent_type: str) -> dict:
     return _build_theme_from_colors(colors, base) or base
 
 
-def _resolve_theme(brand_kit: Optional[dict], extracted_palette: Optional[dict], agent_type: str) -> dict:
+def _resolve_theme(brand_kit: Optional[dict], extracted_palette: Optional[dict], agent_type: str,
+                    base: Optional[dict] = None) -> dict:
     """Export theme precedence: manual brand_kit colors (if any are set) win
-    outright; otherwise an LLM-extracted palette from report generation; otherwise
-    the fixed report-type theme. Logo placement is unaffected — it only ever
-    comes from brand_kit, never from the extracted palette."""
-    base = _get_theme(agent_type)
+    outright; otherwise an LLM-extracted palette from report generation;
+    otherwise a template-supplied `base` palette (if given); otherwise the
+    fixed report-type theme. Logo placement is unaffected — it only ever
+    comes from brand_kit, never from the extracted palette.
+
+    `base`, when given, is a (possibly partial) dict using the same 9 slot
+    keys as a REPORT_THEMES entry — any slot it doesn't set is filled from
+    the report-type theme, so this can never raise a KeyError. Passing
+    base=None (the default) is byte-identical to the old 3-arg behavior,
+    which is what export_service.py (DOCX) still calls unchanged."""
+    report_theme = _get_theme(agent_type)
+    resolved_base = report_theme if not base else {**report_theme, **base}
 
     manual_colors = (brand_kit or {}).get("colors") or {}
     if any(manual_colors.get(k) for k in ("primary", "secondary", "accent")):
-        theme = _build_theme_from_colors(manual_colors, base)
+        theme = _build_theme_from_colors(manual_colors, resolved_base)
         if theme:
             return theme
 
     if extracted_palette:
-        theme = _build_theme_from_colors(extracted_palette, base)
+        theme = _build_theme_from_colors(extracted_palette, resolved_base)
         if theme:
             return theme
 
-    return base
+    return resolved_base
 
 
 # ─────────────────────────────────────────────────────────────────────────────

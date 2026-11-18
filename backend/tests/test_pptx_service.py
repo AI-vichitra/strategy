@@ -27,7 +27,6 @@ from backend.services.pptx_service import (
     CONTENT_SAFE_BOTTOM_IN,
     CONTENT_BODY_TOP_IN,
     CONTENT_BODY_HEIGHT_IN,
-    TITLE_BAR_HEIGHT_IN,
 )
 
 _STATIC_LOGOS_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads", "logos")
@@ -53,18 +52,42 @@ def test_generate_pptx_returns_valid_pptx_bytes():
     assert data[:2] == b"PK"
 
 
-def test_cover_slide_has_correct_title():
+def test_cover_slide_title_prefers_brand_name_over_report_title():
+    # Intentional: the cover's big title shows the brand name, not
+    # report.title (which is derived from the first section heading) —
+    # report.title is still used elsewhere (filenames/TOC/etc.), just not
+    # rendered as the cover title.
     data = _run(generate_pptx({
-        "title": "Cog Culture Brand Strategy",
+        "title": "Executive Summary",
         "content": "### Executive Summary\nSummary text.",
         "brand_name": "Cog Culture",
         "agent_name": "Brand Positioning",
     }))
     prs = Presentation(io.BytesIO(data))
     cover_text = _slide_text(prs.slides[0])
-    assert "Cog Culture Brand Strategy" in cover_text
     assert "Cog Culture" in cover_text
+    assert "Executive Summary" not in cover_text
     assert "BRAND POSITIONING REPORT" in cover_text
+
+
+def test_cover_slide_title_falls_back_to_report_title_without_brand_name():
+    data = _run(generate_pptx({
+        "title": "Cog Culture Brand Strategy",
+        "content": "### Executive Summary\nSummary text.",
+        "agent_name": "Brand Positioning",
+    }))
+    prs = Presentation(io.BytesIO(data))
+    cover_text = _slide_text(prs.slides[0])
+    assert "Cog Culture Brand Strategy" in cover_text
+
+
+def test_cover_slide_title_falls_back_to_art_default_without_title_or_brand():
+    data = _run(generate_pptx({
+        "content": "### Executive Summary\nSummary text.",
+    }))
+    prs = Presentation(io.BytesIO(data))
+    cover_text = _slide_text(prs.slides[0])
+    assert "Strategic Intelligence Report" in cover_text
 
 
 def test_heading_and_bullets_produce_multiple_slides():
@@ -435,14 +458,15 @@ def _content_body_boxes(slide):
 
 
 def _title_bar_text(slide):
-    """The slide heading text specifically — width 12.0in AND height
-    TITLE_BAR_HEIGHT_IN distinguishes it from the (same-width) subtitle box
-    and from the 0.18in-wide accent bar."""
+    """The slide heading text specifically — width 11.5in AND height 0.5in
+    (tpl.geometry["chrome"]["heading"] for DEFAULT_TEMPLATE) distinguishes
+    the chrome heading box from the eyebrow/footer textboxes (different
+    heights) and from the 0.18in-wide accent bar."""
     for shape in slide.shapes:
         if (
             shape.has_text_frame
-            and shape.width == Inches(12.0)
-            and round(shape.height / Inches(1), 2) == TITLE_BAR_HEIGHT_IN
+            and shape.width == Inches(11.5)
+            and round(shape.height / Inches(1), 2) == 0.5
         ):
             return shape.text_frame.text
     return None
@@ -470,23 +494,30 @@ def test_content_box_never_overflows_below_safe_area():
 
 
 def test_heading_to_body_gap_reduced():
+    """Content slides now carry the chrome frame (eyebrow + heading + rule),
+    not the bare title bar — this checks the chrome heading box (w=11.5in,
+    h=0.5in, distinct from the TOC's own w=12.0in title box) sits just above
+    the content body with a small, deliberate gap (spanning the hairline
+    rule), not the old title-bar-to-body gap."""
     data = _run(generate_pptx({"title": "Report", "content": "### Section\n- A bullet.\n"}))
     prs = Presentation(io.BytesIO(data))
 
-    found_title = found_body = False
+    found_heading = found_body = False
+    heading_y = None
     for slide in prs.slides:
         for shape in slide.shapes:
             if not shape.has_text_frame:
                 continue
-            if shape.width == Inches(12.0) and round(shape.height / Inches(1), 2) == TITLE_BAR_HEIGHT_IN:
-                found_title = True
+            if shape.width == Inches(11.5) and round(shape.height / Inches(1), 2) == 0.5:
+                found_heading = True
+                heading_y = shape.top / Inches(1)
             if shape.width == Inches(11.5) and round(shape.top / Inches(1), 2) == CONTENT_BODY_TOP_IN:
                 found_body = True
-    assert found_title, f"expected a title bar box of height {TITLE_BAR_HEIGHT_IN}in"
+    assert found_heading, "expected a chrome heading box (w=11.5in, h=0.5in)"
     assert found_body, f"expected a content body box starting at top {CONTENT_BODY_TOP_IN}in"
 
-    gap_in = CONTENT_BODY_TOP_IN - (0.35 + TITLE_BAR_HEIGHT_IN)
-    assert 0.25 <= gap_in <= 0.5
+    gap_in = CONTENT_BODY_TOP_IN - (heading_y + 0.5)
+    assert 0.1 <= gap_in <= 0.4
 
 
 def test_long_prose_section_splits_across_slides():

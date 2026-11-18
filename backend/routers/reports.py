@@ -3,7 +3,7 @@ import json
 import re
 from typing import Optional, Tuple
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -61,7 +61,7 @@ async def _build_docx_response(db: AsyncSession, report, content_override: Optio
         headers={"Content-Disposition": f'attachment; filename="{title}.docx"'},
     )
 
-async def _build_pptx_response(db: AsyncSession, report) -> Response:
+async def _build_pptx_response(db: AsyncSession, report, template_id: Optional[str] = None) -> Response:
     brand_result = await db.execute(
         select(BrandConfig.brand_name, Project.brand_kit)
         .join(Project, Project.brand_config_id == BrandConfig.id)
@@ -87,6 +87,7 @@ async def _build_pptx_response(db: AsyncSession, report) -> Response:
         "agent_name": report.agent_type,
         "brand_kit": brand_kit,
         "extracted_palette": extracted_palette,
+        "template_id": template_id,
     }
     pptx_bytes = await generate_pptx(report_data)
 
@@ -132,13 +133,23 @@ async def export_report_docx_with_content(
     return await _build_docx_response(db, report, content_override=req.content)
 
 @router.get("/{report_id}/export/pptx")
-async def export_report_pptx(report_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def export_report_pptx(
+    report_id: str,
+    template_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Mirrors export_report_docx: renders the report's raw content as a branded
-    PowerPoint deck via pptx_service.generate_pptx."""
+    PowerPoint deck via pptx_service.generate_pptx. `template_id` selects a visual
+    TemplateSpec (see template_service.get_template / GET /api/pptx-templates for
+    the catalog); an absent or unknown id safely falls back to the default
+    template — generate_pptx/get_template handle that, so no validation is
+    needed here. Resolution is query-param-only for now; a persisted
+    report.template_id column is a later step."""
     report = await report_service.get_report(db, report_id, current_user.id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    return await _build_pptx_response(db, report)
+    return await _build_pptx_response(db, report, template_id=template_id)
 
 @router.get("/{report_id}/export/pdf")
 async def export_report_pdf(report_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
