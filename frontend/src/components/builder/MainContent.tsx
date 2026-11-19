@@ -1011,7 +1011,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           const onboardingComps = JSON.parse(brand.competitors) as Array<{ name?: string; url?: string; website_url?: string }>;
           const mapped = onboardingComps
             .filter((c) => c && typeof c.name === 'string' && c.name.trim())
-            .map((c) => ({ brand_name: c.name!.trim(), website_url: c.url || c.website_url || '', social_media: null }));
+            .map((c) => ({ brand_name: c.name!.trim(), website_url: c.url || c.website_url || '', social_media: undefined }));
           if (mapped.length > 0) {
             setCompetitors(mapped);
             setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
