@@ -77,7 +77,7 @@ export default function ProjectDetailsPage() {
 
   useEffect(() => {
     if (!projectId) return;
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -116,7 +116,7 @@ export default function ProjectDetailsPage() {
   }
 
   const { brand_config_id, brand, competitors_selected, competitors_used, chats, status, created_at, last_updated } = data;
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
 
   // Diff: which used competitors were NOT in the selected set?
   const selectedNorm = new Set(competitors_selected.map(c => normalize(c.name)));

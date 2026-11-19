@@ -6,7 +6,7 @@ Architecture:
   - Knowledge base format: JSON files (one per source document)
     Each JSON file has: { title, url, source_type, brand, content }
   - Chunking: 500-word chunks, 100-word overlap
-  - Embeddings: sentence-transformers all-MiniLM-L6-v2 (384-dim, free, local)
+  - Embeddings: OpenAI text-embedding-3-small (1536-dim, via API)
   - Retrieval: Hybrid — cosine similarity (dense) + BM25 keyword (sparse), RRF fusion
   - Top-K retrieved: 6 chunks
   - Index caching: in-memory per brand_slug, rebuilt only when docs folder changes
@@ -33,7 +33,7 @@ DOCS_DIR = os.path.join(PROJECT_ROOT, "docs")
 CHUNK_SIZE = 500          # words per chunk
 CHUNK_OVERLAP = 100       # words of overlap between adjacent chunks
 TOP_K = 6                 # chunks retrieved per query
-EMBED_MODEL = "all-MiniLM-L6-v2"   # 384-dim, free, local
+EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
 MISTRAL_MODEL = "open-mistral-7b"
 
 # Fallback priority order for LLM providers (mistral verified working;
@@ -46,17 +46,70 @@ LLM_PROVIDER_PRIORITY = ["mistral", "qwen", "openai", "groq", "anthropic"]
 _index_cache: Dict[str, Dict[str, Any]] = {}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Lazy-loaded singletons
+# Embedding constants
 # ─────────────────────────────────────────────────────────────────────────────
-_embedder = None
+_EMBED_API_BATCH_SIZE = 2048   # OpenAI embeddings API max inputs per request
+_EMBED_MAX_CHARS = 24_000      # conservative ~8191 token ceiling (~3 chars/token)
+
+_embedder = None  # kept for signature compatibility; no longer holds a SentenceTransformer
+
 
 def _get_embedder():
-    global _embedder
-    if _embedder is None:
-        from sentence_transformers import SentenceTransformer
-        _embedder = SentenceTransformer(EMBED_MODEL)
-        logger.info(f"[RAG] Loaded embedder: {EMBED_MODEL} (384-dim)")
-    return _embedder
+    # Kept for signature compatibility.
+    # Returns the OPENAI_API_KEY string when set (truthy) so callers that gate
+    # on `if _get_embedder()` still work.  Returns None when key is absent.
+    return os.environ.get("OPENAI_API_KEY", "").strip() or None
+
+
+def _embed_texts(texts: List[str]):
+    """
+    Embed a list of strings via the OpenAI Embeddings API.
+
+    - Batches in groups of _EMBED_API_BATCH_SIZE (API max 2048).
+    - Truncates inputs exceeding ~8191 tokens (_EMBED_MAX_CHARS chars) and logs once per input.
+    - Returns L2-normalised float32 numpy array of shape (N, dim) on success.
+    - Returns None on failure (missing key, network/API error) so callers can
+      fall back to BM25-only retrieval without crashing.
+    """
+    import numpy as np
+
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        logger.warning("[RAG] OPENAI_API_KEY not set — dense retrieval disabled, falling back to BM25-only")
+        return None
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+
+        # Truncate oversized inputs before sending
+        processed: List[str] = []
+        for i, t in enumerate(texts):
+            if len(t) > _EMBED_MAX_CHARS:
+                logger.warning(
+                    f"[RAG] Truncating embed input {i} from {len(t)} to {_EMBED_MAX_CHARS} chars"
+                )
+                t = t[:_EMBED_MAX_CHARS]
+            processed.append(t)
+
+        # Batch requests to stay within API limits
+        all_vectors: List[List[float]] = []
+        for start in range(0, len(processed), _EMBED_API_BATCH_SIZE):
+            batch = processed[start : start + _EMBED_API_BATCH_SIZE]
+            resp = client.embeddings.create(model=EMBED_MODEL, input=batch)
+            # API guarantees ordering by index, but sort defensively
+            sorted_data = sorted(resp.data, key=lambda e: e.index)
+            all_vectors.extend(e.embedding for e in sorted_data)
+
+        embeddings = np.array(all_vectors, dtype="float32")
+        # OpenAI already returns L2-normalised vectors; normalise again to guard
+        # against any future change and to satisfy the dot-product scorer.
+        norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+        return (embeddings / (norms + 1e-9)).astype("float32")
+
+    except Exception as exc:
+        logger.warning(f"[RAG] Embedding call failed ({exc!s}) — falling back to BM25-only retrieval")
+        return None
 
 
 def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
@@ -116,14 +169,29 @@ def _folder_mtime_hash(brand_slug: str) -> str:
     return hashlib.md5(fingerprint.encode()).hexdigest()
 
 
-def _load_json_docs(brand_slug: str) -> List[Dict[str, Any]]:
-    """Loads and flattens the centralized KB JSON into standardized RAG documents."""
+def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Loads and flattens the centralized KB JSON into standardized RAG documents.
+    `kb_json` (BrandConfig.kb_json — the DB source of truth) is used directly when
+    given. Falls back to the KNOWLEDGE_BASE/{slug}_KB.json file only when kb_json
+    is None (brand predates this column, or the DB lookup failed)."""
     docs = []
-    for path in _get_docs_paths(brand_slug):
+
+    data_sources: List[tuple] = []
+    if kb_json:
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                
+            data_sources.append(("<db:kb_json>", json.loads(kb_json)))
+        except Exception as e:
+            logger.warning(f"[RAG] Failed to parse kb_json for '{brand_slug}': {e}")
+    else:
+        for path in _get_docs_paths(brand_slug):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data_sources.append((path, json.load(f)))
+            except Exception as e:
+                logger.warning(f"[RAG] Failed to load {path}: {e}")
+
+    for path, data in data_sources:
+        try:
             def process_entity(entity):
                 name = entity.get("NAME", "Unknown")
                 url = entity.get("URL", "")
@@ -171,6 +239,18 @@ def _chunk_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     Each chunk carries its metadata (title, url, source_type, brand).
     """
     content = doc.get("content", "") or ""
+    # Apply per-source content cap before chunking (prevents 1M+ char sources from
+    # blowing memory on a 512 MB host).  Truncates at a paragraph boundary when possible.
+    _cap = int(os.environ.get("MAX_KB_CHARS_PER_SOURCE", "200000"))
+    if len(content) > _cap:
+        truncated = content[:_cap]
+        last_para = truncated.rfind("\n\n")
+        if last_para > _cap // 2:
+            truncated = truncated[:last_para]
+        logger.warning(
+            f"[RAG] Capping source '{doc.get('title', '?')}': {len(content)} → {len(truncated)} chars (cap={_cap})"
+        )
+        content = truncated
     # Clean up whitespace
     content = re.sub(r'\s+', ' ', content).strip()
     words = content.split()
@@ -212,25 +292,27 @@ def _build_chunks(docs: List[Dict]) -> List[Dict]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 3: Embedding — all-MiniLM-L6-v2, 384-dim
+# Step 3: Embedding — OpenAI text-embedding-3-small, 1536-dim
 # ─────────────────────────────────────────────────────────────────────────────
 def _embed_chunks(chunks: List[Dict]):
     """
-    Embeds all chunk texts using sentence-transformers.
-    Returns numpy array of shape (N, 384).
+    Embeds all chunk texts via the OpenAI Embeddings API.
+    Returns float32 numpy array of shape (N, 1536) on success.
+    Returns shape (0, 1536) when chunks is empty or the API call fails,
+    so hybrid retrieval degrades gracefully to BM25-only without crashing.
     """
     import numpy as np
+    _EMPTY = np.zeros((0, 1536), dtype="float32")
     if not chunks:
-        return np.zeros((0, 384), dtype="float32")
+        return _EMPTY
 
-    embedder = _get_embedder()
     texts = [c["text"] for c in chunks]
-    embeddings = embedder.encode(texts, batch_size=64, show_progress_bar=False, convert_to_numpy=True)
-    # L2-normalize for cosine similarity via dot product
-    norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
-    embeddings = embeddings / (norms + 1e-9)
-    logger.info(f"[RAG] Embedded {len(chunks)} chunks → shape {embeddings.shape}")
-    return embeddings.astype("float32")
+    result = _embed_texts(texts)
+    if result is None:
+        return _EMPTY
+
+    logger.info(f"[RAG] Embedded {len(chunks)} chunks → shape {result.shape}")
+    return result
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -246,15 +328,21 @@ def _build_bm25(chunks: List[Dict]):
 # ─────────────────────────────────────────────────────────────────────────────
 # Index cache management
 # ─────────────────────────────────────────────────────────────────────────────
-def _get_or_build_index(brand_slug: str) -> Optional[Dict]:
+def _get_or_build_index(brand_slug: str, kb_json: Optional[str] = None) -> Optional[Dict]:
     """
-    Returns cached index if docs haven't changed, otherwise rebuilds.
+    Returns cached index if the KB content hasn't changed, otherwise rebuilds.
     Cache key: brand_slug → { chunks, embeddings, bm25, mtime_hash }
+    When `kb_json` (BrandConfig.kb_json) is given, its own content is hashed for
+    invalidation instead of file mtimes — works identically whether the KB comes
+    from the DB or the file fallback.
     """
     if not brand_slug:
         return None
 
-    current_hash = _folder_mtime_hash(brand_slug)
+    if kb_json:
+        current_hash = hashlib.md5(kb_json.encode("utf-8")).hexdigest()
+    else:
+        current_hash = _folder_mtime_hash(brand_slug)
 
     cached = _index_cache.get(brand_slug)
     if cached and cached.get("mtime_hash") == current_hash:
@@ -262,7 +350,7 @@ def _get_or_build_index(brand_slug: str) -> Optional[Dict]:
         return cached
 
     logger.info(f"[RAG] Building index for '{brand_slug}' (hash changed or first run)...")
-    docs = _load_json_docs(brand_slug)
+    docs = _load_json_docs(brand_slug, kb_json)
     if not docs:
         logger.info(f"[RAG] No JSON docs found for '{brand_slug}' — no index built")
         return None
@@ -291,7 +379,7 @@ def _get_or_build_index(brand_slug: str) -> Optional[Dict]:
 def _hybrid_retrieve(query: str, index: Dict, top_k: int = TOP_K) -> List[Dict]:
     """
     Reciprocal Rank Fusion (RRF) of:
-      - Dense: cosine similarity between query embedding and chunk embeddings (384-dim)
+      - Dense: cosine similarity between query embedding and chunk embeddings (1536-dim)
       - Sparse: BM25 keyword scores
 
     RRF score = 1/(rank_dense + 60) + 1/(rank_bm25 + 60)
@@ -300,7 +388,7 @@ def _hybrid_retrieve(query: str, index: Dict, top_k: int = TOP_K) -> List[Dict]:
     import numpy as np
 
     chunks = index["chunks"]
-    embeddings = index["embeddings"]  # shape (N, 384)
+    embeddings = index["embeddings"]  # shape (N, 1536) or (0, 1536) on API failure
     bm25 = index["bm25"]
     n = len(chunks)
 
@@ -308,11 +396,15 @@ def _hybrid_retrieve(query: str, index: Dict, top_k: int = TOP_K) -> List[Dict]:
         return []
 
     # ── Dense: cosine similarity ──────────────────────────────────────────────
-    embedder = _get_embedder()
-    q_emb = embedder.encode([query], convert_to_numpy=True)
-    q_emb = q_emb / (np.linalg.norm(q_emb) + 1e-9)          # L2 normalise
-    dense_scores = (embeddings @ q_emb.T).flatten()            # dot product = cosine
-    dense_ranks = np.argsort(dense_scores)[::-1]               # highest score first
+    # dense_scores / dense_ranks default to "no dense signal" so RRF degrades
+    # gracefully to BM25-only when embeddings are unavailable or the API fails.
+    dense_scores = np.zeros(n, dtype="float32")
+    dense_ranks: np.ndarray = np.array([], dtype=int)
+    if embeddings.shape[0] == n:  # non-empty embeddings stored for this index
+        q_arr = _embed_texts([query])
+        if q_arr is not None:
+            dense_scores = (embeddings @ q_arr.T).flatten()   # dot product = cosine (both L2-normalised)
+            dense_ranks = np.argsort(dense_scores)[::-1]      # highest score first
 
     # ── Sparse: BM25 keyword ──────────────────────────────────────────────────
     tokenised_query = query.lower().split()
@@ -2436,7 +2528,8 @@ async def stream_chat(
     formatted_context = ""
 
     try:
-        index = await asyncio.to_thread(_get_or_build_index, brand_slug)
+        brand_kb_json = brand.kb_json if brand else None
+        index = await asyncio.to_thread(_get_or_build_index, brand_slug, brand_kb_json)
         if index:
             retrieved_chunks = await asyncio.to_thread(_hybrid_retrieve, query, index)
             formatted_context = _format_context(retrieved_chunks)

@@ -17,7 +17,7 @@ function StrategySetupInner() {
         setCheckingFirstTime(false);
         return;
       }
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       if (!token) {
         router.push('/auth');
@@ -62,7 +62,7 @@ function StrategySetupInner() {
   const [isResearching, setIsResearching] = useState(false);
   const [researchNote, setResearchNote] = useState('');
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
   const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
 
   // ── Candidates state ──────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ function StrategySetupInner() {
     setIsResearching(true);
     setResearchNote('');
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem('access_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -209,7 +209,7 @@ function StrategySetupInner() {
 
     setStep('loading');
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem('access_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -275,7 +275,7 @@ function StrategySetupInner() {
       return;
     }
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem('access_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;

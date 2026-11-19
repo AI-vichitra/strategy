@@ -162,15 +162,26 @@ async def confirm_brand(
     Returns immediately so the user is not blocked.
     """
     import json
-    from backend.services import pipeline_service
-    from backend.routers.projects import _serialize_brand_kit
+    from backend.services import pipeline_service, reference_service
+    from backend.routers.projects import _serialize_brand_kit, _resolve_logo_bytes
 
     # Create BrandConfig
     competitors_json = json.dumps([
         {"name": c.name, "url": c.website_url or ""}
         for c in req.selected_competitors
     ])
-    reference_docs_json = json.dumps(req.reference_docs) if req.reference_docs else None
+    # Embed each reference doc's extracted text into the JSON now (not just
+    # {ref_id, filename}) so BrandConfig.reference_docs is the source of truth
+    # for every later pipeline run, surviving a restart that wipes the disk file.
+    reference_docs_with_text = None
+    if req.reference_docs:
+        reference_docs_with_text = []
+        for doc in req.reference_docs:
+            ref_id = doc.get("ref_id")
+            entry = dict(doc)
+            entry["text"] = reference_service.load_reference_text(ref_id) if ref_id else ""
+            reference_docs_with_text.append(entry)
+    reference_docs_json = json.dumps(reference_docs_with_text) if reference_docs_with_text else None
     db_brand = BrandConfig(
         user_id=current_user.id,
         brand_name=req.brand_name,
@@ -187,6 +198,7 @@ async def confirm_brand(
     await db.refresh(db_brand)
 
     # Create default Project
+    logo_data, logo_mime = _resolve_logo_bytes(req.brand_kit)
     db_project = Project(
         user_id=current_user.id,
         brand_config_id=db_brand.id,
@@ -194,6 +206,8 @@ async def confirm_brand(
         title=req.brand_name,
         description="Auto-created project",
         brand_kit=_serialize_brand_kit(req.brand_kit),
+        logo_data=logo_data,
+        logo_mime=logo_mime,
     )
     db.add(db_project)
     await db.commit()

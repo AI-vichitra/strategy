@@ -95,8 +95,8 @@ function AddRow({
   );
 }
 
-function getApiBase(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+function getApiBase(): string | undefined {
+  return process.env.NEXT_PUBLIC_API_URL;
 }
 
 function getAuthHeaders(): Record<string, string> {

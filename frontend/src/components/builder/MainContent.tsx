@@ -626,7 +626,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
   const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
 
   const latestAssistantIdx = useMemo(() => {
@@ -643,7 +643,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setPdfErrorIdx(null);
       setDownloadingPdfIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -689,7 +689,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const fetchReportsForProject = async (projectId: string) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -716,7 +716,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setDocxErrorIdx(null);
       setDownloadingDocxIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -757,7 +757,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setPptxErrorIdx(null);
       setDownloadingPptxIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -820,7 +820,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setShareErrorIdx(null);
       setSharingReportIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -876,7 +876,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // Fetch projects and brands for dropdown
   const loadProjectsAndBrands = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -1080,7 +1080,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const loadProjectById = async (projectId: string) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -1229,7 +1229,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowQuestionnaire(false);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;

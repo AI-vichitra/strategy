@@ -40,7 +40,7 @@ function notify() {
 }
 
 async function fetchAgents(): Promise<AgentsResponse> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
   const res = await fetch(`${apiBase}/api/agents`);
   if (!res.ok) {
     throw new Error(`Failed to load agent catalog (${res.status})`);

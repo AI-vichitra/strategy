@@ -82,7 +82,7 @@ export default function ConnectorsPanel({ open, onClose, agentConnectors, agentN
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
 
     setLoading(true);
     setError(null);
@@ -118,7 +118,7 @@ export default function ConnectorsPanel({ open, onClose, agentConnectors, agentN
   const handleDisconnect = async (connectorId: string) => {
     setError(null);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiBase}/api/connectors/${connectorId}`, {
         method: 'DELETE',
         headers: authHeaders(),

@@ -268,11 +268,31 @@ def _resolve_logo_path(logo_url: Optional[str]) -> Optional[str]:
     return path if os.path.isfile(path) else None
 
 
-def _load_logo_asset(brand_kit: Optional[dict]) -> Optional[Dict[str, Any]]:
-    """Reads the brand kit's logo file and returns {"bytes": <PNG bytes>,
-    "width": px, "height": px}, or None if there's no logo, the file is
-    missing/unreadable, or it's an SVG (Pillow can't rasterize SVG, so it's
-    skipped gracefully rather than crashing the export)."""
+def _load_logo_asset(
+    brand_kit: Optional[dict],
+    logo_data: Optional[bytes] = None,
+    logo_mime: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Reads the brand logo and returns {"bytes": <PNG bytes>, "width": px,
+    "height": px}, or None if there's no logo, it's unreadable, or it's an SVG
+    (Pillow can't rasterize SVG, so it's skipped gracefully rather than
+    crashing the export).
+
+    `logo_data`/`logo_mime` (Project.logo_data/logo_mime — the DB source of
+    truth) are used when given. Falls back to reading brand_kit["logo_url"]
+    off disk only when logo_data is None (project predates these columns, or
+    the caller didn't pass them)."""
+    if logo_data:
+        try:
+            with Image.open(io.BytesIO(logo_data)) as img:
+                width, height = img.size
+                buf = io.BytesIO()
+                img.convert("RGBA").save(buf, format="PNG")
+                return {"bytes": buf.getvalue(), "width": width, "height": height}
+        except Exception:
+            logger.warning("Could not decode brand logo from DB (mime=%s) for export — skipping logo", logo_mime, exc_info=True)
+            return None
+
     logo_url = (brand_kit or {}).get("logo_url")
     path = _resolve_logo_path(logo_url)
     if not path:
@@ -280,7 +300,6 @@ def _load_logo_asset(brand_kit: Optional[dict]) -> Optional[Dict[str, Any]]:
     try:
         with Image.open(path) as img:
             width, height = img.size
-            import io
             buf = io.BytesIO()
             img.convert("RGBA").save(buf, format="PNG")
             return {"bytes": buf.getvalue(), "width": width, "height": height}

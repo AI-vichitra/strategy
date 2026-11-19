@@ -24,7 +24,7 @@ async def _generate_report_docx_bytes(db: AsyncSession, report, content_override
     where `title` is the sanitized "{brand}_{agent}" filename stem shared by
     every export format for this report (docx/pdf/pptx)."""
     brand_result = await db.execute(
-        select(BrandConfig.brand_name, Project.brand_kit, BrandConfig.id)
+        select(BrandConfig.brand_name, Project.brand_kit, BrandConfig.id, Project.logo_data, Project.logo_mime)
         .join(Project, Project.brand_config_id == BrandConfig.id)
         .where(Project.id == report.project_id)
     )
@@ -32,15 +32,20 @@ async def _generate_report_docx_bytes(db: AsyncSession, report, content_override
     brand_name = brand_row[0] if brand_row else None
     brand_kit_raw = brand_row[1] if brand_row else None
     brand_config_id = brand_row[2] if brand_row else None
-    # Fallback: find brand_kit from any sibling project when this project has none
+    logo_data = brand_row[3] if brand_row else None
+    logo_mime = brand_row[4] if brand_row else None
+    # Fallback: find brand_kit (and its logo) from any sibling project when this project has none
     if brand_kit_raw is None and brand_config_id:
         fb = await db.execute(
-            select(Project.brand_kit)
+            select(Project.brand_kit, Project.logo_data, Project.logo_mime)
             .where(Project.brand_config_id == brand_config_id, Project.brand_kit.isnot(None))
             .order_by(Project.created_at.asc())
             .limit(1)
         )
-        brand_kit_raw = fb.scalar_one_or_none()
+        fb_row = fb.first()
+        brand_kit_raw = fb_row[0] if fb_row else None
+        logo_data = fb_row[1] if fb_row else None
+        logo_mime = fb_row[2] if fb_row else None
     brand_kit = json.loads(brand_kit_raw) if brand_kit_raw else None
 
     extracted_palette_raw = getattr(report, "extracted_palette", None)
@@ -56,6 +61,8 @@ async def _generate_report_docx_bytes(db: AsyncSession, report, content_override
         content_override=content_override,
         brand_kit=brand_kit,
         extracted_palette=extracted_palette,
+        logo_data=logo_data,
+        logo_mime=logo_mime,
     )
 
     title = f"{_sanitize_filename_part(brand_name or 'Brand')}_{_sanitize_filename_part(report.agent_type or 'Report')}"
@@ -73,7 +80,7 @@ async def _build_docx_response(db: AsyncSession, report, content_override: Optio
 
 async def _build_pptx_response(db: AsyncSession, report, template_id: Optional[str] = None) -> Response:
     brand_result = await db.execute(
-        select(BrandConfig.brand_name, Project.brand_kit, BrandConfig.id)
+        select(BrandConfig.brand_name, Project.brand_kit, BrandConfig.id, Project.logo_data, Project.logo_mime)
         .join(Project, Project.brand_config_id == BrandConfig.id)
         .where(Project.id == report.project_id)
     )
@@ -81,15 +88,20 @@ async def _build_pptx_response(db: AsyncSession, report, template_id: Optional[s
     brand_name = brand_row[0] if brand_row else None
     brand_kit_raw = brand_row[1] if brand_row else None
     brand_config_id = brand_row[2] if brand_row else None
-    # Fallback: find brand_kit from any sibling project when this project has none
+    logo_data = brand_row[3] if brand_row else None
+    logo_mime = brand_row[4] if brand_row else None
+    # Fallback: find brand_kit (and its logo) from any sibling project when this project has none
     if brand_kit_raw is None and brand_config_id:
         fb = await db.execute(
-            select(Project.brand_kit)
+            select(Project.brand_kit, Project.logo_data, Project.logo_mime)
             .where(Project.brand_config_id == brand_config_id, Project.brand_kit.isnot(None))
             .order_by(Project.created_at.asc())
             .limit(1)
         )
-        brand_kit_raw = fb.scalar_one_or_none()
+        fb_row = fb.first()
+        brand_kit_raw = fb_row[0] if fb_row else None
+        logo_data = fb_row[1] if fb_row else None
+        logo_mime = fb_row[2] if fb_row else None
     brand_kit = json.loads(brand_kit_raw) if brand_kit_raw else None
 
     extracted_palette_raw = getattr(report, "extracted_palette", None)
@@ -108,6 +120,8 @@ async def _build_pptx_response(db: AsyncSession, report, template_id: Optional[s
         "brand_kit": brand_kit,
         "extracted_palette": extracted_palette,
         "template_id": template_id,
+        "logo_data": logo_data,
+        "logo_mime": logo_mime,
     }
     pptx_bytes = await generate_pptx(report_data)
 
