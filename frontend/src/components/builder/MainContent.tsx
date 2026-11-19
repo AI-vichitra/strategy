@@ -1111,7 +1111,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 const mapped = details.competitors_selected.map((c: any) => ({
                   brand_name: c.name || '',
                   website_url: c.website_url || '',
-                  social_media: null,
+                  social_media: undefined,
                 }));
                 setCompetitors(mapped);
                 setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
