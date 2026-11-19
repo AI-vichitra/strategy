@@ -16,7 +16,7 @@ export interface BrandKit {
 interface BrandKitFormProps {
   brandKit: BrandKit;
   onChange: (bk: BrandKit) => void;
-  apiBase: string;
+  apiBase: string | undefined;
   authToken?: string;
 }
 

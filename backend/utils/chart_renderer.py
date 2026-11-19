@@ -10,11 +10,19 @@ import io
 import logging
 from typing import Optional, List, Dict, Any
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
 from backend.services.output_validator import _resolve_chart_type
+
+_plt = None
+
+
+def _get_plt():
+    global _plt
+    if _plt is None:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        _plt = plt
+    return _plt
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +186,7 @@ def render_chart_image(chart_json: Optional[dict], figsize: Optional[tuple] = No
     chart type; omitted (None), both DOCX and the default PPTX template keep
     today's EXECUTIVE_COLORS exactly."""
     try:
+        plt = _get_plt()
         if not isinstance(chart_json, dict):
             return None
 

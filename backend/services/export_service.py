@@ -571,17 +571,21 @@ async def markdown_to_docx(
     content_override: Optional[str] = None,
     brand_kit: Optional[dict] = None,
     extracted_palette: Optional[dict] = None,
+    logo_data: Optional[bytes] = None,
+    logo_mime: Optional[str] = None,
 ) -> bytes:
     """
     `brand_kit` ({"logo_url": ..., "colors": {...}}) and `extracted_palette`
     ({"primary"/"secondary"/"accent"}) mirror generate_pptx's inputs — same
     precedence (manual brand_kit colors > extracted_palette > report-type
     theme, via _resolve_theme) so the DOCX and PPTX always theme identically.
-    The logo always comes from brand_kit only, same as the PPTX.
+    The logo comes from `logo_data` (Project.logo_data, the DB source of
+    truth) when given, else falls back to brand_kit["logo_url"] on disk —
+    same as the PPTX.
     """
     resolved_content = await _resolve_export_content(db, report_id, content, content_override)
     theme = _resolve_theme(brand_kit, extracted_palette, agent_name or "default")
-    logo_asset = _load_logo_asset(brand_kit)
+    logo_asset = _load_logo_asset(brand_kit, logo_data=logo_data, logo_mime=logo_mime)
 
     doc = Document()
     section = doc.sections[0]

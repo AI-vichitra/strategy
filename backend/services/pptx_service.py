@@ -1761,9 +1761,11 @@ async def generate_pptx(report_data: dict) -> bytes:
     date = report_data.get("created_at")
     brand_kit = report_data.get("brand_kit")
     extracted_palette = report_data.get("extracted_palette")
+    logo_data = report_data.get("logo_data")
+    logo_mime = report_data.get("logo_mime")
     tpl = get_template(report_data.get("template_id"))
     theme = _resolve_theme(brand_kit, extracted_palette, agent_name or "default", base=tpl.palette)
-    logo_asset = _load_logo_asset(brand_kit)
+    logo_asset = _load_logo_asset(brand_kit, logo_data=logo_data, logo_mime=logo_mime)
 
     sections = _split_into_sections(content)
 

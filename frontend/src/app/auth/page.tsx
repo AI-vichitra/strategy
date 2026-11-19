@@ -21,7 +21,7 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
     
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
     const payload = JSON.stringify({ email, password, full_name: 'New User' });
 
     try {
@@ -78,7 +78,7 @@ export default function AuthPage() {
     }
   };
 
-  const routeUserAfterAuth = async (token: string, apiBase: string) => {
+  const routeUserAfterAuth = async (token: string, apiBase: string | undefined) => {
     try {
       const res = await fetch(`${apiBase}/api/brands/`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -103,7 +103,7 @@ export default function AuthPage() {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setError('');
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
     try {
       const res = await fetch(`${apiBase}/api/auth/google`, {
         method: 'POST',

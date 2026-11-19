@@ -22,7 +22,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
 
   const fetchProjects = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -59,7 +59,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     if (!newTitle || !newTitle.trim()) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -81,7 +81,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     if (!confirm(`Delete brand "${brandName}"? This cannot be undone.`)) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -109,7 +109,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     if (!confirm("Are you sure you want to delete this project and its research entirely?")) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;

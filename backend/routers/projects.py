@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from datetime import datetime
 import json
 import logging
@@ -56,6 +56,29 @@ def _serialize_brand_kit(brand_kit: Optional[BrandKit]) -> Optional[str]:
     return json.dumps(data)
 
 
+def _resolve_logo_bytes(brand_kit: Optional[BrandKit]) -> Tuple[Optional[bytes], Optional[str]]:
+    """Reads the brand kit's logo file off disk (same lookup brand_theme.py uses
+    at export time) and returns (bytes, mime) to persist on the Project row, so
+    the DB — not the ephemeral filesystem — is what export-time reads rely on.
+    Returns (None, None) if there's no logo or the file isn't there (SVGs and
+    missing files are skipped the same way brand_theme._load_logo_asset does)."""
+    if brand_kit is None or not brand_kit.logo_url:
+        return None, None
+    import mimetypes
+    from backend.services.brand_theme import _resolve_logo_path
+    path = _resolve_logo_path(brand_kit.logo_url)
+    if not path:
+        return None, None
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        mime, _ = mimetypes.guess_type(path)
+        return data, mime or "application/octet-stream"
+    except Exception:
+        logger.warning("Could not read logo at %s to persist to DB", path, exc_info=True)
+        return None, None
+
+
 @router.post("/upload-logo")
 async def upload_logo(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
     ext = _ALLOWED_LOGO_CONTENT_TYPES.get(file.content_type)
@@ -87,6 +110,7 @@ async def upload_logo(file: UploadFile = File(...), current_user: User = Depends
 async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     competitor_details_json = _serialize_competitor_details(project.competitor_details)
     brand_kit_json = _serialize_brand_kit(project.brand_kit)
+    logo_data, logo_mime = _resolve_logo_bytes(project.brand_kit)
 
     # Reuse an existing unused project (0 messages) for this brand if available
     existing_result = await db.execute(
@@ -104,6 +128,8 @@ async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_
                 p.llm_provider = project.llm_provider
             p.competitor_details = competitor_details_json
             p.brand_kit = brand_kit_json
+            p.logo_data = logo_data
+            p.logo_mime = logo_mime
             p.created_at = datetime.utcnow()
             await db.commit()
             res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == p.id))
@@ -111,7 +137,7 @@ async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_
 
     # Otherwise create a new chat project for this brand
     project_data = project.model_dump(exclude={"competitor_details", "brand_kit"})
-    db_project = Project(**project_data, competitor_details=competitor_details_json, brand_kit=brand_kit_json, user_id=current_user.id)
+    db_project = Project(**project_data, competitor_details=competitor_details_json, brand_kit=brand_kit_json, logo_data=logo_data, logo_mime=logo_mime, user_id=current_user.id)
     db.add(db_project)
     await db.commit()
     res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == db_project.id))
@@ -152,6 +178,7 @@ async def update_project(project_id: str, project_update: ProjectUpdate, db: Asy
         update_data["competitor_details"] = _serialize_competitor_details(project_update.competitor_details)
     if "brand_kit" in update_data:
         update_data["brand_kit"] = _serialize_brand_kit(project_update.brand_kit)
+        update_data["logo_data"], update_data["logo_mime"] = _resolve_logo_bytes(project_update.brand_kit)
     for key, value in update_data.items():
         setattr(project, key, value)
 
@@ -233,7 +260,8 @@ async def get_project_details(
             pass
 
     competitors_used = []
-    if brand.brand_slug:
+    kb_raw = brand.kb_json  # DB is the source of truth; file is a local-cache fallback below
+    if kb_raw is None and brand.brand_slug:
         _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         kb_path = os.path.join(_root, "KNOWLEDGE_BASE", f"{brand.brand_slug}_KB.json")
         # Migration fallback: new slugs are {BRAND_SLUG}_{project_id[:8]}; if the new KB
@@ -247,14 +275,19 @@ async def get_project_details(
         if os.path.exists(kb_path):
             try:
                 with open(kb_path, "r", encoding="utf-8") as f:
-                    kb = json.load(f)
-                for c in kb.get("competitors", []):
-                    competitors_used.append({
-                        "name": c.get("NAME", ""),
-                        "website_url": c.get("URL", ""),
-                    })
+                    kb_raw = f.read()
             except Exception:
-                pass
+                kb_raw = None
+    if kb_raw:
+        try:
+            kb = json.loads(kb_raw)
+            for c in kb.get("competitors", []):
+                competitors_used.append({
+                    "name": c.get("NAME", ""),
+                    "website_url": c.get("URL", ""),
+                })
+        except Exception:
+            pass
 
     last_updated = None
     if project.last_active_at:

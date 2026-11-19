@@ -43,7 +43,7 @@ export default function FilesView() {
   useEffect(() => {
     const fetchGeneratedReports = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+        const apiBase = process.env.NEXT_PUBLIC_API_URL;
         const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;

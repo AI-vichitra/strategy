@@ -14,7 +14,7 @@ let cachedTemplates: PptxTemplate[] | null = null;
 let inFlight: Promise<PptxTemplate[]> | null = null;
 
 async function fetchTemplates(): Promise<PptxTemplate[]> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
   const res = await fetch(`${apiBase}/api/pptx-templates`);
   if (!res.ok) {
     throw new Error(`Failed to load PPTX templates (${res.status})`);

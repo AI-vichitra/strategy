@@ -1,0 +1,72 @@
+services:
+  - type: web
+    name: stratai-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # ── Database ──────────────────────────────────────────────────────────
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render dashboard — Neon Postgres connection string. NEVER put the actual value here.
+
+      # ── CORS ──────────────────────────────────────────────────────────────
+      - key: CORS_ORIGINS
+        sync: false  # Placeholder — set to the Vercel production URL after the first Vercel deploy, e.g. https://your-app.vercel.app
+
+      # ── Build ────────────────────────────────────────────────────────────
+      - key: PYTHON_VERSION
+        value: 3.11.11
+
+      # ── Required secrets (set in dashboard — no safe default) ──────────────
+      - key: JWT_SECRET_KEY
+        sync: false  # Required — the code falls back to an INSECURE default if unset. Generate: python -c "import secrets; print(secrets.token_urlsafe(32))"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: CONNECTOR_ENCRYPTION_KEY
+        sync: false  # Required — app raises at runtime if unset. Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: TAVILY_API_KEY
+        sync: false  # Required — core to the brand research pipeline
+
+      # ── LLM providers (at least one required; ai_service picks by priority) ─
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: QWEN_API_KEY
+        sync: false
+      - key: LLM_PROVIDER_PRIORITY
+        sync: false  # Optional — comma-separated provider priority order
+
+      # ── Optional enrichment / feature flags (safe defaults in code) ─────────
+      - key: FIRECRAWL_API_KEY
+        sync: false  # Optional — competitor web-scrape enrichment
+      - key: EXA_API_KEY
+        sync: false  # Optional — competitor semantic-search enrichment
+      - key: COMPETITOR_LLM_RESOLVER
+        sync: false  # Optional feature flag — defaults off
+      - key: SLIDE_PLANNER_LLM
+        sync: false  # Optional
+      - key: SLIDE_PLANNER_PROVIDER
+        sync: false  # Optional
+      - key: SLIDE_PLANNER_MODEL
+        sync: false  # Optional
+      - key: ANTHROPIC_MODEL
+        sync: false  # Optional — overrides the default Anthropic model name
+      - key: OPENAI_MODEL
+        sync: false  # Optional — overrides the default OpenAI model name
+      - key: EMBED_MODEL
+        sync: false  # Optional — defaults to text-embedding-3-small in code
+      - key: MAX_KB_CHARS_PER_SOURCE
+        sync: false  # Optional — defaults to 200000 in code
+
+      # Not set on Render: LIBREOFFICE_PATH — no LibreOffice binary on this
+      # host, so PDF export returns 503 by design (DOCX/PPTX still work).

@@ -225,7 +225,8 @@ async def run_brand_research_pipeline(
         # ── Step 6: Compile Knowledge Base ────────────────────────────────────
         logger.info("[Pipeline] Step 6: Compiling Knowledge Base...")
         reference_docs = await _get_brand_reference_docs(db_session_factory, brand_config_id)
-        await asyncio.to_thread(_compile_knowledge_base, brand_name, brand_slug, output_dir, reference_docs, selected_competitors)
+        kb_json_str = await asyncio.to_thread(_compile_knowledge_base, brand_name, brand_slug, output_dir, reference_docs, selected_competitors)
+        await _update_db(db_session_factory, brand_config_id, {"kb_json": kb_json_str})
 
         # ── Update DB: complete ───────────────────────────────────────────────
         update_data = {
@@ -423,8 +424,10 @@ def _normalize_comp_name(name: str) -> str:
     return re.sub(r'[^a-z0-9]', '', name.lower())
 
 
-def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, reference_docs: Optional[List[dict]] = None, selected_competitors: Optional[List[dict]] = None):
-    """Compiles all JSON data in output_dir into a single KB file in KNOWLEDGE_BASE/"""
+def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, reference_docs: Optional[List[dict]] = None, selected_competitors: Optional[List[dict]] = None) -> str:
+    """Compiles all JSON data in output_dir into a single KB file in KNOWLEDGE_BASE/
+    (local cache) and returns the same JSON as a string so the caller can persist
+    it to BrandConfig.kb_json, the source of truth on an ephemeral filesystem."""
     kb_dir = os.path.join(PROJECT_ROOT, "KNOWLEDGE_BASE")
     os.makedirs(kb_dir, exist_ok=True)
 
@@ -530,7 +533,10 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, r
             filename = doc.get("filename", "")
             if not ref_id:
                 continue
-            text = reference_service.load_reference_text(ref_id)
+            # DB-backed text (saved at confirm time) is the source of truth on an
+            # ephemeral filesystem; disk is only a fallback for rows saved before
+            # this column existed.
+            text = doc.get("text") or reference_service.load_reference_text(ref_id)
             if text:
                 ref_blocks.append(f"[Source: Reference Document — {filename}]\n{text}")
         if ref_blocks:
@@ -555,9 +561,11 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, r
     else:
         final_output["competitors"] = list(brands_data.values())
                     
+    kb_json_str = json.dumps(final_output, ensure_ascii=False, indent=2)
     with open(kb_file, "w", encoding="utf-8") as f:
-        json.dump(final_output, f, ensure_ascii=False, indent=2)
+        f.write(kb_json_str)
     logger.info(f"[Pipeline] Compiled Knowledge Base saved to {kb_file}")
+    return kb_json_str
 
 async def _get_brand_user_id(session_factory, brand_config_id: str) -> Optional[str]:
     """Resolves the owning user_id for a brand config, for per-user connector lookups."""
