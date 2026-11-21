@@ -33,6 +33,17 @@ except (FileNotFoundError, PermissionError):
 
 import logging
 
+# Without this, the root logger stays at its Python default (WARNING) with no
+# handler of its own — every `logger.info(...)` call across the app (pipeline
+# progress, report-gating decisions, etc.) is silently dropped before it ever
+# reaches a handler, even under uvicorn: uvicorn's default log config only
+# attaches a handler to its own "uvicorn"/"uvicorn.access" loggers, not root.
+# LOG_LEVEL lets ops raise/lower verbosity without a code change.
+logging.basicConfig(
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -69,6 +80,7 @@ _NEW_COLUMNS = [
     ("brand_configs", "kb_json", "TEXT", "TEXT"),
     ("projects", "logo_data", "BYTEA", "BLOB"),
     ("projects", "logo_mime", "VARCHAR(100)", "TEXT"),
+    ("brand_configs", "target_market", "TEXT", "TEXT"),
 ]
 
 

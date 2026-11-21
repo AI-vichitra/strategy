@@ -1337,6 +1337,18 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 }
                 return updated;
               });
+            } else if (payload.type === 'status') {
+              // Research-pipeline wait can now run for several minutes — surface
+              // the backend's progress text in the thinking bubble instead of a
+              // static spinner, so a long wait doesn't look frozen.
+              setMessages(prev => {
+                const updated = [...prev];
+                const thinkIdx = updated.findIndex(m => m.role === 'thinking');
+                if (thinkIdx !== -1) {
+                  updated[thinkIdx] = { role: 'thinking', content: payload.content };
+                }
+                return updated;
+              });
             } else if (payload.type === 'error') {
               if (!assistantText) {
                 setActiveProject(null);
@@ -1559,7 +1571,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                       </svg>
                     </div>
                     <div className={styles.thinkingBubble}>
-                      <span className={styles.thinkingLabel}>Thinking</span>
+                      <span className={styles.thinkingLabel}>{msg.content || 'Thinking'}</span>
                       <span className={styles.thinkingDots}>
                         <span /><span /><span />
                       </span>

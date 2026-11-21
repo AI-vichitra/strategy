@@ -733,7 +733,7 @@ _PROVIDER_CHEAP_MODEL_ENV = {
     "openai": ("OPENAI_PLANNER_MODEL", "gpt-4o-mini"),
     "groq": ("GROQ_PLANNER_MODEL", "openai/gpt-oss-120b"),
     "mistral": ("MISTRAL_PLANNER_MODEL", "open-mistral-7b"),
-    "anthropic": ("ANTHROPIC_PLANNER_MODEL", "claude-3-5-haiku-20241022"),
+    "anthropic": ("ANTHROPIC_PLANNER_MODEL", "claude-haiku-5-5"),
 }
 
 
@@ -744,7 +744,7 @@ _PROVIDER_KEY_ENV = {
     "groq": "GROQ_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
 }
-_DEFAULT_ANTHROPIC_PLANNER_MODEL = "claude-3-5-haiku-20241022"
+_DEFAULT_ANTHROPIC_PLANNER_MODEL = "claude-haiku-5-5"
 
 
 def _provider_key_present(provider: str) -> bool:

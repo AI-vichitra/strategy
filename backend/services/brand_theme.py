@@ -15,11 +15,30 @@ import os
 import re
 import io
 import logging
+import colorsys
 from typing import Optional, Dict, Any
 
 from PIL import Image
 
+try:
+    import resvg_py
+except ImportError:  # requirements.txt pins it; degrade gracefully if somehow absent
+    resvg_py = None
+
 logger = logging.getLogger(__name__)
+
+# Supported raster formats (all handled natively by Pillow) plus SVG (rasterized
+# below via resvg before Pillow ever sees it — Pillow has no vector support).
+SUPPORTED_LOGO_FORMATS = ("PNG", "JPEG", "WEBP", "GIF", "BMP", "TIFF", "SVG")
+_LOGO_FORMAT_EXTENSIONS = {
+    "PNG": ".png",
+    "JPEG": ".jpg",
+    "WEBP": ".webp",
+    "GIF": ".gif",
+    "BMP": ".bmp",
+    "TIFF": ".tiff",
+    "SVG": ".svg",
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Per-agent-type color themes
@@ -157,6 +176,30 @@ def _readable_text(bg_hex: str) -> str:
     return "FFFFFF" if _luminance(bg_hex) < 0.5 else "1A1A1A"
 
 
+# Accent fallback: when no accent is explicitly set/extracted, it's derived
+# from primary as a vivid variant (modest hue shift + saturation/brightness
+# floor) rather than reused from secondary or a hardcoded generic color, so a
+# fallback accent still reads as "this brand's accent".
+_ACCENT_HUE_SHIFT = 0.08       # ~29 degrees — related to primary, not a clash
+_ACCENT_MIN_SATURATION = 0.65
+_ACCENT_MIN_VALUE = 0.70
+_ACCENT_MAX_VALUE = 0.95       # stays short of washed-out/white
+
+
+def _vivid_accent_from_primary(primary_hex: str) -> str:
+    """Derives a vivid accent related to `primary`: a modest hue shift plus a
+    saturation/brightness floor, so an accent that couldn't be reliably
+    extracted (or wasn't manually set) is still visibly tied to the brand's
+    own primary color instead of an arbitrary fallback."""
+    r, g, b = _hex_to_rgb(primary_hex)
+    h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+    h = (h + _ACCENT_HUE_SHIFT) % 1.0
+    s = max(s, _ACCENT_MIN_SATURATION)
+    v = min(max(v, _ACCENT_MIN_VALUE), _ACCENT_MAX_VALUE)
+    r2, g2, b2 = colorsys.hsv_to_rgb(h, s, v)
+    return _rgb_to_hex(r2 * 255, g2 * 255, b2 * 255)
+
+
 def _normalize_brand_hex(value: Optional[str]) -> Optional[str]:
     """Validates a user-supplied hex color; malformed input is dropped (so the
     caller derives it instead of embedding garbage into the export)."""
@@ -174,10 +217,14 @@ def _normalize_brand_hex(value: Optional[str]) -> Optional[str]:
 def _build_theme_from_colors(colors: Optional[dict], base: dict) -> Optional[dict]:
     """Shared derivation: given a {"primary"/"secondary"/"accent"} dict (brand_kit
     colors OR an extracted palette — same shape either way) and a fallback base
-    theme, builds a full theme dict (same keys as REPORT_THEMES entries). Any
-    color slot not set is derived from the ones that are, or falls back to
-    `base`. Returns None when none of the three colors are present/valid, so
-    the caller knows to fall through to the next option in its precedence chain."""
+    theme, builds a full theme dict (same keys as REPORT_THEMES entries).
+    Primary/secondary fall back to `base` when unset; accent, when unset,
+    is instead derived from the resolved primary (_vivid_accent_from_primary)
+    rather than reused from secondary or `base` — so a missing accent is
+    always visibly tied to this brand's own primary, never a generic or
+    unrelated color. Returns None when none of the three colors are
+    present/valid, so the caller knows to fall through to the next option in
+    its precedence chain."""
     colors = colors or {}
     primary = _normalize_brand_hex(colors.get("primary"))
     secondary = _normalize_brand_hex(colors.get("secondary"))
@@ -187,7 +234,7 @@ def _build_theme_from_colors(colors: Optional[dict], base: dict) -> Optional[dic
 
     p = primary or base["primary"]
     s = secondary or _lighten(p, 0.25)
-    a = accent or secondary or base["accent"]
+    a = accent or _vivid_accent_from_primary(p)
 
     # Dark background for cover/dividers: darken primary until it's dark enough for white text.
     bg_dark = p if _luminance(p) < 0.35 else _darken(p, 0.55)
@@ -223,6 +270,13 @@ def _resolve_theme(brand_kit: Optional[dict], extracted_palette: Optional[dict],
     fixed report-type theme. Logo placement is unaffected — it only ever
     comes from brand_kit, never from the extracted palette.
 
+    Accent is not a user-settable brand_kit field (Brand Kit UI only offers
+    primary/secondary), so when manual colors win but lack an accent, one is
+    resolved backend-side: a real pixel extraction off the stored logo file
+    if it has a sufficiently vivid color (_accent_from_logo), else a vivid
+    variant derived from primary (_build_theme_from_colors) — never a
+    user-set value.
+
     `base`, when given, is a (possibly partial) dict using the same 9 slot
     keys as a REPORT_THEMES entry — any slot it doesn't set is filled from
     the report-type theme, so this can never raise a KeyError. Passing
@@ -233,7 +287,17 @@ def _resolve_theme(brand_kit: Optional[dict], extracted_palette: Optional[dict],
 
     manual_colors = (brand_kit or {}).get("colors") or {}
     if any(manual_colors.get(k) for k in ("primary", "secondary", "accent")):
-        theme = _build_theme_from_colors(manual_colors, resolved_base)
+        colors = manual_colors
+        if not colors.get("accent"):
+            # Accent is no longer a user-set field (Brand Kit UI only offers
+            # primary/secondary) — try a real extraction off the stored logo
+            # file first, so a genuinely vivid brand accent still reaches the
+            # export theme; _build_theme_from_colors' derive-from-primary
+            # fallback only kicks in when that also finds nothing vivid.
+            logo_accent = _accent_from_logo(brand_kit)
+            if logo_accent:
+                colors = {**colors, "accent": logo_accent}
+        theme = _build_theme_from_colors(colors, resolved_base)
         if theme:
             return theme
 
@@ -268,15 +332,50 @@ def _resolve_logo_path(logo_url: Optional[str]) -> Optional[str]:
     return path if os.path.isfile(path) else None
 
 
+_SVG_SNIFF_RE = re.compile(rb"<svg[\s>]", re.IGNORECASE)
+
+
+def _looks_like_svg(data: bytes) -> bool:
+    """Sniffs file content for an SVG root tag — format is detected from the
+    bytes themselves, not trusted from a filename extension or content-type
+    header, since both can lie."""
+    head = data[:4096].lstrip(b"\xef\xbb\xbf \t\r\n")
+    return bool(_SVG_SNIFF_RE.search(head))
+
+
+def _rasterize_svg(data: bytes) -> bytes:
+    """Rasterizes SVG bytes to PNG bytes via resvg — a Rust-based renderer that
+    ships as a prebuilt pip wheel on both Windows and manylinux (no system
+    cairo/pango required, unlike cairosvg), so it installs cleanly on Windows
+    local dev and on Render's Linux deploy alike."""
+    if resvg_py is None:
+        raise RuntimeError("resvg-py is not installed; cannot rasterize SVG logos")
+    svg_text = data.decode("utf-8", errors="replace")
+    return bytes(resvg_py.svg_to_bytes(svg_string=svg_text))
+
+
+def _decode_logo_image(data: bytes) -> Image.Image:
+    """Single chokepoint turning raw logo bytes — any supported format — into a
+    Pillow Image. SVGs are rasterized to PNG first (Pillow has no vector
+    support); every raster format Pillow understands (png/jpg/jpeg/webp/gif/
+    bmp/tiff/...) is opened directly. Raises on anything unreadable; callers
+    decide how to handle that (skip-with-warning at export time, reject-with-
+    message at upload time) — this helper never swallows errors itself."""
+    if _looks_like_svg(data):
+        data = _rasterize_svg(data)
+    img = Image.open(io.BytesIO(data))
+    img.load()  # force full decode now so truncated/corrupt data raises here
+    return img
+
+
 def _load_logo_asset(
     brand_kit: Optional[dict],
     logo_data: Optional[bytes] = None,
     logo_mime: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Reads the brand logo and returns {"bytes": <PNG bytes>, "width": px,
-    "height": px}, or None if there's no logo, it's unreadable, or it's an SVG
-    (Pillow can't rasterize SVG, so it's skipped gracefully rather than
-    crashing the export).
+    "height": px}, or None if there's no logo or it's unreadable (skipped
+    gracefully rather than crashing the export).
 
     `logo_data`/`logo_mime` (Project.logo_data/logo_mime — the DB source of
     truth) are used when given. Falls back to reading brand_kit["logo_url"]
@@ -284,11 +383,11 @@ def _load_logo_asset(
     the caller didn't pass them)."""
     if logo_data:
         try:
-            with Image.open(io.BytesIO(logo_data)) as img:
-                width, height = img.size
-                buf = io.BytesIO()
-                img.convert("RGBA").save(buf, format="PNG")
-                return {"bytes": buf.getvalue(), "width": width, "height": height}
+            img = _decode_logo_image(logo_data)
+            width, height = img.size
+            buf = io.BytesIO()
+            img.convert("RGBA").save(buf, format="PNG")
+            return {"bytes": buf.getvalue(), "width": width, "height": height}
         except Exception:
             logger.warning("Could not decode brand logo from DB (mime=%s) for export — skipping logo", logo_mime, exc_info=True)
             return None
@@ -298,11 +397,13 @@ def _load_logo_asset(
     if not path:
         return None
     try:
-        with Image.open(path) as img:
-            width, height = img.size
-            buf = io.BytesIO()
-            img.convert("RGBA").save(buf, format="PNG")
-            return {"bytes": buf.getvalue(), "width": width, "height": height}
+        with open(path, "rb") as f:
+            data = f.read()
+        img = _decode_logo_image(data)
+        width, height = img.size
+        buf = io.BytesIO()
+        img.convert("RGBA").save(buf, format="PNG")
+        return {"bytes": buf.getvalue(), "width": width, "height": height}
     except Exception:
         logger.warning("Could not read brand logo at %s for export — skipping logo", path, exc_info=True)
         return None
@@ -312,13 +413,33 @@ def _color_distance(a: tuple, b: tuple) -> float:
     return sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5
 
 
+def _hsv(rgb: tuple) -> tuple:
+    r, g, b = rgb
+    return colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+
+
+# Accent candidate thresholds: a brand's accent is usually a small but VIVID
+# element (e.g. a gold highlight), which a frequency-only pick loses to larger
+# grey edge-blends/midtones — so accent is chosen by saturation instead, among
+# the same background-filtered, de-duped candidate pool primary/secondary use.
+_ACCENT_CANDIDATE_MIN_SATURATION = 0.25
+_ACCENT_CANDIDATE_MIN_VALUE = 0.20  # avoid a near-black pixel reading as "vivid"
+
+
 def extract_palette_from_logo(logo_url: Optional[str]) -> Optional[Dict[str, str]]:
-    """Best-effort auto-palette from an uploaded logo: the 3 most frequent,
-    reasonably-distinct non-background colors, as {"primary"/"secondary"/
-    "accent": "#RRGGBB"}. Returns fewer keys if fewer than 3 survive, or None
-    if the logo can't be loaded (incl. SVG, which Pillow can't rasterize) or
-    nothing survives the background filter. Pure function — no I/O beyond the
-    existing guarded logo load."""
+    """Best-effort auto-palette from an uploaded logo, as {"primary"/
+    "secondary"/"accent": "#RRGGBB"} (fewer keys if fewer survive, or None if
+    the logo can't be loaded or nothing survives the background filter).
+
+    Primary/secondary are the 2 most frequent, reasonably-distinct
+    non-background colors — unchanged from before. Accent is NOT the
+    3rd-most-frequent color: it's the MOST SATURATED remaining candidate (same
+    background/de-dup filters), so a small vivid highlight can win the slot
+    over a larger but duller color. If nothing clears the saturation/
+    brightness floor, accent is simply omitted here — callers (via
+    _build_theme_from_colors) derive it from primary instead of defaulting to
+    an unrelated color. Pure function — no I/O beyond the existing guarded
+    logo load."""
     asset = _load_logo_asset({"logo_url": logo_url})
     if not asset:
         return None
@@ -339,24 +460,46 @@ def extract_palette_from_logo(logo_url: Optional[str]) -> Optional[Dict[str, str
         palette = quantized.getpalette()
         counts.sort(key=lambda c: -c[0])
 
-        picked = []
+        candidates = []
+        picked = []  # primary, secondary — by frequency, same as before
         for _, idx in counts:
             rgb = tuple(palette[idx * 3:idx * 3 + 3])
             if all(c > 240 for c in rgb) or all(c < 15 for c in rgb):
                 continue  # near-white / near-black background or text
-            if any(_color_distance(rgb, p) < 30 for p in picked):
-                continue  # too close to an already-picked color
-            picked.append(rgb)
-            if len(picked) == 3:
-                break
+            candidates.append(rgb)
+            if len(picked) < 2 and not any(_color_distance(rgb, p) < 30 for p in picked):
+                picked.append(rgb)
 
         if not picked:
             return None
-        keys = ("primary", "secondary", "accent")
-        return {keys[i]: _rgb_to_hex(*picked[i]) for i in range(len(picked))}
+        result = {"primary": _rgb_to_hex(*picked[0])}
+        if len(picked) > 1:
+            result["secondary"] = _rgb_to_hex(*picked[1])
+
+        accent_pool = [rgb for rgb in candidates if not any(_color_distance(rgb, p) < 30 for p in picked)]
+        if accent_pool:
+            best = max(accent_pool, key=lambda rgb: _hsv(rgb)[1])
+            h, s, v = _hsv(best)
+            if s >= _ACCENT_CANDIDATE_MIN_SATURATION and v >= _ACCENT_CANDIDATE_MIN_VALUE:
+                result["accent"] = _rgb_to_hex(*best)
+
+        return result
     except Exception:
         logger.warning("Could not extract palette from logo %s", logo_url, exc_info=True)
         return None
+
+
+def _accent_from_logo(brand_kit: Optional[dict]) -> Optional[str]:
+    """Best-effort: pulls just the accent hex out of a fresh pixel extraction
+    of the brand kit's stored logo file. Used by _resolve_theme so a genuinely
+    vivid accent color in the logo still reaches the export theme even though
+    accent is no longer a user-settable Brand Kit field. Never raises — a
+    missing logo or extraction failure just means no logo-derived accent."""
+    logo_url = (brand_kit or {}).get("logo_url")
+    if not logo_url:
+        return None
+    palette = extract_palette_from_logo(logo_url)
+    return (palette or {}).get("accent")
 
 
 def logo_fit_dimensions(asset: Dict[str, Any], max_height_in: float, max_width_in: float):

@@ -418,6 +418,36 @@
   box-shadow: 0 4px 12px rgba(45, 42, 38, 0.15);
 }
 
+/* Target Market: curated city multi-select pills */
+.citySelectGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cityPill {
+  padding: 8px 16px;
+  border: 1px solid #E8E4DC;
+  border-radius: 9999px;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B6560;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cityPill:hover {
+  background: #FAF8F5;
+  color: #1A1A1A;
+}
+
+.cityPillActive {
+  background: rgba(212, 168, 67, 0.15);
+  border-color: rgba(212, 168, 67, 0.4);
+  color: #B8912E;
+}
+
 /* Section Title */
 .sectionTitle {
   font-family: 'Space Grotesk', sans-serif;

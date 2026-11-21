@@ -15,9 +15,23 @@ from backend.schemas.brand import (
     BrandConfirmRequest,
     BrandStatusResponse,
     BrandContextResearchRequest,
+    TARGET_MARKET_CONFIG,
 )
 
 router = APIRouter()
+
+
+# ── GET /api/brands/target-market-config — region/city config ──────────────
+@router.get("/target-market-config")
+async def get_target_market_config(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Backend-owned single source of truth for Target Market region options and
+    their curated per-region city lists. The frontend fetches this instead of
+    keeping its own hardcoded copy.
+    """
+    return TARGET_MARKET_CONFIG
 
 _ALLOWED_REFERENCE_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 _MAX_REFERENCE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
@@ -86,6 +100,7 @@ async def search_competitors(
             user_competitors=[c.model_dump() for c in (req.user_competitors or [])],
             industry=req.industry,
             region=req.region,
+            target_market=req.target_market.model_dump() if req.target_market else None,
             reference_ref_ids=req.reference_ref_ids,
             firecrawl_key=firecrawl_key,
         ),
@@ -182,6 +197,7 @@ async def confirm_brand(
             entry["text"] = reference_service.load_reference_text(ref_id) if ref_id else ""
             reference_docs_with_text.append(entry)
     reference_docs_json = json.dumps(reference_docs_with_text) if reference_docs_with_text else None
+    target_market_json = json.dumps(req.target_market.model_dump()) if req.target_market else None
     db_brand = BrandConfig(
         user_id=current_user.id,
         brand_name=req.brand_name,
@@ -191,6 +207,7 @@ async def confirm_brand(
         competitors=competitors_json,
         brand_handle=req.brand_handle,
         reference_docs=reference_docs_json,
+        target_market=target_market_json,
         pipeline_status="pending",
     )
     db.add(db_brand)

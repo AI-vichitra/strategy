@@ -26,6 +26,34 @@ _BRANDPALETTE_FENCE_RE = re.compile(r"```brandpalette[ \t]*\r?\n(.*?)```", re.DO
 _HEX_COLOR_RE = re.compile(r"^#?[0-9a-fA-F]{3}$|^#?[0-9a-fA-F]{6}$")
 _H2_HEADING_RE = re.compile(r"^##[ \t]+", re.MULTILINE)
 
+# ── Score/evidence consistency (soft, non-blocking) ─────────────────────────
+_SOURCE_BLOCK_RE = re.compile(r"\[Source \d+ — [^\]]*\[(?P<brand>[^\]]+)\]\](?P<body>.*?)(?=\[Source \d+ —|\Z)", re.DOTALL)
+# Trust/delivery-type axis stems ONLY — deliberately excludes "quality"/"luxury":
+# a Quality or Luxury positioning axis can legitimately score high for a premium
+# brand even when that brand has documented risk evidence (delivery delays,
+# complaints, litigation), so it must never trip this check the way a genuinely
+# high Trust/Delivery/Reliability score would. Substring match is intentional —
+# a combined axis label like "Quality & Trust" should still trip on "trust".
+_TRUST_AXIS_KEYWORDS = ("trust", "reput", "reliab", "deliver", "credib", "service", "safety", "health")
+
+
+def find_brands_with_risk_evidence(formatted_context: Optional[str]) -> set:
+    """Returns the lowercase brand names whose retrieved context includes a
+    '[Source: Risk & Reputation Research ...]'-tagged chunk (see pipeline_service's
+    KB compile step). Used only for the soft contradiction check below."""
+    brands: set = set()
+    if not formatted_context:
+        return brands
+    try:
+        for m in _SOURCE_BLOCK_RE.finditer(formatted_context):
+            brand = (m.group("brand") or "").strip()
+            body = m.group("body") or ""
+            if brand and "Risk & Reputation Research" in body:
+                brands.add(brand.lower())
+    except Exception as e:
+        logger.warning(f"[output_validator] find_brands_with_risk_evidence failed: {type(e).__name__}: {e}")
+    return brands
+
 
 def extract_recharts_blocks(text: str) -> List[str]:
     """Extracts the raw JSON string inside each ```recharts ... ``` fence, in order."""
@@ -139,6 +167,91 @@ def validate_recharts_block(raw: str) -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"[output_validator] validate_recharts_block failed unexpectedly: {type(e).__name__}: {e}")
         return {"valid": False, "resolved_type": None, "reason": "validation_error"}
+
+
+def check_score_risk_consistency(
+    text: str, formatted_context: Optional[str], high_score_threshold: int = 8
+) -> List[str]:
+    """
+    Soft, non-blocking check: flags a chart score of >= high_score_threshold on a
+    trust/delivery-type axis for a brand or competitor whose retrieved context
+    carries documented risk evidence (see find_brands_with_risk_evidence). A
+    scatter/positioning-map's x and y values are judged against their OWN
+    axis label only (never the chart title, never each other's label) — a
+    chart that legitimately pairs one trust-type axis with a non-trust one
+    (e.g. Quality x Trust) must not let a high score on the non-trust axis
+    inherit the other axis's verdict. Bar/radar-style values (keyed "value",
+    or by brand name, with no distinct per-value axis label) keep the
+    existing chart-level verdict (title + both labels, or a radar row's
+    subject). Returns a list of warning strings for logging only — never
+    raises, never affects report generation, chart rendering, or
+    validate_output's result.
+    """
+    warnings: List[str] = []
+    try:
+        risky_brands = find_brands_with_risk_evidence(formatted_context)
+        if not risky_brands:
+            return warnings
+
+        for raw in extract_recharts_blocks(text):
+            try:
+                data = json.loads(raw)
+            except Exception:
+                continue
+            if not isinstance(data, dict):
+                continue
+            rows = data.get("data")
+            if not isinstance(rows, list):
+                continue
+
+            title = str(data.get("title") or "")
+            x_label = str(data.get("x_label") or "")
+            y_label = str(data.get("y_label") or "")
+            # Chart-level verdict (title + both labels combined) — still used
+            # to gate non-x/y values (bar "value", radar/bar brand columns),
+            # and as part of deciding whether to look at a row at all.
+            chart_is_risk_axis = any(
+                k in label.lower() for label in (title, x_label, y_label) for k in _TRUST_AXIS_KEYWORDS
+            )
+            # Per-axis verdicts — label ALONE, title deliberately excluded,
+            # so the title's words never leak onto either axis's decision.
+            x_axis_is_trust = any(k in x_label.lower() for k in _TRUST_AXIS_KEYWORDS)
+            y_axis_is_trust = any(k in y_label.lower() for k in _TRUST_AXIS_KEYWORDS)
+
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                subject = str(row.get("subject") or "")
+                row_is_risk_axis = chart_is_risk_axis or any(k in subject.lower() for k in _TRUST_AXIS_KEYWORDS)
+                if not row_is_risk_axis:
+                    continue
+
+                row_name = str(row.get("name") or "")
+                for key, value in row.items():
+                    if not isinstance(value, (int, float)) or value < high_score_threshold:
+                        continue
+                    # A scatter row's x/y value is gated by ITS OWN axis
+                    # label only — e.g. on a Quality(x) x Trust(y) map, a
+                    # high Quality(x) value must not fire just because the
+                    # chart also has a Trust(y) axis.
+                    if key == "x" and not x_axis_is_trust:
+                        continue
+                    if key == "y" and not y_axis_is_trust:
+                        continue
+                    entity = row_name if key in ("value", "x", "y") else str(key)
+                    if entity and entity.strip().lower() in risky_brands:
+                        axis_label = (
+                            x_label if key == "x"
+                            else y_label if key == "y"
+                            else (subject or title or str(key))
+                        )
+                        warnings.append(
+                            f"High score ({value}) for '{entity}' on axis '{axis_label}' "
+                            f"despite documented risk evidence in context"
+                        )
+    except Exception as e:
+        logger.warning(f"[output_validator] check_score_risk_consistency failed unexpectedly: {type(e).__name__}: {e}")
+    return warnings
 
 
 def validate_output(text: str, agent_type: Optional[str] = None) -> Dict[str, Any]:

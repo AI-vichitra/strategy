@@ -23,6 +23,10 @@ class BrandConfig(Base):
     reference_docs = Column(Text, nullable=True)        # JSON list of {ref_id, filename, text}
     pipeline_status = Column(String, default="pending", nullable=False)  # pending | running | complete | failed
     kb_json = Column(Text, nullable=True)               # Compiled KB (mirrors KNOWLEDGE_BASE/{slug}_KB.json); DB is source of truth, file is local cache
+    target_market = Column(Text, nullable=True)         # JSON: {region, cities, custom_region}. May also hold a
+                                                          # legacy plain string (old Target Market value) on rows
+                                                          # written before this column existed being migrated in
+                                                          # place — always read via schemas.brand.normalize_target_market.
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="brands")
