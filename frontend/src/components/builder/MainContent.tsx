@@ -597,7 +597,15 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const searchParams = useSearchParams();
   const nextRouter = useNextRouter();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('mistral');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  type ProviderInfo = {
+    providers: { id: string; display_name: string; configured: boolean; model: string }[];
+    mode: string;
+    advanced_pin: string | null;
+    default_provider: string | null;
+  };
+  const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
+  const [providerNote, setProviderNote] = useState<string>('');
   const [promptText, setPromptText] = useState('');
   const [showBanner, setShowBanner] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
@@ -628,6 +636,42 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
+
+  // Fetch which providers are actually configured + the model each would run,
+  // so the selector reflects reality instead of a hardcoded list.
+  useEffect(() => {
+    (async () => {
+      try {
+        const headers: Record<string, string> = {};
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        const res = await fetch(`${apiBase}/api/chat/providers`, { headers });
+        if (res.ok) setProviderInfo(await res.json());
+      } catch {
+        /* non-blocking: selector falls back to "Loading…" until this succeeds */
+      }
+    })();
+  }, [apiBase, authToken]);
+
+  // Keep the selection on a provider that actually has a key. Corrects the
+  // empty initial value AND a saved project provider that is unavailable,
+  // falling back to the server's default and saying so — never silently.
+  useEffect(() => {
+    if (!providerInfo) return;
+    const configured = new Set(providerInfo.providers.filter(p => p.configured).map(p => p.id));
+    if (selectedModel && configured.has(selectedModel)) {
+      setProviderNote('');
+      return;
+    }
+    const fallback = providerInfo.default_provider;
+    if (fallback) {
+      const label = providerInfo.providers.find(p => p.id === fallback)?.display_name || fallback;
+      if (selectedModel) {
+        const prev = providerInfo.providers.find(p => p.id === selectedModel)?.display_name || selectedModel;
+        setProviderNote(`"${prev}" has no key configured — using ${label} instead.`);
+      }
+      setSelectedModel(fallback);
+    }
+  }, [providerInfo, selectedModel]);
 
   const latestAssistantIdx = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -1896,6 +1940,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   onOpenConnectors={() => setConnectorsOpen(true)}
                   selectedModel={selectedModel}
                   onSelectModel={setSelectedModel}
+                  providers={providerInfo?.providers}
+                  advancedPin={providerInfo?.advanced_pin ?? null}
+                  providerNote={providerNote}
                 />
               </div>
             </div>
@@ -1954,6 +2001,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
             onOpenConnectors={() => setConnectorsOpen(true)}
             selectedModel={selectedModel}
             onSelectModel={setSelectedModel}
+            providers={providerInfo?.providers}
+            advancedPin={providerInfo?.advanced_pin ?? null}
+            providerNote={providerNote}
           />
         </div>
       )}

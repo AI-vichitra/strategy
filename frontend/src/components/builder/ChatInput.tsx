@@ -21,6 +21,9 @@ interface ChatInputProps {
   onStop?: () => void;
   selectedModel?: string;
   onSelectModel?: (model: string) => void;
+  providers?: { id: string; display_name: string; configured: boolean; model: string }[];
+  advancedPin?: string | null;
+  providerNote?: string;
 }
 
 export default function ChatInput({
@@ -40,20 +43,26 @@ export default function ChatInput({
   isInstaScraped = false,
   isGenerating = false,
   onStop,
-  selectedModel = 'mistral',
+  selectedModel = '',
   onSelectModel,
+  providers,
+  advancedPin,
+  providerNote,
 }: ChatInputProps) {
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const modelOptions = [
-    { id: 'mistral', label: 'Mistral', badge: 'Active / Default' },
-    { id: 'qwen', label: 'Qwen', badge: 'Fast' },
-    { id: 'openai', label: 'OpenAI', badge: 'GPT-4o' },
-    { id: 'anthropic', label: 'Claude', badge: 'Sonnet 4.5' },
-  ];
+  // Built from the backend /api/chat/providers response — never hardcoded.
+  // Each option's badge is the REAL resolved model; a provider with no key is
+  // shown disabled with a reason and is not selectable (never "Active/Default").
+  const modelOptions = (providers ?? []).map(p => ({
+    id: p.id,
+    label: p.display_name,
+    badge: p.configured ? p.model : 'No key configured',
+    configured: p.configured,
+  }));
 
   // Reset local isStopping when parent states update
   useEffect(() => {
@@ -106,7 +115,8 @@ export default function ChatInput({
     return () => document.removeEventListener('click', handleOutsideClick);
   }, [showUploadMenu, showModelMenu]);
 
-  const currentModelLabel = modelOptions.find(m => m.id === selectedModel)?.label || 'Qwen';
+  const currentModelLabel = modelOptions.find(m => m.id === selectedModel)?.label || 'Model';
+  const pinnedLabel = advancedPin ? (modelOptions.find(m => m.id === advancedPin)?.label || advancedPin) : null;
 
   return (
     <div className={styles.wrapper}>
@@ -226,27 +236,53 @@ export default function ChatInput({
             {showModelMenu && (
               <div className={styles.modelMenu}>
                 <div className={styles.modelMenuHeader}>MODEL PROVIDER</div>
-                {modelOptions.map(m => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={`${styles.modelMenuItem} ${selectedModel === m.id ? styles.selectedModelItem : ''}`}
-                    onClick={() => {
-                      onSelectModel?.(m.id);
-                      setShowModelMenu(false);
-                    }}
+                {advancedPin && (
+                  <div
+                    className={styles.modelMenuHeader}
+                    style={{ color: '#D4A843', textTransform: 'none', fontWeight: 600, whiteSpace: 'normal', lineHeight: 1.3 }}
                   >
-                    <div className={styles.modelMenuLeft}>
-                      <span className={styles.modelMenuLabel}>{m.label}</span>
-                      <span className={styles.modelMenuBadge}>{m.badge}</span>
-                    </div>
-                    {selectedModel === m.id && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4A843" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
+                    Advanced mode: provider is pinned to {pinnedLabel} by configuration — your selection here won’t apply.
+                  </div>
+                )}
+                {providerNote && (
+                  <div className={styles.modelMenuHeader} style={{ textTransform: 'none', whiteSpace: 'normal', lineHeight: 1.3 }}>
+                    {providerNote}
+                  </div>
+                )}
+                {modelOptions.length === 0 && (
+                  <div className={styles.modelMenuHeader} style={{ textTransform: 'none' }}>Loading providers…</div>
+                )}
+                {modelOptions.map(m => {
+                  const disabled = !m.configured;
+                  const isPinned = advancedPin === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      disabled={disabled}
+                      title={disabled ? 'No API key configured for this provider' : undefined}
+                      className={`${styles.modelMenuItem} ${selectedModel === m.id ? styles.selectedModelItem : ''}`}
+                      style={disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                      onClick={() => {
+                        if (disabled) return;
+                        onSelectModel?.(m.id);
+                        setShowModelMenu(false);
+                      }}
+                    >
+                      <div className={styles.modelMenuLeft}>
+                        <span className={styles.modelMenuLabel}>
+                          {m.label}{isPinned ? ' · pinned' : ''}
+                        </span>
+                        <span className={styles.modelMenuBadge}>{m.badge}</span>
+                      </div>
+                      {selectedModel === m.id && !disabled && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4A843" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
