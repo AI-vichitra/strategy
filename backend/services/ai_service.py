@@ -641,6 +641,81 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
     raise RuntimeError("No valid LLM API key set in environment (MISTRAL_API_KEY, QWEN_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, or ANTHROPIC_API_KEY)")
 
 
+# Display names + the model env var/default for each provider. The model
+# entries MUST mirror the per-branch model resolution in stream_chat's
+# _run_stream (same env var, same default) so a label shows the model that
+# would actually run. Anthropic is mode-dependent (ANTHROPIC_MODEL vs
+# ANTHROPIC_MODEL_ADVANCED) and is resolved from _report_mode_params below.
+_PROVIDER_DISPLAY_NAME = {
+    "mistral": "Mistral", "qwen": "Qwen", "openai": "OpenAI",
+    "groq": "Groq", "anthropic": "Claude",
+}
+_PROVIDER_MODEL_ENV = {
+    "mistral": ("MISTRAL_MODEL", "open-mistral-7b"),
+    "qwen": ("QWEN_MODEL", "qwen-turbo"),
+    "openai": ("OPENAI_MODEL", "gpt-4o"),
+    "groq": ("GROQ_MODEL", "openai/gpt-oss-120b"),
+    # anthropic handled via _report_mode_params["model_env_key"] (mode-dependent)
+}
+
+
+def get_provider_availability() -> Dict[str, Any]:
+    """Authoritative, LOG-SAFE view of which LLM providers are usable and which
+    model each would actually run — booleans and model names ONLY, never any
+    key material. Reuses _get_llm_provider's exact key rules (incl. the
+    OPENAI_API_KEY 'sk-ant-' blanking) and _report_mode_params for the pinned
+    provider + the mode-dependent Anthropic model, so this never drifts from
+    what a real run resolves.
+
+    Returns:
+      {
+        "mode": "standard"|"advanced",
+        "advanced_pin": <provider id> | None,   # pinned provider when advanced
+        "default_provider": <provider id> | None, # first configured, priority order
+        "providers": [ {id, display_name, configured(bool), model(str)}, ... ],
+      }
+    """
+    mode_params = _report_mode_params()
+    mode = mode_params["mode"]
+    pinned = mode_params.get("provider") if mode == "advanced" else None
+
+    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if openai_key.startswith("sk-ant-"):
+        openai_key = ""
+    configured = {
+        "mistral": bool(os.environ.get("MISTRAL_API_KEY", "").strip()),
+        "qwen": bool(os.environ.get("QWEN_API_KEY", "").strip()),
+        "openai": bool(openai_key),
+        "groq": bool(os.environ.get("GROQ_API_KEY", "").strip()),
+        "anthropic": bool(os.environ.get("ANTHROPIC_API_KEY", "").strip()),
+    }
+
+    providers: List[Dict[str, Any]] = []
+    for pid in LLM_PROVIDER_PRIORITY:  # authoritative order + membership
+        if pid == "anthropic":
+            model = os.environ.get(mode_params["model_env_key"], "claude-sonnet-5-5")
+        else:
+            env, default = _PROVIDER_MODEL_ENV[pid]
+            model = os.environ.get(env, default)
+        providers.append({
+            "id": pid,
+            "display_name": _PROVIDER_DISPLAY_NAME[pid],
+            "configured": configured[pid],
+            "model": model,
+        })
+
+    # Default selection must be a provider that actually has a key — this
+    # mirrors _get_llm_provider's priority-order fallthrough exactly.
+    default_provider = next((p["id"] for p in providers if p["configured"]), None)
+
+    return {
+        "mode": mode,
+        "advanced_pin": pinned if (mode == "advanced" and pinned) else None,
+        "default_provider": default_provider,
+        "providers": providers,
+    }
+
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -3589,16 +3664,27 @@ async def stream_chat(
         # Advanced mode PINS its provider (mode_params["provider"], default
         # anthropic) so ANTHROPIC_MODEL_ADVANCED is actually used, rather than
         # letting key-presence selection hand every run to OpenAI (whose key
-        # must stay set for embeddings). An explicit caller `provider` still
-        # wins; a missing key for the pinned provider logs ERROR and falls back
-        # to key-presence selection — never silently. Standard mode is
-        # unchanged: mode_params["provider"] is None, so this is a no-op.
+        # must stay set for embeddings). ADVANCED_PROVIDER is the more specific
+        # instruction, so the pin wins even over a caller-provided `provider`
+        # (the chat payload always sends one — a model-selector default like
+        # "mistral"/"qwen" or a genuine user pick); an override of a real,
+        # different caller choice is logged at INFO. A missing key for the
+        # pinned provider logs ERROR and falls back to key-presence selection —
+        # never silently. Standard mode is unchanged: mode_params["provider"]
+        # is None, so the caller's provider flows straight to selection.
+        caller_provider = provider  # the original request, for the audit line below
         mode_provider = mode_params.get("provider")
-        if mode_provider and not provider:
+        if mode_provider:
             mode_key = os.environ.get(f"{mode_provider.upper()}_API_KEY", "").strip()
             if mode_provider == "openai" and mode_key.startswith("sk-ant-"):
                 mode_key = ""
             if mode_key:
+                if caller_provider and caller_provider.strip().lower() != mode_provider:
+                    logger.info(
+                        f"[REPORT_GATE] advanced mode pinned provider='{mode_provider}' OVERRIDES "
+                        f"caller-requested provider='{caller_provider}' (ADVANCED_PROVIDER is the "
+                        f"more specific instruction)."
+                    )
                 resolved_provider, api_key = mode_provider, mode_key
             else:
                 logger.error(
@@ -3606,9 +3692,9 @@ async def stream_chat(
                     f"{mode_provider.upper()}_API_KEY is not set — falling back to key-presence "
                     f"selection (report will NOT use the pinned provider)."
                 )
-                resolved_provider, api_key = _get_llm_provider(provider)
+                resolved_provider, api_key = _get_llm_provider(caller_provider)
         else:
-            resolved_provider, api_key = _get_llm_provider(provider)
+            resolved_provider, api_key = _get_llm_provider(caller_provider)
 
         # Helper runner function to stream from a given provider
         async def _run_stream(prov: str, key: str):
@@ -3782,13 +3868,16 @@ async def stream_chat(
                 raise prov_err
 
         # Name who ACTUALLY wrote the report — on every run, healthy or
-        # failed-over. Compared against the originally selected provider so a
-        # silent failover is visible at a glance (fallback=yes).
+        # failed-over. Shows the full provenance: what the CALLER requested,
+        # what the mode PINNED (advanced only), the provider SELECTION settled
+        # on, and what actually RAN. fallback=yes flags a provider-failover
+        # (ran != the selected provider), visible at a glance.
         if used_provider:
             logger.info(
                 f"[REPORT_GATE] report generated by provider={used_provider} "
                 f"model={used_model} mode={mode_params['mode']} "
-                f"(requested={resolved_provider}, "
+                f"(requested={caller_provider or 'auto'}, pinned={mode_provider or 'none'}, "
+                f"selected={resolved_provider}, ran={used_provider}, "
                 f"fallback={'yes' if used_provider != resolved_provider else 'no'})"
             )
 
