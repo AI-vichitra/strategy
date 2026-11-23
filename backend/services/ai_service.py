@@ -64,6 +64,12 @@ def _report_mode_params() -> Dict[str, Any]:
     if mode == "advanced":
         return {
             "mode": mode,
+            # Advanced mode PINS its provider (default anthropic) instead of
+            # letting key-presence selection pick it — otherwise OPENAI_API_KEY
+            # (which must stay set for embeddings) always won and the Anthropic
+            # branch, the only reader of model_env_key below, never ran. The
+            # dispatch honours this; an unset key for it logs ERROR + falls back.
+            "provider": os.environ.get("ADVANCED_PROVIDER", "anthropic").strip().lower() or "anthropic",
             "top_k": int(os.environ.get("ADVANCED_TOP_K", "20")),
             "competitor_chunk_cap": int(os.environ.get("ADVANCED_COMPETITOR_CHUNK_CAP", "6")),
             "max_tokens": int(os.environ.get("REPORT_MAX_TOKENS_ADVANCED", "16000")),
@@ -74,6 +80,9 @@ def _report_mode_params() -> Dict[str, Any]:
         }
     return {
         "mode": mode,
+        # Standard mode keeps today's behaviour exactly: no pinned provider, so
+        # the dispatch uses key-presence selection (_get_llm_provider).
+        "provider": None,
         "top_k": TOP_K,
         "competitor_chunk_cap": 1,
         "max_tokens": 4096,
@@ -3577,7 +3586,29 @@ async def stream_chat(
     used_provider = None
     used_model = None
     try:
-        resolved_provider, api_key = _get_llm_provider(provider)
+        # Advanced mode PINS its provider (mode_params["provider"], default
+        # anthropic) so ANTHROPIC_MODEL_ADVANCED is actually used, rather than
+        # letting key-presence selection hand every run to OpenAI (whose key
+        # must stay set for embeddings). An explicit caller `provider` still
+        # wins; a missing key for the pinned provider logs ERROR and falls back
+        # to key-presence selection — never silently. Standard mode is
+        # unchanged: mode_params["provider"] is None, so this is a no-op.
+        mode_provider = mode_params.get("provider")
+        if mode_provider and not provider:
+            mode_key = os.environ.get(f"{mode_provider.upper()}_API_KEY", "").strip()
+            if mode_provider == "openai" and mode_key.startswith("sk-ant-"):
+                mode_key = ""
+            if mode_key:
+                resolved_provider, api_key = mode_provider, mode_key
+            else:
+                logger.error(
+                    f"[REPORT_GATE] advanced mode pinned provider='{mode_provider}' but "
+                    f"{mode_provider.upper()}_API_KEY is not set — falling back to key-presence "
+                    f"selection (report will NOT use the pinned provider)."
+                )
+                resolved_provider, api_key = _get_llm_provider(provider)
+        else:
+            resolved_provider, api_key = _get_llm_provider(provider)
 
         # Helper runner function to stream from a given provider
         async def _run_stream(prov: str, key: str):
