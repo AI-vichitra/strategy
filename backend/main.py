@@ -81,6 +81,7 @@ _NEW_COLUMNS = [
     ("projects", "logo_data", "BYTEA", "BLOB"),
     ("projects", "logo_mime", "VARCHAR(100)", "TEXT"),
     ("brand_configs", "target_market", "TEXT", "TEXT"),
+    ("brand_configs", "additional_notes", "TEXT", "TEXT"),
 ]
 
 

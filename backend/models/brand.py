@@ -27,6 +27,10 @@ class BrandConfig(Base):
                                                           # legacy plain string (old Target Market value) on rows
                                                           # written before this column existed being migrated in
                                                           # place — always read via schemas.brand.normalize_target_market.
+    additional_notes = Column(Text, nullable=True)       # Optional free-text guardrails/intent from onboarding
+                                                          # (e.g. "Moving to premium positioning", "BFSI — follow
+                                                          # SEBI rules"). Injected into the LLM system prompt at
+                                                          # report-generation time; never used to scope research.
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="brands")

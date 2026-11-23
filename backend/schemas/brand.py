@@ -133,6 +133,7 @@ class BrandConfigBase(BaseModel):
     website_url: Optional[str] = None
     category: str
     brand_context: Optional[str] = None
+    additional_notes: Optional[str] = None
     competitors: Optional[str] = None
     social_metrics: Optional[str] = None
 
@@ -200,12 +201,12 @@ class BrandConfirmRequest(BaseModel):
     website_url: str
     category: str
     brand_context: Optional[str] = None
+    additional_notes: Optional[str] = None
     selected_competitors: List[CompetitorConfirmed]
     brand_handle: Optional[str] = None
     brand_kit: Optional[BrandKit] = None
     reference_docs: Optional[List[dict]] = None
-    target_market: Optional[TargetMarket] = None  # optional: the current unchanged
-    # frontend doesn't send this yet; when absent, BrandConfig.target_market stays None.
+    target_market: TargetMarket
 
 
 # ── Status polling ────────────────────────────────────────────────────────────

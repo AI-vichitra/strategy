@@ -43,6 +43,48 @@ MISTRAL_MODEL = "open-mistral-7b"
 LLM_PROVIDER_PRIORITY = ["mistral", "qwen", "openai", "groq", "anthropic"]
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Report mode — resolved ONCE per report run, never mutates module state, so
+# concurrent requests in different modes never interfere with each other.
+# "standard" (default, and the fallback for any unrecognized value) returns
+# today's hardcoded knobs byte-for-byte unchanged. "advanced" raises recall
+# (top_k, competitor evidence cap, per-source ingest cap) and the output
+# budget (max_tokens) together — raising one without the others either wastes
+# the extra retrieved evidence (output cap unchanged) or truncates a source
+# before it's even chunked (ingest cap unchanged). Advanced values are
+# themselves env-tunable so they can be adjusted without a code change.
+# ─────────────────────────────────────────────────────────────────────────────
+def _report_mode_params() -> Dict[str, Any]:
+    """Resolves COMPETITOR_ANALYSIS (standard|advanced) into the knobs for one
+    report run. Unset or any value other than "advanced" resolves to
+    "standard"."""
+    mode = os.environ.get("COMPETITOR_ANALYSIS", "standard").strip().lower()
+    if mode != "advanced":
+        mode = "standard"
+
+    if mode == "advanced":
+        return {
+            "mode": mode,
+            "top_k": int(os.environ.get("ADVANCED_TOP_K", "20")),
+            "competitor_chunk_cap": int(os.environ.get("ADVANCED_COMPETITOR_CHUNK_CAP", "6")),
+            "max_tokens": int(os.environ.get("REPORT_MAX_TOKENS_ADVANCED", "16000")),
+            "model_env_key": "ANTHROPIC_MODEL_ADVANCED",
+            "default_max_chars_per_source": 1_000_000,
+            "max_sources": int(os.environ.get("ADVANCED_MAX_SOURCES", "60")),
+            "per_domain_cap": int(os.environ.get("ADVANCED_PER_DOMAIN_CAP", "4")),
+        }
+    return {
+        "mode": mode,
+        "top_k": TOP_K,
+        "competitor_chunk_cap": 1,
+        "max_tokens": 4096,
+        "model_env_key": "ANTHROPIC_MODEL",
+        "default_max_chars_per_source": 200_000,
+        "max_sources": 25,
+        "per_domain_cap": 2,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Source credibility denylist — EDIT THIS SET to add/remove banned domains.
 # Applied at report-generation READ time (process_entity / _load_raw_risk_depth_docs)
 # so a denied domain never reaches chunk["sources"] — which means it's filtered out
@@ -52,13 +94,18 @@ LLM_PROVIDER_PRIORITY = ["mistral", "qwen", "openai", "groq", "anthropic"]
 # would leave the model free to inline-link a domain the list itself hides.
 # Covers: data-scraper/company-profile aggregators (leadiq, rocketreach, growjo,
 # owler, cbinsights, zoominfo, apollo), user-upload document sites (scribd,
-# slideshare), the search provider's own result pages (tavily.com), and video
-# hosting (youtube.com/youtu.be) — none of these are primary sources for a fact
-# about a brand.
+# slideshare, studocu, coursehero), the search provider's own result pages
+# (tavily.com), video hosting (youtube.com/youtu.be), employer-review platforms
+# (indeed, glassdoor, ambitionbox), consumer-review platforms that surface
+# unrelated entities by name (yelp), and vendor marketing/customer-story pages
+# (salesforce) — none of these are primary sources for brand strategy facts.
+# Financial data sites (yahoo, investing.com, moneycontrol) are intentionally
+# NOT listed here — they carry earnings, analyst and market data.
 SOURCE_DENYLIST = {
     "leadiq.com", "rocketreach.co", "growjo.com", "owler.com", "cbinsights.com",
     "zoominfo.com", "apollo.io", "scribd.com", "slideshare.net", "tavily.com",
-    "youtube.com", "youtu.be",
+    "youtube.com", "youtu.be", "studocu.com", "coursehero.com",
+    "indeed.com", "glassdoor.com", "ambitionbox.com", "yelp.com", "salesforce.com",
 }
 
 
@@ -220,22 +267,206 @@ def _fetch_opr_scores(domains) -> Dict[str, float]:
     return {d: _opr_cache[d] for d in wanted if d in _opr_cache}
 
 
-def _filter_sources(sources: List[Dict], own_domains: set) -> List[Dict]:
-    """Applies the denylist (B) then the Open Page Rank authority floor (C2)
-    to a raw (title, url) source list, in that order, BEFORE it ever becomes
-    chunk["sources"] — the single choke point both process_entity and
-    _load_raw_risk_depth_docs call, so a dropped source is invisible to both
-    the model's "Citable URLs" prompt and the deterministic Sources list.
-    A denylisted domain is dropped outright. A surviving NON-trust-tier
-    domain is then dropped only if OPR returns a KNOWN score below
-    OPR_MIN_SCORE. Trust-tier domains (government, TRUST_TIER_DOMAINS, or a
-    domain in own_domains) and any domain OPR has no score for are ALWAYS
-    kept — fail open, by domain, every time. This only ever removes a
-    citation URL, never the underlying scraped research content, so there is
-    no grounding loss."""
+_MATCH_PUNCT_RE = re.compile(r'[^\w\s]')
+
+# Generic connectors + review/legal/geo vocabulary that commonly follows a
+# BARE brand mention (e.g. "Emaar IS rated...", "... against M3M IN Gurugram
+# land dispute") without signalling a different, specifically-named entity.
+# Deliberately excludes corporate-suffix nouns (Group, Properties, Holdings,
+# Limited, Brands, Medical, Telecom, Feed, PJSC, ...) — those are exactly the
+# words that must be checked against the entity's OWN remaining name tokens
+# instead (see _name_plausibly_in), since blanket-allowing them would let
+# "Prestige Medical Group" or "EMAAR Properties PJSC" slip back in.
+_GENERIC_TITLE_WORDS = {
+    "is", "are", "was", "were", "a", "an", "the", "of", "on", "in", "at", "for",
+    "with", "and", "or", "to", "from", "by", "v", "vs", "review", "reviews",
+    "rating", "ratings", "rated", "complaint", "complaints", "customer",
+    "service", "services", "case", "cases", "court", "builder", "builders",
+    "developer", "developers", "project", "projects", "home", "news", "page",
+    "pages", "story", "gurugram", "gurgaon", "bangalore", "bengaluru", "delhi",
+    "mumbai", "noida", "pune", "hyderabad", "chennai", "kolkata",
+}
+
+# Maps normalized category phrases to sets of industry-descriptor tokens.
+# When a brand's category matches a key (all key tokens appear in the category),
+# the synonym set is added to the "non-conflicting qualifier" pool in
+# _name_plausibly_in — so alt trade names like "Prestige Estates" (entity
+# "Prestige group", category "real estate") are rescued rather than dropped as
+# a different-company conflict. Non-industry qualifiers (Medical, Feed, Brands)
+# are still conflicts. EDIT: add entries here for new industry verticals.
+_INDUSTRY_SYNONYMS: Dict[str, set] = {
+    "real estate": {
+        "realty", "estate", "estates", "property", "properties", "developer",
+        "developers", "builder", "builders", "housing", "construction",
+        "projects", "homes", "group",
+    },
+}
+
+
+def _normalize_for_match(s: str) -> str:
+    """lowercase, strip punctuation, collapse whitespace — shared normalization
+    for _source_matches_entity's phrase comparisons."""
+    s = _MATCH_PUNCT_RE.sub(' ', (s or "").lower())
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+def _get_industry_terms(category: str) -> set:
+    """Returns the category's own normalized tokens PLUS synonyms from
+    _INDUSTRY_SYNONYMS for every key whose tokens are a subset of the category's
+    tokens. E.g. category="Real Estate" → {"real", "estate"} + the full real-
+    estate synonym set. Returns an empty set for an empty/None category."""
+    if not category:
+        return set()
+    cat_tokens = set(_normalize_for_match(category).split())
+    terms = set(cat_tokens)
+    for key, synonyms in _INDUSTRY_SYNONYMS.items():
+        key_tokens = set(_normalize_for_match(key).split())
+        if key_tokens <= cat_tokens:
+            terms |= synonyms
+    return terms
+
+
+def _name_plausibly_in(tokens: List[str], name_tokens: List[str], industry_terms: Optional[set] = None) -> bool:
+    """True if the (multi-word) entity `name_tokens` is plausibly referenced
+    in `tokens` — either as a contiguous phrase, or as a bare mention of just
+    the primary (first) token with nothing that looks like a DIFFERENT
+    specific qualifier immediately after it: a generic connector/review/geo
+    word (_GENERIC_TITLE_WORDS), one of the entity's own remaining tokens
+    (tolerating simple singular/plural variants, e.g. "property"/
+    "properties"), or an industry-descriptor term from `industry_terms`
+    (e.g. "estates"/"realty" for a real-estate brand — these are alt-name
+    qualifiers, not a signal of a different company). A qualifier that is
+    none of those — "Medical", "Brands Holdings", "Telecom" — signals a
+    different, specifically-named entity sharing just the first word, so
+    that case returns False."""
+    primary, remaining = name_tokens[0], name_tokens[1:]
+    n = len(name_tokens)
+    if any(tokens[i:i + n] == name_tokens for i in range(len(tokens) - n + 1)):
+        return True
+    _industry = industry_terms or set()
+    for i, tok in enumerate(tokens):
+        if tok != primary:
+            continue
+        if i + 1 == len(tokens):
+            return True  # primary token is the last word -- bare mention
+        nxt = tokens[i + 1]
+        if nxt in _GENERIC_TITLE_WORDS:
+            return True
+        if nxt in _industry:
+            return True
+        if any(
+            len(nxt) >= 4 and len(r) >= 4 and (nxt.startswith(r) or r.startswith(nxt))
+            for r in remaining
+        ):
+            return True
+    return False
+
+
+def _source_matches_entity(
+    title: str,
+    url: str,
+    entity_name: str,
+    entity_domain: str,
+    category: Optional[str] = None,
+) -> bool:
+    """Recall-biased per-entity relevance check for a {title, url} source (no
+    body text is available at this layer — see _filter_sources callers).
+    KEEPS (True) when ANY of:
+      1. the source's registrable domain is the entity's own homepage domain;
+      2. the entity's name is plausibly referenced in the title OR the url
+         (decoded) — see _name_plausibly_in: a full phrase match, or a bare
+         mention of the entity's primary name token with no conflicting
+         qualifier. Checking the url too catches cases where the title is
+         generic/truncated ("company", "News Detail Page") but the url/
+         filename carries the real identifying text (e.g. a filename like
+         "...Godrej_Properties_Limited_2023_24.pdf");
+      3. (only when `category` is given) the entity's first name token AND a
+         category/industry token both appear in the title or url.
+    Otherwise drops. An entity with no usable name (missing/"Unknown") always
+    keeps — there's no identity to check a mismatch against, and "when in
+    doubt, keep" is the whole point of this being recall-biased."""
+    name_tokens = _normalize_for_match(entity_name).split()
+    if not name_tokens or entity_name.strip().lower() == "unknown":
+        return True
+
+    source_domain = _registrable_domain(_source_host(url))
+    own_domain = _registrable_domain(_source_host(entity_domain))
+    if source_domain and own_domain and source_domain == own_domain:
+        return True
+
+    from urllib.parse import unquote
+    title_tokens = _normalize_for_match(title).split()
+    url_tokens = _normalize_for_match(unquote(url or "")).split()
+
+    # Build industry terms once so both title and url checks share them.
+    industry_terms = _get_industry_terms(category) if category else None
+    if _name_plausibly_in(title_tokens, name_tokens, industry_terms) or _name_plausibly_in(url_tokens, name_tokens, industry_terms):
+        return True
+
+    if category:
+        category_tokens = set(_normalize_for_match(category).split())
+        haystack = set(title_tokens) | set(url_tokens)
+        if name_tokens[0] in haystack and category_tokens & haystack:
+            return True
+
+    return False
+
+
+def _filter_sources(
+    sources: List[Dict],
+    own_domains: set,
+    entity_name: str = "",
+    entity_url: str = "",
+    category: Optional[str] = None,
+) -> List[Dict]:
+    """Applies the denylist (B), a per-entity relevance check, then the Open
+    Page Rank authority floor (C2) to a raw (title, url) source list, in that
+    order, BEFORE it ever becomes chunk["sources"] — the single choke point
+    both process_entity and _load_raw_risk_depth_docs call, so a dropped
+    source is invisible to both the model's "Citable URLs" prompt and the
+    deterministic Sources list.
+    A denylisted domain is dropped outright. A source that plausibly pertains
+    to a DIFFERENT entity sharing a name fragment (see _source_matches_entity)
+    is dropped next — recall-biased, so only a clear mismatch (e.g. "Prestige
+    Medical Group" under entity "Prestige Group") is removed; this runs
+    before the OPR lookup so off-entity domains never cost a lookup. A
+    surviving NON-trust-tier domain is then dropped only if OPR returns a
+    KNOWN score below OPR_MIN_SCORE. Trust-tier domains (government,
+    TRUST_TIER_DOMAINS, or a domain in own_domains) and any domain OPR has no
+    score for are ALWAYS kept — fail open, by domain, every time. This only
+    ever removes a citation URL, never the underlying scraped research
+    content, so there is no grounding loss."""
     allowed = [s for s in sources if not _is_denied_source((s or {}).get("url", ""))]
     if not allowed:
         return allowed
+
+    if entity_name:
+        before = len(allowed)
+        on_entity, off_entity = [], []
+        industry_rescued = 0
+        for s in allowed:
+            s_title = (s or {}).get("title", "")
+            s_url = (s or {}).get("url", "")
+            if _source_matches_entity(s_title, s_url, entity_name, entity_url, category):
+                on_entity.append(s)
+                # Track sources that only pass because of the industry rescue.
+                if category and not _source_matches_entity(s_title, s_url, entity_name, entity_url, None):
+                    industry_rescued += 1
+            else:
+                off_entity.append(s)
+        allowed = on_entity
+        if off_entity:
+            logger.info(
+                f"[SOURCES] entity-relevance dropped {len(off_entity)} of {before} off-entity source(s) for '{entity_name}'"
+            )
+            for s in off_entity:
+                logger.debug(f"[SOURCES] dropped off-entity: '{(s or {}).get('title', '')}' ({(s or {}).get('url', '')})")
+        if industry_rescued:
+            logger.debug(
+                f"[SOURCES] industry-rescue kept {industry_rescued} alt-name source(s) for '{entity_name}' (category='{category}')"
+            )
+        if not allowed:
+            return allowed
 
     non_trust_domains = set()
     for s in allowed:
@@ -279,6 +510,7 @@ _index_cache: Dict[str, Dict[str, Any]] = {}
 # ─────────────────────────────────────────────────────────────────────────────
 _EMBED_API_BATCH_SIZE = 2048   # OpenAI embeddings API max inputs per request
 _EMBED_MAX_CHARS = 24_000      # conservative ~8191 token ceiling (~3 chars/token)
+_EMBED_MAX_TOKENS_PER_REQUEST = 250_000  # headroom under OpenAI's 300K-tokens/request cap
 
 _embedder = None  # kept for signature compatibility; no longer holds a SentenceTransformer
 
@@ -294,7 +526,9 @@ def _embed_texts(texts: List[str]):
     """
     Embed a list of strings via the OpenAI Embeddings API.
 
-    - Batches in groups of _EMBED_API_BATCH_SIZE (API max 2048).
+    - Batches by estimated token sum (_EMBED_MAX_TOKENS_PER_REQUEST) as well as
+      item count (_EMBED_API_BATCH_SIZE), since many small inputs can sum past
+      OpenAI's 300K-tokens/request cap even when well under the 2048-item cap.
     - Truncates inputs exceeding ~8191 tokens (_EMBED_MAX_CHARS chars) and logs once per input.
     - Returns L2-normalised float32 numpy array of shape (N, dim) on success.
     - Returns None on failure (missing key, network/API error) so callers can
@@ -321,14 +555,42 @@ def _embed_texts(texts: List[str]):
                 t = t[:_EMBED_MAX_CHARS]
             processed.append(t)
 
-        # Batch requests to stay within API limits
-        all_vectors: List[List[float]] = []
-        for start in range(0, len(processed), _EMBED_API_BATCH_SIZE):
-            batch = processed[start : start + _EMBED_API_BATCH_SIZE]
+        # Batch requests to stay within API limits: cap each request by BOTH
+        # item count (_EMBED_API_BATCH_SIZE) and estimated token sum
+        # (_EMBED_MAX_TOKENS_PER_REQUEST). A count-only cap lets many small
+        # inputs sum past OpenAI's 300K-tokens/request limit (e.g. 408 chunks
+        # ≈ 336K tokens in a single request), which 400s and silently drops
+        # retrieval to BM25-only.
+        def _flush(batch: List[str], batch_tokens: int, batch_num: int) -> None:
             resp = client.embeddings.create(model=EMBED_MODEL, input=batch)
             # API guarantees ordering by index, but sort defensively
             sorted_data = sorted(resp.data, key=lambda e: e.index)
             all_vectors.extend(e.embedding for e in sorted_data)
+            logger.info(
+                f"[RAG] Embedding batch {batch_num}: {len(batch)} inputs, "
+                f"~{batch_tokens} estimated tokens"
+            )
+
+        all_vectors: List[List[float]] = []
+        batch: List[str] = []
+        batch_tokens = 0
+        batch_num = 0
+        for t in processed:
+            est_tokens = max(1, len(t) // 3)  # same ~3 chars/token proxy as _EMBED_MAX_CHARS
+            if batch and (
+                batch_tokens + est_tokens > _EMBED_MAX_TOKENS_PER_REQUEST
+                or len(batch) >= _EMBED_API_BATCH_SIZE
+            ):
+                batch_num += 1
+                _flush(batch, batch_tokens, batch_num)
+                batch = []
+                batch_tokens = 0
+            batch.append(t)
+            batch_tokens += est_tokens
+
+        if batch:
+            batch_num += 1
+            _flush(batch, batch_tokens, batch_num)
 
         embeddings = np.array(all_vectors, dtype="float32")
         # OpenAI already returns L2-normalised vectors; normalise again to guard
@@ -398,11 +660,14 @@ def _folder_mtime_hash(brand_slug: str) -> str:
     return hashlib.md5(fingerprint.encode()).hexdigest()
 
 
-def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None) -> List[Dict[str, Any]]:
+def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None, category: str = "") -> List[Dict[str, Any]]:
     """Loads and flattens the centralized KB JSON into standardized RAG documents.
     `kb_json` (BrandConfig.kb_json — the DB source of truth) is used directly when
     given. Falls back to the KNOWLEDGE_BASE/{slug}_KB.json file only when kb_json
-    is None (brand predates this column, or the DB lookup failed)."""
+    is None (brand predates this column, or the DB lookup failed).
+    `category` (BrandConfig.category) is threaded to _filter_sources so the
+    industry-rescue logic in _source_matches_entity can keep alt-name sources
+    (e.g. "Prestige Estates" for entity "Prestige group" in real estate)."""
     docs = []
 
     data_sources: List[tuple] = []
@@ -429,7 +694,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None) -> List[Dict
         # each already correctly tagged with its own source_type, so risk/
         # depth evidence survives even if the compiled KB never materializes
         # or materializes later than this read.
-        docs.extend(_load_raw_risk_depth_docs(brand_slug))
+        docs.extend(_load_raw_risk_depth_docs(brand_slug, category=category))
 
     for path, data in data_sources:
         try:
@@ -473,7 +738,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None) -> List[Dict
                         # prompt or _build_sources_section — so they're
                         # invisible to both the citing model and the
                         # rendered list. See _filter_sources.
-                        "sources": _filter_sources(entity.get("RISK_RESEARCH_SOURCES", []), own_domains),
+                        "sources": _filter_sources(entity.get("RISK_RESEARCH_SOURCES", []), own_domains, entity_name=name, entity_url=url, category=category),
                     })
 
                 depth_research = entity.get("DEPTH_RESEARCH", "")
@@ -484,7 +749,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None) -> List[Dict
                         "source_type": "depth_research",
                         "brand": name,
                         "content": depth_research,
-                        "sources": _filter_sources(entity.get("DEPTH_RESEARCH_SOURCES", []), own_domains),
+                        "sources": _filter_sources(entity.get("DEPTH_RESEARCH_SOURCES", []), own_domains, entity_name=name, entity_url=url, category=category),
                     })
 
                 insta_scrapped = entity.get("INSTA_SCRAPPED", "")
@@ -511,7 +776,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None) -> List[Dict
     return docs
 
 
-def _load_raw_risk_depth_docs(brand_slug: str) -> List[Dict[str, Any]]:
+def _load_raw_risk_depth_docs(brand_slug: str, category: str = "") -> List[Dict[str, Any]]:
     """Reads docs/{brand_slug}/*_risk.json and *_depth.json directly — the raw,
     per-entity files tavily_service.run_risk_research/run_depth_research write
     to disk as soon as each research step finishes (well before Step 6 compiles
@@ -553,7 +818,8 @@ def _load_raw_risk_depth_docs(brand_slug: str) -> List[Dict[str, Any]]:
         # non-empty chunk["sources"] gets attached (see _load_json_docs).
         own_domains = {_registrable_domain(_source_host(doc_url))}
         own_domains.discard("")
-        deduped_sources = _filter_sources(deduped_sources, own_domains)
+        entity_name = data.get("brand", "")
+        deduped_sources = _filter_sources(deduped_sources, own_domains, entity_name=entity_name, entity_url=doc_url, category=category)
         out.append({
             "title": data.get("title", fname),
             "url": doc_url,
@@ -570,15 +836,19 @@ def _load_raw_risk_depth_docs(brand_slug: str) -> List[Dict[str, Any]]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 2: Chunking — 500 words, 100-word overlap
 # ─────────────────────────────────────────────────────────────────────────────
-def _chunk_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _chunk_doc(doc: Dict[str, Any], max_chars_per_source: int = 200000) -> List[Dict[str, Any]]:
     """
     Chunks a single document's content field into 500-word segments with 100-word overlap.
     Each chunk carries its metadata (title, url, source_type, brand).
+    `max_chars_per_source` is the already-resolved effective cap (env override
+    applied by the caller, see _get_or_build_index) — read once per report
+    run, not per chunk, so the index cache hash can reflect the exact value
+    actually used.
     """
     content = doc.get("content", "") or ""
     # Apply per-source content cap before chunking (prevents 1M+ char sources from
     # blowing memory on a 512 MB host).  Truncates at a paragraph boundary when possible.
-    _cap = int(os.environ.get("MAX_KB_CHARS_PER_SOURCE", "200000"))
+    _cap = max_chars_per_source
     if len(content) > _cap:
         truncated = content[:_cap]
         last_para = truncated.rfind("\n\n")
@@ -625,12 +895,12 @@ def _chunk_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     return chunks
 
 
-def _build_chunks(docs: List[Dict]) -> List[Dict]:
+def _build_chunks(docs: List[Dict], max_chars_per_source: int = 200000) -> List[Dict]:
     """Builds all chunks from all docs."""
     all_chunks = []
     for doc in docs:
-        all_chunks.extend(_chunk_doc(doc))
-    logger.info(f"[RAG] Built {len(all_chunks)} chunks ({CHUNK_SIZE}-word, {CHUNK_OVERLAP}-word overlap)")
+        all_chunks.extend(_chunk_doc(doc, max_chars_per_source))
+    logger.info(f"[RAG] Built {len(all_chunks)} chunks ({CHUNK_SIZE}-word, {CHUNK_OVERLAP}-word overlap, cap={max_chars_per_source})")
     return all_chunks
 
 
@@ -671,34 +941,45 @@ def _build_bm25(chunks: List[Dict]):
 # ─────────────────────────────────────────────────────────────────────────────
 # Index cache management
 # ─────────────────────────────────────────────────────────────────────────────
-def _get_or_build_index(brand_slug: str, kb_json: Optional[str] = None) -> Optional[Dict]:
+def _get_or_build_index(
+    brand_slug: str,
+    kb_json: Optional[str] = None,
+    brand_category: str = "",
+    max_chars_per_source: int = 200000,
+) -> Optional[Dict]:
     """
     Returns cached index if the KB content hasn't changed, otherwise rebuilds.
     Cache key: brand_slug → { chunks, embeddings, bm25, mtime_hash }
     When `kb_json` (BrandConfig.kb_json) is given, its own content is hashed for
     invalidation instead of file mtimes — works identically whether the KB comes
     from the DB or the file fallback.
+    `max_chars_per_source` (the resolved effective per-source cap — see
+    _report_mode_params/MAX_KB_CHARS_PER_SOURCE) is folded into the hash too,
+    so switching report mode (standard <-> advanced) rebuilds the index with
+    the right chunk boundaries instead of serving the other mode's cached
+    chunks; it does NOT trigger a rebuild when an explicit MAX_KB_CHARS_PER_SOURCE
+    override makes the effective cap identical across modes.
     """
     if not brand_slug:
         return None
 
     if kb_json:
-        current_hash = hashlib.md5(kb_json.encode("utf-8")).hexdigest()
+        current_hash = hashlib.md5(f"{kb_json}|cap={max_chars_per_source}".encode("utf-8")).hexdigest()
     else:
-        current_hash = _folder_mtime_hash(brand_slug)
+        current_hash = hashlib.md5(f"{_folder_mtime_hash(brand_slug)}|cap={max_chars_per_source}".encode("utf-8")).hexdigest()
 
     cached = _index_cache.get(brand_slug)
     if cached and cached.get("mtime_hash") == current_hash:
         logger.info(f"[RAG] Cache hit for '{brand_slug}' ({len(cached['chunks'])} chunks)")
         return cached
 
-    logger.info(f"[RAG] Building index for '{brand_slug}' (hash changed or first run)...")
-    docs = _load_json_docs(brand_slug, kb_json)
+    logger.info(f"[RAG] Building index for '{brand_slug}' (hash changed or first run, cap={max_chars_per_source})...")
+    docs = _load_json_docs(brand_slug, kb_json, category=brand_category)
     if not docs:
         logger.info(f"[RAG] No JSON docs found for '{brand_slug}' — no index built")
         return None
 
-    chunks = _build_chunks(docs)
+    chunks = _build_chunks(docs, max_chars_per_source)
     if not chunks:
         return None
 
@@ -808,10 +1089,7 @@ def _format_context(retrieved_chunks: List[Dict]) -> str:
     return "\n\n" + ("─" * 60) + "\n\n".join(parts) + "\n\n" + ("─" * 60)
 
 
-_MAX_PER_DOMAIN = 2  # cap how many Sources rows any one registrable domain can occupy
-
-
-def _build_sources_section(retrieved_chunks: List[Dict]) -> str:
+def _build_sources_section(retrieved_chunks: List[Dict], max_sources: int = 25, per_domain_cap: int = 2) -> str:
     """Builds a '## Sources' markdown section deterministically from the real
     (title, url) pairs already carried on the retrieved chunks — never
     model-composed, so every link is guaranteed to be one that genuinely fed
@@ -827,13 +1105,16 @@ def _build_sources_section(retrieved_chunks: List[Dict]) -> str:
          first (an unknown score sorts as 0.0 — least-known-authority last
          within its tier, never dropped, never promoted over a scored peer).
          Stable sort preserves first-seen/relevance order among exact ties.
-      3. CAP each registrable domain at _MAX_PER_DOMAIN, walking the
+      3. CAP each registrable domain at `per_domain_cap`, walking the
          now-sorted order — so if a domain's survivors must be chosen, the
          choice is made on the final display order, not raw retrieval order.
-      4. TRUNCATE to max_sources, with the "...and N more" overflow line.
-    This is display-ordering only — it never changes what _format_context
-    hands the model, and never drops a source (that already happened
-    upstream in _filter_sources)."""
+      4. TRUNCATE to `max_sources`, with the "...and N more" overflow line.
+    `max_sources`/`per_domain_cap` are the caller's already-resolved report-
+    mode values (see _report_mode_params) — read once per report run, never
+    re-read from env here, so this function stays a pure display-ordering
+    step. This is display-ordering only — it never changes what
+    _format_context hands the model, and never drops a source (that already
+    happened upstream in _filter_sources)."""
     seen = set()
     # own_domains: each retrieved entity's HOMEPAGE domain. Built from
     # chunk["url"], which IS the entity's HOMEPAGE field for every doc type
@@ -899,14 +1180,13 @@ def _build_sources_section(retrieved_chunks: List[Dict]) -> str:
     entries: List[tuple] = []
     for title, url in gathered:
         domain = _registrable_domain(_source_host(url))
-        if domain and domain_counts.get(domain, 0) >= _MAX_PER_DOMAIN:
+        if domain and domain_counts.get(domain, 0) >= per_domain_cap:
             continue
         if domain:
             domain_counts[domain] = domain_counts.get(domain, 0) + 1
         entries.append((title, url))
 
     # ── 4. TRUNCATE ────────────────────────────────────────────────────────
-    max_sources = 25
     lines = ["\n\n## Sources", ""]
     for i, (title, url) in enumerate(entries[:max_sources], 1):
         safe_title = (title or url).strip().replace("[", "(").replace("]", ")")
@@ -1073,6 +1353,7 @@ def build_system_prompt(
     brand_context: Optional[str],
     formatted_context: str,
     competitor_details: Optional[str] = None,
+    additional_notes: Optional[str] = None,
 ) -> str:
     if agent_type == "Competition Analysis":
         base = """You are a Senior Competitive Intelligence Strategist operating inside an automated strategy tool. You convert raw website and Instagram scrape data into a concise, professional, board-ready competitive analysis document. 
@@ -2894,6 +3175,9 @@ Role/Mode: **{agent_type}**
     if brand_context:
         base += f"\nBrand Context: {brand_context}\n"
 
+    if additional_notes and additional_notes.strip():
+        base += f"\nUser-Provided Constraints / Guardrails: {additional_notes.strip()}\nYou MUST respect these constraints in all analysis and recommendations. Do not contradict or ignore them.\n"
+
     competitor_block = _format_competitor_details(competitor_details)
     if competitor_block:
         base += f"\n{competitor_block}\n"
@@ -3024,6 +3308,7 @@ async def stream_chat(
     brand_name = "Your Brand"
     agent_type = "StratAI"
     brand_context = None
+    brand_additional_notes = None
     brand_slug = None
     project = None
 
@@ -3039,6 +3324,7 @@ async def stream_chat(
             if brand:
                 brand_name = brand.brand_name
                 brand_context = brand.brand_context
+                brand_additional_notes = brand.additional_notes
                 brand_slug = brand.brand_slug
     except Exception as e:
         logger.warning(f"[RAG] Could not load project/brand: {e}")
@@ -3094,6 +3380,14 @@ async def stream_chat(
         _kb_len = len(brand.kb_json) if (brand and brand.kb_json) else 0
         logger.info(f"[REPORT_GATE] KB re-read after wait: {'present, ' + str(_kb_len) + ' chars' if _kb_len else 'still empty'} for '{brand_name}'")
 
+    # ── Resolve report mode knobs once per run (standard|advanced) ───────────
+    # See _report_mode_params: "standard" (unset/default/unrecognized value)
+    # reproduces today's hardcoded 6/1/4096/ANTHROPIC_MODEL exactly.
+    mode_params = _report_mode_params()
+    effective_max_chars_per_source = int(
+        os.environ.get("MAX_KB_CHARS_PER_SOURCE", str(mode_params["default_max_chars_per_source"]))
+    )
+
     # ── Build / retrieve index (cached in memory, rebuilt only on doc changes) ─
     query = user_content
     retrieved_chunks: List[Dict] = []
@@ -3101,11 +3395,16 @@ async def stream_chat(
 
     try:
         brand_kb_json = brand.kb_json if brand else None
-        index = await asyncio.to_thread(_get_or_build_index, brand_slug, brand_kb_json)
+        brand_category = brand.category or "" if brand else ""
+        index = await asyncio.to_thread(
+            _get_or_build_index, brand_slug, brand_kb_json, brand_category, effective_max_chars_per_source
+        )
         if index:
             logger.info(f"[REPORT_GATE] Index for '{brand_slug}': {len(index.get('chunks', []))} total chunks available.")
-            retrieved_chunks = await asyncio.to_thread(_hybrid_retrieve, query, index)
-            retrieved_chunks = _ensure_evidence_coverage(retrieved_chunks, index, full_coverage_brand=brand_name)
+            retrieved_chunks = await asyncio.to_thread(_hybrid_retrieve, query, index, mode_params["top_k"])
+            retrieved_chunks = _ensure_evidence_coverage(
+                retrieved_chunks, index, per_entity_cap=mode_params["competitor_chunk_cap"], full_coverage_brand=brand_name
+            )
             formatted_context = _format_context(retrieved_chunks)
             _retrieved_types = sorted({c.get("source_type", "?") for c in retrieved_chunks})
             # Checked the same way _ensure_evidence_coverage itself now finds
@@ -3126,10 +3425,20 @@ async def stream_chat(
             logger.info(
                 f"[REPORT_GATE] Retrieved {len(retrieved_chunks)} chunks for '{brand_slug}' "
                 f"(types={_retrieved_types}, risk_evidence={_has_risk}, depth_evidence={_has_depth}, "
-                f"context={len(formatted_context)} chars)"
+                f"context={len(formatted_context)} chars) | "
+                f"mode={mode_params['mode']} top_k={mode_params['top_k']} "
+                f"competitor_chunk_cap={mode_params['competitor_chunk_cap']} "
+                f"max_tokens={mode_params['max_tokens']} max_chars_per_source={effective_max_chars_per_source} "
+                f"max_sources={mode_params['max_sources']} per_domain_cap={mode_params['per_domain_cap']}"
             )
         else:
-            logger.info(f"[REPORT_GATE] No index found for '{brand_slug}' — no documents to retrieve from.")
+            logger.info(
+                f"[REPORT_GATE] No index found for '{brand_slug}' — no documents to retrieve from. "
+                f"mode={mode_params['mode']} top_k={mode_params['top_k']} "
+                f"competitor_chunk_cap={mode_params['competitor_chunk_cap']} "
+                f"max_tokens={mode_params['max_tokens']} max_chars_per_source={effective_max_chars_per_source} "
+                f"max_sources={mode_params['max_sources']} per_domain_cap={mode_params['per_domain_cap']}"
+            )
     except Exception as e:
         logger.warning(f"[RAG] Retrieval failed: {e}")
 
@@ -3184,7 +3493,7 @@ async def stream_chat(
             pass
     _n_comps = len(json.loads(competitor_details)) if competitor_details else 0
     print(f"[REPORT] competitors from {_comp_source}: {_n_comps} items")
-    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details)
+    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details, additional_notes=brand_additional_notes)
 
     # ── Prepare messages ──────────────────────────────────────────────────────
     chat_history = []
@@ -3216,7 +3525,7 @@ async def stream_chat(
                     messages=qwen_messages,
                     stream=True,
                     temperature=0.15,
-                    max_tokens=4096,
+                    max_tokens=mode_params["max_tokens"],
                 )
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
@@ -3237,7 +3546,7 @@ async def stream_chat(
                     messages=openai_messages,
                     stream=True,
                     temperature=0.15,
-                    max_tokens=4096,
+                    max_tokens=mode_params["max_tokens"],
                 )
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
@@ -3261,7 +3570,7 @@ async def stream_chat(
                     messages=groq_messages,
                     stream=True,
                     temperature=0.15,
-                    max_tokens=4096,
+                    max_tokens=mode_params["max_tokens"],
                 )
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
@@ -3285,7 +3594,7 @@ async def stream_chat(
                     messages=mistral_messages,
                     stream=True,
                     temperature=0.15,
-                    max_tokens=4096,
+                    max_tokens=mode_params["max_tokens"],
                 )
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
@@ -3299,10 +3608,10 @@ async def stream_chat(
                 logger.info(f"[RAG] Streaming response using Anthropic API...")
                 import anthropic
                 client = anthropic.Anthropic(api_key=key)
-                anthropic_model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5")
+                anthropic_model = os.environ.get(mode_params["model_env_key"], "claude-sonnet-5-5")
                 with client.messages.stream(
                     model=anthropic_model,
-                    max_tokens=4096,
+                    max_tokens=mode_params["max_tokens"],
                     temperature=0.15,
                     system=system_prompt,
                     messages=chat_history
@@ -3358,7 +3667,9 @@ async def stream_chat(
     # Streamed as additional tokens too, so the live chat view shows it, not
     # only a reloaded/persisted copy. ──────────────────────────────────────
     if full_response and retrieved_chunks:
-        sources_md = _build_sources_section(retrieved_chunks)
+        sources_md = _build_sources_section(
+            retrieved_chunks, max_sources=mode_params["max_sources"], per_domain_cap=mode_params["per_domain_cap"]
+        )
         if sources_md:
             full_response += sources_md
             yield f"data: {json.dumps({'type': 'token', 'content': sources_md})}\n\n"

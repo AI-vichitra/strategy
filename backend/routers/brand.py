@@ -204,6 +204,7 @@ async def confirm_brand(
         website_url=req.website_url,
         category=req.category,
         brand_context=req.brand_context,
+        additional_notes=req.additional_notes,
         competitors=competitors_json,
         brand_handle=req.brand_handle,
         reference_docs=reference_docs_json,

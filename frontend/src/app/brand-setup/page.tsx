@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import BrandKitForm, { type BrandKit } from '../../components/BrandKitForm';
+import ReferenceUpload, { type ReferenceDoc } from '../../components/ReferenceUpload';
 
 // ── Target Market: structured region + city selection ───────────────────────
 // Mirrors backend.schemas.brand.TargetMarket exactly. Region options and city
@@ -80,6 +81,8 @@ function StrategySetupInner() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [category, setCategory] = useState('');
   const [brandContext, setBrandContext] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [referenceDocs, setReferenceDocs] = useState<ReferenceDoc[]>([]);
 
   // ── Target Market (structured): region + cities[] + custom_region ───────
   const [tmRegion, setTmRegion] = useState<TargetMarketRegion | ''>('');
@@ -157,6 +160,7 @@ function StrategySetupInner() {
   const websiteUrlRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef<HTMLSelectElement>(null);
   const brandContextRef = useRef<HTMLTextAreaElement>(null);
+  const targetMarketRef = useRef<HTMLDivElement>(null);
 
   const handleAddCompetitor = () => {
     if (!competitorName.trim()) return;
@@ -322,6 +326,13 @@ function StrategySetupInner() {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    // Target Market is required — block before the region-specific checks below.
+    if (!tmRegion) {
+      setTmError('This field is mandatory');
+      targetMarketRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     // Client-side Target Market validation, mirroring the backend exactly —
     // block submit before the request is ever sent.
     const targetMarket = buildTargetMarket();
@@ -416,6 +427,8 @@ function StrategySetupInner() {
           website_url: websiteUrl,
           category,
           brand_context: brandContext,
+          additional_notes: additionalNotes.trim() || undefined,
+          reference_docs: referenceDocs.length > 0 ? referenceDocs : undefined,
           brand_handle: discoveredBrandHandle,
           target_market: confirmedTargetMarket || undefined,
           selected_competitors: selectedComps.map(c => ({
@@ -548,9 +561,9 @@ function StrategySetupInner() {
             {/* Target Market (scopes competitor discovery): cascading Region -> City.
                 Region options + curated city lists come from GET /target-market-config
                 (fetched on mount) -- never hardcoded here. */}
-            <div className={styles.formRow}>
+            <div className={styles.formRow} ref={targetMarketRef}>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Target Market (Optional)</label>
+                <label className={styles.label}>Target Market <span className={styles.required}>*</span></label>
                 <select
                   className={styles.select}
                   value={tmRegion}
@@ -663,6 +676,28 @@ function StrategySetupInner() {
                 rows={4}
               />
               {researchNote && <p className={styles.helpText}>{researchNote}</p>}
+            </div>
+
+            {/* Additional Notes / Guardrails */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Additional Notes / Guardrails (Optional)</label>
+              <textarea
+                className={styles.textarea}
+                value={additionalNotes}
+                onChange={e => setAdditionalNotes(e.target.value)}
+                placeholder="Any intent, restrictions, or compliance rules the AI can't find online (e.g. 'Moving to premium positioning', 'BFSI — follow SEBI rules', 'Do not mention competitor X by name')."
+                rows={3}
+              />
+            </div>
+
+            {/* Brand Documents */}
+            <div className={styles.formGroup}>
+              <ReferenceUpload
+                value={referenceDocs}
+                onChange={setReferenceDocs}
+                apiBase={apiBaseUrl ?? ''}
+                authToken={authToken}
+              />
             </div>
 
             {/* Brand Kit (logo + colors) */}

@@ -107,7 +107,7 @@ export default function ReferenceUpload({ value, onChange, apiBase, authToken, m
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <div>
-          <div className={styles.title}>Reference Documents (Optional)</div>
+          <div className={styles.title}>Brand Documents (Optional)</div>
           <div className={styles.subtitle}>
             Upload brand decks, briefs, or style guides (.pdf, .docx, .txt, .md) to ground the research in your own material
           </div>
