@@ -220,6 +220,16 @@ def _registrable_domain(host: str) -> str:
 # kept; only a NON-trust-tier domain with a KNOWN score below the floor gets
 # dropped. Never raises, never blocks report generation, never logs the key.
 # https://keywordseverywhere.com/openpagerank/docs
+#
+# A single report run calls _fetch_opr_scores once per entity's risk/depth
+# source list (process_entity, _load_raw_risk_depth_docs — see _filter_sources)
+# PLUS once more when _build_sources_section sorts the final list: roughly 15
+# independent calls for a typical advanced run. Domain scores barely move and
+# the same broker/review/finance domains (trustpilot.com, moneycontrol.com,
+# indiankanoon.org, investing.com, ...) recur across almost every brand's
+# competitor set, so a persisted, weeks-long cache turns nearly all of those
+# into free lookups — and when the key IS dead, it means a cached score still
+# applies (degraded, not disabled) instead of every call re-hitting a 403.
 # ─────────────────────────────────────────────────────────────────────────────
 OPENPAGERANK_API_URL = "https://openpagerank.keywordseverywhere.com/v1/domains/bulk"
 OPR_MIN_SCORE = 3.0        # EDIT THIS to tune the floor — non-trust-tier domains
@@ -227,7 +237,95 @@ OPR_MIN_SCORE = 3.0        # EDIT THIS to tune the floor — non-trust-tier doma
 _OPR_BATCH_SIZE = 100       # API limit: <=100 domains per bulk request
 _OPR_REQUEST_TIMEOUT = 10   # seconds — short, since this must never stall a report
 
-_opr_cache: Dict[str, float] = {}  # registrable domain -> score, process-lifetime
+# Persisted cache — follows backend/data/competitor_url_cache.json's exact
+# pattern (same directory, same best-effort load/save-never-raises shape).
+_OPR_CACHE_PATH = os.path.join(PROJECT_ROOT, "backend", "data", "opr_score_cache.json")
+# OPR scores reflect long-run link authority and move slowly — weeks, not
+# minutes. 30 days balances "almost never re-fetch a domain we already know"
+# against eventually picking up a genuine authority change.
+_OPR_CACHE_TTL_SECONDS = 30 * 24 * 3600
+
+# {registrable_domain: {"score": float, "fetched_at": epoch_seconds}} —
+# process-lifetime, seeded from the persisted file on first use (see
+# _load_opr_cache_from_disk). A STALE entry (fetched_at older than the TTL) is
+# still KEPT here and still returned as a fail-open fallback score; staleness
+# only controls whether a call bothers trying to refresh it, never whether an
+# existing score is trusted when a refresh isn't possible.
+_opr_cache: Dict[str, Dict[str, float]] = {}
+_opr_cache_loaded = False
+
+# Failure cooldown: once a batch call fails (dead/rotated key), suppress
+# further network attempts until this deadline instead of letting every one
+# of a report's ~15 independent _fetch_opr_scores calls re-fail and re-log
+# independently. Long enough to cover one report's entire KB-build pass
+# (seconds), short enough that a key fixed mid-session gets retried again soon
+# rather than being wedged dead for the rest of the process.
+_OPR_FAILURE_COOLDOWN_SECONDS = 300  # 5 minutes
+_opr_key_dead_until: float = 0.0
+_opr_failure_logged = False  # reset whenever a fresh attempt begins past the cooldown — one WARNING per failure episode, not per batch
+
+# Per-run counters for the one-line summary (see _log_opr_run_summary) —
+# reset at the start of each stream_chat call, logged once at the end of that
+# report's source processing, instead of once per (~15) internal call.
+_opr_run_stats = {"cache_hits": 0, "fetched": 0, "unscored": 0}
+
+
+def _load_opr_cache_from_disk() -> None:
+    """Loads the persisted domain->score cache into _opr_cache once per
+    process (a no-op on later calls). A missing/corrupt file — or a
+    malformed entry within it — just means starting from nothing for that
+    entry, mirroring competitor_service._load_url_cache's best-effort
+    contract: never raises."""
+    global _opr_cache_loaded
+    if _opr_cache_loaded:
+        return
+    _opr_cache_loaded = True
+    try:
+        with open(_OPR_CACHE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return
+    if not isinstance(data, dict):
+        return
+    for domain, entry in data.items():
+        if not isinstance(entry, dict):
+            continue
+        score, fetched_at = entry.get("score"), entry.get("fetched_at")
+        if isinstance(score, (int, float)) and isinstance(fetched_at, (int, float)):
+            _opr_cache[domain] = {"score": float(score), "fetched_at": float(fetched_at)}
+
+
+def _save_opr_cache_to_disk() -> None:
+    """Best-effort persisted write — a failure here (e.g. read-only
+    filesystem) never breaks scoring for the current run."""
+    try:
+        os.makedirs(os.path.dirname(_OPR_CACHE_PATH), exist_ok=True)
+        with open(_OPR_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(_opr_cache, f, indent=2, sort_keys=True)
+    except Exception as e:
+        logger.warning(f"[SOURCES] Failed to persist OPR score cache: {e}")
+
+
+def _reset_opr_run_stats() -> None:
+    """Call once at the start of a report run (see stream_chat) so the
+    end-of-run summary reflects only THIS run's lookups."""
+    _opr_run_stats["cache_hits"] = 0
+    _opr_run_stats["fetched"] = 0
+    _opr_run_stats["unscored"] = 0
+
+
+def _log_opr_run_summary() -> None:
+    """One INFO line per report run (see stream_chat, called after the
+    Sources section — the last point any OPR lookup happens for a run),
+    instead of a line per one of the ~15 internal _fetch_opr_scores calls."""
+    s = _opr_run_stats
+    total = s["cache_hits"] + s["fetched"] + s["unscored"]
+    if total == 0:
+        return  # no non-trust-tier domain needed scoring this run
+    logger.info(
+        f"[SOURCES] OPR summary for this run: {s['cache_hits']} domain(s) served from cache, "
+        f"{s['fetched']} fetched, {s['unscored']} unscored (of {total} total)."
+    )
 
 
 def _fetch_opr_scores(domains) -> Dict[str, float]:
@@ -235,45 +333,88 @@ def _fetch_opr_scores(domains) -> Dict[str, float]:
     given domains as could be scored. Fails open at every step: a missing/
     invalid API key, an HTTP error, a timeout, or a malformed response all
     just mean fewer (possibly zero) domains come back scored — never raises,
-    never includes the key in a log line. Results are cached for the life of
-    this process, so each domain is fetched from the API at most once."""
+    never includes the key in a log line.
+
+    Cache-first: a domain with a FRESH (< _OPR_CACHE_TTL_SECONDS old) cached
+    score is never re-fetched. A domain with only a STALE cached score still
+    gets a fresh-fetch attempt, but if that attempt fails (or the key is in
+    its post-failure cooldown, or no key is set), the stale score is still
+    returned — a dead key degrades filtering, it never disables it. Only a
+    domain with NO cached score at all, and no successful fetch, is unscored.
+    """
+    _load_opr_cache_from_disk()
     wanted = sorted({_registrable_domain(d) for d in domains if d})
     wanted = [d for d in wanted if d]
-    to_fetch = [d for d in wanted if d not in _opr_cache]
-    if not to_fetch:
-        return {d: _opr_cache[d] for d in wanted if d in _opr_cache}
+    if not wanted:
+        return {}
 
-    api_key = os.environ.get("OPENPAGERANK_API_KEY", "").strip()
-    if not api_key:
-        logger.info("[SOURCES] OPENPAGERANK_API_KEY not set — skipping OPR scoring (fail open).")
-        return {d: _opr_cache[d] for d in wanted if d in _opr_cache}
+    now = time.time()
 
-    for i in range(0, len(to_fetch), _OPR_BATCH_SIZE):
-        batch = to_fetch[i:i + _OPR_BATCH_SIZE]
-        try:
-            resp = requests.post(
-                OPENPAGERANK_API_URL,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={"domains": batch, "include_history": False},
-                timeout=_OPR_REQUEST_TIMEOUT,
-            )
-            resp.raise_for_status()
-            results = (resp.json() or {}).get("results") or []
-            for r in results:
-                dom = (r or {}).get("domain", "")
-                score = (r or {}).get("open_page_rank", None)
-                if dom and isinstance(score, (int, float)):
-                    _opr_cache[dom] = float(score)
-        except Exception as e:
-            # Deliberately logs only the exception TYPE/message, never headers
-            # or the request body — the key is never part of either here.
-            logger.warning(f"[SOURCES] OPR batch fetch failed ({type(e).__name__}: {e}) — failing open for this batch.")
-            continue
+    def _is_fresh(d: str) -> bool:
+        entry = _opr_cache.get(d)
+        return entry is not None and (now - entry["fetched_at"]) < _OPR_CACHE_TTL_SECONDS
 
-    return {d: _opr_cache[d] for d in wanted if d in _opr_cache}
+    to_fetch = [d for d in wanted if not _is_fresh(d)]
+
+    global _opr_key_dead_until, _opr_failure_logged
+    just_fetched: set = set()
+
+    if to_fetch:
+        if now < _opr_key_dead_until:
+            pass  # key already proven dead this cooldown window — don't retry it per call
+        else:
+            api_key = os.environ.get("OPENPAGERANK_API_KEY", "").strip()
+            if not api_key:
+                logger.info("[SOURCES] OPENPAGERANK_API_KEY not set — skipping OPR scoring (fail open).")
+            else:
+                _opr_failure_logged = False  # fresh attempt past any prior cooldown — allow one new WARNING if it fails again
+                for i in range(0, len(to_fetch), _OPR_BATCH_SIZE):
+                    batch = to_fetch[i:i + _OPR_BATCH_SIZE]
+                    try:
+                        resp = requests.post(
+                            OPENPAGERANK_API_URL,
+                            headers={
+                                "Authorization": f"Bearer {api_key}",
+                                "Content-Type": "application/json",
+                            },
+                            json={"domains": batch, "include_history": False},
+                            timeout=_OPR_REQUEST_TIMEOUT,
+                        )
+                        resp.raise_for_status()
+                        results = (resp.json() or {}).get("results") or []
+                        for r in results:
+                            dom = (r or {}).get("domain", "")
+                            score = (r or {}).get("open_page_rank", None)
+                            if dom and isinstance(score, (int, float)):
+                                _opr_cache[dom] = {"score": float(score), "fetched_at": now}
+                                just_fetched.add(dom)
+                    except Exception as e:
+                        # Deliberately logs only the exception TYPE/message, never
+                        # headers or the request body — the key is never part of
+                        # either here. Logged ONCE per failure episode (the
+                        # cooldown below suppresses every other call for the rest
+                        # of this run), not once per batch/entity.
+                        if not _opr_failure_logged:
+                            logger.warning(
+                                f"[SOURCES] OPR fetch failed ({type(e).__name__}: {e}) — "
+                                f"failing open for the rest of this run (likely a dead/rotated key); "
+                                f"cached scores still apply."
+                            )
+                            _opr_failure_logged = True
+                        _opr_key_dead_until = now + _OPR_FAILURE_COOLDOWN_SECONDS
+                        break  # key's dead for this run — further batches would only repeat the failure
+                if just_fetched:
+                    _save_opr_cache_to_disk()
+
+    for d in wanted:
+        if d in just_fetched:
+            _opr_run_stats["fetched"] += 1
+        elif d in _opr_cache:
+            _opr_run_stats["cache_hits"] += 1
+        else:
+            _opr_run_stats["unscored"] += 1
+
+    return {d: _opr_cache[d]["score"] for d in wanted if d in _opr_cache}
 
 
 _MATCH_PUNCT_RE = re.compile(r'[^\w\s]')
@@ -296,6 +437,22 @@ _GENERIC_TITLE_WORDS = {
     "mumbai", "noida", "pune", "hyderabad", "chennai", "kolkata",
 }
 
+# Bare legal-entity-suffix words (mirrors competitor_service._GENERIC_SUFFIX_
+# TOKENS' concept). Deliberately NOT folded into _GENERIC_TITLE_WORDS — that
+# set's "Limited"/"Group" exclusion is itself deliberate, protecting a
+# MULTI-WORD name's own remaining token ("Prestige Group" must still be
+# checked via the "remaining" path so "Prestige Medical Group" keeps
+# failing). This tolerance is scoped to `not remaining` (a SINGLE-TOKEN
+# entity name only, e.g. "Sobha", "DLF") where there is no remaining token to
+# protect — "Sobha Ltd" or "DLF Limited" is just the company's own formal
+# name ending, not a different, specifically-named qualifier. This is what
+# keeps the moneycontrol "...against Sobha Ltd for forgery..." story once a
+# single-token name no longer gets an unconditional bare-match (see below).
+_LEGAL_SUFFIX_WORDS = {
+    "ltd", "limited", "llc", "llp", "inc", "incorporated", "pvt", "private",
+    "co", "corp", "corporation", "plc", "pjsc",
+}
+
 # Maps normalized category phrases to sets of industry-descriptor tokens.
 # When a brand's category matches a key (all key tokens appear in the category),
 # the synonym set is added to the "non-conflicting qualifier" pool in
@@ -310,6 +467,50 @@ _INDUSTRY_SYNONYMS: Dict[str, set] = {
         "projects", "homes", "group",
     },
 }
+
+# EDIT HERE for a new geography-corroboration vocabulary: maps a target_market
+# "region" code to the broad set of that region's country/state/metro markers
+# (mirrors competitor_service._MARKET_MARKERS' concept — deliberately a
+# SEPARATE, small copy rather than importing it, so this module's source-
+# relevance gate never depends on competitor-discovery internals changing
+# shape). A recognized region contributes its WHOLE marker set (not just the
+# brand's specific target cities) because the failure mode being guarded
+# against is cross-COUNTRY confusion (Sobha Realty/Dubai vs Sobha Limited/
+# India), not cross-city precision — "Sobha Developers, Bangalore" or a
+# Karnataka High Court case are still clearly India-market even though
+# Bangalore isn't one of this particular brand's named target cities.
+_REGION_MARKET_TERMS: Dict[str, set] = {
+    "india": {
+        "india", "bengaluru", "bangalore", "mumbai", "delhi", "delhi ncr",
+        "new delhi", "gurugram", "gurgaon", "noida", "pune", "hyderabad",
+        "chennai", "kolkata", "haryana", "maharashtra", "karnataka",
+        # Indian FINANCIAL/stock sources routinely identify themselves by
+        # exchange or currency rather than the word "India" itself — e.g. a
+        # stock-price page titled "NSE DLF Stock" or "DLF Ltd Share Price",
+        # or a figure quoted as "₹2,500 Crore" — these are just as strong an
+        # India-market signal for that kind of citation (net cash position,
+        # completion-percentage comparisons, demand figures, ...).
+        "nse", "bse", "crore", "lakh", "rupee", "rupees", "rs",
+    },
+    "us": {"usa", "united states", "u s a"},
+}
+
+# ₹ does NOT survive _normalize_for_match's tokenization: it is a currency
+# SYMBOL (Unicode category "Sc"), not a \w character, so _MATCH_PUNCT_RE
+# strips it to a space before any token-set membership check ever runs.
+# Checked directly against the RAW (pre-normalization) title/url instead —
+# see its use in _source_matches_entity's geography corroboration.
+_INDIA_CURRENCY_SYMBOLS = ("₹",)
+
+
+def _mentions_india_currency_symbol(title: str, url: str) -> bool:
+    return any(sym in (title or "") or sym in (url or "") for sym in _INDIA_CURRENCY_SYMBOLS)
+
+# ~3 chars or fewer is the length past which a bare substring match starts
+# colliding with unrelated organisations sharing the same short word/acronym
+# (DLF Law Group, a Danish grass-seed company literally named DLF, the
+# Digital Library Federation). EDIT to tune.
+_SHORT_NAME_MAX_CHARS = 3
 
 
 def _normalize_for_match(s: str) -> str:
@@ -335,40 +536,115 @@ def _get_industry_terms(category: str) -> set:
     return terms
 
 
-def _name_plausibly_in(tokens: List[str], name_tokens: List[str], industry_terms: Optional[set] = None) -> bool:
-    """True if the (multi-word) entity `name_tokens` is plausibly referenced
-    in `tokens` — either as a contiguous phrase, or as a bare mention of just
-    the primary (first) token with nothing that looks like a DIFFERENT
-    specific qualifier immediately after it: a generic connector/review/geo
-    word (_GENERIC_TITLE_WORDS), one of the entity's own remaining tokens
-    (tolerating simple singular/plural variants, e.g. "property"/
-    "properties"), or an industry-descriptor term from `industry_terms`
-    (e.g. "estates"/"realty" for a real-estate brand — these are alt-name
-    qualifiers, not a signal of a different company). A qualifier that is
-    none of those — "Medical", "Brands Holdings", "Telecom" — signals a
-    different, specifically-named entity sharing just the first word, so
-    that case returns False."""
+def _geography_terms_from_target_market(target_market: Optional[Dict[str, Any]]) -> set:
+    """Geography/market terms for the same-name-different-market corroboration
+    gate (see _source_matches_entity) — the brand's configured target_market
+    (BrandConfig.target_market, already normalized to {region, cities,
+    custom_region} by schemas.brand.normalize_target_market before it reaches
+    here). A recognized country-level region contributes _REGION_MARKET_TERMS'
+    whole set; the brand's own specific cities (lowercased, as typed — no
+    metro-expansion needed here, this is a substring-presence check, not a
+    query-scoping one) are added on top for brands under an unrecognized/
+    custom region. Returns an empty set for no target_market — a report run
+    predating this column, or a brand-less chat — so the geography gate below
+    can never fire with nothing to corroborate against (see its own handling
+    of an empty geography_terms set: it never turns a requirement into an
+    unconditional pass)."""
+    if not target_market:
+        return set()
+    terms: set = set()
+    region = (target_market.get("region") or "").strip().lower()
+    custom_region = (target_market.get("custom_region") or "").strip().lower()
+    cities = [c.strip().lower() for c in (target_market.get("cities") or []) if c and c.strip()]
+
+    if region in _REGION_MARKET_TERMS:
+        terms |= _REGION_MARKET_TERMS[region]
+    elif custom_region:
+        terms.add(custom_region)
+    terms.update(cities)
+    return terms
+
+
+def _is_short_or_acronym_name(entity_name: str, primary_token: str) -> bool:
+    """True for a name needing the stricter short/acronym corroboration gate
+    in _source_matches_entity: roughly _SHORT_NAME_MAX_CHARS characters or
+    fewer (DLF, M3M), or a name whose ORIGINAL (pre-lowercasing) form is a
+    pure acronym — all-caps letters, e.g. "NDTV"."""
+    if len(primary_token) <= _SHORT_NAME_MAX_CHARS:
+        return True
+    letters_only = re.sub(r'[^A-Za-z]', '', entity_name)
+    return bool(letters_only) and letters_only.isupper() and len(letters_only) <= 6
+
+
+def _name_plausibly_in(tokens: List[str], name_tokens: List[str], industry_terms: Optional[set] = None, geography_terms: Optional[set] = None) -> Tuple[bool, str]:
+    """True if the entity `name_tokens` is plausibly referenced in `tokens`,
+    and VIA WHICH SIGNAL — the caller (_source_matches_entity) uses the `via`
+    tag to decide whether extra corroboration is required for a BARE mention
+    (short/acronym names, and same-name-different-market), while a genuinely
+    multi-word full PHRASE match is always unconditional, exactly as before.
+
+    Returns (matched, via), via one of:
+      "phrase"       — the full, contiguous multi-word name appears (n>=2
+                       ONLY: for a single-token name this degenerates into
+                       "does the bare token appear anywhere", which is NOT a
+                       distinguishing phrase at all, so it falls through to
+                       the same per-occurrence scrutiny as any other bare
+                       mention below instead of auto-passing).
+      "last_word"    — the primary token is the final word: bare mention,
+                       nothing follows it at all.
+      "generic"      — a connector/review/geo word follows (_GENERIC_TITLE_
+                       WORDS) — e.g. "Emaar IS rated...".
+      "legal_suffix" — (single-token names ONLY, i.e. no `remaining` tokens
+                       to protect) a bare legal-entity suffix follows (Ltd,
+                       Limited, LLC, ...) — the company's own formal-name
+                       ending, e.g. "...against Sobha Ltd for forgery...".
+      "industry"     — an industry-descriptor term follows (e.g. "Realty"
+                       for a real-estate brand) — an alt-name qualifier, NOT
+                       by itself a signal of a different company, but ALSO
+                       the exact signal that makes a genuinely different
+                       same-industry company (Sobha Realty/Dubai) look like
+                       a plausible alt-name for Sobha Limited/India — see
+                       the same-name-different-market gate.
+      "geography"    — a target_market geography term follows (e.g. "India"
+                       for "M3M India Ltd...") — this is itself a POSITIVE
+                       market-corroboration signal, so the caller treats it
+                       as an unconditional pass (it already satisfies what
+                       the short-name and same-name-different-market gates
+                       would otherwise additionally require).
+      "remaining"    — a qualifier fuzzy-matching one of the entity's OWN
+                       other name tokens follows (e.g. "Properties" for
+                       "Godrej Properties", tolerating simple singular/
+                       plural variants).
+      "none"         — no match; a qualifier that is none of the above
+                       ("Medical", "Brands Holdings", "Telecom") signals a
+                       different, specifically-named entity.
+    """
     primary, remaining = name_tokens[0], name_tokens[1:]
     n = len(name_tokens)
-    if any(tokens[i:i + n] == name_tokens for i in range(len(tokens) - n + 1)):
-        return True
+    if n >= 2 and any(tokens[i:i + n] == name_tokens for i in range(len(tokens) - n + 1)):
+        return True, "phrase"
     _industry = industry_terms or set()
+    _geo = geography_terms or set()
     for i, tok in enumerate(tokens):
         if tok != primary:
             continue
         if i + 1 == len(tokens):
-            return True  # primary token is the last word -- bare mention
+            return True, "last_word"
         nxt = tokens[i + 1]
         if nxt in _GENERIC_TITLE_WORDS:
-            return True
+            return True, "generic"
+        if not remaining and nxt in _LEGAL_SUFFIX_WORDS:
+            return True, "legal_suffix"
         if nxt in _industry:
-            return True
+            return True, "industry"
+        if nxt in _geo:
+            return True, "geography"
         if any(
             len(nxt) >= 4 and len(r) >= 4 and (nxt.startswith(r) or r.startswith(nxt))
             for r in remaining
         ):
-            return True
-    return False
+            return True, "remaining"
+    return False, "none"
 
 
 def _source_matches_entity(
@@ -377,6 +653,7 @@ def _source_matches_entity(
     entity_name: str,
     entity_domain: str,
     category: Optional[str] = None,
+    target_market: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Recall-biased per-entity relevance check for a {title, url} source (no
     body text is available at this layer — see _filter_sources callers).
@@ -385,12 +662,37 @@ def _source_matches_entity(
       2. the entity's name is plausibly referenced in the title OR the url
          (decoded) — see _name_plausibly_in: a full phrase match, or a bare
          mention of the entity's primary name token with no conflicting
-         qualifier. Checking the url too catches cases where the title is
-         generic/truncated ("company", "News Detail Page") but the url/
-         filename carries the real identifying text (e.g. a filename like
-         "...Godrej_Properties_Limited_2023_24.pdf");
-      3. (only when `category` is given) the entity's first name token AND a
-         category/industry token both appear in the title or url.
+         qualifier — SUBJECT TO two additional corroboration gates on a bare
+         mention only (never on a full multi-word phrase match, and never on
+         the own-domain check above — both unchanged):
+           a. SHORT/ACRONYM NAMES (_is_short_or_acronym_name, e.g. "DLF"):
+              a bare mention also needs an industry term (the category's own
+              synonyms, EXCLUDING the generic corporate-structure word
+              "group" — "DLF Law Group" would otherwise pass on "Group"
+              alone, same as a company literally named "DLF Group") or a
+              geography term from target_market. The _GENERIC_TITLE_WORDS
+              tolerance does NOT count here — "reviews"/"rated" etc. are
+              exactly what let BBB's "DLF Law Group... Reviews" and a Danish
+              grass-seed company's "DLF resolves grass seed complaints"
+              through on the bare acronym alone.
+           b. SAME NAME, DIFFERENT MARKET: when the bare mention matched
+              ONLY via an industry-term qualifier (the "industry" via-tag —
+              the signal that also makes a genuinely different company in
+              the same trade look like a plausible alt-name) AND the
+              entity's own registrable domain is known AND the source's
+              domain is known and DIFFERENT from it, a geography term from
+              target_market is additionally required. This is what drops
+              "Sobha Realty" (sobharealty.com, Dubai) sources for an India-
+              market "Sobha" analysis without touching the alt-name rescue
+              itself for a same-domain or generic-word/remaining-token/
+              legal-suffix match.
+         Checking the url too catches cases where the title is generic/
+         truncated ("company", "News Detail Page") but the url/filename
+         carries the real identifying text.
+      3. (only when `category` is given, and the name is NOT short/acronym —
+         gate (a) above already requires corroboration for those) the
+         entity's first name token AND a category/industry token both
+         appear in the title or url.
     Otherwise drops. An entity with no usable name (missing/"Unknown") always
     keeps — there's no identity to check a mismatch against, and "when in
     doubt, keep" is the whole point of this being recall-biased."""
@@ -407,15 +709,51 @@ def _source_matches_entity(
     title_tokens = _normalize_for_match(title).split()
     url_tokens = _normalize_for_match(unquote(url or "")).split()
 
-    # Build industry terms once so both title and url checks share them.
+    # Build industry/geography terms once so both title and url checks share them.
     industry_terms = _get_industry_terms(category) if category else None
-    if _name_plausibly_in(title_tokens, name_tokens, industry_terms) or _name_plausibly_in(url_tokens, name_tokens, industry_terms):
+    geography_terms = _geography_terms_from_target_market(target_market)
+    is_short = _is_short_or_acronym_name(entity_name, name_tokens[0])
+    short_name_industry_terms = (industry_terms or set()) - {"group"}
+    # ₹ is checked separately (raw string, not the normalized token set — see
+    # _mentions_india_currency_symbol) and only counts when "india" is
+    # actually one of this brand's geography terms.
+    geo_satisfied_by_symbol = "india" in geography_terms and _mentions_india_currency_symbol(title, url)
+
+    def _corroborated(via: str, haystack: set) -> bool:
+        if via in ("phrase", "geography"):
+            # geography is itself a POSITIVE market-corroboration signal —
+            # already satisfies what either gate below would otherwise
+            # additionally require, e.g. "M3M India Ltd..." for short-name
+            # "M3M", or "Sobha India..." for a different-domain Sobha source.
+            return True
+        if is_short:
+            return bool(short_name_industry_terms & haystack) or bool(geography_terms & haystack) or geo_satisfied_by_symbol
+        if via == "industry" and source_domain and own_domain and source_domain != own_domain:
+            return bool(geography_terms & haystack) or geo_satisfied_by_symbol
+        return True  # last_word / generic / legal_suffix / remaining — unchanged
+
+    full_haystack = set(title_tokens) | set(url_tokens)
+    matched, via = _name_plausibly_in(title_tokens, name_tokens, industry_terms, geography_terms)
+    if matched and _corroborated(via, full_haystack):
+        return True
+    matched, via = _name_plausibly_in(url_tokens, name_tokens, industry_terms, geography_terms)
+    if matched and _corroborated(via, full_haystack):
         return True
 
-    if category:
+    if category and not is_short:
         category_tokens = set(_normalize_for_match(category).split())
-        haystack = set(title_tokens) | set(url_tokens)
-        if name_tokens[0] in haystack and category_tokens & haystack:
+        if name_tokens[0] in full_haystack and category_tokens & full_haystack:
+            # Document-wide "name + category token present" is the SAME
+            # alt-name signal as the "industry" via-tag above (just checked
+            # anywhere, not adjacently) — e.g. sobharealty.com's own page
+            # "Luxury Real Estate Marketing ... | Sobha Realty" would
+            # otherwise be rescued here on "real"/"estate" alone, bypassing
+            # the same-name-different-market gate entirely. Same rule
+            # applies: a different, known domain claiming the name still
+            # needs geography corroboration.
+            if source_domain and own_domain and source_domain != own_domain:
+                if not (geography_terms & full_haystack) and not geo_satisfied_by_symbol:
+                    return False
             return True
 
     return False
@@ -427,6 +765,7 @@ def _filter_sources(
     entity_name: str = "",
     entity_url: str = "",
     category: Optional[str] = None,
+    target_market: Optional[Dict[str, Any]] = None,
 ) -> List[Dict]:
     """Applies the denylist (B), a per-entity relevance check, then the Open
     Page Rank authority floor (C2) to a raw (title, url) source list, in that
@@ -456,10 +795,10 @@ def _filter_sources(
         for s in allowed:
             s_title = (s or {}).get("title", "")
             s_url = (s or {}).get("url", "")
-            if _source_matches_entity(s_title, s_url, entity_name, entity_url, category):
+            if _source_matches_entity(s_title, s_url, entity_name, entity_url, category, target_market):
                 on_entity.append(s)
                 # Track sources that only pass because of the industry rescue.
-                if category and not _source_matches_entity(s_title, s_url, entity_name, entity_url, None):
+                if category and not _source_matches_entity(s_title, s_url, entity_name, entity_url, None, target_market):
                     industry_rescued += 1
             else:
                 off_entity.append(s)
@@ -744,7 +1083,7 @@ def _folder_mtime_hash(brand_slug: str) -> str:
     return hashlib.md5(fingerprint.encode()).hexdigest()
 
 
-def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None, category: str = "") -> List[Dict[str, Any]]:
+def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None, category: str = "", target_market: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Loads and flattens the centralized KB JSON into standardized RAG documents.
     `kb_json` (BrandConfig.kb_json — the DB source of truth) is used directly when
     given. Falls back to the KNOWLEDGE_BASE/{slug}_KB.json file only when kb_json
@@ -778,7 +1117,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None, category: st
         # each already correctly tagged with its own source_type, so risk/
         # depth evidence survives even if the compiled KB never materializes
         # or materializes later than this read.
-        docs.extend(_load_raw_risk_depth_docs(brand_slug, category=category))
+        docs.extend(_load_raw_risk_depth_docs(brand_slug, category=category, target_market=target_market))
 
     for path, data in data_sources:
         try:
@@ -822,7 +1161,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None, category: st
                         # prompt or _build_sources_section — so they're
                         # invisible to both the citing model and the
                         # rendered list. See _filter_sources.
-                        "sources": _filter_sources(entity.get("RISK_RESEARCH_SOURCES", []), own_domains, entity_name=name, entity_url=url, category=category),
+                        "sources": _filter_sources(entity.get("RISK_RESEARCH_SOURCES", []), own_domains, entity_name=name, entity_url=url, category=category, target_market=target_market),
                     })
 
                 depth_research = entity.get("DEPTH_RESEARCH", "")
@@ -833,7 +1172,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None, category: st
                         "source_type": "depth_research",
                         "brand": name,
                         "content": depth_research,
-                        "sources": _filter_sources(entity.get("DEPTH_RESEARCH_SOURCES", []), own_domains, entity_name=name, entity_url=url, category=category),
+                        "sources": _filter_sources(entity.get("DEPTH_RESEARCH_SOURCES", []), own_domains, entity_name=name, entity_url=url, category=category, target_market=target_market),
                     })
 
                 insta_scrapped = entity.get("INSTA_SCRAPPED", "")
@@ -860,7 +1199,7 @@ def _load_json_docs(brand_slug: str, kb_json: Optional[str] = None, category: st
     return docs
 
 
-def _load_raw_risk_depth_docs(brand_slug: str, category: str = "") -> List[Dict[str, Any]]:
+def _load_raw_risk_depth_docs(brand_slug: str, category: str = "", target_market: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Reads docs/{brand_slug}/*_risk.json and *_depth.json directly — the raw,
     per-entity files tavily_service.run_risk_research/run_depth_research write
     to disk as soon as each research step finishes (well before Step 6 compiles
@@ -903,7 +1242,7 @@ def _load_raw_risk_depth_docs(brand_slug: str, category: str = "") -> List[Dict[
         own_domains = {_registrable_domain(_source_host(doc_url))}
         own_domains.discard("")
         entity_name = data.get("brand", "")
-        deduped_sources = _filter_sources(deduped_sources, own_domains, entity_name=entity_name, entity_url=doc_url, category=category)
+        deduped_sources = _filter_sources(deduped_sources, own_domains, entity_name=entity_name, entity_url=doc_url, category=category, target_market=target_market)
         out.append({
             "title": data.get("title", fname),
             "url": doc_url,
@@ -1030,6 +1369,7 @@ def _get_or_build_index(
     kb_json: Optional[str] = None,
     brand_category: str = "",
     max_chars_per_source: int = 200000,
+    target_market: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict]:
     """
     Returns cached index if the KB content hasn't changed, otherwise rebuilds.
@@ -1058,7 +1398,7 @@ def _get_or_build_index(
         return cached
 
     logger.info(f"[RAG] Building index for '{brand_slug}' (hash changed or first run, cap={max_chars_per_source})...")
-    docs = _load_json_docs(brand_slug, kb_json, category=brand_category)
+    docs = _load_json_docs(brand_slug, kb_json, category=brand_category, target_market=target_market)
     if not docs:
         logger.info(f"[RAG] No JSON docs found for '{brand_slug}' — no index built")
         return None
@@ -3535,6 +3875,11 @@ async def stream_chat(
         os.environ.get("MAX_KB_CHARS_PER_SOURCE", str(mode_params["default_max_chars_per_source"]))
     )
 
+    # OPR run-stats start here — the KB index build immediately below is where
+    # the per-entity OPR lookups happen (see _filter_sources); the summary is
+    # logged once after the Sources section further down (_log_opr_run_summary).
+    _reset_opr_run_stats()
+
     # ── Build / retrieve index (cached in memory, rebuilt only on doc changes) ─
     query = user_content
     retrieved_chunks: List[Dict] = []
@@ -3543,8 +3888,15 @@ async def stream_chat(
     try:
         brand_kb_json = brand.kb_json if brand else None
         brand_category = brand.category or "" if brand else ""
+        # For the same-name-different-market source-relevance gate (see
+        # _source_matches_entity) — already available on BrandConfig, same
+        # normalize_target_market boundary used everywhere else it's read.
+        brand_target_market = None
+        if brand and brand.target_market:
+            from backend.schemas.brand import normalize_target_market
+            brand_target_market = normalize_target_market(brand.target_market)
         index = await asyncio.to_thread(
-            _get_or_build_index, brand_slug, brand_kb_json, brand_category, effective_max_chars_per_source
+            _get_or_build_index, brand_slug, brand_kb_json, brand_category, effective_max_chars_per_source, brand_target_market
         )
         if index:
             logger.info(f"[REPORT_GATE] Index for '{brand_slug}': {len(index.get('chunks', []))} total chunks available.")
@@ -3660,6 +4012,13 @@ async def stream_chat(
     # run: the [REPORT_GATE] line below names who really wrote the report.
     used_provider = None
     used_model = None
+    # Set inside whichever _run_stream branch runs, from that provider's own
+    # stop signal (Anthropic stop_reason / OpenAI-compatible finish_reason) —
+    # {"truncated": bool, "stop_reason": str, "provider", "model", "max_tokens",
+    # "output_chars"}. None until a branch completes; "truncated" distinguishes
+    # hitting the token limit from a normal stop, so a report that silently
+    # ran out of budget is never indistinguishable from a finished one.
+    truncation_info = None
     try:
         # Advanced mode PINS its provider (mode_params["provider"], default
         # anthropic) so ANTHROPIC_MODEL_ADVANCED is actually used, rather than
@@ -3698,7 +4057,7 @@ async def stream_chat(
 
         # Helper runner function to stream from a given provider
         async def _run_stream(prov: str, key: str):
-            nonlocal full_response, used_provider, used_model
+            nonlocal full_response, used_provider, used_model, truncation_info
             if prov == "qwen":
                 logger.info(f"[RAG] Streaming response using Qwen API...")
                 from openai import OpenAI
@@ -3716,13 +4075,26 @@ async def stream_chat(
                     temperature=0.15,
                     max_tokens=mode_params["max_tokens"],
                 )
+                branch_chars = 0
+                finish_reason = None
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
-                        delta = chunk.choices[0].delta
+                        choice = chunk.choices[0]
+                        if choice.finish_reason:
+                            finish_reason = choice.finish_reason
+                        delta = choice.delta
                         if delta and delta.content:
                             text_chunk = delta.content
                             full_response += text_chunk
+                            branch_chars += len(text_chunk)
                             yield text_chunk
+                # OpenAI-compatible finish_reason: "length" == hit max_tokens,
+                # distinct from a normal "stop".
+                truncation_info = {
+                    "truncated": finish_reason == "length", "stop_reason": finish_reason,
+                    "provider": prov, "model": model_name,
+                    "max_tokens": mode_params["max_tokens"], "output_chars": branch_chars,
+                }
 
             elif prov == "openai":
                 logger.info(f"[RAG] Streaming response using OpenAI API...")
@@ -3738,13 +4110,24 @@ async def stream_chat(
                     temperature=0.15,
                     max_tokens=mode_params["max_tokens"],
                 )
+                branch_chars = 0
+                finish_reason = None
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
-                        delta = chunk.choices[0].delta
+                        choice = chunk.choices[0]
+                        if choice.finish_reason:
+                            finish_reason = choice.finish_reason
+                        delta = choice.delta
                         if delta and delta.content:
                             text_chunk = delta.content
                             full_response += text_chunk
+                            branch_chars += len(text_chunk)
                             yield text_chunk
+                truncation_info = {
+                    "truncated": finish_reason == "length", "stop_reason": finish_reason,
+                    "provider": prov, "model": model_name,
+                    "max_tokens": mode_params["max_tokens"], "output_chars": branch_chars,
+                }
 
             elif prov == "groq":
                 logger.info(f"[RAG] Streaming response using Groq API...")
@@ -3763,13 +4146,24 @@ async def stream_chat(
                     temperature=0.15,
                     max_tokens=mode_params["max_tokens"],
                 )
+                branch_chars = 0
+                finish_reason = None
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
-                        delta = chunk.choices[0].delta
+                        choice = chunk.choices[0]
+                        if choice.finish_reason:
+                            finish_reason = choice.finish_reason
+                        delta = choice.delta
                         if delta and delta.content:
                             text_chunk = delta.content
                             full_response += text_chunk
+                            branch_chars += len(text_chunk)
                             yield text_chunk
+                truncation_info = {
+                    "truncated": finish_reason == "length", "stop_reason": finish_reason,
+                    "provider": prov, "model": model_name,
+                    "max_tokens": mode_params["max_tokens"], "output_chars": branch_chars,
+                }
 
             elif prov == "mistral":
                 logger.info(f"[RAG] Streaming response using Mistral API...")
@@ -3788,13 +4182,24 @@ async def stream_chat(
                     temperature=0.15,
                     max_tokens=mode_params["max_tokens"],
                 )
+                branch_chars = 0
+                finish_reason = None
                 for chunk in response:
                     if chunk.choices and len(chunk.choices) > 0:
-                        delta = chunk.choices[0].delta
+                        choice = chunk.choices[0]
+                        if choice.finish_reason:
+                            finish_reason = choice.finish_reason
+                        delta = choice.delta
                         if delta and delta.content:
                             text_chunk = delta.content
                             full_response += text_chunk
+                            branch_chars += len(text_chunk)
                             yield text_chunk
+                truncation_info = {
+                    "truncated": finish_reason == "length", "stop_reason": finish_reason,
+                    "provider": prov, "model": model_name,
+                    "max_tokens": mode_params["max_tokens"], "output_chars": branch_chars,
+                }
 
             else:
                 logger.info(f"[RAG] Streaming response using Anthropic API...")
@@ -3802,6 +4207,7 @@ async def stream_chat(
                 client = anthropic.Anthropic(api_key=key)
                 anthropic_model = os.environ.get(mode_params["model_env_key"], "claude-sonnet-5-5")
                 used_provider, used_model = prov, anthropic_model
+                branch_chars = 0
                 with client.messages.stream(
                     model=anthropic_model,
                     max_tokens=mode_params["max_tokens"],
@@ -3819,7 +4225,19 @@ async def stream_chat(
                 ) as stream:
                     for text_chunk in stream.text_stream:
                         full_response += text_chunk
+                        branch_chars += len(text_chunk)
                         yield text_chunk
+                    # get_final_message() is only valid once the stream is
+                    # exhausted (text_stream above) — it's the only way to read
+                    # stop_reason ("end_turn" | "max_tokens" | "stop_sequence" |
+                    # "tool_use" | ...); "max_tokens" is the truncation case.
+                    final_message = stream.get_final_message()
+                stop_reason = getattr(final_message, "stop_reason", None)
+                truncation_info = {
+                    "truncated": stop_reason == "max_tokens", "stop_reason": stop_reason,
+                    "provider": prov, "model": anthropic_model,
+                    "max_tokens": mode_params["max_tokens"], "output_chars": branch_chars,
+                }
 
         # Try initial provider, fallback to the next available provider (by
         # priority order) if it fails
@@ -3881,6 +4299,19 @@ async def stream_chat(
                 f"fallback={'yes' if used_provider != resolved_provider else 'no'})"
             )
 
+        # LOUD and distinct from a normal stop: generation hit the provider's
+        # own token limit before finishing, not a graceful completion. This is
+        # what let a mid-JSON, half-finished advanced run go unnoticed — the
+        # Sources section below appends unconditionally regardless, so without
+        # this nothing distinguishes a cut-off report from a finished one.
+        if truncation_info and truncation_info.get("truncated"):
+            logger.error(
+                f"[RAG] REPORT TRUNCATED: provider={truncation_info['provider']} "
+                f"model={truncation_info['model']} stop_reason={truncation_info['stop_reason']} "
+                f"max_tokens={truncation_info['max_tokens']} output_chars={truncation_info['output_chars']} "
+                f"— generation hit the token limit before the report was finished."
+            )
+
     except Exception as e:
         logger.error(f"[RAG] AI streaming error: {e}")
 
@@ -3898,6 +4329,31 @@ async def stream_chat(
         extracted_palette = _palette_validator.extract_brand_palette(full_response)
         full_response = _palette_validator.strip_brand_palette_block(full_response)
 
+    # ── Truncation notice: inserted at the exact point generation was cut off
+    # — BEFORE the Sources section — so a reader scrolling down hits this
+    # first and can never mistake a complete Sources list for a finished
+    # report. Embedded directly in the persisted content (survives every
+    # render path: live chat, reload, export) AND sent as a distinct
+    # client-visible event + persisted structured flag (see below) so the UI
+    # can also flag it without parsing content text. No auto-retry — that
+    # decision (cost/latency) is the user's, not this code's. ─────────────
+    is_truncated = bool(truncation_info and truncation_info.get("truncated"))
+    if is_truncated and full_response:
+        notice = (
+            "\n\n---\n\n"
+            f"**⚠️ GENERATION TRUNCATED:** This report was cut off before completion — "
+            f"the model ({truncation_info['provider']}/{truncation_info['model']}) hit its "
+            f"output token limit (max_tokens={truncation_info['max_tokens']}) while writing. "
+            "Everything above this notice was generated; the report does not continue past "
+            "this point. Any Sources list below was compiled from evidence already gathered "
+            "and does not imply the report finished.\n\n---\n\n"
+        )
+        full_response += notice
+        yield f"data: {json.dumps({'type': 'token', 'content': notice})}\n\n"
+        # Client-visible flag at end of stream — the UI can show a banner
+        # without scanning content text for the notice above.
+        yield f"data: {json.dumps({'type': 'truncated', 'content': truncation_info})}\n\n"
+
     # ── Append a deterministic "Sources" section — built here from the real
     # URLs already on the retrieved chunks, NEVER composed by the model, so
     # every link is guaranteed to be one that was actually in the evidence.
@@ -3910,6 +4366,11 @@ async def stream_chat(
         if sources_md:
             full_response += sources_md
             yield f"data: {json.dumps({'type': 'token', 'content': sources_md})}\n\n"
+
+    # This is the last point any OPR lookup happens for this report (the KB
+    # index build earlier already ran its per-entity lookups) — one summary
+    # line for the whole run, not one per internal _fetch_opr_scores call.
+    _log_opr_run_summary()
 
     # ── Save user & assistant messages to DB ONLY on successful generation ───
     persisted_assistant_msg_id = None
@@ -3980,7 +4441,15 @@ async def stream_chat(
             from backend.services import report_service
 
             snap_validation = _ov.validate_output(full_response, agent_type)
-            qualifies = snap_validation.get("chart_count", 0) >= 1 or snap_validation.get("heading_count", 0) >= 3
+            # A truncated run ALWAYS snapshots, even if cut off too early to
+            # clear the normal chart/heading bar — otherwise an early cutoff
+            # could silently produce no Report row at all, and the truncation
+            # flag would have nowhere to persist to.
+            qualifies = (
+                snap_validation.get("chart_count", 0) >= 1
+                or snap_validation.get("heading_count", 0) >= 3
+                or is_truncated
+            )
             if qualifies:
                 await report_service.create_report_snapshot(
                     db=db,
@@ -3990,6 +4459,7 @@ async def stream_chat(
                     content=full_response,
                     message_id=persisted_assistant_msg_id,
                     extracted_palette=extracted_palette,
+                    truncation_info=truncation_info if is_truncated else None,
                 )
     except Exception as e:
         logger.warning(f"[report_service] Report snapshot failed (non-fatal): {e}")

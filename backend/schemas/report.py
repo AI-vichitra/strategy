@@ -10,6 +10,11 @@ class ReportMetadata(BaseModel):
     agent_type: str
     chart_count: int
     created_at: datetime
+    # Raw JSON string ({truncated, stop_reason, provider, model, max_tokens,
+    # output_chars}), set only when generation was cut off by the provider's
+    # token limit (see ai_service.stream_chat). None for a normal, complete
+    # report — never a literal "false".
+    truncation_info: Optional[str] = None
 
     class Config:
         from_attributes = True
