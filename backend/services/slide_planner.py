@@ -807,9 +807,18 @@ def _default_llm_completion(system_prompt: str, user_prompt: str) -> str:
         kwargs = {
             "model": model,
             "max_tokens": 4096,
-            "temperature": 0.1,
             "system": system_prompt,
             "messages": [{"role": "user", "content": user_prompt}],
+            # temperature is gone from this API entirely — not just absent
+            # from the SDK's typed create() signature (TypeError), but
+            # actively rejected server-side even via extra_body (400
+            # "Extra inputs are not permitted"). There is no sampling knob
+            # left to ask for determinism with; output_config.effort="low"
+            # is the closest available lever (least exploratory/most
+            # literal), so extraction passes use that instead of silently
+            # running at an uncontrolled default via the strip-and-retry
+            # path below.
+            "output_config": {"effort": "low"},
         }
         stripped: List[str] = []
         while True:

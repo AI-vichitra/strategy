@@ -347,7 +347,6 @@ async def get_project_details(
 @router.delete("/{project_id}")
 async def delete_project(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy import delete
-    from backend.models.message import Message
     from backend.models.report import Report
     from backend.models.report_section import ReportSection
     from backend.models.report_share import ReportShare
@@ -364,10 +363,12 @@ async def delete_project(project_id: str, db: AsyncSession = Depends(get_db), cu
         await db.execute(delete(ReportSection).where(ReportSection.report_id.in_(report_ids)))
         await db.execute(delete(ReportShare).where(ReportShare.report_id.in_(report_ids)))
 
-    # 2. Delete all messages associated with this project
-    await db.execute(delete(Message).where(Message.project_id == project_id))
-
-    # 3. Delete the project (ORM cascade removes Report rows via Project.reports relationship)
+    # 2. Delete the project — ORM cascade (Project.messages / Project.reports,
+    # both cascade="all, delete-orphan") removes Message and Report rows.
+    # Neither FK has an ON DELETE CASCADE at the DB level (confirmed against
+    # the live SQLite schema), so the ORM cascade is the ONLY delete
+    # mechanism for them — do not also issue a manual bulk DELETE here, or
+    # the ORM's own cascade-delete will match 0 rows and log a SAWarning.
     await db.delete(project)
     await db.commit()
 

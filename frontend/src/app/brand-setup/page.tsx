@@ -33,6 +33,97 @@ const TARGET_MARKET_FALLBACK_REGIONS: { value: TargetMarketRegion; label: string
   { value: 'other', label: 'Other' },
 ];
 
+// ── Social Handles: multi-platform profile URLs ─────────────────────────────
+// Mirrors backend.schemas.brand.SOCIAL_PLATFORMS exactly — never hardcoded
+// independently of that closed set.
+const SOCIAL_PLATFORMS = ['instagram', 'linkedin', 'x', 'youtube', 'facebook', 'tiktok'] as const;
+type SocialPlatform = typeof SOCIAL_PLATFORMS[number];
+
+const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  x: 'X (Twitter)',
+  youtube: 'YouTube',
+  facebook: 'Facebook',
+  tiktok: 'TikTok',
+};
+
+// Domains that identify a profile URL for each platform (first = canonical
+// domain used when the user types a bare handle, e.g. "@brand").
+const SOCIAL_PLATFORM_DOMAINS: Record<SocialPlatform, string[]> = {
+  instagram: ['instagram.com'],
+  linkedin: ['linkedin.com'],
+  x: ['x.com', 'twitter.com'],
+  youtube: ['youtube.com', 'youtu.be'],
+  facebook: ['facebook.com', 'fb.com'],
+  tiktok: ['tiktok.com'],
+};
+
+// Accepts a bare handle ("@brand" / "brand"), or a full URL, for the given
+// platform's row. Returns a canonical https URL (query/fragment stripped, no
+// trailing slash) or an error when the input's domain doesn't match the
+// platform (e.g. a LinkedIn URL typed into the Instagram row).
+function normalizeSocialHandleInput(platform: SocialPlatform, raw: string): { url: string; error: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { url: '', error: '' };
+
+  const stripped = trimmed.replace(/^@/, '');
+  const hasScheme = /^https?:\/\//i.test(stripped);
+  const mentionsKnownDomain = SOCIAL_PLATFORM_DOMAINS[platform].some(d => stripped.toLowerCase().includes(d));
+  const looksLikeUrl = hasScheme || /^[a-z0-9.-]+\.[a-z]{2,}\//i.test(stripped) || mentionsKnownDomain;
+
+  let urlObj: URL;
+  try {
+    if (looksLikeUrl) {
+      urlObj = new URL(hasScheme ? stripped : `https://${stripped}`);
+    } else {
+      // Bare handle -> build a canonical URL on the platform's own domain.
+      urlObj = new URL(`https://${SOCIAL_PLATFORM_DOMAINS[platform][0]}/${stripped.replace(/^\/+/, '')}`);
+    }
+  } catch {
+    return { url: '', error: 'Enter a valid handle or URL.' };
+  }
+
+  const host = urlObj.hostname.toLowerCase().replace(/^www\./, '');
+  const domainMatches = SOCIAL_PLATFORM_DOMAINS[platform].some(d => host === d || host.endsWith(`.${d}`));
+  if (!domainMatches) {
+    return { url: '', error: `This link isn't for ${SOCIAL_PLATFORM_LABELS[platform]}.` };
+  }
+
+  const path = urlObj.pathname.replace(/\/+$/, '');
+  return { url: `https://${host}${path}`, error: '' };
+}
+
+// ── Brand Brief: structured 6-field brand summary ────────────────────────────
+// Mirrors backend.schemas.brand.BRAND_BRIEF_KEYS exactly, including order.
+const BRAND_BRIEF_KEYS = [
+  'what_we_do',
+  'positioning',
+  'target_audience',
+  'differentiators',
+  'products_services',
+  'tone_of_voice',
+] as const;
+type BrandBriefKey = typeof BRAND_BRIEF_KEYS[number];
+
+const BRAND_BRIEF_LABELS: Record<BrandBriefKey, string> = {
+  what_we_do: 'What We Do',
+  positioning: 'Positioning',
+  target_audience: 'Target Audience',
+  differentiators: 'Differentiators',
+  products_services: 'Products & Services',
+  tone_of_voice: 'Tone of Voice',
+};
+
+const BRAND_BRIEF_PLACEHOLDERS: Record<BrandBriefKey, string> = {
+  what_we_do: 'e.g. We build premium residential and commercial real estate across India.',
+  positioning: 'e.g. Positioned as the most design-led developer in the premium segment.',
+  target_audience: 'e.g. High-net-worth buyers seeking move-in-ready luxury homes.',
+  differentiators: 'e.g. In-house design studio; IGBC Platinum-certified green buildings.',
+  products_services: 'e.g. Residential towers, villas, plotted developments, commercial complexes.',
+  tone_of_voice: 'e.g. Confident, design-forward, data-backed.',
+};
+
 function StrategySetupInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -76,11 +167,10 @@ function StrategySetupInner() {
   }, [router]);
 
   // ── Step 1 state ──────────────────────────────────────────────────────────
-  const [step, setStep] = useState<'form' | 'loading' | 'confirm_competitors'>('form');
+  const [step, setStep] = useState<'form' | 'loading' | 'confirm_competitors' | 'brief_review'>('form');
   const [brandName, setBrandName] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [category, setCategory] = useState('');
-  const [brandContext, setBrandContext] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [referenceDocs, setReferenceDocs] = useState<ReferenceDoc[]>([]);
 
@@ -100,14 +190,114 @@ function StrategySetupInner() {
   const [competitorUrl, setCompetitorUrl] = useState('');
   const [competitors, setCompetitors] = useState<{ name: string; url?: string }[]>([]);
   const [brandKit, setBrandKit] = useState<BrandKit>({});
-  const [isResearching, setIsResearching] = useState(false);
-  const [researchNote, setResearchNote] = useState('');
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
   const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
 
+  // ── Social Handles: prefilled from the website extractor (and, for
+  // Instagram, from Tavily's handle discovery as a fallback), always shown
+  // to the user to verify/correct/add before confirm — never forwarded
+  // silently. ──────────────────────────────────────────────────────────────
+  const [socialHandles, setSocialHandles] = useState<Record<string, string>>({});
+  // Which rows were auto-filled, and from which source — purely cosmetic
+  // (the subtle "found" badge); cleared for a row once the user edits it.
+  const [socialHandlesFoundSource, setSocialHandlesFoundSource] = useState<Record<string, 'website' | 'discovery'>>({});
+  const [socialHandlesFieldErrors, setSocialHandlesFieldErrors] = useState<Record<string, string>>({});
+  const [socialHandlesError, setSocialHandlesError] = useState('');
+  const [socialHandlesExtractedEmpty, setSocialHandlesExtractedEmpty] = useState(false);
+  const socialHandlesRef = useRef<HTMLDivElement>(null);
+
+  const handleSocialHandleChange = (platform: SocialPlatform, value: string) => {
+    setSocialHandles(prev => ({ ...prev, [platform]: value }));
+    setSocialHandlesFieldErrors(prev => ({ ...prev, [platform]: '' }));
+    setSocialHandlesError('');
+    // Once the user touches a row, it's no longer a pristine auto-find --
+    // they're actively verifying/editing it, so drop the "found" badge.
+    setSocialHandlesFoundSource(prev => {
+      if (!(platform in prev)) return prev;
+      const next = { ...prev };
+      delete next[platform];
+      return next;
+    });
+  };
+
+  const handleSocialHandleBlur = (platform: SocialPlatform) => {
+    const raw = socialHandles[platform] || '';
+    if (!raw.trim()) {
+      setSocialHandlesFieldErrors(prev => ({ ...prev, [platform]: '' }));
+      return;
+    }
+    const { url, error } = normalizeSocialHandleInput(platform, raw);
+    if (error) {
+      setSocialHandlesFieldErrors(prev => ({ ...prev, [platform]: error }));
+      return;
+    }
+    setSocialHandles(prev => ({ ...prev, [platform]: url }));
+    setSocialHandlesFieldErrors(prev => ({ ...prev, [platform]: '' }));
+  };
+
+  // social_handles is re-validated and frozen once, on the confirm_competitors
+  // -> brief_review transition, and resent unchanged on the actual /confirm
+  // call -- same "captured once, resent later" pattern as confirmedTargetMarket,
+  // since the user doesn't revisit this screen on brief_review.
+  const [confirmedSocialHandles, setConfirmedSocialHandles] = useState<Record<string, string> | null>(null);
+
+  // ── Brand Brief: generated from the website/docs, always user-verified
+  // before confirm. Fired at handleSubmit time but NOT awaited there (see
+  // fetchBrandBrief/briefPromiseRef) -- generation overlaps with the time the
+  // user spends on the competitor-confirm screen instead of adding its own
+  // serial wait. ────────────────────────────────────────────────────────────
+  const [brandBrief, setBrandBrief] = useState<Record<string, string>>({});
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefError, setBriefError] = useState('');
+  const [briefEmptyNote, setBriefEmptyNote] = useState(false);
+  const briefRef = useRef<HTMLDivElement>(null);
+  const briefPromiseRef = useRef<Promise<Record<string, string>> | null>(null);
+
+  const fetchBrandBrief = async (targetMarketOverride?: TargetMarket | null): Promise<Record<string, string>> => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem('access_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const tm = targetMarketOverride !== undefined ? targetMarketOverride : confirmedTargetMarket;
+
+    try {
+      const res = await fetch(`${apiBase}/api/brands/generate-brief`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          brand_name: brandName,
+          website_url: websiteUrl,
+          category,
+          target_market: tm || undefined,
+          additional_notes: additionalNotes.trim() || undefined,
+          reference_docs: referenceDocs.length > 0 ? referenceDocs : undefined,
+        })
+      });
+      if (!res.ok) return {};
+      return await res.json();
+    } catch (e) {
+      console.warn('Brand brief generation failed:', e);
+      return {};
+    }
+  };
+
+  const isBriefAllEmpty = (brief: Record<string, string>) =>
+    BRAND_BRIEF_KEYS.every(key => !(brief[key] || '').trim());
+
+  const handleRegenerateBrief = async () => {
+    setBriefLoading(true);
+    setBriefError('');
+    try {
+      const brief = await fetchBrandBrief();
+      setBrandBrief(brief || {});
+      setBriefEmptyNote(isBriefAllEmpty(brief || {}));
+    } finally {
+      setBriefLoading(false);
+    }
+  };
+
   // ── Candidates state ──────────────────────────────────────────────────────
-  const [discoveredBrandHandle, setDiscoveredBrandHandle] = useState('');
   const [candidates, setCandidates] = useState<{ name: string; website_url: string; handle: string; source: string; selected: boolean; verified?: boolean; source_url?: string }[]>([]);
   const [newCompName, setNewCompName] = useState('');
   const [newCompWebsite, setNewCompWebsite] = useState('');
@@ -159,7 +349,6 @@ function StrategySetupInner() {
   const brandNameRef = useRef<HTMLInputElement>(null);
   const websiteUrlRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef<HTMLSelectElement>(null);
-  const brandContextRef = useRef<HTMLTextAreaElement>(null);
   const targetMarketRef = useRef<HTMLDivElement>(null);
 
   const handleAddCompetitor = () => {
@@ -233,48 +422,6 @@ function StrategySetupInner() {
     return { region: tmRegion, cities: tmCities };
   };
 
-  const canResearch = brandName.trim() && websiteUrl.trim() && category;
-
-  const handleResearchBrand = async () => {
-    if (!canResearch || isResearching) return;
-    if (brandContext.trim()) {
-      const proceed = window.confirm('This will replace your current context. Continue?');
-      if (!proceed) return;
-    }
-
-    setIsResearching(true);
-    setResearchNote('');
-
-    const apiBase = process.env.NEXT_PUBLIC_API_URL;
-    const token = localStorage.getItem('access_token');
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    try {
-      const res = await fetch(`${apiBase}/api/brands/research-context`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ brand_name: brandName, website_url: websiteUrl, category })
-      });
-      if (res.status === 401) {
-        localStorage.removeItem('access_token');
-        router.push('/auth');
-        return;
-      }
-      const data = await res.json();
-      if (data.context) {
-        setBrandContext(data.context);
-        setResearchNote('');
-      } else {
-        setResearchNote('Could not auto-research brand context. You can fill it manually.');
-      }
-    } catch (e) {
-      console.error('Research brand context error:', e);
-      setResearchNote('Could not auto-research brand context. You can fill it manually.');
-    } finally {
-      setIsResearching(false);
-    }
-  };
 
   const handleAddConfirmedCompetitor = () => {
     if (!newCompName.trim() || selectionAtMax) return;
@@ -350,19 +497,54 @@ function StrategySetupInner() {
     const token = localStorage.getItem('access_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    const getHeaders: Record<string, string> = {};
+    if (token) getHeaders['Authorization'] = `Bearer ${token}`;
+
+    // Social-links extraction runs IN PARALLEL with search-competitors, not
+    // after -- it must never add a serial wait to this step. A client-side
+    // timeout means a slow/unreachable site still lets the user proceed with
+    // blank rows rather than blocking brand setup.
+    const extractSocialLinksWithTimeout = async (timeoutMs: number): Promise<Record<string, string>> => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(
+          `${apiBase}/api/brands/extract-social-links?website_url=${encodeURIComponent(websiteUrl)}`,
+          { headers: getHeaders, signal: controller.signal }
+        );
+        if (!res.ok) return {};
+        return await res.json();
+      } catch (e) {
+        console.warn('Social link extraction skipped (slow/unreachable site):', e);
+        return {};
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    // Brand Brief generation (LLM + Tavily) is started HERE but deliberately
+    // NOT awaited in the Promise.all below -- it's likely slower than
+    // competitor search, and awaiting it up front would add that wait to a
+    // step users already sit through. The promise is stashed and awaited
+    // only on the transition into the review step, so it overlaps with the
+    // time the user spends on the competitor-confirm screen instead.
+    briefPromiseRef.current = fetchBrandBrief(targetMarket);
 
     try {
-      const res = await fetch(`${apiBase}/api/brands/search-competitors`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          brand_name: brandName,
-          website_url: websiteUrl,
-          category,
-          target_market: targetMarket || undefined,
-          user_competitors: finalCompetitors.map(c => ({ name: c.name, url: c.url || '' }))
-        })
-      });
+      const [res, extracted] = await Promise.all([
+        fetch(`${apiBase}/api/brands/search-competitors`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            brand_name: brandName,
+            website_url: websiteUrl,
+            category,
+            target_market: targetMarket || undefined,
+            user_competitors: finalCompetitors.map(c => ({ name: c.name, url: c.url || '' }))
+          })
+        }),
+        extractSocialLinksWithTimeout(6000)
+      ]);
 
       if (res.status === 401) {
         localStorage.removeItem('access_token');
@@ -371,9 +553,35 @@ function StrategySetupInner() {
       }
       if (!res.ok) throw new Error('Failed to search competitors');
       const data = await res.json();
-      setDiscoveredBrandHandle(data.brand_handle || brandName.replace(/\s/g, '').toLowerCase());
       setTavilyError(data.tavily_error || '');
       setDiscoveryStatus(data.discovery_status || null);
+
+      // Prefill Social Handles: one row per SOCIAL_PLATFORMS, from the website
+      // scan first. If the scan found no Instagram link but Tavily's handle
+      // discovery did, use that as a full URL -- visible and editable, never
+      // forwarded silently as it was before this change.
+      const prefill: Record<string, string> = {};
+      const foundSource: Record<string, 'website' | 'discovery'> = {};
+      for (const platform of SOCIAL_PLATFORMS) {
+        const url = extracted?.[platform];
+        if (url) {
+          prefill[platform] = url;
+          foundSource[platform] = 'website';
+        }
+      }
+      // Same fallback the backend used to apply silently: when Tavily found no
+      // real handle, guess one from the brand name so the row isn't blank --
+      // but now it's a visible, editable prefill, not a value sent unseen.
+      const discoveredHandle = data.brand_handle || brandName.replace(/\s/g, '').toLowerCase();
+      if (!prefill.instagram && discoveredHandle) {
+        prefill.instagram = `https://instagram.com/${discoveredHandle}`;
+        foundSource.instagram = 'discovery';
+      }
+      setSocialHandles(prefill);
+      setSocialHandlesFoundSource(foundSource);
+      setSocialHandlesFieldErrors({});
+      setSocialHandlesError('');
+      setSocialHandlesExtractedEmpty(Object.keys(prefill).length === 0);
 
       // Backend now returns up to MAX_SUGGESTIONS (8) candidates, user-provided
       // entries first — default-select by position so the first 5 (which are
@@ -405,13 +613,78 @@ function StrategySetupInner() {
     }
   };
 
-  const handleFinalConfirm = async () => {
+  // confirm_competitors -> brief_review: validates competitors + social
+  // handles (unchanged logic, just moved), freezes social_handles into state
+  // for the actual /confirm call later, then awaits whatever
+  // fetchBrandBrief(...) (started back in handleSubmit) has produced by now.
+  const handleContinueToBrief = async () => {
     const selectedComps = candidates.filter(c => c.selected);
     if (selectedComps.length === 0) {
       alert("Please select or add at least one competitor to analyze.");
       return;
     }
 
+    // Social Handles — required: at least one platform (not Instagram
+    // specifically, since extraction legitimately returns {} for some
+    // sites). Re-normalize every non-empty row on submit (not just on
+    // blur) so a value pasted and never blurred still gets validated.
+    const canonicalSocialHandles: Record<string, string> = {};
+    let hasFieldError = false;
+    const fieldErrors: Record<string, string> = {};
+    for (const platform of SOCIAL_PLATFORMS) {
+      const raw = (socialHandles[platform] || '').trim();
+      if (!raw) continue;
+      const { url, error } = normalizeSocialHandleInput(platform, raw);
+      if (error) {
+        fieldErrors[platform] = error;
+        hasFieldError = true;
+        continue;
+      }
+      if (url) canonicalSocialHandles[platform] = url;
+    }
+    if (hasFieldError) {
+      setSocialHandlesFieldErrors(prev => ({ ...prev, ...fieldErrors }));
+      setSocialHandlesError('Fix the highlighted social handle(s) before continuing.');
+      socialHandlesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (Object.keys(canonicalSocialHandles).length === 0) {
+      setSocialHandlesError('Add at least one social profile link.');
+      socialHandlesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setSocialHandlesError('');
+    setConfirmedSocialHandles(canonicalSocialHandles);
+
+    setStep('brief_review');
+    setBriefLoading(true);
+    setBriefError('');
+    try {
+      const brief = await (briefPromiseRef.current ?? fetchBrandBrief());
+      setBrandBrief(brief || {});
+      setBriefEmptyNote(isBriefAllEmpty(brief || {}));
+    } finally {
+      setBriefLoading(false);
+    }
+  };
+
+  const handleFinalConfirm = async () => {
+    // Brand Brief — required: at least one of the six fields (pre-filled
+    // fields make this low-friction in the normal case; a thin brand can
+    // still fill just one by hand).
+    const trimmedBrief: Record<string, string> = {};
+    for (const key of BRAND_BRIEF_KEYS) {
+      const value = (brandBrief[key] || '').trim();
+      if (value) trimmedBrief[key] = value;
+    }
+    if (Object.keys(trimmedBrief).length === 0) {
+      setBriefError('Add at least one field before continuing.');
+      briefRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setBriefError('');
+
+    const selectedComps = candidates.filter(c => c.selected);
     const apiBase = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem('access_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -426,10 +699,10 @@ function StrategySetupInner() {
           brand_name: brandName,
           website_url: websiteUrl,
           category,
-          brand_context: brandContext,
           additional_notes: additionalNotes.trim() || undefined,
           reference_docs: referenceDocs.length > 0 ? referenceDocs : undefined,
-          brand_handle: discoveredBrandHandle,
+          social_handles: confirmedSocialHandles || {},
+          brand_brief: trimmedBrief,
           target_market: confirmedTargetMarket || undefined,
           selected_competitors: selectedComps.map(c => ({
             name: c.name,
@@ -476,6 +749,7 @@ function StrategySetupInner() {
           {step === 'form' && "Fill in brand details to generate strategic intelligence"}
           {step === 'loading' && "Analysing brand and fetching competitor profiles"}
           {step === 'confirm_competitors' && "Confirm the competitor list for deep scraping"}
+          {step === 'brief_review' && "Review your Brand Brief"}
         </p>
       </div>
 
@@ -651,31 +925,6 @@ function StrategySetupInner() {
 
                 {tmError && <span className={styles.errorMsg}>{tmError}</span>}
               </div>
-            </div>
-
-            {/* Brand Context / Details */}
-            <div className={styles.formGroup}>
-              <div className={styles.contextLabelRow}>
-                <label className={styles.label}>Brand Context (Tone, Mission, Vision, or Direction) (Optional)</label>
-                <button
-                  type="button"
-                  className={styles.researchBtn}
-                  onClick={handleResearchBrand}
-                  disabled={!canResearch || isResearching}
-                  title={!canResearch ? 'Fill in Brand Name, Website URL, and Category first' : undefined}
-                >
-                  {isResearching ? 'Researching...' : 'Research Brand'}
-                </button>
-              </div>
-              <textarea
-                ref={brandContextRef}
-                className={styles.textarea}
-                value={brandContext}
-                onChange={e => setBrandContext(e.target.value)}
-                placeholder="Describe your brand's tone, mission, vision, or the direction in which you want to move forward..."
-                rows={4}
-              />
-              {researchNote && <p className={styles.helpText}>{researchNote}</p>}
             </div>
 
             {/* Additional Notes / Guardrails */}
@@ -949,6 +1198,50 @@ function StrategySetupInner() {
               </div>
             </div>
 
+            {/* Social Handles — required: at least one platform, auto-filled
+                from the website scan (and, for Instagram, from Tavily's
+                discovery as a fallback), always user-verified before confirm. */}
+            <div className={styles.formGroup} ref={socialHandlesRef}>
+              <label className={styles.label}>Social Handles <span className={styles.required}>*</span></label>
+              <p className={styles.helpText} style={{ marginTop: 0 }}>
+                We scanned your website for official profile links. Verify or correct what we found, and
+                add any platform we missed — at least one is required.
+              </p>
+
+              {socialHandlesExtractedEmpty && (
+                <p className={styles.helpText}>
+                  We couldn&apos;t automatically find any social links on your site. Please add at least one below.
+                </p>
+              )}
+
+              <div className={styles.socialHandlesGrid}>
+                {SOCIAL_PLATFORMS.map(platform => (
+                  <div key={platform} className={styles.socialHandleRow}>
+                    <div className={styles.socialHandleLabelRow}>
+                      <span className={styles.socialHandlePlatform}>{SOCIAL_PLATFORM_LABELS[platform]}</span>
+                      {socialHandlesFoundSource[platform] && (
+                        <span className={styles.foundBadge}>
+                          {socialHandlesFoundSource[platform] === 'website' ? 'Found on your site' : 'Auto-detected'}
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      className={`${styles.input} ${socialHandlesFieldErrors[platform] ? styles.inputError : ''}`}
+                      value={socialHandles[platform] || ''}
+                      onChange={e => handleSocialHandleChange(platform, e.target.value)}
+                      onBlur={() => handleSocialHandleBlur(platform)}
+                      placeholder={`@handle or https://${SOCIAL_PLATFORM_DOMAINS[platform][0]}/yourbrand`}
+                    />
+                    {socialHandlesFieldErrors[platform] && (
+                      <span className={styles.errorMsg}>{socialHandlesFieldErrors[platform]}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {socialHandlesError && <span className={styles.errorMsg}>{socialHandlesError}</span>}
+            </div>
+
             <div className={styles.footer}>
               <button className={styles.backBtn} onClick={() => setStep('form')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -958,9 +1251,88 @@ function StrategySetupInner() {
               </button>
               <button
                 className={styles.continueBtn}
-                onClick={handleFinalConfirm}
+                onClick={handleContinueToBrief}
                 disabled={belowMinCompetitors}
                 title={belowMinCompetitors ? `At least ${MIN_COMPETITORS} competitors required to continue` : undefined}
+              >
+                CONTINUE
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'brief_review' && (
+          <div>
+            <div className={styles.cardHeader}>
+              <div className={styles.iconWrapper}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+              </div>
+              <div>
+                <h2 className={styles.cardTitle}>Review Your Brand Brief</h2>
+                <p className={styles.confirmSectionSubtitle}>
+                  We drafted this from your website and documents. Verify or edit each field — at least one is required.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.formGroup} ref={briefRef}>
+              {briefLoading ? (
+                <div className={styles.loadingScreen} style={{ padding: '32px 0' }}>
+                  <div className={styles.spinner} />
+                  <p className={styles.helpText} style={{ marginTop: '12px' }}>Drafting your Brand Brief...</p>
+                </div>
+              ) : (
+                <>
+                  {briefEmptyNote && (
+                    <p className={styles.helpText}>
+                      We couldn&apos;t automatically draft a brief from the available information. Please fill in at least one field below.
+                    </p>
+                  )}
+
+                  {BRAND_BRIEF_KEYS.map(key => (
+                    <div key={key} className={styles.formGroup}>
+                      <label className={styles.label}>{BRAND_BRIEF_LABELS[key]}</label>
+                      <textarea
+                        className={styles.textarea}
+                        value={brandBrief[key] || ''}
+                        onChange={e => {
+                          const value = e.target.value;
+                          setBrandBrief(prev => ({ ...prev, [key]: value }));
+                          setBriefError('');
+                        }}
+                        placeholder={BRAND_BRIEF_PLACEHOLDERS[key]}
+                        rows={2}
+                      />
+                    </div>
+                  ))}
+
+                  <button type="button" className={styles.addBtn} onClick={handleRegenerateBrief}>
+                    Regenerate
+                  </button>
+
+                  {briefError && <span className={styles.errorMsg}>{briefError}</span>}
+                </>
+              )}
+            </div>
+
+            <div className={styles.footer}>
+              <button className={styles.backBtn} onClick={() => setStep('confirm_competitors')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Back
+              </button>
+              <button
+                className={styles.continueBtn}
+                onClick={handleFinalConfirm}
+                disabled={briefLoading}
               >
                 CONFIRM AND START RESEARCH
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

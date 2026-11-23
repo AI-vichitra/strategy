@@ -127,6 +127,118 @@ def normalize_target_market(value: Any) -> Dict[str, Any]:
     return dict(_DEFAULT_TARGET_MARKET)
 
 
+# ── Social handles: multi-platform profile URLs ──────────────────────────────
+SOCIAL_PLATFORMS = ("instagram", "linkedin", "x", "youtube", "facebook", "tiktok")
+
+
+def extract_instagram_username(value: Optional[str]) -> str:
+    """Pulls the bare Instagram username out of either a bare handle or a full
+    profile URL (scheme/www optional, leading '@' or trailing '/' tolerated).
+    Used to keep the legacy brand_handle column (bare username) in sync with
+    social_handles["instagram"] (a full URL)."""
+    if not value:
+        return ""
+    v = value.strip()
+    if not v:
+        return ""
+    if "instagram.com" in v:
+        v = v.split("instagram.com", 1)[1]
+    v = v.strip("/").split("/")[0].split("?")[0]
+    return v.lstrip("@")
+
+
+def normalize_social_handles(value: Any, brand_handle: Optional[str] = None) -> Dict[str, str]:
+    """
+    Back-compat read/normalize boundary for social_handles, mirroring
+    normalize_target_market() above. Accepts whatever shape the social_handles
+    column (or a raw request field) might hold and returns ONE canonical shape:
+    a dict of {platform: profile_url}, restricted to SOCIAL_PLATFORMS.
+
+    Handles, in order:
+      - an already-structured dict                 -> filtered to SOCIAL_PLATFORMS
+      - a JSON-encoded dict string                  -> parsed, then filtered
+      - None / unparseable, with a legacy brand_handle -> synthesized
+        {"instagram": "https://instagram.com/<brand_handle>"}
+      - None / unparseable, with no brand_handle    -> {}
+
+    This is intentionally lenient, NOT validation: an unknown key is dropped
+    rather than raising, so a legacy or malformed row can never fail a read.
+    """
+    parsed: Optional[dict] = None
+    if isinstance(value, dict):
+        parsed = value
+    elif isinstance(value, str) and value.strip():
+        try:
+            candidate = json.loads(value)
+        except (json.JSONDecodeError, ValueError):
+            candidate = None
+        if isinstance(candidate, dict):
+            parsed = candidate
+
+    if parsed is not None:
+        return {
+            platform: url
+            for platform, url in parsed.items()
+            if platform in SOCIAL_PLATFORMS and url
+        }
+
+    if brand_handle:
+        return {"instagram": f"https://instagram.com/{brand_handle}"}
+
+    return {}
+
+
+# ── Brand Brief: structured 6-field brand summary ────────────────────────────
+# Will eventually replace the free-text brand_context in the report-generation
+# prompt; not yet threaded there (see build_system_prompt).
+BRAND_BRIEF_KEYS = (
+    "what_we_do",
+    "positioning",
+    "target_audience",
+    "differentiators",
+    "products_services",
+    "tone_of_voice",
+)
+
+_DEFAULT_BRAND_BRIEF: Dict[str, str] = {key: "" for key in BRAND_BRIEF_KEYS}
+
+
+def normalize_brand_brief(value: Any) -> Dict[str, str]:
+    """
+    Back-compat read/normalize boundary for brand_brief, mirroring
+    normalize_target_market/normalize_social_handles above. Accepts whatever
+    shape the brand_brief column might hold and returns ONE canonical shape:
+    all six BRAND_BRIEF_KEYS present, each a string ("" when missing, not a
+    string, or the row predates this column).
+
+    Handles, in order:
+      - an already-structured dict   -> coerced to the 6 keys, extras dropped
+      - a JSON-encoded dict string    -> parsed, then coerced
+      - None / unparseable / anything else -> the all-empty shape
+
+    Intentionally lenient, NOT validation — a legacy or malformed row can
+    never fail a read.
+    """
+    parsed: Optional[dict] = None
+    if isinstance(value, dict):
+        parsed = value
+    elif isinstance(value, str) and value.strip():
+        try:
+            candidate = json.loads(value)
+        except (json.JSONDecodeError, ValueError):
+            candidate = None
+        if isinstance(candidate, dict):
+            parsed = candidate
+
+    if parsed is None:
+        return dict(_DEFAULT_BRAND_BRIEF)
+
+    return {
+        key: parsed[key] if isinstance(parsed.get(key), str) else ""
+        for key in BRAND_BRIEF_KEYS
+    }
+
+
 # ── Shared base ─────────────────────────────────────────────────────────────
 class BrandConfigBase(BaseModel):
     brand_name: str
@@ -148,6 +260,8 @@ class BrandConfigResponse(BrandConfigBase):
     user_id: str
     brand_slug: Optional[str] = None
     brand_handle: Optional[str] = None
+    social_handles: Optional[Dict[str, str]] = None
+    brand_brief: Optional[Dict[str, str]] = None
     pipeline_status: str = "pending"
     target_market: Optional[TargetMarketOut] = None
     created_at: datetime
@@ -162,6 +276,18 @@ class BrandConfigResponse(BrandConfigBase):
         # legacy bare string) — normalize_target_market() is the back-compat
         # shim that turns any of those shapes into the canonical dict here.
         return normalize_target_market(value)
+
+    @field_validator("social_handles", mode="before")
+    @classmethod
+    def _normalize_social_handles(cls, value, info):
+        # brand_handle is declared above this field, so it is already in
+        # info.data by the time this runs — used as the legacy-row fallback.
+        return normalize_social_handles(value, info.data.get("brand_handle"))
+
+    @field_validator("brand_brief", mode="before")
+    @classmethod
+    def _normalize_brand_brief(cls, value):
+        return normalize_brand_brief(value)
 
 
 # ── Search competitors request ───────────────────────────────────────────────
@@ -204,9 +330,38 @@ class BrandConfirmRequest(BaseModel):
     additional_notes: Optional[str] = None
     selected_competitors: List[CompetitorConfirmed]
     brand_handle: Optional[str] = None
+    social_handles: Dict[str, str]  # REQUIRED — {platform: profile_url}, platform in SOCIAL_PLATFORMS.
+    # At least one non-empty entry (see _validate_social_handles below); the frontend now always
+    # sends a user-verified value here instead of forwarding brand_handle silently.
     brand_kit: Optional[BrandKit] = None
     reference_docs: Optional[List[dict]] = None
     target_market: TargetMarket
+    brand_brief: Dict[str, str]  # REQUIRED — {field: value}, field in BRAND_BRIEF_KEYS. At least one
+    # non-empty entry (see _validate_brand_brief below); the UI now always sends a user-verified brief.
+
+    @field_validator("social_handles")
+    @classmethod
+    def _validate_social_handles(cls, value):
+        if not value or not any((v or "").strip() for v in value.values()):
+            raise ValueError("social_handles is required — add at least one platform's profile URL")
+        return value
+
+    @field_validator("brand_brief")
+    @classmethod
+    def _validate_brand_brief(cls, value):
+        if not value or not any((v or "").strip() for v in value.values()):
+            raise ValueError("brand_brief is required — fill in at least one field")
+        return value
+
+
+# ── Generate Brand Brief (onboarding-time, pre-confirm) ──────────────────────
+class BrandBriefRequest(BaseModel):
+    brand_name: str
+    website_url: str
+    category: str
+    target_market: Optional[TargetMarket] = None
+    additional_notes: Optional[str] = None
+    reference_docs: Optional[List[dict]] = None  # [{ref_id, filename, ...}] — text is loaded server-side by ref_id.
 
 
 # ── Status polling ────────────────────────────────────────────────────────────

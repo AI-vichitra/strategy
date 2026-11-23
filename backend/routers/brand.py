@@ -15,7 +15,9 @@ from backend.schemas.brand import (
     BrandConfirmRequest,
     BrandStatusResponse,
     BrandContextResearchRequest,
+    BrandBriefRequest,
     TARGET_MARKET_CONFIG,
+    extract_instagram_username,
 )
 
 router = APIRouter()
@@ -133,6 +135,97 @@ async def research_context(
     return {"context": summary, "sources": sources}
 
 
+# ── POST /api/brands/generate-brief — structured 6-field Brand Brief ───────
+@router.post("/generate-brief")
+async def generate_brief(
+    req: BrandBriefRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Brand-setup wizard: generates the structured Brand Brief from whatever
+    onboarding-time evidence is available — a direct fetch of the brand's
+    own website text, uploaded reference docs, the same two Tavily queries
+    brand_context_service already runs, and category/target_market/
+    additional_notes. The richer Tavily research pipeline (web_scrape/
+    deep_dive/risk/depth) does not exist yet at this point in the flow, so
+    the brief is only as grounded as these inputs.
+
+    Always returns the 6-key dict, never an error — brand_brief_service
+    degrades to an all-"" shape on any failure (missing LLM key, completion
+    error, unparseable response), same non-blocking contract as
+    research-context/extract-social-links.
+    """
+    from backend.services import social_links_service, brand_context_service, brand_brief_service, reference_service, connector_service
+
+    # Firecrawl key: DB connector lookup -> FIRECRAWL_API_KEY env fallback, the
+    # same resolution search_competitors already uses. Resolved async here and
+    # handed to the executor as a plain string; a failed lookup just means no
+    # JS-render fallback for a thin website (never blocks brief generation).
+    firecrawl_key = None
+    try:
+        firecrawl_key = await connector_service.get_api_key(
+            db, user_id=current_user.id, connector_id="firecrawl", env_fallback="FIRECRAWL_API_KEY"
+        )
+    except Exception:
+        firecrawl_key = None
+
+    def _collect_reference_text() -> str:
+        if not req.reference_docs:
+            return ""
+        parts = []
+        for doc in req.reference_docs:
+            ref_id = doc.get("ref_id")
+            if not ref_id:
+                continue
+            text = reference_service.load_reference_text(ref_id)
+            if text:
+                parts.append(f"[{doc.get('filename', '')}]\n{text}")
+        return "\n\n".join(parts)
+
+    def _run():
+        website_text = social_links_service.extract_page_text(req.website_url, firecrawl_key=firecrawl_key)
+        reference_docs_text = _collect_reference_text()
+        tavily_context, tavily_sources = brand_context_service._research_brand_context_full(
+            brand_name=req.brand_name,
+            website_url=req.website_url,
+            category=req.category,
+        )
+        return brand_brief_service.generate_brand_brief(
+            brand_name=req.brand_name,
+            category=req.category,
+            target_market=req.target_market.model_dump() if req.target_market else None,
+            additional_notes=req.additional_notes or "",
+            website_text=website_text,
+            reference_docs_text=reference_docs_text,
+            tavily_context=tavily_context,
+            tavily_sources=tavily_sources,
+        )
+
+    result = await __import__("asyncio").get_event_loop().run_in_executor(None, _run)
+    return result
+
+
+# ── GET /api/brands/extract-social-links — scan a website for profile links ─
+@router.get("/extract-social-links")
+async def extract_social_links(
+    website_url: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Brand-setup wizard: best-effort scan of the brand's own website for links
+    to its social profiles, to pre-fill a user-verify step. Always returns
+    200 with a dict (possibly empty) — a blocked, slow, or broken site must
+    never fail onboarding.
+    """
+    from backend.services import social_links_service
+
+    result = await __import__("asyncio").get_event_loop().run_in_executor(
+        None, lambda: social_links_service.extract_social_links(website_url)
+    )
+    return result
+
+
 # ── POST /api/brands/upload-reference — brand-setup reference doc upload ────
 @router.post("/upload-reference")
 async def upload_reference(
@@ -198,6 +291,20 @@ async def confirm_brand(
             reference_docs_with_text.append(entry)
     reference_docs_json = json.dumps(reference_docs_with_text) if reference_docs_with_text else None
     target_market_json = json.dumps(req.target_market.model_dump()) if req.target_market else None
+
+    # social_handles is optional and not yet sent by the frontend. When it IS
+    # present and carries an instagram entry, that becomes the source of truth
+    # for the legacy brand_handle column (bare username, no URL) — otherwise
+    # brand_handle falls back to whatever the (today's) frontend sent directly.
+    social_handles_json = json.dumps(req.social_handles) if req.social_handles else None
+    brand_handle_value = req.brand_handle
+    if req.social_handles and req.social_handles.get("instagram"):
+        brand_handle_value = extract_instagram_username(req.social_handles["instagram"])
+
+    # brand_brief is optional and not yet sent by the UI; brand_context keeps
+    # being written exactly as it is today, unaffected by this.
+    brand_brief_json = json.dumps(req.brand_brief) if req.brand_brief else None
+
     db_brand = BrandConfig(
         user_id=current_user.id,
         brand_name=req.brand_name,
@@ -206,7 +313,9 @@ async def confirm_brand(
         brand_context=req.brand_context,
         additional_notes=req.additional_notes,
         competitors=competitors_json,
-        brand_handle=req.brand_handle,
+        brand_handle=brand_handle_value,
+        social_handles=social_handles_json,
+        brand_brief=brand_brief_json,
         reference_docs=reference_docs_json,
         target_market=target_market_json,
         pipeline_status="pending",
