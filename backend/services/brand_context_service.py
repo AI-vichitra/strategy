@@ -60,6 +60,14 @@ def _research_brand_context_full(
             f"{brand_name} official site OR crunchbase OR linkedin",
         ]
 
+        # Reuse the report-generation source denylist (the single source of
+        # truth in ai_service — not a second copy): data-scraper/profile
+        # aggregators like leadiq.com, rocketreach.co, growjo.com are banned
+        # from report citations, so they must not shape the brand's brief or
+        # context either. If a source isn't trustworthy enough to cite, it
+        # isn't trustworthy enough to define the brand.
+        from backend.services.ai_service import _is_denied_source
+
         all_results = []
         seen_urls = set()
         for query in queries:
@@ -76,6 +84,9 @@ def _research_brand_context_full(
             for r in response.get("results", []) or []:
                 url = r.get("url", "")
                 if not url or url in seen_urls:
+                    continue
+                if _is_denied_source(url):
+                    logger.info(f"[BrandContextService] Dropped denylisted source: {url}")
                     continue
                 seen_urls.add(url)
                 all_results.append({

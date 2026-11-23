@@ -768,6 +768,44 @@
   border: 1px solid #E8E4DC;
 }
 
+/* Social Handles */
+.socialHandlesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .socialHandlesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+.socialHandleRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.socialHandleLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.socialHandlePlatform {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4A4540;
+}
+.foundBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+}
+
 .candidateWebsiteLink {
   display: inline-flex;
   align-items: center;

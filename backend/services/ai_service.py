@@ -64,6 +64,12 @@ def _report_mode_params() -> Dict[str, Any]:
     if mode == "advanced":
         return {
             "mode": mode,
+            # Advanced mode PINS its provider (default anthropic) instead of
+            # letting key-presence selection pick it — otherwise OPENAI_API_KEY
+            # (which must stay set for embeddings) always won and the Anthropic
+            # branch, the only reader of model_env_key below, never ran. The
+            # dispatch honours this; an unset key for it logs ERROR + falls back.
+            "provider": os.environ.get("ADVANCED_PROVIDER", "anthropic").strip().lower() or "anthropic",
             "top_k": int(os.environ.get("ADVANCED_TOP_K", "20")),
             "competitor_chunk_cap": int(os.environ.get("ADVANCED_COMPETITOR_CHUNK_CAP", "6")),
             "max_tokens": int(os.environ.get("REPORT_MAX_TOKENS_ADVANCED", "16000")),
@@ -74,6 +80,9 @@ def _report_mode_params() -> Dict[str, Any]:
         }
     return {
         "mode": mode,
+        # Standard mode keeps today's behaviour exactly: no pinned provider, so
+        # the dispatch uses key-presence selection (_get_llm_provider).
+        "provider": None,
         "top_k": TOP_K,
         "competitor_chunk_cap": 1,
         "max_tokens": 4096,
@@ -1347,6 +1356,31 @@ def _format_competitor_details(competitor_details: Optional[str]) -> str:
     return "\n".join(lines)
 
 
+_BRAND_BRIEF_LABELS = {
+    "what_we_do": "What We Do",
+    "positioning": "Positioning",
+    "target_audience": "Target Audience",
+    "differentiators": "Differentiators",
+    "products_services": "Products & Services",
+    "tone_of_voice": "Tone of Voice",
+}
+
+
+def _is_brief_field_populated(value: Optional[str]) -> bool:
+    """A brand_brief field counts as populated only when it holds a real
+    value — not empty/unset, and not the LLM's own "nothing to report" marker
+    for that field (case-insensitive, tolerating N/A spellings). A field that
+    fails this is OMITTED from the prompt entirely, never printed as a gap —
+    the model should never see "Target Audience: Not available" and be
+    tempted to fill the "gap" itself."""
+    if not value or not isinstance(value, str):
+        return False
+    v = value.strip().lower().rstrip(".")
+    if not v:
+        return False
+    return v not in ("not available", "n/a", "na", "not applicable")
+
+
 def build_system_prompt(
     brand_name: str,
     agent_type: str,
@@ -1354,6 +1388,7 @@ def build_system_prompt(
     formatted_context: str,
     competitor_details: Optional[str] = None,
     additional_notes: Optional[str] = None,
+    brand_brief: Optional[dict] = None,
 ) -> str:
     if agent_type == "Competition Analysis":
         base = """You are a Senior Competitive Intelligence Strategist operating inside an automated strategy tool. You convert raw website and Instagram scrape data into a concise, professional, board-ready competitive analysis document. 
@@ -3172,7 +3207,32 @@ Role/Mode: **{agent_type}**
     base += "\n\n" + build_section_prompt(agent_type)
     base += "\n\nIMPORTANT: When analyzing competitors, ALWAYS use real company/brand names based on the industry and market context provided. NEVER use placeholder names like 'Competitor X', 'Competitor Y', 'Company A', 'Brand B', etc. Research and reference actual market players, their real products, and real market data. If the brand context mentions specific competitors, use those. Otherwise, identify the most relevant real competitors in that industry."
 
-    if brand_context:
+    # Brief replaces free-text brand_context when present — never both at
+    # once, since two competing brand descriptions in one prompt is worse
+    # than either alone. "Present" means at least one field survives
+    # _is_brief_field_populated; an all-empty/unset brief (every brand
+    # confirmed before this shipped) falls through to brand_context exactly
+    # as before this change.
+    brief_lines = []
+    if brand_brief:
+        from backend.schemas.brand import BRAND_BRIEF_KEYS
+        for key in BRAND_BRIEF_KEYS:
+            value = brand_brief.get(key)
+            if _is_brief_field_populated(value):
+                label = _BRAND_BRIEF_LABELS.get(key, key)
+                brief_lines.append(f"{label}: {value.strip()}")
+
+    if brief_lines:
+        base += (
+            "\n### BRAND BRIEF (the brand's own verified self-description, confirmed by the "
+            "brand at onboarding) ###\n"
+            "This is AUTHORITATIVE for what the brand is — treat every line below as established "
+            "fact, not a claim to verify. It is NOT a research source: do NOT attach a citation, "
+            "URL, or source label to anything stated here. The source-citation rules elsewhere in "
+            "this prompt apply only to claims drawn from the retrieved research context below.\n"
+            + "\n".join(brief_lines) + "\n"
+        )
+    elif brand_context:
         base += f"\nBrand Context: {brand_context}\n"
 
     if additional_notes and additional_notes.strip():
@@ -3309,6 +3369,7 @@ async def stream_chat(
     agent_type = "StratAI"
     brand_context = None
     brand_additional_notes = None
+    brand_brief = None
     brand_slug = None
     project = None
 
@@ -3325,9 +3386,20 @@ async def stream_chat(
                 brand_name = brand.brand_name
                 brand_context = brand.brand_context
                 brand_additional_notes = brand.additional_notes
+                from backend.schemas.brand import normalize_brand_brief
+                brand_brief = normalize_brand_brief(brand.brand_brief)
                 brand_slug = brand.brand_slug
     except Exception as e:
         logger.warning(f"[RAG] Could not load project/brand: {e}")
+
+    # Which brand description the prompt will actually use — mirrors
+    # build_system_prompt's own "brief present?" check exactly, so this never
+    # drifts from what the prompt really contains. Logged in [REPORT_GATE]
+    # below alongside the mode values.
+    _brand_description_source = (
+        "brief" if brand_brief and any(_is_brief_field_populated(v) for v in brand_brief.values())
+        else "brand_context"
+    )
 
     # ── User message content ───────────────────────────────────────────────────
     user_content = messages[-1]["content"] if messages else ""
@@ -3429,7 +3501,8 @@ async def stream_chat(
                 f"mode={mode_params['mode']} top_k={mode_params['top_k']} "
                 f"competitor_chunk_cap={mode_params['competitor_chunk_cap']} "
                 f"max_tokens={mode_params['max_tokens']} max_chars_per_source={effective_max_chars_per_source} "
-                f"max_sources={mode_params['max_sources']} per_domain_cap={mode_params['per_domain_cap']}"
+                f"max_sources={mode_params['max_sources']} per_domain_cap={mode_params['per_domain_cap']} "
+                f"brand_description_source={_brand_description_source}"
             )
         else:
             logger.info(
@@ -3437,7 +3510,8 @@ async def stream_chat(
                 f"mode={mode_params['mode']} top_k={mode_params['top_k']} "
                 f"competitor_chunk_cap={mode_params['competitor_chunk_cap']} "
                 f"max_tokens={mode_params['max_tokens']} max_chars_per_source={effective_max_chars_per_source} "
-                f"max_sources={mode_params['max_sources']} per_domain_cap={mode_params['per_domain_cap']}"
+                f"max_sources={mode_params['max_sources']} per_domain_cap={mode_params['per_domain_cap']} "
+                f"brand_description_source={_brand_description_source}"
             )
     except Exception as e:
         logger.warning(f"[RAG] Retrieval failed: {e}")
@@ -3493,7 +3567,7 @@ async def stream_chat(
             pass
     _n_comps = len(json.loads(competitor_details)) if competitor_details else 0
     print(f"[REPORT] competitors from {_comp_source}: {_n_comps} items")
-    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details, additional_notes=brand_additional_notes)
+    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details, additional_notes=brand_additional_notes, brand_brief=brand_brief)
 
     # ── Prepare messages ──────────────────────────────────────────────────────
     chat_history = []
@@ -3505,12 +3579,40 @@ async def stream_chat(
 
     # ── Stream response from selected LLM provider ───────────────────────────
     full_response = ""
+    # Which provider/model ACTUALLY produced the streamed response — set
+    # inside whichever _run_stream branch runs (initial or fallback), so a
+    # silent failover can never again be indistinguishable from a healthy
+    # run: the [REPORT_GATE] line below names who really wrote the report.
+    used_provider = None
+    used_model = None
     try:
-        resolved_provider, api_key = _get_llm_provider(provider)
+        # Advanced mode PINS its provider (mode_params["provider"], default
+        # anthropic) so ANTHROPIC_MODEL_ADVANCED is actually used, rather than
+        # letting key-presence selection hand every run to OpenAI (whose key
+        # must stay set for embeddings). An explicit caller `provider` still
+        # wins; a missing key for the pinned provider logs ERROR and falls back
+        # to key-presence selection — never silently. Standard mode is
+        # unchanged: mode_params["provider"] is None, so this is a no-op.
+        mode_provider = mode_params.get("provider")
+        if mode_provider and not provider:
+            mode_key = os.environ.get(f"{mode_provider.upper()}_API_KEY", "").strip()
+            if mode_provider == "openai" and mode_key.startswith("sk-ant-"):
+                mode_key = ""
+            if mode_key:
+                resolved_provider, api_key = mode_provider, mode_key
+            else:
+                logger.error(
+                    f"[REPORT_GATE] advanced mode pinned provider='{mode_provider}' but "
+                    f"{mode_provider.upper()}_API_KEY is not set — falling back to key-presence "
+                    f"selection (report will NOT use the pinned provider)."
+                )
+                resolved_provider, api_key = _get_llm_provider(provider)
+        else:
+            resolved_provider, api_key = _get_llm_provider(provider)
 
         # Helper runner function to stream from a given provider
         async def _run_stream(prov: str, key: str):
-            nonlocal full_response
+            nonlocal full_response, used_provider, used_model
             if prov == "qwen":
                 logger.info(f"[RAG] Streaming response using Qwen API...")
                 from openai import OpenAI
@@ -3519,6 +3621,7 @@ async def stream_chat(
                     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
                 )
                 model_name = os.environ.get("QWEN_MODEL", "qwen-turbo")
+                used_provider, used_model = prov, model_name
                 qwen_messages = [{"role": "system", "content": system_prompt}] + chat_history
                 response = client.chat.completions.create(
                     model=model_name,
@@ -3541,6 +3644,7 @@ async def stream_chat(
                 client = OpenAI(api_key=key)
                 openai_messages = [{"role": "system", "content": system_prompt}] + chat_history
                 model_name = os.environ.get("OPENAI_MODEL", "gpt-4o")
+                used_provider, used_model = prov, model_name
                 response = client.chat.completions.create(
                     model=model_name,
                     messages=openai_messages,
@@ -3564,6 +3668,7 @@ async def stream_chat(
                     base_url="https://api.groq.com/openai/v1",
                 )
                 model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+                used_provider, used_model = prov, model_name
                 groq_messages = [{"role": "system", "content": system_prompt}] + chat_history
                 response = client.chat.completions.create(
                     model=model_name,
@@ -3588,6 +3693,7 @@ async def stream_chat(
                     base_url="https://api.mistral.ai/v1",
                 )
                 model_name = os.environ.get("MISTRAL_MODEL", "open-mistral-7b")
+                used_provider, used_model = prov, model_name
                 mistral_messages = [{"role": "system", "content": system_prompt}] + chat_history
                 response = client.chat.completions.create(
                     model=model_name,
@@ -3609,10 +3715,19 @@ async def stream_chat(
                 import anthropic
                 client = anthropic.Anthropic(api_key=key)
                 anthropic_model = os.environ.get(mode_params["model_env_key"], "claude-sonnet-5-5")
+                used_provider, used_model = prov, anthropic_model
                 with client.messages.stream(
                     model=anthropic_model,
                     max_tokens=mode_params["max_tokens"],
-                    temperature=0.15,
+                    # temperature is gone from this API entirely (see
+                    # slide_planner._default_llm_completion) — passing it
+                    # here raised TypeError on every call, which the
+                    # provider-fallback except-block below was silently
+                    # swallowing by failing over to the next configured
+                    # provider instead. output_config.effort is the
+                    # closest remaining control; "low" is dropped here
+                    # since this is open-ended report/chat generation, not
+                    # a deterministic extraction pass.
                     system=system_prompt,
                     messages=chat_history
                 ) as stream:
@@ -3626,6 +3741,16 @@ async def stream_chat(
             async for token in _run_stream(resolved_provider, api_key):
                 yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
         except Exception as prov_err:
+            # A TypeError here is a BAD-KWARG CODE BUG in a _run_stream branch
+            # above (e.g. a parameter the SDK has removed), NOT a provider
+            # outage. Failing over on it is exactly how a removed `temperature`
+            # kwarg stayed invisible — every report silently routed to a
+            # different provider for an unknown period. Never fall over on it:
+            # re-raise so it hits the outer handler, which logs at ERROR and
+            # surfaces the failure instead of degrading silently.
+            if isinstance(prov_err, TypeError):
+                raise
+
             fallback_provider = None
             fallback_key = None
             for prov in LLM_PROVIDER_PRIORITY:
@@ -3638,11 +3763,34 @@ async def stream_chat(
                     break
 
             if fallback_provider:
-                logger.warning(f"[RAG] Provider '{resolved_provider}' failed ({prov_err}). Falling back to '{fallback_provider}'...")
+                # LOUD (ERROR): a failover is a degraded run — an operator must
+                # see it at a glance, with both providers and the real cause.
+                logger.error(
+                    f"[RAG] PROVIDER FALLBACK: '{resolved_provider}' FAILED "
+                    f"({type(prov_err).__name__}: {prov_err}) — falling back to "
+                    f"'{fallback_provider}'. This report was NOT written by the "
+                    f"originally selected provider."
+                )
                 async for token in _run_stream(fallback_provider, fallback_key):
                     yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
             else:
+                logger.error(
+                    f"[RAG] PROVIDER FAILURE: '{resolved_provider}' FAILED "
+                    f"({type(prov_err).__name__}: {prov_err}) and NO fallback "
+                    f"provider is configured."
+                )
                 raise prov_err
+
+        # Name who ACTUALLY wrote the report — on every run, healthy or
+        # failed-over. Compared against the originally selected provider so a
+        # silent failover is visible at a glance (fallback=yes).
+        if used_provider:
+            logger.info(
+                f"[REPORT_GATE] report generated by provider={used_provider} "
+                f"model={used_model} mode={mode_params['mode']} "
+                f"(requested={resolved_provider}, "
+                f"fallback={'yes' if used_provider != resolved_provider else 'no'})"
+            )
 
     except Exception as e:
         logger.error(f"[RAG] AI streaming error: {e}")

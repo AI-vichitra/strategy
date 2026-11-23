@@ -62,6 +62,7 @@ async def run_brand_research_pipeline(
     db_session_factory is the SQLAlchemy async_sessionmaker.
     """
     from backend.services import tavily_service, connector_service, firecrawl_service, exa_service
+    from backend.schemas.brand import extract_instagram_username
 
     brand_slug = _make_slug(brand_name, project_id or brand_config_id)
     output_dir = _get_output_dir(brand_slug)
@@ -225,6 +226,12 @@ async def run_brand_research_pipeline(
             {"name": c.get("name", ""), "is_brand": False} for c in selected_competitors if c.get("name")
         ]
 
+        # MERGE, never overwrite: a social_handles["instagram"] the user already
+        # confirmed (at onboarding, or by a prior pipeline run) must survive
+        # this step untouched — only an absent instagram entry gets filled in.
+        existing_social_handles = await _get_brand_social_handles(db_session_factory, brand_config_id)
+        existing_instagram = existing_social_handles.get("instagram") or ""
+
         discovered_handles = []
         brand_handle = ""
         for target in all_targets:
@@ -237,8 +244,11 @@ async def run_brand_research_pipeline(
                     tavily_service.find_social_handle, name
                 )
             else:
-                # For brand, find its handle
-                handle = await asyncio.to_thread(tavily_service.find_social_handle, name)
+                if existing_instagram:
+                    # Already confirmed — reuse it, skip rediscovery entirely.
+                    handle = extract_instagram_username(existing_instagram)
+                else:
+                    handle = await asyncio.to_thread(tavily_service.find_social_handle, name)
                 brand_handle = handle
 
             if handle:
@@ -246,6 +256,12 @@ async def run_brand_research_pipeline(
                 logger.info(f"[Pipeline] Discovered handle @{handle} for '{name}'")
 
         logger.info(f"[Pipeline] Step 4 done: {len(discovered_handles)}/{len(all_targets)} social handles discovered.")
+
+        # brand_handle column stays in sync with social_handles["instagram"];
+        # only fill the instagram key here if it was missing before.
+        merged_social_handles = dict(existing_social_handles)
+        if brand_handle and not existing_instagram:
+            merged_social_handles["instagram"] = f"https://instagram.com/{brand_handle}"
 
         # ── Step 5: Instagram scraper ─────────────────────────────────────────
         if discovered_handles:
@@ -270,6 +286,7 @@ async def run_brand_research_pipeline(
         update_data = {
             "pipeline_status": "complete",
             "brand_handle": brand_handle,
+            "social_handles": json.dumps(merged_social_handles) if merged_social_handles else None,
             "confirmed_competitor_handles": json.dumps([h["handle"] for h in discovered_handles]),
             "social_metrics": "complete",
         }
@@ -707,6 +724,26 @@ async def _get_brand_reference_docs(session_factory, brand_config_id: str) -> Op
     except Exception as e:
         logger.error(f"[Pipeline] Failed to resolve brand reference_docs: {e}")
         return None
+
+
+async def _get_brand_social_handles(session_factory, brand_config_id: str) -> dict:
+    """Resolves the brand's current social_handles JSON ({platform: url}), or
+    {} if unset / unparseable / lookup fails — the read side of the Step 4
+    merge, so a user-confirmed handle is never silently rediscovered."""
+    try:
+        from sqlalchemy import select
+        from backend.models.brand import BrandConfig
+        async with session_factory() as session:
+            result = await session.execute(
+                select(BrandConfig.social_handles).where(BrandConfig.id == brand_config_id)
+            )
+            row = result.first()
+            raw = row[0] if row else None
+            parsed = json.loads(raw) if raw else {}
+            return parsed if isinstance(parsed, dict) else {}
+    except Exception as e:
+        logger.error(f"[Pipeline] Failed to resolve brand social_handles: {e}")
+        return {}
 
 
 async def _update_db(session_factory, brand_config_id: str, updates: dict):

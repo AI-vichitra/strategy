@@ -117,6 +117,14 @@ def search_competitors(
                     candidate["source_url"] = item.get("source_url", "")
                     candidate["summary"] = item.get("summary", "")
                     candidate["verified"] = item.get("verified", False)
+                    # Additive, inspectable discovery metadata (ignored by
+                    # existing consumers): geography evidence driving the rank,
+                    # the page-identity confirmation status, and whether
+                    # verification was skipped due to a Firecrawl rate limit.
+                    candidate["geo_evidence"] = item.get("geo_evidence", [])
+                    candidate["identity_status"] = item.get("identity_status", "")
+                    if item.get("verification"):
+                        candidate["verification"] = item["verification"]
                 candidates.append(candidate)
         except competitor_service.CompetitorDiscoveryFailure as e:
             logger.warning(f"[CompetitorResolver] discover_and_resolve failed: {e}")

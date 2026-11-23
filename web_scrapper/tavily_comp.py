@@ -347,6 +347,20 @@ def search_candidates(brand_name, brand_url, brand_category, industry=None, regi
 
     client = TavilyClient(api_key=api_key)
 
+    # `region` may arrive only as a bare legacy string, or not at all when the
+    # caller sent the structured target_market instead (the new shape). Derive
+    # a display/scoping region from target_market when the bare param is empty,
+    # so COMP-SEARCH no longer logs region='None' and the broad queries still
+    # carry the user's region. global/local have no single region word — the
+    # city place-terms below cover those — so they're left out of this clause.
+    if not region and target_market:
+        tm_region = (target_market.get("region") or "").strip()
+        custom_region = (target_market.get("custom_region") or "").strip()
+        if tm_region and tm_region.lower() not in ("global", "local"):
+            region = tm_region
+        elif custom_region:
+            region = custom_region
+
     print(f"[COMP-SEARCH] Starting search for brand='{brand_name}', category='{brand_category}', region='{region}'")
 
     product_focus, segment, geography = _research_brand_scope(client, brand_name, brand_url, brand_category)
@@ -354,17 +368,12 @@ def search_candidates(brand_name, brand_url, brand_category, industry=None, regi
     scope = industry or product_focus
     region_clause = f" in {region}" if region else ""
 
-    queries = [
+    broad_queries = [
         f"Top direct competitors and alternatives to the {scope} company '{brand_name}'{region_clause}. Include their official website URLs.",
         f"Companies similar to '{brand_name}' in the {scope} industry{region_clause}, with links to their official websites.",
         f"Who competes with '{brand_name}' in {scope}{region_clause}? Name the competing brands and their own official company websites (not directories, review sites, or listicles).",
     ]
 
-    # ── ADDITIVE segment + geography-scoped variants ───────────────────────
-    # Added ALONGSIDE the broad queries above, never replacing them — no
-    # place terms (global, or no target_market at all) only means no geo
-    # variant gets added, so coverage can only broaden here, never wrongly
-    # narrow.
     place_terms = _build_place_terms(target_market)
 
     tm_region = (target_market.get("region") or "").strip().lower() if target_market else ""
@@ -377,6 +386,19 @@ def search_candidates(brand_name, brand_url, brand_category, industry=None, regi
         if geography and geography != "unknown" and geography.lower() not in [t.lower() for t in place_terms]:
             place_terms.append(geography)
 
+    # ── GEOGRAPHY-WEIGHTED query mix ───────────────────────────────────────
+    # When the user named specific markets (place_terms), the pool MUST be
+    # biased toward local players — three national-listicle queries drown out
+    # city developers and make a national name the only thing the pick can
+    # choose. So: keep only ONE broad national query (a clearly major national
+    # rival still surfaces there), and spend the rest of the budget on
+    # city-scoped queries. With NO place terms, behaviour is unchanged (all
+    # three broad queries, no geo variants) so coverage never wrongly narrows.
+    if place_terms:
+        queries = broad_queries[:1]
+    else:
+        queries = list(broad_queries)
+
     if segment != "unknown":
         geo_clause = f" in {place_terms[0]}" if place_terms else ""
         queries.append(
@@ -384,14 +406,21 @@ def search_candidates(brand_name, brand_url, brand_category, industry=None, regi
             f"{scope} industry{geo_clause}. Include their official website URLs."
         )
 
-    # One city/geography-scoped query per place term, capped at 3.
-    MAX_GEO_QUERIES = 3
-    for term in place_terms[:MAX_GEO_QUERIES]:
-        queries.append(
+    # Multiple city-scoped phrasings per place term so the pool fills with
+    # local developers. A single metro (several cities collapsed onto one, e.g.
+    # Delhi NCR) still gets two distinct phrasings; total capped to bound cost.
+    MAX_GEO_QUERIES = 4
+    geo_queries = []
+    for term in place_terms:
+        geo_queries.append(
             f"Who competes with '{brand_name}' specifically in {term}? Name "
-            f"{scope} companies operating in {term}, with their official "
-            f"website URLs."
+            f"{scope} companies operating in {term}, with their official website URLs."
         )
+        geo_queries.append(
+            f"Leading {scope} companies and developers based in {term} — "
+            f"official company websites only, not directories or listicles."
+        )
+    queries.extend(geo_queries[:MAX_GEO_QUERIES])
 
     all_results = []
     raw_answers = []
