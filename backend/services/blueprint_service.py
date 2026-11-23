@@ -64,6 +64,11 @@ def build_section_prompt(agent_key: str) -> str:
         if subsections:
             lines.append(f"Subsections: {' | '.join(subsections)}")
         lines.append(f"Content: {section['content_guidance']}")
+        lines.append(
+            "Recommendation: End this section with 1-3 sentences under a '**Recommendation:**' line, tying its "
+            "analysis to one concrete, specific action for THIS brand — grounded in what the section just covered, "
+            "not a generic best-practice statement that could apply to any brand."
+        )
         lines.append("")
 
     lines.extend([
@@ -74,6 +79,12 @@ def build_section_prompt(agent_key: str) -> str:
         "- Maintain the exact section order above — do not skip, merge, or reorder sections",
         '- Every section must have substantive, detailed content — no placeholders or "to be completed" text',
         "- Keep section titles EXACTLY as specified above (the section editor relies on consistent H3 titles)",
+        "- Match each section's depth to how much the evidence actually supports: wherever the research contains a "
+        "specific figure, date, named project, rating, or incident relevant to that section, cite it explicitly "
+        "instead of a generic paraphrase — do not compress a specific fact into vague language, and do not pad a "
+        "section with generic filler when the evidence has nothing specific to add. This does not override any "
+        "explicit item-count limit a section's own content guidance specifies (e.g. a SWOT quadrant or a fixed-size "
+        "action plan) — within that limit, prefer the most specific available fact over a generic one.",
     ])
 
     return "\n".join(lines)

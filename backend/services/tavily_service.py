@@ -45,6 +45,7 @@ def search_competitors(
     user_competitors: Optional[List[Dict]] = None,
     industry: Optional[str] = None,
     region: Optional[str] = None,
+    target_market: Optional[Dict[str, Any]] = None,
     reference_ref_ids: Optional[List[str]] = None,
     firecrawl_key: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -77,6 +78,17 @@ def search_competitors(
     tavily_error = ""
     discovery_status: Optional[str] = None
 
+    # Normalize geography ONCE here, the single entry point both the API
+    # router and any other caller go through: the structured target_market
+    # (when given) takes priority; a legacy bare `region` string is
+    # normalized the same way, so discovery's geography scoping behaves
+    # identically whether the caller sent the new shape or the old one.
+    from backend.schemas.brand import normalize_target_market
+    effective_target_market = (
+        normalize_target_market(target_market) if target_market
+        else (normalize_target_market(region) if region else None)
+    )
+
     if _resolver_enabled():
         from backend.services import competitor_service
         try:
@@ -86,6 +98,7 @@ def search_competitors(
                 category=category,
                 industry=industry,
                 region=region,
+                target_market=effective_target_market,
                 user_competitors=user_competitors,
                 reference_ref_ids=reference_ref_ids,
                 firecrawl_key=firecrawl_key,
@@ -271,6 +284,120 @@ def run_deep_dive(brand_name: str, brand_url: str, brand_category: str, output_d
     except Exception as e:
         logger.error(f"Deep dive skipped: {e}")
         return None
+
+
+# ── 4b. Risk / Reputation Research → saves JSON ─────────────────────────────
+def run_risk_research(brand_name: str, brand_url: str, category: str, output_dir: str) -> Optional[str]:
+    """
+    Searches for critical/risk evidence — delivery delays, litigation/legal
+    disputes, customer complaints, service/quality issues, reputation problems.
+    Queries are built dynamically from brand_name + category, same as run_web_scrape.
+    JSON format: { title, url, source_type, brand, content, sources }
+    Returns the file path, or None on failure.
+    """
+    try:
+        client = _get_client()
+    except RuntimeError as e:
+        logger.error(f"Risk research skipped: {e}")
+        return None
+
+    os.makedirs(output_dir, exist_ok=True)
+    clean_name = re.sub(r'[^\w]', '_', brand_name.lower())
+
+    queries = [
+        f"{brand_name} customer complaints and negative reviews",
+        f"{brand_name} delivery delays or service quality issues",
+        f"{brand_name} lawsuit litigation legal dispute controversy",
+        f"{brand_name} {category} reputation problems and criticism",
+    ]
+
+    all_content_parts = []
+    all_sources = []
+
+    for query in queries:
+        try:
+            resp = client.search(query=query, search_depth="basic", max_results=3, include_answer=True)
+            answer = resp.get("answer", "") or ""
+            results = resp.get("results", [])
+            if answer:
+                all_content_parts.append(answer)
+            for r in results:
+                all_content_parts.append(r.get("content", ""))
+                all_sources.append({"title": r.get("title", ""), "url": r.get("url", "")})
+        except Exception as e:
+            logger.warning(f"Risk research query failed: {e}")
+
+    doc = {
+        "title": f"{brand_name} — Risk & Reputation Research",
+        "url": brand_url,
+        "source_type": "risk_research",
+        "brand": brand_name,
+        "content": "\n\n".join(filter(None, all_content_parts)),
+        "sources": all_sources,
+    }
+
+    filepath = os.path.join(output_dir, f"{clean_name}_risk.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(doc, f, ensure_ascii=False, indent=2)
+    logger.info(f"Risk research saved to {filepath}")
+    return filepath
+
+
+# ── 4c. Depth / Specificity Research → saves JSON ───────────────────────────
+def run_depth_research(brand_name: str, brand_url: str, category: str, output_dir: str) -> Optional[str]:
+    """
+    Searches for depth/specificity evidence — concrete projects/products, price
+    positioning, target segments, geographic focus, differentiators. Queries are
+    built dynamically from brand_name + category, same as run_web_scrape.
+    JSON format: { title, url, source_type, brand, content, sources }
+    Returns the file path, or None on failure.
+    """
+    try:
+        client = _get_client()
+    except RuntimeError as e:
+        logger.error(f"Depth research skipped: {e}")
+        return None
+
+    os.makedirs(output_dir, exist_ok=True)
+    clean_name = re.sub(r'[^\w]', '_', brand_name.lower())
+
+    queries = [
+        f"{brand_name} specific flagship projects, products, or case studies",
+        f"{brand_name} pricing model and price positioning in the {category} market",
+        f"{brand_name} target customer segments and geographic focus",
+        f"{brand_name} key differentiators compared to other {category} companies",
+    ]
+
+    all_content_parts = []
+    all_sources = []
+
+    for query in queries:
+        try:
+            resp = client.search(query=query, search_depth="basic", max_results=3, include_answer=True)
+            answer = resp.get("answer", "") or ""
+            results = resp.get("results", [])
+            if answer:
+                all_content_parts.append(answer)
+            for r in results:
+                all_content_parts.append(r.get("content", ""))
+                all_sources.append({"title": r.get("title", ""), "url": r.get("url", "")})
+        except Exception as e:
+            logger.warning(f"Depth research query failed: {e}")
+
+    doc = {
+        "title": f"{brand_name} — Depth & Specificity Research",
+        "url": brand_url,
+        "source_type": "depth_research",
+        "brand": brand_name,
+        "content": "\n\n".join(filter(None, all_content_parts)),
+        "sources": all_sources,
+    }
+
+    filepath = os.path.join(output_dir, f"{clean_name}_depth.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(doc, f, ensure_ascii=False, indent=2)
+    logger.info(f"Depth research saved to {filepath}")
+    return filepath
 
 
 # ── 4. Social Handle Discovery ────────────────────────────────────────────────

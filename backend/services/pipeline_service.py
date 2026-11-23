@@ -21,6 +21,7 @@ import json
 import logging
 import asyncio
 import re
+import time
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)
@@ -64,14 +65,20 @@ async def run_brand_research_pipeline(
 
     brand_slug = _make_slug(brand_name, project_id or brand_config_id)
     output_dir = _get_output_dir(brand_slug)
+    _pipeline_started_at = time.monotonic()
+    _competitor_names = [c.get("name", "") for c in selected_competitors if c.get("name")]
 
-    logger.info(f"[Pipeline] Starting for brand '{brand_name}' (id={brand_config_id}), docs → {output_dir}")
+    logger.info(
+        f"[Pipeline] Starting for brand '{brand_name}' (id={brand_config_id}) slug='{brand_slug}' "
+        f"competitors={len(_competitor_names)} {_competitor_names} -> docs → {output_dir}"
+    )
 
     # ── Mark as running in DB ─────────────────────────────────────────────────
     await _update_db(db_session_factory, brand_config_id, {
         "pipeline_status": "running",
         "brand_slug": brand_slug,
     })
+    logger.info(f"[Pipeline] DB updated: pipeline_status='running' (brand_config_id={brand_config_id})")
 
     # ── Optional connector enrichment: resolve keys if available ─────────────
     # Each lookup is independently wrapped so a failure here never affects the
@@ -112,15 +119,17 @@ async def run_brand_research_pipeline(
     try:
         # ── Step 1: Web scrape brand ──────────────────────────────────────────
         logger.info("[Pipeline] Step 1: Web scraping brand website...")
-        await asyncio.to_thread(
+        _web_scrape_result = await asyncio.to_thread(
             tavily_service.run_web_scrape, brand_name, brand_url, output_dir
         )
+        logger.info(f"[Pipeline] Step 1 done: web scrape {'saved' if _web_scrape_result else 'empty/failed'} for '{brand_name}'")
 
         # ── Step 2: Deep dive — brand ─────────────────────────────────────────
         logger.info("[Pipeline] Step 2: Deep diving brand...")
-        await asyncio.to_thread(
+        _deep_dive_result = await asyncio.to_thread(
             tavily_service.run_deep_dive, brand_name, brand_url, category, output_dir
         )
+        logger.info(f"[Pipeline] Step 2 done: deep dive {'saved' if _deep_dive_result else 'empty/failed'} for '{brand_name}'")
 
         # ── Step 2b: OPTIONAL Firecrawl enrichment — brand website ───────────
         # No-op unless firecrawl_key was resolved above; failures never fail the pipeline.
@@ -149,16 +158,29 @@ async def run_brand_research_pipeline(
             except Exception as e:
                 logger.warning(f"[Pipeline] Exa brand enrichment failed: {e}")
 
+        # ── Step 2d: Risk & depth research — brand ───────────────────────────
+        logger.info("[Pipeline] Step 2d: Risk & depth research for brand...")
+        _risk_result = await asyncio.to_thread(
+            tavily_service.run_risk_research, brand_name, brand_url, category, output_dir
+        )
+        logger.info(f"[Pipeline] Step 2d done: risk research {'saved' if _risk_result else 'empty/failed'} for '{brand_name}'")
+        _depth_result = await asyncio.to_thread(
+            tavily_service.run_depth_research, brand_name, brand_url, category, output_dir
+        )
+        logger.info(f"[Pipeline] Step 2d done: depth research {'saved' if _depth_result else 'empty/failed'} for '{brand_name}'")
+
         # ── Step 3: Deep dive — each competitor ──────────────────────────────
-        for comp in selected_competitors:
+        _n_competitors = len(_competitor_names)
+        for _comp_idx, comp in enumerate(selected_competitors, start=1):
             comp_name = comp.get("name", "")
             comp_url = comp.get("website_url") or comp.get("url") or ""
             if not comp_name:
                 continue
-            logger.info(f"[Pipeline] Step 3: Deep diving competitor '{comp_name}'...")
-            await asyncio.to_thread(
+            logger.info(f"[Pipeline] Step 3: competitor {_comp_idx}/{_n_competitors} = '{comp_name}' — deep diving...")
+            _comp_dd_result = await asyncio.to_thread(
                 tavily_service.run_deep_dive, comp_name, comp_url, category, output_dir
             )
+            logger.info(f"[Pipeline] Step 3 done: deep dive {'saved' if _comp_dd_result else 'empty/failed'} for '{comp_name}'")
 
             # ── OPTIONAL Firecrawl enrichment — competitor website ───────────
             if firecrawl_key and comp_url:
@@ -184,6 +206,18 @@ async def run_brand_research_pipeline(
                         _save_exa_doc(output_dir, comp_name, comp_url, exa_content)
                 except Exception as e:
                     logger.warning(f"[Pipeline] Exa competitor enrichment failed for '{comp_name}': {e}")
+
+            # ── Risk & depth research — competitor ────────────────────────────
+            logger.info(f"[Pipeline] Risk & depth research for competitor '{comp_name}'...")
+            _comp_risk_result = await asyncio.to_thread(
+                tavily_service.run_risk_research, comp_name, comp_url, category, output_dir
+            )
+            logger.info(f"[Pipeline] Risk research {'saved' if _comp_risk_result else 'empty/failed'} for '{comp_name}'")
+            _comp_depth_result = await asyncio.to_thread(
+                tavily_service.run_depth_research, comp_name, comp_url, category, output_dir
+            )
+            logger.info(f"[Pipeline] Depth research {'saved' if _comp_depth_result else 'empty/failed'} for '{comp_name}'")
+            logger.info(f"[Pipeline] Step 3: competitor {_comp_idx}/{_n_competitors} = '{comp_name}' — done.")
 
         # ── Step 4: Social handle discovery ───────────────────────────────────
         logger.info("[Pipeline] Step 4: Discovering social handles...")
@@ -211,6 +245,8 @@ async def run_brand_research_pipeline(
                 discovered_handles.append({"name": name, "handle": handle, "is_brand": target["is_brand"]})
                 logger.info(f"[Pipeline] Discovered handle @{handle} for '{name}'")
 
+        logger.info(f"[Pipeline] Step 4 done: {len(discovered_handles)}/{len(all_targets)} social handles discovered.")
+
         # ── Step 5: Instagram scraper ─────────────────────────────────────────
         if discovered_handles:
             logger.info(f"[Pipeline] Step 5: Running Instagram scraper for {len(discovered_handles)} targets...")
@@ -219,6 +255,7 @@ async def run_brand_research_pipeline(
                 output_dir=output_dir,
                 brand_slug=brand_slug
             )
+            logger.info("[Pipeline] Step 5 done: Instagram scraper finished.")
         else:
             logger.warning("[Pipeline] Step 5: No handles discovered, skipping Instagram scraper.")
 
@@ -227,6 +264,7 @@ async def run_brand_research_pipeline(
         reference_docs = await _get_brand_reference_docs(db_session_factory, brand_config_id)
         kb_json_str = await asyncio.to_thread(_compile_knowledge_base, brand_name, brand_slug, output_dir, reference_docs, selected_competitors)
         await _update_db(db_session_factory, brand_config_id, {"kb_json": kb_json_str})
+        logger.info(f"[Pipeline] Step 6 done: kb_json persisted to DB ({len(kb_json_str)} chars) for brand_config_id={brand_config_id}")
 
         # ── Update DB: complete ───────────────────────────────────────────────
         update_data = {
@@ -236,10 +274,12 @@ async def run_brand_research_pipeline(
             "social_metrics": "complete",
         }
         await _update_db(db_session_factory, brand_config_id, update_data)
-        logger.info(f"[Pipeline] Completed for brand '{brand_name}'")
+        _elapsed = time.monotonic() - _pipeline_started_at
+        logger.info(f"[Pipeline] Completed for brand '{brand_name}' in {_elapsed:.1f}s (brand_config_id={brand_config_id})")
 
     except Exception as e:
-        logger.error(f"[Pipeline] FAILED for brand '{brand_name}': {e}", exc_info=True)
+        _elapsed = time.monotonic() - _pipeline_started_at
+        logger.error(f"[Pipeline] FAILED for brand '{brand_name}' after {_elapsed:.1f}s: {e}", exc_info=True)
         await _update_db(db_session_factory, brand_config_id, {"pipeline_status": "failed"})
 
 
@@ -458,6 +498,10 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, r
                             "_deep_dive_content": "",
                             "_firecrawl_parts": [],
                             "_exa_parts": [],
+                            "_risk_parts": [],
+                            "_depth_parts": [],
+                            "_risk_sources": [],
+                            "_depth_sources": [],
                         }
 
                     if not brands_data[b_key]["URL"] and data.get("url"):
@@ -475,6 +519,16 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, r
                         exa_content = data.get("content", "")
                         if exa_content:
                             brands_data[b_key]["_exa_parts"].append((data.get("url", ""), exa_content))
+                    elif stype == "risk_research":
+                        risk_content = data.get("content", "")
+                        if risk_content:
+                            brands_data[b_key]["_risk_parts"].append((data.get("url", ""), risk_content))
+                            brands_data[b_key]["_risk_sources"].extend(data.get("sources", []) or [])
+                    elif stype == "depth_research":
+                        depth_content = data.get("content", "")
+                        if depth_content:
+                            brands_data[b_key]["_depth_parts"].append((data.get("url", ""), depth_content))
+                            brands_data[b_key]["_depth_sources"].extend(data.get("sources", []) or [])
                     elif stype == "social_instagram":
                         brands_data[b_key]["INSTA_SCRAPPED"] = data.get("content", "")
 
@@ -484,31 +538,80 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, r
     # ── Merge Tavily deep-dive + optional Firecrawl/Exa content into WEB_SCRAPPED ──
     # When neither a Firecrawl nor an Exa doc exists for a brand (no keys / both
     # failed), this is byte-for-byte what the old direct-assignment code produced.
+    #
+    # Risk and depth research are kept as their OWN fields (RISK_RESEARCH /
+    # DEPTH_RESEARCH below), NOT folded into WEB_SCRAPPED. They used to be
+    # appended here too, last — but ai_service._chunk_doc's per-source
+    # MAX_KB_CHARS_PER_SOURCE cap truncates WEB_SCRAPPED from the front, so for
+    # any entity whose deep-dive/Firecrawl/Exa content alone exceeds that cap
+    # (e.g. a brand with 750K+ chars of deep-dive content), risk/depth sat past
+    # the cutoff and were silently deleted before chunking ever ran — the
+    # entity's own critical evidence never reached the index. Keeping them as
+    # separate fields means they're chunked independently, each with their own
+    # full cap budget, regardless of how large WEB_SCRAPPED is.
     for b in brands_data.values():
         has_dd = b.pop("_has_deep_dive", False)
         dd_content = b.pop("_deep_dive_content", "")
         fc_parts = b.pop("_firecrawl_parts", [])
         exa_parts = b.pop("_exa_parts", [])
+        risk_parts = b.pop("_risk_parts", [])
+        depth_parts = b.pop("_depth_parts", [])
+        risk_sources = b.pop("_risk_sources", [])
+        depth_sources = b.pop("_depth_sources", [])
 
         if not fc_parts and not exa_parts:
             if has_dd:
                 b["WEB_SCRAPPED"] = dd_content
-            continue
+        else:
+            pieces = []
+            if has_dd and dd_content:
+                pieces.append(f"[Source: Tavily Deep Dive]\n{dd_content}")
+            for fc_url, fc_content in fc_parts:
+                label = f"Firecrawl Scrape — {fc_url}" if fc_url else "Firecrawl Scrape"
+                pieces.append(f"[Source: {label}]\n{fc_content}")
+            for exa_url, exa_content in exa_parts:
+                label = f"Exa Semantic Search — {exa_url}" if exa_url else "Exa Semantic Search"
+                pieces.append(f"[Source: {label}]\n{exa_content}")
 
-        pieces = []
-        if has_dd and dd_content:
-            pieces.append(f"[Source: Tavily Deep Dive]\n{dd_content}")
-        for fc_url, fc_content in fc_parts:
-            label = f"Firecrawl Scrape — {fc_url}" if fc_url else "Firecrawl Scrape"
-            pieces.append(f"[Source: {label}]\n{fc_content}")
-        for exa_url, exa_content in exa_parts:
-            label = f"Exa Semantic Search — {exa_url}" if exa_url else "Exa Semantic Search"
-            pieces.append(f"[Source: {label}]\n{exa_content}")
+            if pieces:
+                b["WEB_SCRAPPED"] = "\n\n".join(pieces)
+            elif has_dd:
+                b["WEB_SCRAPPED"] = dd_content
 
-        if pieces:
-            b["WEB_SCRAPPED"] = "\n\n".join(pieces)
-        elif has_dd:
-            b["WEB_SCRAPPED"] = dd_content
+        if risk_parts:
+            b["RISK_RESEARCH"] = "\n\n".join(
+                f"[Source: {f'Risk & Reputation Research — {u}' if u else 'Risk & Reputation Research'}]\n{c}"
+                for u, c in risk_parts
+            )
+        if depth_parts:
+            b["DEPTH_RESEARCH"] = "\n\n".join(
+                f"[Source: {f'Depth & Specificity Research — {u}' if u else 'Depth & Specificity Research'}]\n{c}"
+                for u, c in depth_parts
+            )
+        # The per-query search results' own (title, url) pairs — these are the
+        # REAL, specific source links the content above was built from (e.g. the
+        # exact Trustpilot review page, not just the brand's own website). Kept
+        # alongside RISK_RESEARCH/DEPTH_RESEARCH so a citing model — and the
+        # deterministic Sources section — can reference the real page a fact
+        # came from, never a guessed or generic one. Deduped by URL.
+        if risk_sources:
+            seen, deduped = set(), []
+            for s in risk_sources:
+                u = (s or {}).get("url", "")
+                if u and u not in seen:
+                    seen.add(u)
+                    deduped.append({"title": s.get("title", ""), "url": u})
+            if deduped:
+                b["RISK_RESEARCH_SOURCES"] = deduped
+        if depth_sources:
+            seen, deduped = set(), []
+            for s in depth_sources:
+                u = (s or {}).get("url", "")
+                if u and u not in seen:
+                    seen.add(u)
+                    deduped.append({"title": s.get("title", ""), "url": u})
+            if deduped:
+                b["DEPTH_RESEARCH_SOURCES"] = deduped
 
     final_output = {}
     main_brand_key = brand_name.lower().strip()
@@ -554,9 +657,9 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, r
                 kept.append(entry)
             else:
                 dropped.append(entry.get("NAME", "?"))
-        print(f"[KB-COMPILE] {len(kept)} of {len(brands_data)} competitors kept after selection filter")
+        logger.info(f"[Pipeline] KB compile: {len(kept)} of {len(brands_data)} competitors kept after selection filter")
         if dropped:
-            print(f"[KB-COMPILE] Dropped stale competitors: {dropped}")
+            logger.info(f"[Pipeline] KB compile: dropped stale competitors (not in this run's selection): {dropped}")
         final_output["competitors"] = kept
     else:
         final_output["competitors"] = list(brands_data.values())
@@ -564,7 +667,11 @@ def _compile_knowledge_base(brand_name: str, brand_slug: str, output_dir: str, r
     kb_json_str = json.dumps(final_output, ensure_ascii=False, indent=2)
     with open(kb_file, "w", encoding="utf-8") as f:
         f.write(kb_json_str)
-    logger.info(f"[Pipeline] Compiled Knowledge Base saved to {kb_file}")
+    _n_competitors = len(final_output.get("competitors", []))
+    logger.info(
+        f"[Pipeline] Compiled Knowledge Base saved to {kb_file} "
+        f"({len(kb_json_str)} chars, 1 brand + {_n_competitors} competitors)"
+    )
     return kb_json_str
 
 async def _get_brand_user_id(session_factory, brand_config_id: str) -> Optional[str]:

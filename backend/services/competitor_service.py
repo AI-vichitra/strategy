@@ -172,6 +172,8 @@ def resolve_competitors(
     user_competitors: Optional[List[Dict[str, Any]]],
     industry: Optional[str] = None,
     product_focus: Optional[str] = None,
+    segment: Optional[str] = None,
+    geography: Optional[str] = None,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Two-pass resolution of Tavily's raw structured (article) results into
@@ -179,6 +181,10 @@ def resolve_competitors(
 
     Pass 1 — LLM extracts competitor brand NAMES ONLY from the article
     content (title/snippet). Trustworthy because it never fabricates a URL.
+    When segment/geography (inferred from the brand's own fetched content —
+    see tavily_comp._research_brand_scope) are known, Pass 1 is told to
+    PREFER matching candidates as a ranking signal only, never a hard filter
+    — a clearly major rival is never excluded just for being more national.
     Pass 2 — a dedicated Tavily lookup per extracted name
     ("{name} official website {product_focus}") finds that company's own
     domain, picked via a same-name-in-domain heuristic that excludes known
@@ -223,6 +229,12 @@ def resolve_competitors(
         else ""
     )
 
+    scope_clause = ""
+    if segment and segment != "unknown":
+        scope_clause += f"\n- PREFER competitors that also operate in the '{segment}' segment/tier of {focus}, when the search results let you tell segment apart. Do NOT drop a clearly major, well-known rival just because it's broader/more national than that segment — this is a ranking preference, not a hard filter."
+    if geography and geography != "unknown":
+        scope_clause += f"\n- PREFER competitors primarily operating in '{geography}', when the search results let you tell geography apart. Do NOT drop a clearly major, well-known rival just because it operates more broadly than that geography — this is a ranking preference, not a hard filter."
+
     system_prompt = (
         f"From the following search results about {brand_name} in the {focus} space, "
         f"extract up to 8 competitor brand names. These are companies that compete "
@@ -234,7 +246,8 @@ def resolve_competitors(
         f"- Do NOT include {brand_name} itself\n"
         "- Do NOT include market research firms, directories, or news sites\n"
         "- Do NOT fabricate names — only extract names explicitly mentioned in the provided content\n"
-        f"- This brand operates in: {focus}. Only include competitors in the same or directly adjacent product space.\n"
+        f"- This brand operates in: {focus}. Only include competitors in the same or directly adjacent product space."
+        f"{scope_clause}\n"
         "- Return ONLY the JSON array, nothing else."
         f"{context_clause}"
     )
@@ -452,6 +465,7 @@ def discover_and_resolve(
     category: str,
     industry: Optional[str] = None,
     region: Optional[str] = None,
+    target_market: Optional[Dict[str, Any]] = None,
     user_competitors: Optional[List[Dict[str, Any]]] = None,
     reference_ref_ids: Optional[List[str]] = None,
     firecrawl_key: Optional[str] = None,
@@ -500,7 +514,8 @@ def discover_and_resolve(
 
     try:
         raw = tavily_comp.search_candidates(
-            brand_name, website_url, category, industry=industry, region=region
+            brand_name, website_url, category, industry=industry, region=region,
+            target_market=target_market,
         )
     except CompetitorDiscoveryFailure:
         raise  # already the right type/message (e.g. "All Tavily search queries failed") — don't rewrap
@@ -512,7 +527,12 @@ def discover_and_resolve(
 
     raw_results = raw["results"]
     product_focus = raw.get("product_focus") or category
-    print(f"[COMP-RESOLVE] Received {len(raw_results)} candidates from search, product_focus='{product_focus}'")
+    segment = raw.get("segment")
+    geography = raw.get("geography")
+    print(
+        f"[COMP-RESOLVE] Received {len(raw_results)} candidates from search, "
+        f"product_focus='{product_focus}', segment='{segment}', geography='{geography}'"
+    )
 
     if not raw_results:
         print("[COMP-RESOLVE] No raw candidates from Tavily — returning empty")
@@ -531,6 +551,8 @@ def discover_and_resolve(
         user_competitors=user_competitors,
         industry=industry,
         product_focus=product_focus,
+        segment=segment,
+        geography=geography,
     )
     if resolved is None:
         raise CompetitorDiscoveryFailure("LLM resolution unavailable or returned an unparseable response")

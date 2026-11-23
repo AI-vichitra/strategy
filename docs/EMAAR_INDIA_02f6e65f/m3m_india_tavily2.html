@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M3M INDIA - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>M3M INDIA</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">Real Estate</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://m3mindia.com" target="_blank" class="meta-url">https://m3mindia.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> M3M India, founded in 2010, is a leading real estate developer in India, known for its luxury residential, retail, and commercial projects. Led by Founder Chairman Basant Bansal and supported by promoters Roop Bansal and Pankaj Bansal, the company has established itself as a transformative force in the real estate sector through its commitment to ethical governance, transparency, and innovation. M3M India's portfolio includes iconic projects like M3M Golfestate and Trump Towers Gurugram, which have set new benchmarks in luxury living. The company's vertically integrated model manages every aspect from land acquisition to after-sales, ensuring streamlined processes and quality control. With a land bank of 3,000 acres and a customer base exceeding 20,000, M3M India continues to expand its footprint with new developments and acquisitions, aiming to shape the Gurugram landscape with integrated, personalized lifestyle options.. #### M3M India Group  Founded in 2010, M3M India has quickly risen as one of India’s most dynamic and innovative real estate developers, built on the values of ethical governance, transparency, commitment, and passion for excellence.  With a forward-looking vision crafted by Founder Chairman Sh. Basant Bansal and Promoters Sh. Pankaj Bansal, M3M India has become a transformative force in the luxury residential and retail real estate sector. Today, M3M stands as a symbol of sophistication and innovation, setting new benchmarks across India.  A Proven Track Record of Delivery and Development [...] With a focus on building world-class destinations, M3M is developing M3M Smart City Delhi Airport—a high-end residential, mixed-use retail, and commercial hub along the Dwarka Expressway. This project symbolizes M3M’s commitment to creating spaces that integrate urban luxury with functional design.  Backed by a robust land bank of 3,000 acres and a customer base exceeding 20,000, M3M India operates on the principles of Trust, Transparency, and Timely Delivery. M3M’s vertically integrated model, managing every aspect from land acquisition to after-sales, ensures streamlined processes, cost-efficiency, and quality control, giving it a strong competitive advantage.  2024-25: A Year of Record-Breaking Growth [...] A Proven Track Record of Delivery and Development  With an impressive portfolio of 66 projects, M3M has already delivered all developments launched before 2020. The company has successfully completed 43 projects spanning 20 million square feet, and another 23 projects, covering 40 million square feet, are in full swing, adhering to the company’s commitment to timely delivery.  Signature projects like M3M Golfestate, M3M IFC, and Trump Towers Gurugram have redefined luxury living and established Gurugram as a premier real estate hub.<br/><br/><strong>Product & Service Portfolio:</strong> M3M India is a leading luxury real estate developer in Gurugram and Delhi NCR, offering a range of premium residential, retail, and commercial projects. Their product portfolio includes luxury residential apartments, serviced apartments, retail shopping centers, and office spaces, along with property leasing services. The company emphasizes high-end design, premium materials, and upscale amenities, managing the full project lifecycle from land acquisition through delivery. M3M India collaborates with trusted architects, engineers, and global brands to create luxurious lifestyles, offering integrated, personalized lifestyle options with comprehensive facilities. The company's developments aim to shape the Gurugram landscape by providing elegant living spaces, spaces where businesses and customers connect, and business environments that inspire success and productivity.. # M3M India Private Limited ID: 7h9uuxcr0RQs Website: www.m3mindia.com Headquarters: Gurugram, Haryana, India LinkedIn: www.linkedin.com/company/m3m-india-limited · 156,986 followers Industry: Real Estate Industry codes: SIC 65, 653, NAICS 53, 531 Company type: Privately Held Business model: B2B, B2C SaaS: no Social profiles: www.facebook.com/m3mindialtd, www.twitter.com/m3mindialimited, www.twitter.com/m3mindiapvtltd, www.crunchbase.com/organization/m3m-india-limited, www.instagram.com/m3mindiapvtltd, www.youtube.com/user/m3mindialtd Email: sales@m3mindia.com Phone: 91-97110-05826, 1800-123-3333 Description: M3M India is a leading luxury real estate developer in Gurugram & Delhi NCR. They offer premium residential, retail, and office projects with RERA-approved quality. [...] ## Products and services Business areas: Real Estate Development, Luxury Residential Development, Commercial Real Estate Development, Retail Property Development Products: Luxury Residential Apartments, Serviced Apartments, Retail Shopping Centers, Office Spaces, Property Leasing Services  ## Headcount - Now: 2,699 · +404 yearly (17.6%) · +75 quarterly · +13 monthly   - Southern Asia: 1,625   - Western Asia: 7   - Northern America: 1   - Northern Europe: 1   - Eastern Europe: 0   - Latin America: 0   - Southern Europe: 0   - Sub Saharan Africa: 0   - Central Asia: 0   - Australia New Zealand: 0   - South Eastern Asia: 0   - Polynesia: 0   - Northern Africa: 0   - Melanesia: 0   - Western Europe: 0  ## Financials - Annual revenue: 1.58B USD. -20 points in the past 30 days  ## About M3M India  M3M India is a real estate developer that focuses on residential and commercial properties. The company offers services including the development of residential projects, commercial spaces, retail outlets, and serviced apartments, along with property leasing services. M3M India's projects include various designs and amenities, serving the luxury segment of the real estate market. It was founded in 2007 and is based in Gurugram, India.  ## Headquarters Location  6th Floor, M3M Tee Point, Sector 65 Golf Course Road Ext.  Gurugram,  India  +91 124 4732000  Loading...  Loading...  ## Latest M3M India News  ### M3M India Frequently Asked Questions (FAQ)  When was M3M India founded?  M3M India was founded in 2007.<br/><br/><strong>Recent Developments & News:</strong> M3M India has unveiled a ₹14,500 crore construction acceleration program to expedite the development of its 45 million sq ft portfolio, with plans to complete 7.8 million sq ft by FY27, funded through internal accruals and working capital, maintaining a zero-debt balance sheet. The company has secured occupancy certificates for these developments, which include residential projects like M3M Capital 113 and M3M Antalya Hills 79, and mixed-use commercial developments such as M3M Capital Walk 113 and M3M Paragon 57. M3M India also won a prime 12.5-acre land parcel in Noida Sector 108 for Rs 2,000 crore, and has acquired a 13-acre mixed-use plot in an e-auction for ₹827.41 crore. The company has also partnered with global hospitality brand ONE Atmosphere to bring global hospitality living to Gurugram.. - Industry - 1 min read  # M3M India deploys ₹14,500 crore to fund construction of over 45 million sq ft  M3M India has launched a ₹14,500 crore construction acceleration program to expedite the development of its 45 million sq ft portfolio. The company plans to complete 7.8 million sq ft by FY27, focusing on premium residential and mixed-use commercial projects. This initiative is entirely funded through internal accruals and working capital, maintaining M3M's zero-debt balance sheet.  NEW DELHI: M3M India plans to invest about ₹14,500 crore to fund the development of its over 45 million sq ft under-development portfolio, the company said in a media release. [...] Pratik Tibrewala, head of Corporate Finance of the company said, "This entire capital deployment is being funded through internal accruals and working capital, reinforcing the strength of M3M's balance sheet and our net zero-debt position."  The developments are being funded through internal accruals and working capital, with the company maintaining a zero-debt balance sheet.  The company has identified 7.8 million sq ft for completion by FY27, spanning premium residential and mixed-use commercial projects. Residential projects account for 5.8 million sq ft, including M3M Capital 113 (3.2 million sq ft) and M3M Antalya Hills 79 (2.6 million sq ft). [...] The remaining two million sq ft is allocated to mixed-use commercial developments, including M3M Capital Walk 113 (0.8 million sq ft), M3M Paragon 57 (0.9 million sq ft), and M3M Jewel 25 (0.3 million sq ft).  Pratik Tibrewala, head of Corporate Finance of the company said, "This entire capital deployment is being funded through internal accruals and working capital, reinforcing the strength of M3M's balance sheet and our net zero-debt position.". Dwarka Expressway Prices Surge Over Five Years  ### M3M India highlights how Dwarka Expressway has transformed into Gurugram's top luxury hub following a one hundred thirty...  08 September 2026 M3M Wins High-Value Noida Land Auction  ### M3M India wins a prime Sector 108 Noida land parcel by bidding over double the reserve price, expanding its regional dev...  08 September 2026 M3M Outbids Competitors For Noida Expressway Plot  ### M3M India secures a major twelve point five acre Noida Sector 108 land parcel, outbidding industry competitors in a high...  08 September 2026 M3M Acquires Noida Land For Record Amount  ### M3M India acquires a prime twelve point five acre land parcel in Noida Sector 108 for two thousand crore rupees for mixe... [...] M3M Partners with ELLE Impact 2026: Shaping the Future of Conscious Luxury  #### M3M India at PRC 2026  #### Premium Retail Partner | Phygital Retail Convention & Awards 2026M3M India proudly participates as the Premium Retail Partner at the Phygital Retail Convention & Awards (PRC) 2026 — the 7th edition of I...<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> M3M India's key competitors in the real estate market include Emaar, Wanda Group, Godrej Properties, Vingroup, and DLF India. Emaar, based in Dubai, is a leading global real estate developer, while Wanda Group, headquartered in Beijing, specializes in commercial hotels, resorts, and apartments. Godrej Properties, based in Mumbai, focuses on residential and commercial real estate projects. Vingroup, from Hanoi, provides real estate development and management services. DLF India, based in Gurugram, offers property and real estate development services. Additionally, local rivals include Smartworld, Elan Group, Sobha, and Godrej Properties, each with unique specialties in ultra luxury residential projects. Other significant competitors include Vatika, EDL, and Raheja Developers, all operating within the Real Estate & Construction sector.. ## M3M vs The Market: Who Are Their Competitors?  When looking at the competitors of M3M, the Gurgaon market is fiercely competitive. The most notable rivals in the ultra luxury space include DLF, Smartworld, Elan Group, Sobha, and Godrej Properties.  Each of these developers commands a unique specialty. Smartworld (M3M sister company) is known for highly modern, tech-forward designs, while Elan has recently made massive waves transitioning from purely commercial builds to ultra luxury residential projects.  Meanwhile, Sobha commands a massive premium for its flawless, backward-integrated construction quality, and Godrej Properties leverages its absolute corporate transparency to dominate the resort-style luxury segment.. Vatika is one of M3M's top competitors. Vatika was founded in 1986, and its headquarters is in Gurugram, Haryana.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://m3mindia.com/our-story" target="_blank">About M3M India | Our Story, Legacy &amp; Leadership</a></h3>
+                    <div class="result-url">https://m3mindia.com/our-story</div>
+                    <div class="result-content">M3M India Group
+
+Founded in 2010, M3M India has quickly risen as one of India’s most dynamic and innovative real estate developers, built on the values of ethical governance, transparency, commitment, and passion for excellence.
+
+With a forward-looking vision crafted by Founder Chairman Sh. Basant Bansal and Promoters Sh. Roop Bansal and Sh. Pankaj Bansal, M3M India has become a transformative force in the luxury residential and retail real estate sector. Today, M3M stands as a symbol of sophistication and innovation, setting new benchmarks across India.
+
+A Proven Track Record of Delivery and Development [...] With a focus on building world-class destinations, M3M is developing M3M Smart City Delhi Airport—a high-end residential, mixed-use retail, and commercial hub along the Dwarka Expressway. This project symbolizes M3M’s commitment to creating spaces that integrate urban luxury with functional design.
+
+Backed by a robust land bank of 3,000 acres and a customer base exceeding 20,000, M3M India operates on the principles of Trust, Transparency, and Timely Delivery. M3M’s vertically integrated model, managing every aspect from land acquisition to after-sales, ensures streamlined processes, cost-efficiency, and quality control, giving it a strong competitive advantage.
+
+2024-25: A Year of Record-Breaking Growth [...] A Proven Track Record of Delivery and Development
+
+With an impressive portfolio of 66 projects, M3M has already delivered all developments launched before 2020. The company has successfully completed 43 projects spanning 20 million square feet, and another 23 projects, covering 40 million square feet, are in full swing, adhering to the company’s commitment to timely delivery.
+
+Signature projects like M3M Golfestate, M3M IFC, and Trump Towers Gurugram have redefined luxury living and established Gurugram as a premier real estate hub. Among these, M3M Golfestate—a 56-acre luxury residential complex—has won numerous awards for its architectural brilliance and stands as a global exemplar of luxury real estate.
+
+Expanding Horizons: M3M Smart City Delhi Airport and Beyond</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://cm.linkedin.com/company/m3m-india-limited" target="_blank">M3M India Private Limited</a></h3>
+                    <div class="result-url">https://cm.linkedin.com/company/m3m-india-limited</div>
+                    <div class="result-content">Description: M3M India, established in 2010, is one of the fastest-growing real estate developers in the country. It is driven by Founder Chairman Basant Bansal and supported by promoters Roop Bansal and Pankaj Bansal. The growth story is built upon a foundation of ethical corporate governance, transparency, commitment, and passion. The Chairman and promoters have designed a progressive vision for M3M India, aiming to establish the company as one of the most sought-after players in the real estate sector. Over time, M3M India has emerged as a game-changer in the luxury, residential, and retail segments of the real estate industry in the country. The Group has launched a slew of iconic projects, designed and developed by world-class partners. Put together these projects epitomize the new [...] partners. Put together these projects epitomize the new bustling Millennium Gurugram. The Group’s projects have repeatedly been acknowledged as the best and have been felicitated with numerous business and lifestyle awards the world over. What sets M3M Group apart as a developer and provider of luxury living experiences across the country is its world-class designs, high-end amenities and the use of top notch materials. M3M has scripted its market success and built formidable brand equity within a short time-span owing to a firm commitment to innovation, quality, customer satisfaction and ethical behaviour of the highest standards. M3M has delivered a slew of luxury residential developments and premium commercial projects, each designed to be one of a kind. These developments cater to [...] designed to be one of a kind. These developments cater to personalised lifestyle options along with world-class facilities and amenities. One thing that sets us apart is that we have built the business end-to-end. From owning land to monetising, licensing, launch, construction, marketing, delivery and after-sales, the complete value chain is in our control.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/m3m-india-limited" target="_blank">M3M India Private Limited - LinkedIn</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/m3m-india-limited</div>
+                    <div class="result-content">Description: M3M India, established in 2010, is one of the fastest-growing real estate developers in the country. It is driven by Founder Chairman Basant Bansal and supported by promoters Roop Bansal and Pankaj Bansal. The growth story is built upon a foundation of ethical corporate governance, transparency, commitment, and passion. The Chairman and promoters have designed a progressive vision for M3M India, aiming to establish the company as one of the most sought-after players in the real estate sector. Over time, M3M India has emerged as a game-changer in the luxury, residential, and retail segments of the real estate industry in the country. The Group has launched a slew of iconic projects, designed and developed by world-class partners. Put together these projects epitomize the new [...] partners. Put together these projects epitomize the new bustling Millennium Gurugram. The Group’s projects have repeatedly been acknowledged as the best and have been felicitated with numerous business and lifestyle awards the world over. What sets M3M Group apart as a developer and provider of luxury living experiences across the country is its world-class designs, high-end amenities and the use of top notch materials. M3M has scripted its market success and built formidable brand equity within a short time-span owing to a firm commitment to innovation, quality, customer satisfaction and ethical behaviour of the highest standards. M3M has delivered a slew of luxury residential developments and premium commercial projects, each designed to be one of a kind. These developments cater to [...] designed to be one of a kind. These developments cater to personalised lifestyle options along with world-class facilities and amenities. One thing that sets us apart is that we have built the business end-to-end. From owning land to monetising, licensing, launch, construction, marketing, delivery and after-sales, the complete value chain is in our control.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://leadiq.com/c/m3m-india-private-limited/5a1d901b5400005b0075c04a" target="_blank">M3M India Private Limited Company Overview, Contact Details &amp; Competitors | LeadIQ</a></h3>
+                    <div class="result-url">https://leadiq.com/c/m3m-india-private-limited/5a1d901b5400005b0075c04a</div>
+                    <div class="result-content">M3M India Private Limited, founded in 2010 and based in Badshahpur, Haryana, India, operates as a real estate developer led by founder Basant Bansal and supported by promoters Roop Bansal and Pankaj Bansal. The company concentrates on luxury residential, retail, and premium commercial projects, emphasizing high-end design, premium materials, and upscale amenities, while managing the full project lifecycle from land acquisition through delivery. The group is a rapidly expanding player in India&#x27;s real estate market, with projects that have earned industry and lifestyle awards and that involve collaborations with world-class partners. Its developments aim to shape the Gurugram landscape by offering integrated, personalized lifestyle options with comprehensive facilities. In 2026, M3M India [...] LeadIQ logo
+
+Learn more at LeadIQ.com
+
+ Insights
+
+Expansion Momentum M3M India is actively expanding its footprint with multiple high-value acquisitions and new developments in Noida, including a 12.5-acre commercial mixed-use plot and additional sector acquisitions, signaling ongoing growth and opportunity for partnerships, leasing, and amenity collaborations.
+
+Luxury Urbanization The company focuses on luxury residential and premium commercial projects with integrated, end-to-end value chains and world-class amenities, creating opportunities to cross-sell premium services, concierge offerings, and high-end retail partnerships within their developments. [...] LinkedIn logoCrunchbase logo
+
+ Section iconCompany Overview
+
+Phone number
+:   +91-124-473-\\\\
+
+Website
+:   m3mindia.com
+
+SIC Code
+:   6531 - Real Estate Agents and Managers
+
+NAICS Code
+:   531 - Real Estate
+
+Employees
+:   1001-5000
+
+ Section iconMedia &amp; News
+
+ Media icon
+
+   M3M India Pvt. Ltd. and Smartworld Developers Pvt Ltd have built a branded-residences portfolio spanning three Trump, two ELIE SAAB and one Jacob &amp; Co. developments, covering approximately 6.9 million sq. ft. and around 500 owners.
+
+  Oct 29, 2026 | economictimes.indiatimes.com
+ Media icon
+
+   M3M India Pvt. Ltd. unveils M3M Black Circle, a private, invitation-only platform that extends branded homeownership beyond the residence through exclusive access and curated experiences, debuting in Paris, France.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://pitchbook.com/profiles/company/93779-65" target="_blank">M3M India 2026 Company Profile: Valuation, Funding &amp; Investors | PitchBook</a></h3>
+                    <div class="result-url">https://pitchbook.com/profiles/company/93779-65</div>
+                    <div class="result-content">M3M India
+
+ M3M India Overview
+
+  Year Founded  1985
+
+Year Founded
+
+  Status  Private
+
+  Employees  931
+
+Employees
+
+  Latest Deal Type  Later Stage VC  (Upcoming)
+
+  Investors  1
+
+ M3M India General Information
+
+ Description
+
+Operator of a real estate construction company intended to deliver sustainable and customer-centric projects. The company offers property development, residential communities, commercial spaces, retail developments, project planning, property management services, and creates properties for modern living and business needs, enabling homebuyers, businesses, and investors to access professionally developed properties with functional designs and long-term usability.
+
+ Contact Information
+
+ Website
+
+www.m3mindia.com
+
+Ownership Status [...]  M3M India Affiliates
+
+Subsidiaries (1)
+
+| Name | Industry | Location | Year Founded |
+ ---  --- |
+| Capital Warriors Gurgaon | , | Gurgaon, India |  |
+
+ M3M India FAQs
+
+  When was M3M India founded?
+
+  M3M India was founded in 1985.
+  Where is M3M India headquartered?
+
+  M3M India is headquartered in Gurugram, India.
+  What is the size of M3M India?
+
+  M3M India has 931 total employees.
+  What industry is M3M India in?
+
+  M3M India’s primary industry is Buildings and Property.
+  Is M3M India a private or public company?
+
+  M3M India is a Private company.
+  What is M3M India’s current revenue?
+
+  The current revenue for M3M India is  .
+  Who are M3M India’s investors?
+
+  Brand Capital has invested in M3M India.
+  Who are M3M India’s competitors?</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/7h9uuxcr0RQs" target="_blank">M3M India Private Limited</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/7h9uuxcr0RQs</div>
+                    <div class="result-content">M3M India Private Limited
+ID: 7h9uuxcr0RQs
+Website: www.m3mindia.com
+Headquarters: Gurugram, Haryana, India
+LinkedIn: www.linkedin.com/company/m3m-india-limited · 156,986 followers
+Industry: Real Estate
+Industry codes: SIC 65, 653, NAICS 53, 531
+Company type: Privately Held
+Business model: B2B, B2C
+SaaS: no
+Social profiles: www.facebook.com/m3mindialtd, www.twitter.com/m3mindialimited, www.twitter.com/m3mindiapvtltd, www.crunchbase.com/organization/m3m-india-limited, www.instagram.com/m3mindiapvtltd, www.youtube.com/user/m3mindialtd
+Email: sales@m3mindia.com
+Phone: 91-97110-05826, 1800-123-3333
+Description: M3M India is a leading luxury real estate developer in Gurugram &amp; Delhi NCR. They offer premium residential, retail, and office projects with RERA-approved quality. [...]  Products and services
+Business areas: Real Estate Development, Luxury Residential Development, Commercial Real Estate Development, Retail Property Development
+Products: Luxury Residential Apartments, Serviced Apartments, Retail Shopping Centers, Office Spaces, Property Leasing Services
+
+ Headcount
+- Now: 2,699 · +404 yearly (17.6%) · +75 quarterly · +13 monthly
+  - Southern Asia: 1,625
+  - Western Asia: 7
+  - Northern America: 1
+  - Northern Europe: 1
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Australia New Zealand: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+
+ Financials
+- Annual revenue: 1.58B USD</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/m3m-india" target="_blank">M3M India - Products, Competitors, Financials, Employees, Headquarters Locations</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/m3m-india</div>
+                    <div class="result-content">-20 points in the past 30 days
+
+ About M3M India
+
+M3M India is a real estate developer that focuses on residential and commercial properties. The company offers services including the development of residential projects, commercial spaces, retail outlets, and serviced apartments, along with property leasing services. M3M India&#x27;s projects include various designs and amenities, serving the luxury segment of the real estate market. It was founded in 2007 and is based in Gurugram, India.
+
+ Headquarters Location
+
+6th Floor, M3M Tee Point, Sector 65 Golf Course Road Ext.
+
+Gurugram,
+
+India
+
++91 124 4732000
+
+Loading...
+
+Loading...
+
+ Latest M3M India News
+
+ M3M India Frequently Asked Questions (FAQ)
+
+When was M3M India founded?
+
+M3M India was founded in 2007. [...] Sobha Dream Series is a real estate development company involved in residential and commercial properties. The company provides services that include the development of residential communities and commercial spaces, contracting services, and manufacturing in areas such as concrete products and interior design. Sobha Dream Series serves the real estate sector with properties located in various cities. It was founded in 1995 and is based in Bengaluru, India.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.m3mproperties.com" target="_blank">M3M Properties Gurgaon &amp; Noida | Luxury Homes &amp; Commercial Spaces</a></h3>
+                    <div class="result-url">https://www.m3mproperties.com</div>
+                    <div class="result-content">Explore More
+
+ Retail
+
+retail
+
+Vibrant retail spaces  
+that connect brands with customers.
+
+Explore More
+
+ Leasing
+
+leasing
+
+Smart leasing options  
+for smart business decisions.
+
+Explore More
+
+ Upcoming Projects
+
+Offices
+
+Upcoming projects designed to inspire excellence and elevate every space.
+
+Explore More
+
+image
+
+About M3M
+
+ Explore M3M India Luxury Homes, Apartments &amp; Commercial Spaces [...] M3M Properties is North India’s prominent luxury real estate builder, specializing in premium ultra-luxury branded residences, commercial &amp; leasing across Gurgaon, Delhi-NCR, Noida, and Panipat. Massive, high-end developments with golf-themed views and high-society crowds. M3M does not just build simple apartment blocks; they construct luxurious lifestyles. When you walk into an M3M India, it feels like entering a 5-star hotel. They are eminent for excessive clubhouses, white-glove concierge services, high-end retail opportunity on the ground floor, and shaped green landscapes.
+
+ Experience Luxury Living with M3M Residential Projects [...] arrow
+
+eating
+
+ Contemporary Designs
+
+Modern architecture blended with smart layouts for elegant and functional living.
+
+arrow
+
+island
+
+ Top Class Partners
+
+We collaborate with trusted architects, engineers, and global brands.
+
+arrow
+
+hotel
+
+ Best Customer Support
+
+Dedicated assistance at every step — from inquiry to handover and beyond.
+
+arrow
+
+eating
+
+ Value Creations
+
+Designed to maximize long-term returns and enhance lifestyle value.
+
+arrow
+
+FAQ
+
+ Need Help? Read Popular Questions
+
+M3M Properties features residential and commercial real estate developments, including high-class luxurious residential apartments, retail spaces, office spaces, and leasing opportunities. Buyers can explore property by location, property type, budget, and requirements.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://m3mindia.com" target="_blank">M3M India | Luxury Real Estate Developer in Gurugram &amp; NCR</a></h3>
+                    <div class="result-url">https://m3mindia.com</div>
+                    <div class="result-content">Sector 113, SCDA, Dwarka Expressway, Delhi NCR
+
+Altitude_home_page_-_E0fw0J2JcfPd_-_jEKOMiqvZx1P
+
+m3m-altitude-logo_-_Qp0HP7X06qXb
+
+ Residential
+
+Sector 65, Gurugram
+
+cullinan_-_xWpN2bljojHt
+
+cullinan-logo_-_ZrGUfza7w7CZ
+
+ Residential
+
+Sector 94, Noida
+
+ Crafting Excellence Across Verticals
+
+ Residential
+
+residentail
+
+Elegant living spaces  
+designed for modern families.
+
+Read More
+
+ Retail
+
+retail
+
+Spaces where businesses and  
+customers seamlessly connect.
+
+Read More
+
+ Offices
+
+office
+
+Business environments that  
+inspire success and productivity.
+
+Read More
+
+ Serviced Apartments
+
+service apartments
+
+Comfortable living spaces for  
+modern lifestyles on the go.
+
+Read More
+
+ Leasing
+
+leasing
+
+Smart leasing options  
+for smart business decisions.
+
+Read More</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://leadiq.com/c/m3m-india-private-limited/5a1d901b5400005b0075c04a" target="_blank">M3M India Private Limited Company Overview, Contact Details &amp; Competitors | LeadIQ</a></h3>
+                    <div class="result-url">https://leadiq.com/c/m3m-india-private-limited/5a1d901b5400005b0075c04a</div>
+                    <div class="result-content">M3M India Private Limited, founded in 2010 and based in Badshahpur, Haryana, India, operates as a real estate developer led by founder Basant Bansal and supported by promoters Roop Bansal and Pankaj Bansal. The company concentrates on luxury residential, retail, and premium commercial projects, emphasizing high-end design, premium materials, and upscale amenities, while managing the full project lifecycle from land acquisition through delivery. The group is a rapidly expanding player in India&#x27;s real estate market, with projects that have earned industry and lifestyle awards and that involve collaborations with world-class partners. Its developments aim to shape the Gurugram landscape by offering integrated, personalized lifestyle options with comprehensive facilities. In 2026, M3M India [...]  M3M India Private Limited Tech Stack
+
+M3M India Private Limited uses 8 technology products and services including Google Ads, Taboola, Power BI, and more. Explore M3M India Private Limited&#x27;s tech stack below.
+
+ Google Ads
+
+  Advertising
+ Taboola
+
+  Advertising
+ Power BI
+
+  Business Intelligence
+ Salesforce
+
+  Customer Relationship Management
+ SAP
+
+  Customer Relationship Management
+ Microsoft 365
+
+  Email
+ Brevo
+
+  Live Chat
+ Adobe Creative Suite
+
+  Visualisation Software
+
+ Media &amp; News
+
+ Media icon
+
+   M3M India Pvt. Ltd. and Smartworld Developers Pvt Ltd have built a branded-residences portfolio spanning three Trump, two ELIE SAAB and one Jacob &amp; Co. developments, covering approximately 6.9 million sq. ft. and around 500 owners. [...] M3M India, together with Smartworld, has built a branded-residences portfolio spanning three Trump developments, two ELIE SAAB developments and one Jacob &amp; Co. development.
+
+  Oct 29, 2026 | economictimes.indiatimes.com
+ Media icon
+
+   M3M India Pvt. Ltd. unveils M3M Black Circle, a private, invitation-only platform that extends branded homeownership beyond the residence through exclusive access and curated experiences, debuting in Paris, France.
+
+  India&#x27;s largest player in branded residences segment, M3M India has unveiled M3M Black Circle, a private, invitation-only privilege platform designed to extend the experience of branded homeownership beyond the residence.
+
+  Oct 29, 2026 | constrofacilitator.com
+ Media icon</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://realty.economictimes.indiatimes.com/news/industry/m3m-india-unveils-14500-crore-construction-acceleration-programme-for-45-million-sq-ft-portfolio/129946559" target="_blank">M3M India Unveils ₹14,500 Crore Construction Acceleration Programme for 45 Million Sq Ft Portfolio, ETRealty</a></h3>
+                    <div class="result-url">https://realty.economictimes.indiatimes.com/news/industry/m3m-india-unveils-14500-crore-construction-acceleration-programme-for-45-million-sq-ft-portfolio/129946559</div>
+                    <div class="result-content">- Industry
+- 1 min read
+
+ M3M India deploys ₹14,500 crore to fund construction of over 45 million sq ft
+
+M3M India has launched a ₹14,500 crore construction acceleration program to expedite the development of its 45 million sq ft portfolio. The company plans to complete 7.8 million sq ft by FY27, focusing on premium residential and mixed-use commercial projects. This initiative is entirely funded through internal accruals and working capital, maintaining M3M&#x27;s zero-debt balance sheet.
+
+NEW DELHI: M3M India plans to invest about ₹14,500 crore to fund the development of its over 45 million sq ft under-development portfolio, the company said in a media release. [...] Pratik Tibrewala, head of Corporate Finance of the company said, &quot;This entire capital deployment is being funded through internal accruals and working capital, reinforcing the strength of M3M&#x27;s balance sheet and our net zero-debt position.&quot;
+
+The developments are being funded through internal accruals and working capital, with the company maintaining a zero-debt balance sheet.
+
+The company has identified 7.8 million sq ft for completion by FY27, spanning premium residential and mixed-use commercial projects. Residential projects account for 5.8 million sq ft, including M3M Capital 113 (3.2 million sq ft) and M3M Antalya Hills 79 (2.6 million sq ft). [...] The remaining two million sq ft is allocated to mixed-use commercial developments, including M3M Capital Walk 113 (0.8 million sq ft), M3M Paragon 57 (0.9 million sq ft), and M3M Jewel 25 (0.3 million sq ft).
+
+Pratik Tibrewala, head of Corporate Finance of the company said, &quot;This entire capital deployment is being funded through internal accruals and working capital, reinforcing the strength of M3M&#x27;s balance sheet and our net zero-debt position.&quot;</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://m3mindia.com" target="_blank">M3M India | Luxury Real Estate Developer in Gurugram &amp; NCR</a></h3>
+                    <div class="result-url">https://m3mindia.com</div>
+                    <div class="result-content">Dwarka Expressway Prices Surge Over Five Years
+
+ M3M India highlights how Dwarka Expressway has transformed into Gurugram&#x27;s top luxury hub following a one hundred thirty...
+
+08 September 2026 M3M Wins High-Value Noida Land Auction
+
+ M3M India wins a prime Sector 108 Noida land parcel by bidding over double the reserve price, expanding its regional dev...
+
+08 September 2026 M3M Outbids Competitors For Noida Expressway Plot
+
+ M3M India secures a major twelve point five acre Noida Sector 108 land parcel, outbidding industry competitors in a high...
+
+08 September 2026 M3M Acquires Noida Land For Record Amount
+
+ M3M India acquires a prime twelve point five acre land parcel in Noida Sector 108 for two thousand crore rupees for mixe... [...] M3M Partners with ELLE Impact 2026: Shaping the Future of Conscious Luxury
+
+ M3M India at PRC 2026
+
+ Premium Retail Partner | Phygital Retail Convention &amp; Awards 2026M3M India proudly participates as the Premium Retail Partner at the Phygital Retail Convention &amp; Awards (PRC) 2026 — the 7th edition of I... Read More
+
+M3M India at PRC 2026
+
+ M3M India and ONE Atmosphere Bring Global Hospitality Living to Gurugram
+
+ Gurugram, March 24, 2026: M3M India, one of India’s leading real estate developers, in partnership  with global hospitality brand ONE Atmosphere, part of Atmosphere Core, has announced the launch  of... Read More
+
+M3M India and ONE Atmosphere Bring Global Hospitality Living to Gurugram [...] 08 September 2026 M3M Emphasizes Practical Skills Over Degrees
+
+ M3M India CHRO Veena Bansal highlights the shift toward skills-based recruitment, prioritizing practical problem-solving...
+
+04 September 2026 Structural Shift Towards Premium Luxury Housing
+
+ M3M India aligns with CareEdge Ratings&#x27; report highlighting a structural shift toward premium and luxury housing, driven...
+
+29 August 2026
+
+VIEW MORE
+
+ -
+
+acres of prime land bank
+
+ -
+
+iconic projects
+
+ -
+
+Sq. M delivered
+
+ -
+
+Sq. M under construction
+
+ -
+
+strong M3M family
+
+ Iconic Masterpieces
+
+Jewel_desktop.jpg_-_G6pmOHPjps47
+
+logo-jewel-2_-_geOVQCFsLKzD
+
+ Retail
+
+Sector 25, MG Road, Gurugram
+
+mansion_-_JCTLohqIUT3m
+
+mansion-ICON_-_WYStDeLQwemJ
+
+ Residential
+
+Sector 113, SCDA, Dwarka Expressway, Delhi NCR</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://realty.economictimes.indiatimes.com/tag/m3m+india" target="_blank">M3m india - Latest m3m india , Information &amp; Updates - Real Estate -ET Realty</a></h3>
+                    <div class="result-url">https://realty.economictimes.indiatimes.com/tag/m3m+india</div>
+                    <div class="result-content">&quot;The SHO City, Gurugram is also directed to appear in person in court on January 2 at about 11 am and submit his written reply for not registering the FIR despite the court order,” the court has said on Saturday. As per the court order, the SHO did not register the FIR for two days after the first order.
+
+&quot;Under the Deen Dayal Jan Awas Yojana, we will invest another Rs 1,000 crore to create 2,000 independent floors,&quot; M3M India director PankajBansal said. &quot;We will launch this initiative within this financial year.&quot;
+
+The company has repaid a loan of Rs 418 crore in Q4 FY21 ahead of its target of 400 crore. It is confident of clearing the balance liabilities by March 2022, said Pankaj Bansal, director, M3M India. [...]  Allahabad HC quashes ECIR and two FIRs filed against M3M India
+
+M3M India said, &quot;This ruling reaffirms our commitment to ethical business practices and reinforces our trust in the judiciary.&quot;
+
+Bansals on Friday appeared before the Special Court (PMLA), Panchkula in compliance of the summons issued by the court on February 20, 2024, directing their appearance.
+
+​The UP Real Estate Regulatory Authority (UP RERA) also warned that if the unregistered project is not discontinued, its promoter can be imprisoned, and cautioned other developers to follow the RERA Act strictly, according to an official statement.
+
+The land, located near IFFCO Chowk, has been acquired through an auction conducted by Haryana Shahari Vikas Pradhikaran (HSVP).</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.business-standard.com/companies/news/m3m-to-deploy-rs-14500-crore-for-45-msf-construction-pipeline-126040100987_1.html" target="_blank">M3M to deploy ₹14,500 crore to fund construction of 45 mn sqft portfolio | Company News - Business Standard</a></h3>
+                    <div class="result-url">https://www.business-standard.com/companies/news/m3m-to-deploy-rs-14500-crore-for-45-msf-construction-pipeline-126040100987_1.html</div>
+                    <div class="result-content">M3M to deploy ₹14,500 crore to fund construction of 45 mn sqft portfolio
+
+ M3M India plans to deploy ₹14,500 crore to accelerate construction of over 45 million sq ft, funded through internal accruals and working capital
+
+ Listen to This Article
+
+Realty major M3M India is planning to deploy a ₹14,500 crore construction acceleration programme to fund the development of more than 45 million square feet (msf) of its under-development portfolio.
+
+“M3M Group plans to deliver multiple projects totalling 7 to 9 msf annually over the next five financial years, with the goal of achieving 45 msf by financial year 2030–31 (FY31),” Pratik Tiberwala, head of corporate finance at M3M India, told
+
+Business Standard. [...] “Together, these projects form one of the largest upcoming delivery pipelines in Gurugram, strengthening M3M India’s position as a leading execution-driven developer,” the firm said.
+
+The firm said the developments will be funded through internal accruals and working capital, with the company maintaining a zero-debt balance sheet.
+
+“Of the 45 msf earmarked to be funded, 37.4 msf is for residential projects, 5.6 msf is for retail and commercial developments, whereas the remaining 2 msf will be kept for industrial plotting,” said Tiberwala.
+
+He added that the under-construction portfolio will be delivered in phases starting from FY27, with full completion targeted by FY31. [...] Business Standard.
+
+He added that the programme will include projects initiated as late as the second half of FY26 (H2 FY26).
+
+Within this broader programme, M3M India has identified 7.8 msf across five projects in Gurugram for completion by FY27, spanning premium residential and mixed-use commercial projects.
+
+The company said it has already secured occupancy certificates for these five developments.
+
+ Also Read
+
+This includes residential projects accounting for 5.8 msf, including M3M Capital 113 (3.2 msf) and M3M Antalya Hills 79 (2.6 msf).
+
+The remaining 2.0 msf is allocated to mixed-use commercial developments, including M3M Capital Walk 113 (0.8 msf), M3M Paragon 57 (0.9 msf), and M3M Jewel 25 (0.3 msf).</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://leadiq.com/c/m3m-india-private-limited/5a1d901b5400005b0075c04a" target="_blank">M3M India Private Limited Company Overview, Contact Details &amp; Competitors | LeadIQ</a></h3>
+                    <div class="result-url">https://leadiq.com/c/m3m-india-private-limited/5a1d901b5400005b0075c04a</div>
+                    <div class="result-content">Oct 29, 2026 | constrofacilitator.com
+ Media icon
+
+   M3M India Pvt. Ltd. launches Black Circle and targets an additional $1.41B in topline revenue by expanding its branded-residences portfolio to 10 million sq. ft. by the end of 2026.
+
+  M3M India launches &#x27;Black Circle&#x27;, targets expansion of branded portfolio to 10 mn sq. Ft. and additional ₹13,400 crore in revenue.
+
+  Oct 29, 2026 | constrofacilitator.com
+ Media icon
+
+   M3M India Pvt. Ltd. wins a 13 acre mixed-use plot at an e-auction for $87.1M in India in 2022.
+
+  M3M India won a 13 acre mixed-use plot in this sector at an e-auction in 2022 for ₹827.41 crore.
+
+  Oct 21, 2026 | bharatacre.com
+ Media icon [...] LinkedIn logoCrunchbase logo
+
+ Section iconCompany Overview
+
+Phone number
+:   +91-124-473-\\\\
+
+Website
+:   m3mindia.com
+
+SIC Code
+:   6531 - Real Estate Agents and Managers
+
+NAICS Code
+:   531 - Real Estate
+
+Employees
+:   1001-5000
+
+ Section iconMedia &amp; News
+
+ Media icon
+
+   M3M India Pvt. Ltd. and Smartworld Developers Pvt Ltd have built a branded-residences portfolio spanning three Trump, two ELIE SAAB and one Jacob &amp; Co. developments, covering approximately 6.9 million sq. ft. and around 500 owners.
+
+  Oct 29, 2026 | economictimes.indiatimes.com
+ Media icon
+
+   M3M India Pvt. Ltd. unveils M3M Black Circle, a private, invitation-only platform that extends branded homeownership beyond the residence through exclusive access and curated experiences, debuting in Paris, France. [...] Noida, September 10, 2026: Real estate major M3M India bagged a 12.5-acre commercial mixed-use plot in Sector 108 for Rs 1,839 crore, more than double the reserve price of Rs 836 crore, following an aggressive auction battle with DLF.
+
+  Sep 10, 2026 | realtynmore.com
+ Media icon
+
+   M3M India Pvt. Ltd. invests $212M into a 12.5-acre land parcel in India on Sep 8th &#x27;26 for mixed-use residential and commercial development.
+
+  M3M India proudly secured a massive 12.5-acre land parcel in Noida for around Rs 2,000 crore, further bolstering its footprint.
+
+  Sep 08, 2026 | economictimes.indiatimes.com
+
+ M3M India Private Limited&#x27;s Email Address Formats
+
+M3M India Private Limited uses at least 3 email formats:</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://m3mpropertyindia.com/m3m-india-review" target="_blank">Is M3M a Reliable Developer? Complete M3M Review for Investors</a></h3>
+                    <div class="result-url">https://m3mpropertyindia.com/m3m-india-review</div>
+                    <div class="result-content">M3M vs The Market: Who Are Their Competitors?
+
+When looking at the competitors of M3M, the Gurgaon market is fiercely competitive. The most notable rivals in the ultra luxury space include DLF, Smartworld, Elan Group, Sobha, and Godrej Properties.
+
+Each of these developers commands a unique specialty. Smartworld (M3M sister company) is known for highly modern, tech-forward designs, while Elan has recently made massive waves transitioning from purely commercial builds to ultra luxury residential projects.
+
+Meanwhile, Sobha commands a massive premium for its flawless, backward-integrated construction quality, and Godrej Properties leverages its absolute corporate transparency to dominate the resort-style luxury segment.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.owler.com/company/m3mindia/competitors" target="_blank">M3M Competitors and Alternatives - Owler</a></h3>
+                    <div class="result-url">https://www.owler.com/company/m3mindia/competitors</div>
+                    <div class="result-content">Vatika is one of M3M&#x27;s top competitors. Vatika was founded in 1986, and its headquarters is in Gurugram, Haryana. Like M3M, Vatika also works within the Real Estate &amp; Construction sector. Vatika has 690 more employees than M3M.
+
+EDL is M3M&#x27;s 2 rival. EDL was founded in 1993 in Inn Bangalore, Karnataka. EDL operates in the Real Estate Development &amp; Operations industry. EDL generates $1.4B less revenue than M3M.
+
+Raheja Developers is a top competitor of M3M. Raheja Developers is a Private company that was founded in Gurugram, Haryana in 1990. Raheja Developers is in the Real Estate Development &amp; Operations field. Raheja Developers has 650 more employees vs. M3M.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/m3m/__rsh2un6W0dMT1KN-SggYKko_y84V70PeksNBYHkQ5XM" target="_blank">M3M - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/m3m/__rsh2un6W0dMT1KN-SggYKko_y84V70PeksNBYHkQ5XM</div>
+                    <div class="result-content">| 4th | Logo for Max Estates  Max Estates 2016, Noida  (India), Public | Provider of residential &amp; commercial development services  - | 69/100 |
+| 5th | Logo for Oberoi Realty  Oberoi Realty 1980, Mumbai  (India), Public | Real estate developer specializing in premium residential and commercial properties | $152M | Alpha Wave Global, Morgan Stanley  &amp; 2 others | 69/100 |
+| 6th | Logo for Vingroup  Vingroup 1993, Hanoi  (Vietnam), Public | Provider of real estate development and management services  IMM Investment, Korea Investment Private Equity ... &amp; 4 others | 69/100 | [...] | Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |
+ ---  ---  --- |
+| 1st | Logo for Emaar  Emaar 1997, Dubai  (United Arab Emirates), Public | Provider of real estate development properties | $98M | Mashreq Bank, Taaleri  &amp; 13 others | 83/100 |
+| 2nd | Logo for Wanda Group  Wanda Group 1988, Beijing  (China), Acquired | Provider of commercial hotels, resorts, and apartments management &amp; development services | $7B | PAG,   &amp; 6 others | 74/100 |
+| 3rd | Logo for Godrej Properties  Godrej Properties 1990, Mumbai  (India), Public | Developer of residential and commercial real estate projects  SBI Pension Funds, GIC  &amp; 9 others | 69/100 | [...] | 7th | Logo for Signature Global  Signature Global 2014, Delhi  (India), Public | Provider of real estate, property, and affordable home development services | $118M | HDFC Capital, ICICI Prudential Real Estate Fund ... &amp; 2 others | 67/100 |
+| 8th | Logo for M3M India  M3M India 2010, Gurugram  (India), Series D | Provider of real estate and commercial project development services | $538M | Piramal Group, PAG  &amp; 9 others | 67/100 |
+| 9th | Logo for DLF India  DLF India 1946, Gurugram  (India), Public | Provider of property and real estate development services  HDFC Mutual Fund, Goldman Sachs  &amp; 12 others | 66/100 |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/m3m-india/__mXICEksauN9TbYK6lMc0AgHeNZXb1ZMSOgrg2oHK6JA" target="_blank">M3M India - 2026 Company Profile, Team, Funding, Competitors &amp; Financials - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/m3m-india/__mXICEksauN9TbYK6lMc0AgHeNZXb1ZMSOgrg2oHK6JA</div>
+                    <div class="result-content">| Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |
+ ---  ---  --- |
+| 1st | Logo for Emaar  Emaar 1997, Dubai  (United Arab Emirates), Public | Provider of real estate development properties | $98M | Mashreq Bank, Taaleri  &amp; 13 others | 82/100 |
+| 2nd | Logo for Wanda Group  Wanda Group 1988, Beijing  (China), Late Stage | Provider of commercial hotels, resorts, and apartments management &amp; development services | $7B | PAG, tencent-holdings.com  &amp; 6 others | 72/100 |
+| 3rd | Logo for Godrej Properties  Godrej Properties 1990, Mumbai  (India), Public | Developer of residential and commercial real estate projects  SBI Pension Funds, GIC  &amp; 9 others | 69/100 | [...] | 4th | Logo for Vingroup  Vingroup 1993, Hanoi  (Vietnam), Public | Provider of real estate development and management services  IMM Investment, Korea Investment Private Equity ... &amp; 4 others | 69/100 |
+| 5th | Logo for Max Estates  Max Estates 2016, Noida  (India), Public | Provider of residential &amp; commercial development services  - | 67/100 |
+| 6th | Logo for DLF India  DLF India 1946, Gurugram  (India), Public | Provider of property and real estate development services  HDFC Mutual Fund, Goldman Sachs  &amp; 12 others | 67/100 |
+| 7th | Logo for Prateek Group  Prateek Group 2005, Noida  (India), Seed | Developer of commercial and residential real estate projects | $31.6M | Auto Components India, fortuneengineering.co.in ... &amp; 7 others | 66/100 | [...] | 8th | Logo for Lendlease  Lendlease 1958, Melbourne  (Australia), Public | Provider of sustainable project development services  Gresham, AUI  &amp; 2 others | 66/100 |
+| 9th | Logo for M3M India  M3M India 2010, Gurugram  (India), Series D | Provider of real estate and commercial project development services | $538M | Piramal Group, PAG  &amp; 9 others | 65/100 |
+| 10th | Logo for SILA  SILA 2010, Mumbai  (India), Series B | Provider of facility management, material handling, food catering, real estate advisory, and development services | $146M | Norwest, Norwest Venture Partners  &amp; 28 others | 64/100 |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://growjo.com/company/M3M_India_Private_Limited" target="_blank">M3M India Private Limited: Revenue, Competitors, Alternatives</a></h3>
+                    <div class="result-url">https://growjo.com/company/M3M_India_Private_Limited</div>
+                    <div class="result-content">| Competitor Name | Revenue | Number of Employees | Employee Growth | Total Funding | Valuation |
+ ---  ---  --- |
+| 1  CoWrks | $64.1M | 342 | 31% | N/A | N/A |
+| 2  Smartworks | $173M | 824 | 34% | N/A | N/A |
+| 3  Emaar India | $130.7M | 697 | 15% | N/A | N/A |
+| 4  Adani Realty | $194.5M | 926 | 30% | N/A | N/A |
+| 5  360 Realtors | $228.3M | 1087 | -1% | N/A | N/A |
+| 6  Workafella by W... | $27.7M | 168 | 10% | N/A | N/A |
+| 7  IndiQube | $102.3M | 537 | 16% | $15M | N/A |
+| 8  Sugam Homes | $10M | 74 | 21% | N/A | N/A |
+| 9  Skootr Offices | $17.6M | 117 | 21% | N/A | N/A |
+| 10  Stayabode Ventu... | $2.4M | 23 | -8% | N/A | N/A |
+
+Add Company
+
+Show More Real Estate Companies
+
+ What Is M3M India Private Limited?</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

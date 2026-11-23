@@ -13,8 +13,9 @@ from backend.models.user import User
 from backend.models.project import Project
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, CompetitorDetail, BrandKit
 from backend.schemas.report import ReportMetadata
+from backend.schemas.brand import normalize_target_market
 from backend.services import report_service
-from backend.services.brand_theme import extract_palette_from_logo
+from backend.services.brand_theme import extract_palette_from_logo, _decode_logo_image, _looks_like_svg, _LOGO_FORMAT_EXTENSIONS
 
 from sqlalchemy.orm import selectinload
 
@@ -24,14 +25,8 @@ logger = logging.getLogger(__name__)
 MAX_COMPETITORS = 5
 
 _LOGO_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads", "logos")
-_ALLOWED_LOGO_CONTENT_TYPES = {
-    "image/png": ".png",
-    "image/jpeg": ".jpg",
-    "image/jpg": ".jpg",
-    "image/svg+xml": ".svg",
-    "image/webp": ".webp",
-}
 _MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024  # 2MB
+_ACCEPTED_LOGO_FORMATS_MSG = "png, jpg, jpeg, webp, gif, bmp, tiff, svg"
 
 
 def _serialize_competitor_details(competitors: Optional[List[CompetitorDetail]]) -> Optional[str]:
@@ -60,8 +55,8 @@ def _resolve_logo_bytes(brand_kit: Optional[BrandKit]) -> Tuple[Optional[bytes],
     """Reads the brand kit's logo file off disk (same lookup brand_theme.py uses
     at export time) and returns (bytes, mime) to persist on the Project row, so
     the DB — not the ephemeral filesystem — is what export-time reads rely on.
-    Returns (None, None) if there's no logo or the file isn't there (SVGs and
-    missing files are skipped the same way brand_theme._load_logo_asset does)."""
+    Returns (None, None) if there's no logo or the file isn't there (missing
+    files are skipped the same way brand_theme._load_logo_asset does)."""
     if brand_kit is None or not brand_kit.logo_url:
         return None, None
     import mimetypes
@@ -81,13 +76,26 @@ def _resolve_logo_bytes(brand_kit: Optional[BrandKit]) -> Tuple[Optional[bytes],
 
 @router.post("/upload-logo")
 async def upload_logo(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
-    ext = _ALLOWED_LOGO_CONTENT_TYPES.get(file.content_type)
-    if ext is None:
-        raise HTTPException(status_code=422, detail="Unsupported image type. Allowed: png, jpeg, svg, webp")
-
     contents = await file.read()
     if len(contents) > _MAX_LOGO_SIZE_BYTES:
         raise HTTPException(status_code=422, detail="Logo file exceeds the 2MB size limit")
+
+    # Format is detected from the file's own bytes (not the client-supplied
+    # filename/content-type, which can lie) by running it through the same
+    # decoder the export path uses — if it can't be decoded here, it couldn't
+    # be used in an export either.
+    try:
+        img = _decode_logo_image(contents)
+    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported or corrupt image file. Allowed formats: {_ACCEPTED_LOGO_FORMATS_MSG}",
+        )
+    # Store the original bytes under an extension matching the detected format
+    # (SVG is kept as the original vector file, not the rasterized preview
+    # `img` is decoded into — rasterization happens again, from this file, at
+    # export time via the same chokepoint).
+    ext = ".svg" if _looks_like_svg(contents) else (_LOGO_FORMAT_EXTENSIONS.get(img.format) or ".png")
 
     filename = f"{uuid.uuid4().hex}{ext}"
     os.makedirs(_LOGO_UPLOAD_DIR, exist_ok=True)
@@ -322,6 +330,7 @@ async def get_project_details(
             "website_url": brand.website_url,
             "category": brand.category,
             "region": None,
+            "target_market": normalize_target_market(brand.target_market),
             "brand_context": brand.brand_context,
             "logo_url": logo_url,
             "colors": colors,

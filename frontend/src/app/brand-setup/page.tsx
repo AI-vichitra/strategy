@@ -4,6 +4,34 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import BrandKitForm, { type BrandKit } from '../../components/BrandKitForm';
+import ReferenceUpload, { type ReferenceDoc } from '../../components/ReferenceUpload';
+
+// ── Target Market: structured region + city selection ───────────────────────
+// Mirrors backend.schemas.brand.TargetMarket exactly. Region options and city
+// lists are NEVER hardcoded here — they come from GET /target-market-config.
+type TargetMarketRegion = 'local' | 'india' | 'us' | 'europe' | 'global' | 'other';
+
+interface TargetMarket {
+  region: TargetMarketRegion;
+  cities: string[];
+  custom_region?: string;
+}
+
+interface TargetMarketConfig {
+  regions: { value: TargetMarketRegion; label: string }[];
+  cities: Record<string, string[]>;
+}
+
+// Degraded fallback ONLY used when the config fetch fails — region options
+// only (no curated city lists, since those must never be hardcoded here).
+const TARGET_MARKET_FALLBACK_REGIONS: { value: TargetMarketRegion; label: string }[] = [
+  { value: 'local', label: 'Local / City-specific' },
+  { value: 'india', label: 'India' },
+  { value: 'us', label: 'United States' },
+  { value: 'europe', label: 'Europe' },
+  { value: 'global', label: 'Global' },
+  { value: 'other', label: 'Other' },
+];
 
 function StrategySetupInner() {
   const router = useRouter();
@@ -53,8 +81,21 @@ function StrategySetupInner() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [category, setCategory] = useState('');
   const [brandContext, setBrandContext] = useState('');
-  const [region, setRegion] = useState('');
-  const [regionOther, setRegionOther] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [referenceDocs, setReferenceDocs] = useState<ReferenceDoc[]>([]);
+
+  // ── Target Market (structured): region + cities[] + custom_region ───────
+  const [tmRegion, setTmRegion] = useState<TargetMarketRegion | ''>('');
+  const [tmCities, setTmCities] = useState<string[]>([]);
+  const [tmCustomRegion, setTmCustomRegion] = useState('');
+  const [tmCityInput, setTmCityInput] = useState('');
+  const [tmError, setTmError] = useState('');
+  const [tmConfig, setTmConfig] = useState<TargetMarketConfig | null>(null);
+  const [tmConfigFailed, setTmConfigFailed] = useState(false);
+  // Captured at search-competitors time, re-sent unchanged on confirm — the
+  // user doesn't revisit this field between the two steps.
+  const [confirmedTargetMarket, setConfirmedTargetMarket] = useState<TargetMarket | null>(null);
+
   const [competitorName, setCompetitorName] = useState('');
   const [competitorUrl, setCompetitorUrl] = useState('');
   const [competitors, setCompetitors] = useState<{ name: string; url?: string }[]>([]);
@@ -79,6 +120,28 @@ function StrategySetupInner() {
     return () => { if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current); };
   }, []);
 
+  // ── Fetch Target Market region/city config — single source of truth,
+  // never hardcoded here. Degrades gracefully (region-only, free-text
+  // cities) if the fetch fails, so the wizard still works. ─────────────────
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem('access_token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    (async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/brands/target-market-config`, { headers });
+        if (!res.ok) throw new Error('target-market-config fetch failed');
+        const data: TargetMarketConfig = await res.json();
+        setTmConfig(data);
+      } catch (e) {
+        console.error('Failed to load target market config, degrading to free-text:', e);
+        setTmConfigFailed(true);
+      }
+    })();
+  }, []);
+
   // Mirrors backend MIN_COMPETITORS / MAX_COMPETITORS (competitor_service.py).
   // Note: the backend's suggestion pool (MAX_SUGGESTIONS=8) is intentionally
   // larger than this — the frontend is what enforces the 5-selection cap.
@@ -97,6 +160,7 @@ function StrategySetupInner() {
   const websiteUrlRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef<HTMLSelectElement>(null);
   const brandContextRef = useRef<HTMLTextAreaElement>(null);
+  const targetMarketRef = useRef<HTMLDivElement>(null);
 
   const handleAddCompetitor = () => {
     if (!competitorName.trim()) return;
@@ -107,6 +171,66 @@ function StrategySetupInner() {
 
   const handleRemoveCompetitor = (index: number) => {
     setCompetitors(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // ── Target Market handlers ───────────────────────────────────────────────
+  const handleTmRegionChange = (value: TargetMarketRegion | '') => {
+    setTmRegion(value);
+    setTmCities([]);          // region change always resets the city selection
+    setTmCustomRegion('');
+    setTmCityInput('');
+    setTmError('');
+  };
+
+  const handleToggleCuratedCity = (city: string) => {
+    setTmCities(prev => (prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]));
+    setTmError('');
+  };
+
+  const handleAddCustomCity = () => {
+    const city = tmCityInput.trim();
+    if (!city) return;
+    if (!tmCities.some(c => c.toLowerCase() === city.toLowerCase())) {
+      setTmCities(prev => [...prev, city]);
+    }
+    setTmCityInput('');
+    setTmError('');
+  };
+
+  const handleRemoveCity = (city: string) => {
+    setTmCities(prev => prev.filter(c => c !== city));
+  };
+
+  // Mirrors the backend's TargetMarket validation exactly (schemas/brand.py):
+  //   local  -> cities must have >= 1 entry
+  //   global -> cities forced empty (never an error)
+  //   india/us/europe -> cities optional (0+)
+  //   other  -> requires custom_region OR >= 1 city
+  // Returns null (no target_market — omitted from the request) when the user
+  // made no selection at all; returns the built object otherwise; sets
+  // tmError and returns 'invalid' when the selection fails validation.
+  const buildTargetMarket = (): TargetMarket | null | 'invalid' => {
+    if (!tmRegion) return null; // untouched -- omit entirely, backend treats as None
+
+    if (tmRegion === 'local') {
+      if (tmCities.length < 1) {
+        setTmError('Add at least one city for a local target market.');
+        return 'invalid';
+      }
+      return { region: 'local', cities: tmCities };
+    }
+    if (tmRegion === 'global') {
+      return { region: 'global', cities: [] }; // cities forced empty, never an error
+    }
+    if (tmRegion === 'other') {
+      if (!tmCustomRegion.trim() && tmCities.length < 1) {
+        setTmError('Enter a custom region or add at least one city.');
+        return 'invalid';
+      }
+      return { region: 'other', cities: tmCities, custom_region: tmCustomRegion.trim() || undefined };
+    }
+    // india / us / europe: cities optional
+    return { region: tmRegion, cities: tmCities };
   };
 
   const canResearch = brandName.trim() && websiteUrl.trim() && category;
@@ -202,6 +326,19 @@ function StrategySetupInner() {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    // Target Market is required — block before the region-specific checks below.
+    if (!tmRegion) {
+      setTmError('This field is mandatory');
+      targetMarketRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Client-side Target Market validation, mirroring the backend exactly —
+    // block submit before the request is ever sent.
+    const targetMarket = buildTargetMarket();
+    if (targetMarket === 'invalid') return;
+    setConfirmedTargetMarket(targetMarket);
+
     let finalCompetitors = [...competitors];
     if (competitorName.trim()) {
       finalCompetitors.push({ name: competitorName.trim(), url: competitorUrl.trim() || undefined });
@@ -222,7 +359,7 @@ function StrategySetupInner() {
           brand_name: brandName,
           website_url: websiteUrl,
           category,
-          region: (region === 'Other' ? regionOther.trim() : region) || undefined,
+          target_market: targetMarket || undefined,
           user_competitors: finalCompetitors.map(c => ({ name: c.name, url: c.url || '' }))
         })
       });
@@ -290,7 +427,10 @@ function StrategySetupInner() {
           website_url: websiteUrl,
           category,
           brand_context: brandContext,
+          additional_notes: additionalNotes.trim() || undefined,
+          reference_docs: referenceDocs.length > 0 ? referenceDocs : undefined,
           brand_handle: discoveredBrandHandle,
+          target_market: confirmedTargetMarket || undefined,
           selected_competitors: selectedComps.map(c => ({
             name: c.name,
             website_url: c.website_url || '',
@@ -418,32 +558,98 @@ function StrategySetupInner() {
               {errors.category && <span className={styles.errorMsg}>{errors.category}</span>}
             </div>
 
-            {/* Target Market (scopes competitor discovery) */}
-            <div className={styles.formRow}>
+            {/* Target Market (scopes competitor discovery): cascading Region -> City.
+                Region options + curated city lists come from GET /target-market-config
+                (fetched on mount) -- never hardcoded here. */}
+            <div className={styles.formRow} ref={targetMarketRef}>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Target Market (Optional)</label>
+                <label className={styles.label}>Target Market <span className={styles.required}>*</span></label>
                 <select
                   className={styles.select}
-                  value={region}
-                  onChange={e => setRegion(e.target.value)}
+                  value={tmRegion}
+                  onChange={e => handleTmRegionChange(e.target.value as TargetMarketRegion | '')}
                 >
                   <option value="">Select target market...</option>
-                  <option value="Local">Local</option>
-                  <option value="India">India</option>
-                  <option value="USA">USA</option>
-                  <option value="Europe">Europe</option>
-                  <option value="Global">Global</option>
-                  <option value="Other">Other</option>
+                  {(tmConfig?.regions || TARGET_MARKET_FALLBACK_REGIONS).map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
                 </select>
-                {region === 'Other' && (
+
+                {tmRegion === 'other' && (
                   <input
                     className={styles.input}
                     style={{ marginTop: '10px' }}
-                    value={regionOther}
-                    onChange={e => setRegionOther(e.target.value)}
-                    placeholder="Specify target market"
+                    value={tmCustomRegion}
+                    onChange={e => { setTmCustomRegion(e.target.value); setTmError(''); }}
+                    placeholder="Specify target market (e.g. UAE)"
                   />
                 )}
+
+                {/* Curated multi-select, from the config endpoint, for india/us/europe */}
+                {(tmRegion === 'india' || tmRegion === 'us' || tmRegion === 'europe') && tmConfig && !tmConfigFailed && (
+                  <div className={styles.citySelectGrid} style={{ marginTop: '10px' }}>
+                    {(tmConfig.cities[tmRegion] || []).map(city => (
+                      <button
+                        type="button"
+                        key={city}
+                        className={`${styles.cityPill} ${tmCities.includes(city) ? styles.cityPillActive : ''}`}
+                        onClick={() => handleToggleCuratedCity(city)}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Free-text city add: required for local, optional custom-add for
+                    india/us/europe/other, or the fallback when config fetch failed. */}
+                {(tmRegion === 'local' || tmRegion === 'india' || tmRegion === 'us' || tmRegion === 'europe' || tmRegion === 'other') && (
+                  <div className={styles.competitorRow} style={{ marginTop: '10px' }}>
+                    <input
+                      className={styles.input}
+                      value={tmCityInput}
+                      onChange={e => setTmCityInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomCity(); } }}
+                      placeholder={
+                        tmRegion === 'local'
+                          ? 'Type a city and press Enter (required, add 1 or more)'
+                          : 'Add a city not in the list above (optional)'
+                      }
+                    />
+                    <button type="button" className={styles.addBtn} onClick={handleAddCustomCity}>Add</button>
+                  </div>
+                )}
+
+                {tmCities.length > 0 && tmRegion !== 'global' && (
+                  <div className={styles.competitorsList}>
+                    {tmCities.map(city => (
+                      <div key={city} className={styles.competitorChip}>
+                        <span className={styles.competitorChipText}>{city}</span>
+                        <button
+                          type="button"
+                          className={styles.deleteChipBtn}
+                          onClick={() => handleRemoveCity(city)}
+                          title="Remove city"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {tmRegion === 'global' && (
+                  <p className={styles.helpText}>Global target market — no city narrowing needed.</p>
+                )}
+
+                {tmConfigFailed && tmRegion && tmRegion !== 'global' && tmRegion !== 'local' && (
+                  <p className={styles.helpText}>Couldn&apos;t load the curated city list — type city names manually above.</p>
+                )}
+
+                {tmError && <span className={styles.errorMsg}>{tmError}</span>}
               </div>
             </div>
 
@@ -470,6 +676,28 @@ function StrategySetupInner() {
                 rows={4}
               />
               {researchNote && <p className={styles.helpText}>{researchNote}</p>}
+            </div>
+
+            {/* Additional Notes / Guardrails */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Additional Notes / Guardrails (Optional)</label>
+              <textarea
+                className={styles.textarea}
+                value={additionalNotes}
+                onChange={e => setAdditionalNotes(e.target.value)}
+                placeholder="Any intent, restrictions, or compliance rules the AI can't find online (e.g. 'Moving to premium positioning', 'BFSI — follow SEBI rules', 'Do not mention competitor X by name')."
+                rows={3}
+              />
+            </div>
+
+            {/* Brand Documents */}
+            <div className={styles.formGroup}>
+              <ReferenceUpload
+                value={referenceDocs}
+                onChange={setReferenceDocs}
+                apiBase={apiBaseUrl ?? ''}
+                authToken={authToken}
+              />
             </div>
 
             {/* Brand Kit (logo + colors) */}
