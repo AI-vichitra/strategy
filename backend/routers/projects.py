@@ -13,7 +13,14 @@ from backend.models.user import User
 from backend.models.project import Project
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, CompetitorDetail, BrandKit
 from backend.schemas.report import ReportMetadata
-from backend.schemas.brand import normalize_target_market
+from backend.schemas.brand import (
+    normalize_target_market,
+    normalize_brand_brief,
+    normalize_social_handles,
+    BrandBriefUpdate,
+    SocialHandlesUpdate,
+    BrandContextUpdate,
+)
 from backend.services import report_service
 from backend.services.brand_theme import extract_palette_from_logo, _decode_logo_image, _looks_like_svg, _LOGO_FORMAT_EXTENSIONS
 
@@ -332,6 +339,8 @@ async def get_project_details(
             "region": None,
             "target_market": normalize_target_market(brand.target_market),
             "brand_context": brand.brand_context,
+            "brand_brief": normalize_brand_brief(brand.brand_brief),
+            "social_handles": normalize_social_handles(brand.social_handles, brand.brand_handle),
             "logo_url": logo_url,
             "colors": colors,
         },
@@ -342,6 +351,91 @@ async def get_project_details(
         "created_at": brand.created_at.isoformat() if brand.created_at else None,
         "last_updated": last_updated,
     }
+
+
+@router.put("/{project_id}/brand-brief")
+async def update_brand_brief(
+    project_id: str,
+    payload: BrandBriefUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from backend.models.brand import BrandConfig
+
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
+    brand = brand_result.scalars().first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    data = payload.model_dump()
+    if not any(v.strip() for v in data.values()):
+        raise HTTPException(status_code=422, detail="At least one instruction field is required")
+
+    brand.brand_brief = json.dumps(data)
+    await db.commit()
+    return {"status": "ok"}
+
+
+@router.put("/{project_id}/social-handles")
+async def update_social_handles(
+    project_id: str,
+    payload: SocialHandlesUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from backend.models.brand import BrandConfig
+
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
+    brand = brand_result.scalars().first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    data = payload.model_dump()
+    if not any(v.strip() for v in data.values()):
+        raise HTTPException(status_code=422, detail="At least one social handle is required")
+
+    brand.social_handles = json.dumps(data)
+    await db.commit()
+    return {"status": "ok"}
+
+
+@router.put("/{project_id}/brand-context")
+async def update_brand_context(
+    project_id: str,
+    payload: BrandContextUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from backend.models.brand import BrandConfig
+
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
+    brand = brand_result.scalars().first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    if not payload.website_url.strip() or not payload.category.strip() or not payload.target_market.strip():
+        raise HTTPException(status_code=422, detail="website_url, category, and target_market are all required")
+
+    brand.website_url = payload.website_url
+    brand.category = payload.category
+    brand.target_market = payload.target_market
+    await db.commit()
+    return {"status": "ok"}
 
 
 @router.delete("/{project_id}")

@@ -84,6 +84,7 @@ _NEW_COLUMNS = [
     ("brand_configs", "additional_notes", "TEXT", "TEXT"),
     ("brand_configs", "social_handles", "TEXT", "TEXT"),
     ("brand_configs", "brand_brief", "TEXT", "TEXT"),
+    ("reports", "truncation_info", "TEXT", "TEXT"),
 ]
 
 

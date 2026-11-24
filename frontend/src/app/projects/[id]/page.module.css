@@ -11,7 +11,7 @@
 
 .inner {
   width: 100%;
-  max-width: 860px;
+  max-width: 1200px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -38,13 +38,6 @@
   color: #1A1A1A;
   letter-spacing: -0.02em;
   margin: 0;
-}
-
-.brandSlug {
-  font-size: 13px;
-  color: #A39E97;
-  font-weight: 500;
-  margin-top: 4px;
 }
 
 .statusRow {
@@ -92,40 +85,441 @@
   color: #A39E97;
 }
 
-.card {
-  background: #ffffff;
-  border: 1px solid #E8E4DC;
-  border-radius: 20px;
-  padding: 28px 32px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+/* ── Two-column layout: chat/recents main panel + reference sidebar ───────── */
+.layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
 }
 
-.sectionTitle {
+.mainPanel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    position: static;
+    width: 100%;
+    max-height: none;
+  }
+}
+
+/* ── New-chat input card ───────────────────────────────────────────────────
+   Light-theme adaptation: a bordered input-style container with the brand's
+   gold accent, rather than Claude's dark card (this page is a light/cream
+   theme throughout). */
+.newChatCard {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 18px 16px 18px 20px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.newChatCard:focus-within {
+  border-color: #B8912E;
+  box-shadow: 0 4px 14px rgba(212, 168, 67, 0.1);
+}
+
+.newChatIcon {
+  flex-shrink: 0;
+  color: #B8912E;
+  margin-bottom: 4px;
+}
+
+.newChatInput {
+  flex: 1;
+  min-height: 24px;
+  max-height: 200px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1A1A1A;
+  line-height: 1.5;
+  padding: 2px 0;
+}
+.newChatInput::placeholder {
+  color: #6B6560;
+  font-weight: 500;
+}
+
+.newChatSubmitBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #F5F1EA;
+  color: #B8912E;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.newChatSubmitBtn:hover {
+  background: #D4A843;
+  color: #fff;
+}
+
+/* ── Recents ────────────────────────────────────────────────────────────── */
+.recentsHeading {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #D4A843;
-  margin-bottom: 20px;
+  color: #A39E97;
+  margin-bottom: 4px;
 }
 
-.brandGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.field {
+.recentsList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-.fieldFull {
+.recentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 4px;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.recentRow:hover {
+  background: rgba(212, 168, 67, 0.06);
+}
+.recentRow:last-child {
+  border-bottom: none;
+}
+
+.recentTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentTime {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #A39E97;
+}
+
+.emptyList {
+  font-size: 14px;
+  color: #A39E97;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* ── Sidebar card + compact rows ────────────────────────────────────────── */
+.sidebarCard {
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  border-radius: 20px;
+  padding: 4px 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.sidebarRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.sidebarRow:last-child {
+  border-bottom: none;
+}
+.sidebarRow:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.sidebarRowLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.sidebarRowMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #888;
+}
+
+.sidebarRowChevron {
+  font-size: 16px;
+  color: #aaa;
+}
+
+/* ── Slide-over drawer ─────────────────────────────────────────────────── */
+.drawerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawerPanel {
+  width: 420px;
+  max-width: 90vw;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  grid-column: 1 / -1;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.drawerHeader h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.drawerCloseBtn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.drawerCloseBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.drawerEditBtn,
+.drawerSaveBtn,
+.drawerCancelBtn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.drawerEditBtn {
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+}
+
+.drawerEditBtn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.drawerSaveBtn {
+  background: #b8860b;
+  color: #fff;
+}
+
+.drawerSaveBtn:hover {
+  background: #9a7209;
+}
+
+.drawerSaveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.drawerCancelBtn {
+  background: none;
+  color: #666;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.drawerHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editTextarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 16px;
+}
+
+.editTextarea:focus {
+  border-color: #b8860b;
+}
+
+.editInput {
+  width: 100%;
+  height: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.editInput:focus {
+  border-color: #b8860b;
+}
+
+.saveError {
+  color: #c0392b;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.handleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.removeHandleBtn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.removeHandleBtn:hover {
+  color: #c0392b;
+}
+
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.drawerContextList {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawerContextItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.drawerContextItem:last-child {
+  border-bottom: none;
+}
+
+.drawerLogoImg {
+  max-width: 120px;
+  object-fit: contain;
+  border: 1px solid #E8E4DC;
+  border-radius: 10px;
+  background: #FAF8F5;
+  padding: 6px;
+}
+
+/* ── Instructions (brand brief) ────────────────────────────────────────── */
+.briefList {
+  display: flex;
+  flex-direction: column;
+}
+
+.briefField {
+  display: flex;
+  flex-direction: column;
+}
+
+.briefLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #A39E97;
+  margin-bottom: 4px;
+}
+
+.briefValue {
+  font-size: 13px;
+  font-weight: 400;
+  color: #4A4540;
+  line-height: 1.55;
+  margin-bottom: 16px;
 }
 
 .fieldLabel {
@@ -137,13 +531,13 @@
 }
 
 .fieldValue {
-  font-size: 15px;
+  font-size: 13px;
   color: #1A1A1A;
   font-weight: 500;
 }
 
 .fieldLink {
-  font-size: 15px;
+  font-size: 13px;
   color: #B8912E;
   font-weight: 500;
   text-decoration: none;
@@ -155,26 +549,9 @@
 }
 
 .fieldEmpty {
-  font-size: 14px;
+  font-size: 13px;
   color: #C4BEB8;
   font-style: italic;
-}
-
-.logoRow {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  grid-column: 1 / -1;
-}
-
-.logoImg {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-  border: 1px solid #E8E4DC;
-  border-radius: 12px;
-  background: #FAF8F5;
-  padding: 6px;
 }
 
 .swatchRow {
@@ -192,216 +569,51 @@
 }
 
 .swatchDot {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   border: 1px solid rgba(0,0,0,0.08);
 }
 
 .swatchLabel {
-  font-size: 10px;
+  font-size: 9px;
   color: #A39E97;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.contextMarkdown {
-  font-size: 14px;
-  color: #4A4540;
-  line-height: 1.65;
-  background: #FAF8F5;
-  border: 1px solid #EDE8E0;
-  border-radius: 12px;
-  padding: 16px 18px;
-}
-.contextMarkdown p { margin: 0 0 10px; }
-.contextMarkdown p:last-child { margin-bottom: 0; }
-.contextMarkdown strong { color: #1A1A1A; font-weight: 700; }
-.contextMarkdown ul, .contextMarkdown ol { margin: 0 0 10px 20px; }
-.contextMarkdown li { margin-bottom: 4px; }
-.contextMarkdown h1, .contextMarkdown h2, .contextMarkdown h3 {
-  color: #1A1A1A;
-  font-family: 'Space Grotesk', sans-serif;
-  margin: 12px 0 6px;
-}
-.contextMarkdown code {
-  background: #EDE8E0;
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 12px;
-}
-
-.amberNotice {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
-  border-radius: 12px;
-  padding: 14px 18px;
-  margin-bottom: 20px;
-}
-
-.amberIcon {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: #D97706;
-}
-
-.amberText {
-  font-size: 14px;
-  color: #92400E;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.compList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.compRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid #E8E4DC;
-  border-radius: 12px;
-  background: #FAFAF9;
-}
-
-.compRowExtra {
-  border-color: #FDE68A;
-  background: #FFFBEB;
-}
-
-.compDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #D4A843;
-  flex-shrink: 0;
-}
-
-.compDotExtra {
-  background: #F59E0B;
-}
-
-.compName {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1A1A1A;
-  flex: 1;
-}
-
-.compUrl {
-  font-size: 12px;
-  color: #A39E97;
-  word-break: break-all;
-}
-
-.compBadgeExtra {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #D97706;
-  background: #FEF3C7;
-  border-radius: 6px;
-  padding: 2px 8px;
-  flex-shrink: 0;
-}
-
-.compRowMissing {
-  border-color: #E8E4DC;
-  background: #FAFAF9;
-  opacity: 0.7;
-}
-
-.compBadgeMissing {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6B6560;
-  background: #F0ECE4;
-  border-radius: 6px;
-  padding: 2px 8px;
-  flex-shrink: 0;
-}
-
-.chatList {
+/* Compact list — reused by Competitors (Context) and Social Media */
+.compactList {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.chatRow {
+.compactItem {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid #E8E4DC;
-  border-radius: 12px;
-  background: #FAFAF9;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-direction: column;
+  gap: 1px;
 }
 
-.chatRow:hover {
-  border-color: #D4A843;
-  background: #FFFBF0;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(212, 168, 67, 0.08);
-}
-
-.chatIcon {
-  flex-shrink: 0;
-  color: #A39E97;
-}
-
-.chatTitle {
-  flex: 1;
-  font-size: 14px;
+.compactName {
+  font-size: 13px;
   font-weight: 600;
   color: #1A1A1A;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.chatMeta {
+.compactUrl {
   font-size: 12px;
   color: #A39E97;
-  flex-shrink: 0;
+  word-break: break-all;
 }
 
-.chatDate {
-  font-size: 12px;
-  color: #A39E97;
-  flex-shrink: 0;
+.compactUrlLink {
+  color: #B8912E;
+  text-decoration: none;
 }
-
-.chatArrow {
-  flex-shrink: 0;
-  color: #C4BEB8;
-  transition: color 0.2s, transform 0.2s;
-}
-
-.chatRow:hover .chatArrow {
+.compactUrlLink:hover {
   color: #D4A843;
-  transform: translateX(2px);
-}
-
-.emptyList {
-  font-size: 14px;
-  color: #A39E97;
-  font-style: italic;
-  padding: 12px 0;
+  text-decoration: underline;
 }
 
 .loadingWrap {
@@ -421,10 +633,4 @@
   min-height: 60vh;
   gap: 16px;
   color: #6B6560;
-}
-
-.divider {
-  height: 1px;
-  background: #EDE8E0;
-  margin: 4px 0 20px;
 }
