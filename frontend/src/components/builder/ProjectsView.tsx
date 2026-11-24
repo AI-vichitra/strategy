@@ -22,7 +22,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
 
   const fetchProjects = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -59,7 +59,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     if (!newTitle || !newTitle.trim()) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -77,11 +77,39 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     }
   };
 
+  const handleDeleteBrand = async (brandId: string, brandName: string) => {
+    if (!confirm(`Delete brand "${brandName}"? This cannot be undone.`)) return;
+
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem('access_token');
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiBase}/api/brands/${brandId}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (res.ok) {
+        setBrands(prev => prev.filter(b => b.id !== brandId));
+        window.dispatchEvent(new CustomEvent('projectChanged', { detail: { projectId: null } }));
+        fetchProjects();
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.detail ?? 'Could not delete this brand. Please try again.');
+      }
+    } catch (e) {
+      console.error("Failed to delete brand", e);
+    } finally {
+      setActiveMenuProjectId(null);
+    }
+  };
+
   const handleDeleteProject = async (id: string) => {
     if (!confirm("Are you sure you want to delete this project and its research entirely?")) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -99,6 +127,9 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
         } else {
           fetchProjects();
         }
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.detail ?? 'Could not delete this project. Please try again.');
       }
     } catch (e) {
       console.error("Failed to delete project", e);
@@ -112,6 +143,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     const latestProj = projects.find((p: any) => p.brand_config_id === b.id);
     return {
       id: latestProj ? latestProj.id : b.id,
+      _hasProject: !!latestProj,
       brand_config_id: b.id,
       title: b.brand_name,
       description: latestProj ? latestProj.title : (b.category || 'Strategic Intelligence'),
@@ -136,17 +168,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
   const displayProjects = brandCards.length > 0 ? brandCards : projects;
 
   const handleCardClick = (proj: any) => {
-    if (proj.brand_config_id && typeof window !== 'undefined') {
-      localStorage.setItem('brand_config_id', proj.brand_config_id);
-    }
-    window.dispatchEvent(new CustomEvent('projectChanged', { 
-      detail: { projectId: proj.id, brand_config_id: proj.brand_config_id } 
-    }));
-    if (onSelectProject) {
-      onSelectProject(proj.id);
-    } else {
-      window.dispatchEvent(new CustomEvent('openProject', { detail: { projectId: proj.id, brand_config_id: proj.brand_config_id } }));
-    }
+    router.push(`/projects/${proj.id}`);
   };
 
   return (
@@ -213,11 +235,15 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
                     >
                       Rename
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteProject(proj.id);
+                        if (proj._hasProject === false) {
+                          handleDeleteBrand(proj.brand_config_id, proj.title);
+                        } else {
+                          handleDeleteProject(proj.id);
+                        }
                       }}
                       className={`${styles.optionsMenuItem} ${styles.deleteOption}`}
                     >
@@ -292,11 +318,15 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
                     >
                       Rename
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteProject(proj.id);
+                        if (proj._hasProject === false) {
+                          handleDeleteBrand(proj.brand_config_id, proj.title);
+                        } else {
+                          handleDeleteProject(proj.id);
+                        }
                       }}
                       className={`${styles.optionsMenuItem} ${styles.deleteOption}`}
                     >

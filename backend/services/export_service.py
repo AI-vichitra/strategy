@@ -117,6 +117,44 @@ def _add_field(paragraph, field_code: str):
 # ─────────────────────────────────────────────────────────────────────────────
 # Markdown → docx elements
 # ─────────────────────────────────────────────────────────────────────────────
+_HYPERLINK_RELTYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+_HYPERLINK_BLUE = "0563C1"
+
+
+def _add_hyperlink_run(paragraph, url: str, text: str, bold=None, italic: bool = False):
+    """python-docx has no high-level hyperlink API — a real clickable link
+    needs a w:hyperlink element wrapping its own w:r, pointing at a
+    relationship id registered on the paragraph's part. Styled like a
+    standard Word hyperlink (blue, underlined) so it's visibly clickable."""
+    part = paragraph.part
+    r_id = part.relate_to(url, _HYPERLINK_RELTYPE, is_external=True)
+
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), r_id)
+
+    run_el = OxmlElement("w:r")
+    rpr = OxmlElement("w:rPr")
+    color_el = OxmlElement("w:color")
+    color_el.set(qn("w:val"), _HYPERLINK_BLUE)
+    rpr.append(color_el)
+    u_el = OxmlElement("w:u")
+    u_el.set(qn("w:val"), "single")
+    rpr.append(u_el)
+    if bold:
+        rpr.append(OxmlElement("w:b"))
+    if italic:
+        rpr.append(OxmlElement("w:i"))
+    run_el.append(rpr)
+
+    text_el = OxmlElement("w:t")
+    text_el.set(qn("xml:space"), "preserve")
+    text_el.text = text
+    run_el.append(text_el)
+
+    hyperlink.append(run_el)
+    paragraph._p.append(hyperlink)
+
+
 def _add_inline_runs(paragraph, el, bold=None, italic=False, code=False):
     """`bold=None` (the default) leaves a run's bold unset so it inherits
     from its paragraph style — important for headings, whose style is bold;
@@ -141,6 +179,17 @@ def _add_inline_runs(paragraph, el, bold=None, italic=False, code=False):
             _add_inline_runs(paragraph, child, bold=bold, italic=True, code=code)
         elif name == "code":
             _add_inline_runs(paragraph, child, bold=bold, italic=italic, code=True)
+        elif name == "a":
+            href = child.get("href", "")
+            link_text = child.get_text()
+            if href and link_text:
+                _add_hyperlink_run(paragraph, href, link_text, bold=bold, italic=italic)
+            elif link_text:
+                # No href (shouldn't happen for a real markdown link) — still
+                # show the text rather than silently dropping it.
+                run = paragraph.add_run(link_text)
+                run.bold = bold
+                run.italic = italic
         elif name == "br":
             paragraph.add_run().add_break()
         else:
@@ -571,17 +620,21 @@ async def markdown_to_docx(
     content_override: Optional[str] = None,
     brand_kit: Optional[dict] = None,
     extracted_palette: Optional[dict] = None,
+    logo_data: Optional[bytes] = None,
+    logo_mime: Optional[str] = None,
 ) -> bytes:
     """
     `brand_kit` ({"logo_url": ..., "colors": {...}}) and `extracted_palette`
     ({"primary"/"secondary"/"accent"}) mirror generate_pptx's inputs — same
     precedence (manual brand_kit colors > extracted_palette > report-type
     theme, via _resolve_theme) so the DOCX and PPTX always theme identically.
-    The logo always comes from brand_kit only, same as the PPTX.
+    The logo comes from `logo_data` (Project.logo_data, the DB source of
+    truth) when given, else falls back to brand_kit["logo_url"] on disk —
+    same as the PPTX.
     """
     resolved_content = await _resolve_export_content(db, report_id, content, content_override)
     theme = _resolve_theme(brand_kit, extracted_palette, agent_name or "default")
-    logo_asset = _load_logo_asset(brand_kit)
+    logo_asset = _load_logo_asset(brand_kit, logo_data=logo_data, logo_mime=logo_mime)
 
     doc = Document()
     section = doc.sections[0]

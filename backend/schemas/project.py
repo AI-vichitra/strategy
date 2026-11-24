@@ -74,7 +74,7 @@ class ProjectUpdate(BaseModel):
 class ProjectResponse(BaseModel):
     id: str
     user_id: str
-    brand_config_id: str
+    brand_config_id: Optional[str] = None
     agent_type: str
     title: str
     description: Optional[str] = None
@@ -83,7 +83,7 @@ class ProjectResponse(BaseModel):
     competitor_details: Optional[List[CompetitorDetail]] = None
     brand_kit: Optional[BrandKit] = None
     last_active_at: Optional[datetime] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
     messages: List[MessageResponse] = []
 
     class Config:

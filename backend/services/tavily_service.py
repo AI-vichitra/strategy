@@ -27,32 +27,133 @@ def _get_client():
 
 
 # ── 1. Competitor Discovery ───────────────────────────────────────────────────
+# Default OFF: today's domain-frequency logic runs unchanged unless this is
+# explicitly enabled. ON with no LLM key, or on any resolver failure, falls
+# back to the exact same legacy logic.
+COMPETITOR_LLM_RESOLVER_ENV = "COMPETITOR_LLM_RESOLVER"
+_AUTO_DISCOVERED_CAP = 8
+
+
+def _resolver_enabled() -> bool:
+    return os.environ.get(COMPETITOR_LLM_RESOLVER_ENV, "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def search_competitors(
     brand_name: str,
     category: str,
     website_url: str,
-    user_competitors: Optional[List[Dict]] = None
+    user_competitors: Optional[List[Dict]] = None,
+    industry: Optional[str] = None,
+    region: Optional[str] = None,
+    target_market: Optional[Dict[str, Any]] = None,
+    reference_ref_ids: Optional[List[str]] = None,
+    firecrawl_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Uses Tavily to find competitors for a given brand.
-    Returns dict:  { candidates: [{name, website_url, handle, source}], brand_handle, tavily_error }
+    Finds competitors for a given brand.
+    Returns dict: { candidates: [...], brand_handle, tavily_error[, discovery_status] }
+
+    Flag OFF (COMPETITOR_LLM_RESOLVER unset/false): byte-identical to the
+    original behaviour — today's domain-frequency legacy heuristic
+    (tavily_comp.get_competitors), capped then topped up with every
+    user-provided competitor via _append_user_competitors. No
+    "discovery_status" key is added in this branch.
+
+    Flag ON: uses competitor_service.discover_and_resolve's result directly.
+    tavily_comp.get_competitors (the legacy heuristic) is NEVER called on
+    this path, for either an empty or a failed discovery — only the flag
+    being OFF can reach it. The response additionally carries
+    "discovery_status": "ok" | "empty" | "failed". Auto-discovered candidates
+    carry source_url, summary, and verified; user-provided candidates (always
+    kept, ranked first) carry only the legacy keys — strictly additive, so
+    existing consumers of the legacy keys are unaffected either way.
     """
     import sys
     # Ensure web_scrapper is in path
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
-        
-    try:
-        from web_scrapper import tavily_comp
-        candidates = tavily_comp.get_competitors(brand_name, website_url, category)
-        tavily_error = ""
-    except Exception as e:
-        candidates = []
-        tavily_error = str(e)
-        logger.warning(f"Tavily competitor search failed: {e}")
 
-    # --- Discover brand's own social handle ---
+    candidates: List[Dict] = []
+    tavily_error = ""
+    discovery_status: Optional[str] = None
+
+    # Normalize geography ONCE here, the single entry point both the API
+    # router and any other caller go through: the structured target_market
+    # (when given) takes priority; a legacy bare `region` string is
+    # normalized the same way, so discovery's geography scoping behaves
+    # identically whether the caller sent the new shape or the old one.
+    from backend.schemas.brand import normalize_target_market
+    effective_target_market = (
+        normalize_target_market(target_market) if target_market
+        else (normalize_target_market(region) if region else None)
+    )
+
+    if _resolver_enabled():
+        from backend.services import competitor_service
+        try:
+            result = competitor_service.discover_and_resolve(
+                brand_name=brand_name,
+                website_url=website_url,
+                category=category,
+                industry=industry,
+                region=region,
+                target_market=effective_target_market,
+                user_competitors=user_competitors,
+                reference_ref_ids=reference_ref_ids,
+                firecrawl_key=firecrawl_key,
+            )
+            discovery_status = result["status"]
+            for item in result["candidates"]:
+                item_url = item.get("website_url", "") or ""
+                is_auto = bool(item.get("source_url"))
+                candidate = {
+                    "name": item.get("name", ""),
+                    "website_url": item_url,
+                    "handle": _url_to_handle(item_url or item.get("name", "")),
+                    "source": "tavily_llm_verified" if is_auto else "user",
+                }
+                if is_auto:
+                    candidate["source_url"] = item.get("source_url", "")
+                    candidate["summary"] = item.get("summary", "")
+                    candidate["verified"] = item.get("verified", False)
+                    # Additive, inspectable discovery metadata (ignored by
+                    # existing consumers): geography evidence driving the rank,
+                    # the page-identity confirmation status, and whether
+                    # verification was skipped due to a Firecrawl rate limit.
+                    candidate["geo_evidence"] = item.get("geo_evidence", [])
+                    candidate["identity_status"] = item.get("identity_status", "")
+                    if item.get("verification"):
+                        candidate["verification"] = item["verification"]
+                candidates.append(candidate)
+        except competitor_service.CompetitorDiscoveryFailure as e:
+            logger.warning(f"[CompetitorResolver] discover_and_resolve failed: {e}")
+            discovery_status = "failed"
+            candidates = _user_comps_to_candidates(user_competitors)
+        except Exception as e:
+            # Any other unexpected error: degrade to the user list only, same
+            # as an explicit failure — never crash, never reach the legacy
+            # heuristic on the ON path.
+            logger.warning(f"[CompetitorResolver] discover_and_resolve raised unexpectedly: {e}")
+            discovery_status = "failed"
+            candidates = _user_comps_to_candidates(user_competitors)
+    else:
+        try:
+            from web_scrapper import tavily_comp
+            candidates = tavily_comp.get_competitors(brand_name, website_url, category)
+            tavily_error = ""
+        except Exception as e:
+            candidates = []
+            tavily_error = str(e)
+            logger.warning(f"Tavily competitor search failed: {e}")
+
+        # Cap applies ONLY to the auto-discovered list, BEFORE user competitors
+        # are appended — fixes the bug where a full auto-discovered list could
+        # cause the post-merge slice to drop user-provided entries.
+        candidates = candidates[:_AUTO_DISCOVERED_CAP]
+        candidates = _append_user_competitors(candidates, user_competitors)
+
+    # --- Discover brand's own social handle (both branches) ---
     brand_handle = ""
     try:
         from web_scrapper import tavily_insta
@@ -60,23 +161,32 @@ def search_competitors(
     except Exception as e:
         logger.warning(f"Brand handle discovery failed: {e}")
 
-    # --- Merge user-provided competitors ---
-    if user_competitors:
-        existing_names = {c["name"].lower() for c in candidates}
-        for uc in user_competitors:
-            if uc.get("name") and uc["name"].lower() not in existing_names:
-                candidates.append({
-                    "name": uc["name"],
-                    "website_url": uc.get("url") or "",
-                    "handle": _url_to_handle(uc.get("url") or uc["name"]),
-                    "source": "user"
-                })
-
-    return {
-        "candidates": candidates[:8],
+    response: Dict[str, Any] = {
+        "candidates": candidates,
         "brand_handle": brand_handle,
         "tavily_error": tavily_error
     }
+    if discovery_status is not None:
+        response["discovery_status"] = discovery_status
+    return response
+
+
+def _append_user_competitors(candidates: List[Dict], user_competitors: Optional[List[Dict]]) -> List[Dict]:
+    """Appends every user-provided competitor not already present by name,
+    with NO further cap — user entries must never be dropped."""
+    if not user_competitors:
+        return candidates
+    existing_names = {c["name"].lower() for c in candidates if c.get("name")}
+    for uc in user_competitors:
+        if uc.get("name") and uc["name"].lower() not in existing_names:
+            candidates.append({
+                "name": uc["name"],
+                "website_url": uc.get("url") or "",
+                "handle": _url_to_handle(uc.get("url") or uc["name"]),
+                "source": "user"
+            })
+            existing_names.add(uc["name"].lower())
+    return candidates
 
 
 # ── 2. Brand Web Scrape → saves JSON ────────────────────────────────────────
@@ -182,6 +292,120 @@ def run_deep_dive(brand_name: str, brand_url: str, brand_category: str, output_d
     except Exception as e:
         logger.error(f"Deep dive skipped: {e}")
         return None
+
+
+# ── 4b. Risk / Reputation Research → saves JSON ─────────────────────────────
+def run_risk_research(brand_name: str, brand_url: str, category: str, output_dir: str) -> Optional[str]:
+    """
+    Searches for critical/risk evidence — delivery delays, litigation/legal
+    disputes, customer complaints, service/quality issues, reputation problems.
+    Queries are built dynamically from brand_name + category, same as run_web_scrape.
+    JSON format: { title, url, source_type, brand, content, sources }
+    Returns the file path, or None on failure.
+    """
+    try:
+        client = _get_client()
+    except RuntimeError as e:
+        logger.error(f"Risk research skipped: {e}")
+        return None
+
+    os.makedirs(output_dir, exist_ok=True)
+    clean_name = re.sub(r'[^\w]', '_', brand_name.lower())
+
+    queries = [
+        f"{brand_name} customer complaints and negative reviews",
+        f"{brand_name} delivery delays or service quality issues",
+        f"{brand_name} lawsuit litigation legal dispute controversy",
+        f"{brand_name} {category} reputation problems and criticism",
+    ]
+
+    all_content_parts = []
+    all_sources = []
+
+    for query in queries:
+        try:
+            resp = client.search(query=query, search_depth="basic", max_results=3, include_answer=True)
+            answer = resp.get("answer", "") or ""
+            results = resp.get("results", [])
+            if answer:
+                all_content_parts.append(answer)
+            for r in results:
+                all_content_parts.append(r.get("content", ""))
+                all_sources.append({"title": r.get("title", ""), "url": r.get("url", "")})
+        except Exception as e:
+            logger.warning(f"Risk research query failed: {e}")
+
+    doc = {
+        "title": f"{brand_name} — Risk & Reputation Research",
+        "url": brand_url,
+        "source_type": "risk_research",
+        "brand": brand_name,
+        "content": "\n\n".join(filter(None, all_content_parts)),
+        "sources": all_sources,
+    }
+
+    filepath = os.path.join(output_dir, f"{clean_name}_risk.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(doc, f, ensure_ascii=False, indent=2)
+    logger.info(f"Risk research saved to {filepath}")
+    return filepath
+
+
+# ── 4c. Depth / Specificity Research → saves JSON ───────────────────────────
+def run_depth_research(brand_name: str, brand_url: str, category: str, output_dir: str) -> Optional[str]:
+    """
+    Searches for depth/specificity evidence — concrete projects/products, price
+    positioning, target segments, geographic focus, differentiators. Queries are
+    built dynamically from brand_name + category, same as run_web_scrape.
+    JSON format: { title, url, source_type, brand, content, sources }
+    Returns the file path, or None on failure.
+    """
+    try:
+        client = _get_client()
+    except RuntimeError as e:
+        logger.error(f"Depth research skipped: {e}")
+        return None
+
+    os.makedirs(output_dir, exist_ok=True)
+    clean_name = re.sub(r'[^\w]', '_', brand_name.lower())
+
+    queries = [
+        f"{brand_name} specific flagship projects, products, or case studies",
+        f"{brand_name} pricing model and price positioning in the {category} market",
+        f"{brand_name} target customer segments and geographic focus",
+        f"{brand_name} key differentiators compared to other {category} companies",
+    ]
+
+    all_content_parts = []
+    all_sources = []
+
+    for query in queries:
+        try:
+            resp = client.search(query=query, search_depth="basic", max_results=3, include_answer=True)
+            answer = resp.get("answer", "") or ""
+            results = resp.get("results", [])
+            if answer:
+                all_content_parts.append(answer)
+            for r in results:
+                all_content_parts.append(r.get("content", ""))
+                all_sources.append({"title": r.get("title", ""), "url": r.get("url", "")})
+        except Exception as e:
+            logger.warning(f"Depth research query failed: {e}")
+
+    doc = {
+        "title": f"{brand_name} — Depth & Specificity Research",
+        "url": brand_url,
+        "source_type": "depth_research",
+        "brand": brand_name,
+        "content": "\n\n".join(filter(None, all_content_parts)),
+        "sources": all_sources,
+    }
+
+    filepath = os.path.join(output_dir, f"{clean_name}_depth.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(doc, f, ensure_ascii=False, indent=2)
+    logger.info(f"Depth research saved to {filepath}")
+    return filepath
 
 
 # ── 4. Social Handle Discovery ────────────────────────────────────────────────

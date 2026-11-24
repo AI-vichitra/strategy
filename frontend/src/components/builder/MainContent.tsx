@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams, useRouter as useNextRouter } from 'next/navigation';
 import TemplateGrid from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
 import { useAgents } from '../../hooks/useAgents';
@@ -20,6 +21,16 @@ import SectionEditor from '../SectionEditor';
 
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
 type ReportInfo = { id: string; title: string; agent_type: string };
+
+// Must match the notice text ai_service.stream_chat embeds directly in a
+// truncated report's content (backend/services/ai_service.py). No separate
+// persisted flag exists (see TASK: "skip Message persistence") — a reloaded
+// message's own content is the only record of truncation, so detecting it
+// here is what makes the banner survive a reload/reopen.
+const TRUNCATION_MARKER = 'GENERATION TRUNCATED';
+function isTruncatedContent(content: string): boolean {
+  return content.includes(TRUNCATION_MARKER);
+}
 
 // ── Per-agent questionnaire configs ───────────────────────────────
 const agentQuestions: Record<string, Question[]> = {
@@ -593,8 +604,25 @@ const getDomain = (connectorName: string) => {
 };
 
 export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
+  const searchParams = useSearchParams();
+  const nextRouter = useNextRouter();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('mistral');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  type ProviderInfo = {
+    providers: { id: string; display_name: string; configured: boolean; model: string }[];
+    mode: string;
+    advanced_pin: string | null;
+    default_provider: string | null;
+  };
+  const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
+  const [providerNote, setProviderNote] = useState<string>('');
+  // Truncation detail for the CURRENTLY streaming message only (from the
+  // backend's 'truncated' SSE event) — transient, never persisted. A
+  // persisted/reloaded message carries no separate flag: the truncation
+  // notice is embedded directly in its content (see TRUNCATION_MARKER
+  // below), which is what the banner falls back to after reload.
+  type TruncationDetail = { provider: string; model: string; max_tokens: number; output_chars: number };
+  const [liveTruncation, setLiveTruncation] = useState<TruncationDetail | null>(null);
   const [promptText, setPromptText] = useState('');
   const [showBanner, setShowBanner] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
@@ -623,8 +651,44 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
   const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
+
+  // Fetch which providers are actually configured + the model each would run,
+  // so the selector reflects reality instead of a hardcoded list.
+  useEffect(() => {
+    (async () => {
+      try {
+        const headers: Record<string, string> = {};
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        const res = await fetch(`${apiBase}/api/chat/providers`, { headers });
+        if (res.ok) setProviderInfo(await res.json());
+      } catch {
+        /* non-blocking: selector falls back to "Loading…" until this succeeds */
+      }
+    })();
+  }, [apiBase, authToken]);
+
+  // Keep the selection on a provider that actually has a key. Corrects the
+  // empty initial value AND a saved project provider that is unavailable,
+  // falling back to the server's default and saying so — never silently.
+  useEffect(() => {
+    if (!providerInfo) return;
+    const configured = new Set(providerInfo.providers.filter(p => p.configured).map(p => p.id));
+    if (selectedModel && configured.has(selectedModel)) {
+      setProviderNote('');
+      return;
+    }
+    const fallback = providerInfo.default_provider;
+    if (fallback) {
+      const label = providerInfo.providers.find(p => p.id === fallback)?.display_name || fallback;
+      if (selectedModel) {
+        const prev = providerInfo.providers.find(p => p.id === selectedModel)?.display_name || selectedModel;
+        setProviderNote(`"${prev}" has no key configured — using ${label} instead.`);
+      }
+      setSelectedModel(fallback);
+    }
+  }, [providerInfo, selectedModel]);
 
   const latestAssistantIdx = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -640,7 +704,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setPdfErrorIdx(null);
       setDownloadingPdfIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -686,7 +750,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const fetchReportsForProject = async (projectId: string) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -713,7 +777,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setDocxErrorIdx(null);
       setDownloadingDocxIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -754,7 +818,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setPptxErrorIdx(null);
       setDownloadingPptxIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -817,7 +881,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setShareErrorIdx(null);
       setSharingReportIdx(idx);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -851,6 +915,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [brandsList, setBrandsList] = useState<any[]>([]);
   const [brandsMap, setBrandsMap] = useState<Record<string, string>>({});
   const [activeProject, setActiveProject] = useState<{ id: string; title: string; brand_config_id?: string } | null>(null);
+  const [prefilledOnboarding, setPrefilledOnboarding] = useState<{ competitors: boolean; brandKit: boolean }>({ competitors: false, brandKit: false });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
@@ -872,7 +937,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // Fetch projects and brands for dropdown
   const loadProjectsAndBrands = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -942,13 +1007,32 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   useEffect(() => {
-    loadProjectsAndBrands();
+    // Capture the project param once at mount — do not re-read on re-renders.
+    const projectParam = searchParams.get('project');
+
+    const init = async () => {
+      await loadProjectsAndBrands();
+      if (projectParam) {
+        await loadProjectById(projectParam);
+        // A draft typed on the project details page's "new chat" field, if any —
+        // pre-fills the input so the onboarding form is still reviewed before send.
+        const pendingMessage = typeof window !== 'undefined' ? sessionStorage.getItem('pending_chat_message') : null;
+        if (pendingMessage) {
+          sessionStorage.removeItem('pending_chat_message');
+          setPromptText(pendingMessage);
+        }
+        // Clear the param so a refresh doesn't force-reload the same chat.
+        nextRouter.replace('/build');
+      }
+    };
+    init();
 
     const handleProjectChanged = () => {
       loadProjectsAndBrands();
     };
     window.addEventListener('projectChanged', handleProjectChanged);
     return () => window.removeEventListener('projectChanged', handleProjectChanged);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredHomeSearchAgents = catalogAgents.filter(agent =>
@@ -984,6 +1068,31 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
+    setPrefilledOnboarding({ competitors: false, brandKit: false });
+
+    // Pre-fill competitor list and brand kit from onboarding data for this brand
+    const currentBrandIdForPrefill = activeProject?.brand_config_id || savedBrandId;
+    if (currentBrandIdForPrefill) {
+      const brand = brandsList.find((b: any) => b.id === currentBrandIdForPrefill);
+      if (brand?.competitors) {
+        try {
+          const onboardingComps = JSON.parse(brand.competitors) as Array<{ name?: string; url?: string; website_url?: string }>;
+          const mapped = onboardingComps
+            .filter((c) => c && typeof c.name === 'string' && c.name.trim())
+            .map((c) => ({ brand_name: c.name!.trim(), website_url: c.url || c.website_url || '', social_media: undefined }));
+          if (mapped.length > 0) {
+            setCompetitors(mapped);
+            setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
+          }
+        } catch {}
+      }
+      const projWithKit = projectsList.find((p: any) => p.brand_config_id === currentBrandIdForPrefill && p.brand_kit);
+      if (projWithKit?.brand_kit) {
+        setBrandKit(projWithKit.brand_kit);
+        setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
+      }
+    }
+
     const prompt = title === 'Competition Analysis'
       ? `Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.`
       : title === 'GTM Strategy'
@@ -1005,6 +1114,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
+    setPrefilledOnboarding({ competitors: false, brandKit: false });
   };
 
   const handleNewChat = () => {
@@ -1019,6 +1129,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
+    setPrefilledOnboarding({ competitors: false, brandKit: false });
     setActiveProject(null);
     onNewChat?.();
   };
@@ -1037,7 +1148,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const loadProjectById = async (projectId: string) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -1050,8 +1161,37 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         if (proj.llm_provider) {
           setSelectedModel(proj.llm_provider);
         }
-        setCompetitors(Array.isArray(proj.competitor_details) ? proj.competitor_details : []);
-        setBrandKit(proj.brand_kit && typeof proj.brand_kit === 'object' ? proj.brand_kit : {});
+        const hasCompetitors = Array.isArray(proj.competitor_details) && proj.competitor_details.length > 0;
+        const hasBrandKit = proj.brand_kit && typeof proj.brand_kit === 'object' &&
+          (proj.brand_kit.logo_url || proj.brand_kit.colors);
+        setCompetitors(hasCompetitors ? proj.competitor_details : []);
+        setBrandKit(hasBrandKit ? proj.brand_kit : {});
+        setPrefilledOnboarding({ competitors: false, brandKit: false });
+
+        // When the form will show (no messages yet) and data is missing, fetch onboarding defaults
+        const willShowForm = !proj.messages || proj.messages.length === 0;
+        if (willShowForm && (!hasCompetitors || !hasBrandKit) && proj.brand_config_id) {
+          try {
+            const detRes = await fetch(`${apiBase}/api/projects/${proj.id}/details`, { headers });
+            if (detRes.ok) {
+              const details = await detRes.json();
+              if (!hasCompetitors && Array.isArray(details.competitors_selected) && details.competitors_selected.length > 0) {
+                const mapped = details.competitors_selected.map((c: any) => ({
+                  brand_name: c.name || '',
+                  website_url: c.website_url || '',
+                  social_media: undefined,
+                }));
+                setCompetitors(mapped);
+                setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
+              }
+              if (!hasBrandKit && details.brand && (details.brand.logo_url || details.brand.colors)) {
+                setBrandKit({ logo_url: details.brand.logo_url ?? null, colors: details.brand.colors ?? null });
+                setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
+              }
+            }
+          } catch {}
+        }
+
         if (proj.brand_config_id) {
           const brandName = brandsMap[proj.brand_config_id] || 'Brand Project';
           setActiveProject({
@@ -1137,6 +1277,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
     const userMsg: Message = { role: 'user', content: baseContent };
     const thinking: Message = { role: 'thinking', content: '' };
+    setLiveTruncation(null);
 
     // Build conversation history (only user + assistant, skip thinking/error)
     const history = [...messages, { role: 'user', content: apiUserContent }]
@@ -1157,7 +1298,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowQuestionnaire(false);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -1265,6 +1406,18 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 }
                 return updated;
               });
+            } else if (payload.type === 'status') {
+              // Research-pipeline wait can now run for several minutes — surface
+              // the backend's progress text in the thinking bubble instead of a
+              // static spinner, so a long wait doesn't look frozen.
+              setMessages(prev => {
+                const updated = [...prev];
+                const thinkIdx = updated.findIndex(m => m.role === 'thinking');
+                if (thinkIdx !== -1) {
+                  updated[thinkIdx] = { role: 'thinking', content: payload.content };
+                }
+                return updated;
+              });
             } else if (payload.type === 'error') {
               if (!assistantText) {
                 setActiveProject(null);
@@ -1274,6 +1427,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 { role: 'error', content: payload.content },
               ]);
               return;
+            } else if (payload.type === 'truncated') {
+              // The in-report notice text already arrived as a preceding
+              // 'token' event (part of assistantText) — this event only adds
+              // the structured detail (exact model/token-limit/output size)
+              // for a sharper live banner than parsing that prose would give.
+              setLiveTruncation(payload.content);
             }
           } catch { /* skip malformed lines */ }
         }
@@ -1487,7 +1646,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                       </svg>
                     </div>
                     <div className={styles.thinkingBubble}>
-                      <span className={styles.thinkingLabel}>Thinking</span>
+                      <span className={styles.thinkingLabel}>{msg.content || 'Thinking'}</span>
                       <span className={styles.thinkingDots}>
                         <span /><span /><span />
                       </span>
@@ -1625,6 +1784,28 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                           )}
                         </div>
                       </div>
+
+                      {isTruncatedContent(msg.content) && (
+                        <div
+                          role="alert"
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5',
+                            borderRadius: '8px', padding: '8px 12px', margin: '0 0 12px',
+                            fontSize: '13px', fontWeight: 600,
+                          }}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <span>
+                            {i === latestAssistantIdx && liveTruncation
+                              ? `Truncated — ${liveTruncation.provider}/${liveTruncation.model} hit its token limit (max_tokens=${liveTruncation.max_tokens}) after ${liveTruncation.output_chars.toLocaleString()} characters.`
+                              : 'This report was cut off before completion — see the notice below.'}
+                          </span>
+                        </div>
+                      )}
 
                       {msg.id && reportsByMessageId[msg.id] && editingReportId === reportsByMessageId[msg.id].id ? (
                         <SectionEditor
@@ -1812,6 +1993,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   onOpenConnectors={() => setConnectorsOpen(true)}
                   selectedModel={selectedModel}
                   onSelectModel={setSelectedModel}
+                  providers={providerInfo?.providers}
+                  advancedPin={providerInfo?.advanced_pin ?? null}
+                  providerNote={providerNote}
                 />
               </div>
             </div>
@@ -1826,9 +2010,23 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         <div className={styles.chatContainer}>
           {selectedAgent && messages.length === 0 && (
             <div className={styles.onboardingForms}>
-              <BrandKitForm brandKit={brandKit} onChange={setBrandKit} apiBase={apiBase} authToken={authToken} />
+              <BrandKitForm
+                brandKit={brandKit}
+                onChange={(kit) => { setBrandKit(kit); setPrefilledOnboarding(prev => ({ ...prev, brandKit: false })); }}
+                apiBase={apiBase}
+                authToken={authToken}
+              />
+              {prefilledOnboarding.brandKit && (
+                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
+              )}
               <div className={styles.formDivider} />
-              <CompetitorForm competitors={competitors} onChange={setCompetitors} />
+              <CompetitorForm
+                competitors={competitors}
+                onChange={(comps) => { setCompetitors(comps); setPrefilledOnboarding(prev => ({ ...prev, competitors: false })); }}
+              />
+              {prefilledOnboarding.competitors && (
+                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
+              )}
               {showQuestionnaire && agentQuestions[selectedAgent] && (
                 <>
                   <div className={styles.formDivider} />
@@ -1856,6 +2054,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
             onOpenConnectors={() => setConnectorsOpen(true)}
             selectedModel={selectedModel}
             onSelectModel={setSelectedModel}
+            providers={providerInfo?.providers}
+            advancedPin={providerInfo?.advanced_pin ?? null}
+            providerNote={providerNote}
           />
         </div>
       )}

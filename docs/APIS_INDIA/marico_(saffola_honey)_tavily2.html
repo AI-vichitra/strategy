@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARICO (SAFFOLA HONEY) - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MARICO (SAFFOLA HONEY)</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.saffola.in" target="_blank" class="meta-url">https://www.saffola.in</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Marico, founded in 1988 by Harsh Mariwala, has evolved into a leading Indian FMCG company in the beauty and wellness sector, operating across multiple segments including Hair Care, Foods & Nutrition, Male Grooming, Skin Care, and Fabric Care. The company's strategy focuses on premiumization and innovation, exemplified by its flagship brands like Parachute and Saffola. Marico's mission is to delight consumers with high-quality, trusted brands and pioneering product innovations. The company's vision is to bridge the nutritional gap with science-backed products that provide "nutritious indulgence" without compromising on taste. Marico's pricing model emphasizes maintaining an optimal Relative Price Index (RPI) vis-à-vis competing edible oils while ensuring profitability. The company's marketing strategy includes driving E-com offtakes through performance marketing and last mile conversion in Modern Trade and General Trade through in-store initiatives. Saffola, once just another edible oil brand, has been repositioned as a health and wellness brand, leading to significant growth and market share in both E-Commerce and Modern Trade.. Premiumization Strategy: Rather than competing in commodity segments, Marico focuses on value-added products. For example, while basic coconut oil is a commodity, Parachute commands premium pricing through superior quality, packaging, and brand trust. This strategy has enabled the company to maintain healthy gross margins.  Innovation Pipeline: The company consistently invests in R&D, continuously launching new products and variants. Recent launches in the health foods space (Saffola oats variants, True Elements products) demonstrate their ability to enter new categories successfully. [...] The story of Marico Limited is truly fascinating, showcasing the evolution of an Indian FMCG powerhouse that has successfully built a portfolio of trusted household brands over the past five decades.<br/><br/><strong>Product & Service Portfolio:</strong> Marico Limited offers a diverse range of products across various categories, primarily focusing on health, beauty, and wellness. The company's product portfolio includes hair care products like Parachute Coconut Oil, Parachute Advansed hair oils, Nihar Naturals herbal hair oils, and Livon hair serums. In the edible oils category, Saffola provides a variety of heart-healthy cooking oils. Marico also offers personal care products such as Parachute Advansed Body Lotion, Revive household cleaning products, and Set Wet men's hair styling products. Additionally, the company provides packaged food items under brands like Saffola, including Masala Oats, Pure Honey, Peanut Butter, and Muesli. Marico's product range is available in multiple international markets including Bangladesh, Vietnam, South Africa, the Middle East, and Egypt.. Male Grooming and Styling   Parachute Advansed Men's Hair Cream Range  Set Wet Beard Styling Gel  Set Wet Deodorants  Set Wet Styling Gel  Wellness   Saffola Oils  Saffola Aura - Olive & Flaxseed Oil  Saffola Masala Oats  Saffola Multigrain Flakes  Skincare   Parachute Advansed Body Lotion  ## Marico - Business Model  The Marico business model is centered on focused growth across all of its brands/and territories, which is powered by constantly enhancing customer value propositions, market expansion, and expanding its retail presence. The model ensures Marico's presence in niche / ethnic Indian product or service categories where traditional MNCs are weak. [...] Company Logo of Marico  ## Marico - Products  Hair Oil   Nihar Naturals Sarson Kesh Tel  Nihar Naturals Shanti Amla Badam Hair Oil  Parachute Advansed Deep Conditioning Hot Oil  Parachute Advansed Aloe Vera Enriched Coconut Hair Oil  Parachute Advansed Coconut Hair Oil  Parachute Advansed Jasmine Hair Oil  Hair & Care Fruit Oils  Nihar Naturals Coconut Hair Oil  Coconut Oil   Parachute Coconut Oil  Nihar Naturals Coconut Oil  Nihar Naturals Uttam Coconut Oil  Hair Serum   Livon Silky Potion Hair Serum  Hair & Care Silk n Shine Hair Serum  Anti-Hairfall   Livon Hair Gain Tonic  Parachute Advansed Ayurvedic Hair Oil  Parachute Advansed Ayurvedic Gold Hair Oil  Parachute Advansed Scalp Therapie Hair Oil  Male Grooming and Styling [...] Marico Limited is a leading consumer goods company in India, offering a wide range of food, beauty, and wellness products and services. Marico has offices in over 25 countries across Asia and Africa, with its headquarters in Mumbai, Maharashtra, India.  ## Marico - Company Highlights  | Company Name | Marico Limited |  --- | | Headquarters | Mumbai, Maharashtra, India | | Industry | Consumer goods | | Founded | 2 April 1990 | | Founder | Harsh Mariwala | | Products | Personal care, Skin care, Convenience food | | Areas Served | Worldwide | | Website | www.marcio.com |. Masala Millets - Offer a goodness and functional benefits along with micronutrients which comes up naturally from multi millets. d) Saffola Multigrain Oats - Offers a goodness of oats plus multigrain with a bundle of protein, fiber and micronutrients packed together with natural along , with a functional benefits with a combination of ingredients.<br/><br/><strong>Recent Developments & News:</strong> Marico's CEO Saugata Gupta highlighted that Saffola has grown into a ₹2,000-crore-plus brand, emphasizing the company's focus on expanding its healthier food segment under the Saffola brand, which now includes products like honey, peanut butter, soya chunks, and instant noodles. The company's food business saw a 31% growth in the December quarter, and Marico aims for ₹850 crore plus revenue in FY24. Marico acquired a 60% stake in Cosmix, a superfood powder brand, to further its strategy in the health and wellness food sector. The company's food business contributed 11% to its domestic business in FY25, growing by 33%, while its edible oil business grew at a low single-digit rate. Marico's consolidated revenue crossed the ₹10,000 crore mark in FY25, with a standalone revenue of ₹7,581 crore.. "Food has been one of the significant diversification journeys we have taken in Marico. Our effort was to expand the total addressable market, with the brand Saffola, participating in the healthier food segment," Gupta added.  ## Marico's food business grew by 31% in December quarter  The company showed an impressive performance in previous quarter. Its food business grew by 31 per cent in the latest December quarter.  Also Read:Marico Q3 net profit rises 5% to ₹333 cr, revenue up by 2.6%  The company is expanding its footprint in the food segment, and plans to add more healthy food products under its brand Saffola. Saffola has become a lot more than just an edible oil, as it offers its honey, peanut butter, soya chunks, instant noodles, etc. [...] "I think the worst is behind," said Gupta, adding, "Overall for FMCG, we see a gradual recovery, but that has to be led by rural. Saffola master brand, if we put together, it is a ₹2,000-crore-plus brand," Saugata Gupta told PTI.  Also Read: Marico to invest in more D2C brands; food, digital in focus  He believed that the rural FMCG market is expected to have a turnaround in the next 2-3 quarters. It witnessed a decline in the last 4-5 quarters.  Also Read:Consumer goods makers bet on rural recovery to lift profits  Saugata also added that food continues to do well at the industry level.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Marico's key competitors in the FMCG sector include Hindustan Unilever Limited (HUL), Procter & Gamble, Dabur, Advantice Health, Emami, Gillette India, Bajaj Consumer, and Colgate. HUL is one of the largest FMCG companies in India, with a diverse portfolio in personal care, home care, and food products. Dabur India, founded in 1884, operates in the Household Products industry and has 5,461 more employees than Marico. Emami, a Public company founded in 1974, competes in the Consumer Goods industry. Other notable rivals include Procter & Gamble, known for its wide range of consumer goods, and Nestle, which dominates the instant noodles market in India.. COMPETITORS ANALYSIS Dabur India is the biggest rival of Marico. DaburIndia was founded in 1884, and its headquarters is in Ghaziabad, UttarPradesh. Dabur India operates inthe Household Products industry. Dabur India has 5,461 more employees than Marico. HUL is Marico's #3 rival. HUL was founded in1933 in Mumbai,Maharashtra. HUL is in the Personal Services industry.HUL generates $3.7Bmore revenue than Marico Emami has been one of Marico's top competitors. Emami is a Public company that was founded in Kolkata, West Bengal in 1974. Emami competes in the Consumer Goods industry. Emami has 1,609 more employees vs. Marico   PRODUCT INFORMATION  Saffola is a health care brand which brings to you a range of everyday Heart [...] Systems THREATS -Disruption in Fmcg Sector -Political Risks -Competition -Foreign Currency Exposure OPPORTUNITIES -StrongEconomicIndications -GST Implications Benefits -Promising growth in Rural Markets -Organic/Inorganic Growth Opportunities SWOT ANALYSIS STP   COMPETITORS ANALYSIS Dabur India is the biggest rival of Marico. Dabur India has 5,461 more employees than Marico. HUL is Marico's #3 rival. HUL was founded in1933 in Mumbai,Maharashtra. HUL is in the Personal Services industry.HUL generates $3.7Bmore revenue than Marico Emami has been one of Marico's top competitors. Emami is a Public company that was founded in Kolkata, West Bengal in [...] HAIR OIL PARACHUTE, HAIR & CARE, SHANTI AMLA, NIHAR, LIVON HAIR CARE AFTER SHOWER, SILK & SHINE, MEDIKER, OILOF MALABAR FOOD AND EDIBLEOIL SIL, SAFFOLA, SWEEKAR OIL SKIN CARE KAYACLINIC, SUNDARI, MEDIKER, MANJAL DEODRANTS SET WET, ZATAK, REVIVE, XMEN PRODUCT PORTFOLIO   WEAKNESS -Largely dependent on Saffola and parachute brands. -Limited Global Presence STRENGTH Massive Distributionnetwork -Strongpresence in Asia and Africa -StrongFinancialPerformance -Advanced Quality Check Systems THREATS -Disruption in Fmcg Sector -Political Risks -Competition -Foreign Currency Exposure OPPORTUNITIES -StrongEconomicIndications -GST Implications Benefits -Promising growth in Rural Markets -Organic/Inorganic Growth Opportunities SWOT ANALYSIS STP   COMPETITORS ANALYSIS Dabur India is the biggest. ### Bank Stock Performance  ### Financial Metrics Table  ## 5.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.smallcase.com/blog/the-marico-story-nourishing-indias-beauty-and-wellness-journey" target="_blank">The Marico Story: Nourishing India&#x27;s Beauty and Wellness Journey 🥥</a></h3>
+                    <div class="result-url">https://www.smallcase.com/blog/the-marico-story-nourishing-indias-beauty-and-wellness-journey</div>
+                    <div class="result-content">Premiumization Strategy: Rather than competing in commodity segments, Marico focuses on value-added products. For example, while basic coconut oil is a commodity, Parachute commands premium pricing through superior quality, packaging, and brand trust. This strategy has enabled the company to maintain healthy gross margins.
+
+Innovation Pipeline: The company consistently invests in R&amp;D, continuously launching new products and variants. Recent launches in the health foods space (Saffola oats variants, True Elements products) demonstrate their ability to enter new categories successfully. [...] The story of Marico Limited is truly fascinating, showcasing the evolution of an Indian FMCG powerhouse that has successfully built a portfolio of trusted household brands over the past five decades. Founded in 1988 by Harsh Mariwala, Marico has transformed from a small commodity trading business into one of India’s leading consumer products companies in the beauty and wellness sector. The company operates across multiple segments, including Hair Care, Foods &amp; Nutrition, Male Grooming, Skin Care, and Fabric Care, through iconic brands like Parachute, Saffola, Set Wet, and Livon. With its headquarters in Mumbai, Marico is present in over 25 countries across Asia and Africa, serving millions of consumers daily through its diversified portfolio that touches every aspect of personal care and [...] A particularly interesting aspect of Marico’s strategy is its approach to the food business. When Saffola was struggling as just another edible oil brand, Marico repositioned it as a health and wellness brand, launching oats, masala oats, and other health foods. This transformation has made Saffola one of the fastest-growing brands in their portfolio.
+
+ Growth Drivers:
+
+Marico is positioned to benefit from multiple structural growth drivers that could accelerate revenue and profit growth in the coming years:</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://marico.com/investorspdf/Marico_Annual_Report_FY23.pdf" target="_blank">Transformative Innovative Purpose-led - Marico</a></h3>
+                    <div class="result-url">https://marico.com/investorspdf/Marico_Annual_Report_FY23.pdf</div>
+                    <div class="result-content">and accelerate adoption across channels – Maintaining an optimal Relative Price Index (RPI) vis-à-vis competing Edible Oils while maintaining a sustainable balance between pricing and profitability – Continue driving upgrades through trials and accessibility by building focussed SKUs to induce trials from smaller households – Strengthening ‘Better for Heart’ superiority through content pieces on Saffola blended oils with a focus on Saffola Gold – Driving E-com offtakes through performance marketing and last mile conversion in Modern Trade (MT) &amp; General Trade (GT) through in-store initiatives Foods delivered 20% growth in FY23 to close near the H 600 crore revenue mark, led by strong growth in core Oats franchises and traction building up in some of the newer launches during the year. The [...] Saffola Honey has garnered 20%+ market share in E-Commerce and nearly double-digit market share in Modern Trade. During the year, we restaged Saffola Honey with the launch of 2 variants – Saffola Honey Active and Saffola Honey Gold. Saffola Honey Active (multiflora honey including the delicious Sundarban Forest honey) complies with 22 stringent FSSAI parameters to ensure it is free from any adulteration and 100% pure. Saffola Honey Gold (multiflora honey made using Kashmir Honey), priced at a premium, is tested using the latest NMR technology to ensure it is free from any adulteration. With a dual portfolio strategy, we will continue to scale-up by broadening our presence and gaining market share in the category. [...] In FY23, we launched 14 New Products in Saffola Masala Oats, Saffola Munchiez, Saffola Soya, Saffola Honey, Saffola Mayonnaise, Consumer Value Proposition To deliver on our consumer value proposition of providing exceptional product experience at affordable price points, we are constantly innovating and creating unique and differentiated product offerings that address consumers’ growing needs. Product Footprint We conduct life cycle assessment of our products to understand their impacts across the lifecycle. We are taking actions to reduce product carbon footprint (PCF) and developing a product sustainability index (PSI) to guide our strategy on product development. Health &amp; Nutrition Under the EAT Right India with FSSAI, we have pledged to reduce sodium in the relevant products. We are</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://marico.com/investorspdf/Marico_Annual_Report_FY26.pdf" target="_blank">Advancing towards - Vision - Marico</a></h3>
+                    <div class="result-url">https://marico.com/investorspdf/Marico_Annual_Report_FY26.pdf</div>
+                    <div class="result-content">Our commitment to innovation is rooted in deep science, specifically aimed at tackling the growing burden of lifestyle related health challenges. By leveraging advanced research and the &quot;better for you&quot; philosophy, embodied in our Saffola portfolio, we are mainstreaming ancient grains and healthy fats. Our goal is to bridge the nutritional gap with science-backed products that provide &quot;nutritious indulgence&quot; without compromising on taste.
+Integral to this mission is our rigorous product stewardship. We ensure that integrity and safety drive every stage of a product&#x27;s lifecycle—from sourcing of ingredients to transparent labeling and the use of eco-friendly packaging. We believe that being a trusted brand requires radical genuineness in every consumer interaction. [...] creation Value Creation approach for our stakeholders: 1. Consumers (Delight) Consumers are central to Marico’s value creation journey. We are committed to offering high-quality, trusted brands and pioneering product innovations that meet the dynamic needs of both core and emerging consumer segments. By ensuring timely availability and value-driven pricing, we strive to enhance consumer satisfaction and foster long-term loyalty. Our unwavering focus on innovation and consumer-centricity continues to drive our competitive edge and sustainable growth in a rapidly evolving marketplace. 2. Shareholders (Deliver) We are committed to generating consistent, long-term value for our shareholders. This is driven by a focus on strengthening our core businesses, exploring Corporate Overview Statutory [...] As input costs softened, the brand passed on value through selective pricing actions in Q4. Our efforts to further strengthen brand salience continue with focused communication around the natural goodness and purity of coconut oil through targeted marketing initiatives.
+Saffola Edible Oils Saffola Edible Oils delivered ~13% revenue growth along with a low single digit volume growth, reflecting pricing interventions implemented earlier in response to higher input costs. We continue to focus on growing the brand while maintaining threshold profitability.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.boardinfinity.com/blog/marico-interview-preparation-guide" target="_blank">Marico Interview Preparation: A Guide to Success</a></h3>
+                    <div class="result-url">https://www.boardinfinity.com/blog/marico-interview-preparation-guide</div>
+                    <div class="result-content">| Period | Milestone |
+ --- |
+| 1971–1989 | Harsh Mariwala modernized the family business by introducing branded, small-pack coconut oil, laying the foundation for Parachute. |
+| 1990–1992 | Marico was incorporated, launched Hair &amp; Care, expanded Sweekar, and opened its first international office in Dubai. |
+| 1996–1999 | Listed on Indian stock exchanges and established its first overseas manufacturing unit in Bangladesh. |
+| 2003–2006 | Established the Marico Innovation Foundation and expanded through the Nihar acquisition and entry into Egypt and South Africa. |
+| 2010s–Present | Strengthened its portfolio with brands like Set Wet and Livon, expanded Saffola into health and wellness foods, and continued global growth. |
+
+ 2. Mission, Vision, and Values
+
+ Core Values</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.boardinfinity.com/blog/company-marico" target="_blank">Ace Your Interview at Marico: Insights of India&#x27;s FMCG Leader</a></h3>
+                    <div class="result-url">https://www.boardinfinity.com/blog/company-marico</div>
+                    <div class="result-content">Key Milestones in Marico’s History:
+
+| Year | Milestone |
+ --- |
+| 1974 | Established branded distribution network for Parachute coconut oil. |
+| 1988 | Marico Foods Limited incorporated; renamed Marico Industries Limited in 1989. |
+| 1990 | Marico officially established. |
+| 1992 | Opened first international office in Dubai. |
+| 1996 | Listed on Indian stock exchanges. |
+| 1999 | Expanded into Bangladesh; acquired Mediker. |
+| 2003 | Established Marico Innovation Foundation. |
+| 2006 | Acquired Nihar; expanded into African market. |
+| 2010 | Launched Saffola breakfast products. |
+| 2015 | Market capitalization exceeded ₹25,000 crores. |
+| 2020 | Net profit surpassed ₹1,000 crores; launched Saffola Honey. |
+| 2023 | Acquired PLix; achieved market leadership in Saffola oats. | [...]  Expansion and Innovation (1991-2000)
+
+ 1991: Launched Hair &amp; Care, a non-sticky hair oil, and nationally rolled out Sweekar sunflower oil.
+ 1992: Marico opened its first international office in Dubai, marking its entry into global markets.
+ 1996: The company was listed on Indian stock exchanges, enhancing its financial credibility.
+ 1999: Marico expanded into Bangladesh with its first overseas manufacturing facility and acquired Mediker.
+
+ Growth and Diversification (2001-2010)
+
+ 2003: Established the Marico Innovation Foundation to drive corporate social responsibility and sustainability initiatives.
+ 2006: Acquired Nihar and expanded into the African market, diversifying its product offerings.
+ 2010: Launched Saffola breakfast products, entering the health food segment. [...]  Strategic Priorities
+
+1. Diversification and Growth in Foods Segment:
+
+ Marico aims to double its foods portfolio by FY27, targeting a 20% compound annual growth rate (CAGR) in this segment. The company is focusing on expanding its offerings under the Saffola brand, which has already seen significant growth, nearing a revenue of Rs 600 crore in FY23 and aiming for Rs 850 crore in FY24.
+
+2. Digital Transformation:
+
+ Recognizing the importance of digital channels, Marico plans to leverage enhanced digital capabilities to expand its online presence. The annual recurring revenue from its digital-first brands is expected to double by FY27.
+
+3. Project SETU:</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://startuptalky.com/marico-success-story" target="_blank">Marico Limited - Company Profile | Indian FMCG Company</a></h3>
+                    <div class="result-url">https://startuptalky.com/marico-success-story</div>
+                    <div class="result-content">Male Grooming and Styling
+
+ Parachute Advansed Men&#x27;s Hair Cream Range
+ Set Wet Beard Styling Gel
+ Set Wet Deodorants
+ Set Wet Styling Gel
+
+Wellness
+
+ Saffola Oils
+ Saffola Aura - Olive &amp; Flaxseed Oil
+ Saffola Masala Oats
+ Saffola Multigrain Flakes
+
+Skincare
+
+ Parachute Advansed Body Lotion
+
+ Marico - Business Model
+
+The Marico business model is centered on focused growth across all of its brands/and territories, which is powered by constantly enhancing customer value propositions, market expansion, and expanding its retail presence. The model ensures Marico&#x27;s presence in niche / ethnic Indian product or service categories where traditional MNCs are weak. [...] Company Logo of Marico
+
+ Marico - Products
+
+Hair Oil
+
+ Nihar Naturals Sarson Kesh Tel
+ Nihar Naturals Shanti Amla Badam Hair Oil
+ Parachute Advansed Deep Conditioning Hot Oil
+ Parachute Advansed Aloe Vera Enriched Coconut Hair Oil
+ Parachute Advansed Coconut Hair Oil
+ Parachute Advansed Jasmine Hair Oil
+ Hair &amp; Care Fruit Oils
+ Nihar Naturals Coconut Hair Oil
+
+Coconut Oil
+
+ Parachute Coconut Oil
+ Nihar Naturals Coconut Oil
+ Nihar Naturals Uttam Coconut Oil
+
+Hair Serum
+
+ Livon Silky Potion Hair Serum
+ Hair &amp; Care Silk n Shine Hair Serum
+
+Anti-Hairfall
+
+ Livon Hair Gain Tonic
+ Parachute Advansed Ayurvedic Hair Oil
+ Parachute Advansed Ayurvedic Gold Hair Oil
+ Parachute Advansed Scalp Therapie Hair Oil
+
+Male Grooming and Styling [...] Marico Limited is a leading consumer goods company in India, offering a wide range of food, beauty, and wellness products and services. Marico has offices in over 25 countries across Asia and Africa, with its headquarters in Mumbai, Maharashtra, India.
+
+ Marico - Company Highlights
+
+| Company Name | Marico Limited |
+ --- |
+| Headquarters | Mumbai, Maharashtra, India |
+| Industry | Consumer goods |
+| Founded | 2 April 1990 |
+| Founder | Harsh Mariwala |
+| Products | Personal care, Skin care, Convenience food |
+| Areas Served | Worldwide |
+| Website | www.marcio.com |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.linkedin.com/posts/piyush-chuttar-8642902b7_marico-fmcg-indianfmcg-activity-7492903480148348928-22FJ" target="_blank">Marico FMCG Company Overview | Piyush Chuttar posted on the topic | LinkedIn</a></h3>
+                    <div class="result-url">https://www.linkedin.com/posts/piyush-chuttar-8642902b7_marico-fmcg-indianfmcg-activity-7492903480148348928-22FJ</div>
+                    <div class="result-content">Masala Millets - Offer a goodness and functional benefits along with micronutrients which comes up naturally from multi millets. d) Saffola Multigrain Oats - Offers a goodness of oats plus multigrain with a bundle of protein, fiber and micronutrients packed together with natural along , with a functional benefits with a combination of ingredients. Majority share of the Saffola food product range are - Oats, Soya, Millets ,Multi-source edible oils(MSEOs) , Nuts, Seeds and Honey. All these products were addressing the Non-communicable diseases (NCDs), Cardio vascular diseases ( CVDs ) and , influencing immunit unity etc. [...] centric who seeks for smart food choices without any single compromises. True Elements,🍟an acquired business of Marico, a premeium snacking brand which offers a healthier and clean label products portfolio. under &quot;FSSAI’s Eat Right India initiative &quot; Marico successfully launched✅️ a new variants with &quot; upto 20% reduced sodium content in key products&quot;🍶 such as - Saffola Masala Oats,🥗 Saffola Masala Millets🧆,and Saffola Crunchiez.🍪 Marico ensures that - &quot;none of their products in the portfolio contains any Refined Sugar &quot;🍬 a) Saffola Edible Oils - Enriched with vitamins A ,D and contains natural form of vitamin E . b) Saffola Muesli - Stronger with 8 essential micronutrients including B complex vitamins, iron and biotin. c) Saffola Masala Millets - Offer a goodness and functional benefits [...] several well-known brands: 1️⃣ Hair Care 💇♀️ - Parachute Coconut Oil - Parachute Advansed Hair Oil - Hair &amp; Care - Nihar Naturals 2️⃣ Edible Oils 🥗 - Saffola Edible Oil - Saffola Gold 3️⃣ Foods 🥣 - Saffola Oats - Saffola Muesli - Saffola Peanut Butter - Saffola Honey - Saffola Healthy Foods 4️⃣ Premium Personal Care 🧴 - Beardo - Just Herbs - Plix - True Elements 5️⃣ Digital-First Brands 🚀 - Cosmix - 4700BC 🌎 Marico is not only an India story Marico has also built a significant international presence, with products reaching markets such as: - Bangladesh - Vietnam - South Africa - Middle East - Egypt - Nepal 💡In one sentence: Marico is essentially a consumer-brand company that turns everyday needs into trusted brands and recurring purchases. From coconut oil to oats, edible oils to grooming</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/il8tXw7FZfFl" target="_blank">Saffola</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/il8tXw7FZfFl</div>
+                    <div class="result-content">Saffola
+ID: il8tXw7FZfFl
+Website: www.saffola.in
+Headquarters: New Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/saffola · 24 followers
+Industry: Computers and Electronics Manufacturing
+Industry codes: SIC 82, 822, NAICS 61, 611
+Company type: Private
+Business model: B2C
+SaaS: no
+Social profiles: www.facebook.com/saffolalife, www.twitter.com/saffolalife, www.instagram.com/saffolalife/?hl=en, www.youtube.com/channel/ucfw6ls7u3fmq4cmyolyl12g
+Email: saffolasupport@marico.com
+Description: Saffola is a healthcare brand that offers a range of &#x27;better for you&#x27; products designed to be easy, effective, and easy. [...]  Products and services
+Business areas: Food and Beverage Manufacturing, Health and Wellness Products, Packaged Food Retail
+Products: Edible Oils, Pure Honey, Masala Oats, Plain Oats, Crunchiez Millet Cones, Soya Chunks, Peanut Butter, Mayonnaise, Muesli
+
+ Headcount
+- Now: 13 · +3 yearly (30%) · 0 quarterly · 0 monthly
+  - Southern Asia: 1
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Financials
+- Annual revenue: 7.82M USD</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.boardinfinity.com/blog/company-marico" target="_blank">Ace Your Interview at Marico: Insights of India&#x27;s FMCG Leader</a></h3>
+                    <div class="result-url">https://www.boardinfinity.com/blog/company-marico</div>
+                    <div class="result-content">2. Skin Care
+
+ Parachute Advansed Body Lotion: A moisturizing lotion designed to keep the skin hydrated and nourished, suitable for daily use.
+
+ 3. Edible Oils
+
+ Saffola: A leading brand offering a variety of heart-healthy cooking oils, including Saffola Gold and Saffola Active, promoting a healthy lifestyle.
+
+ 4. Home Care
+
+ Revive: A brand that includes cold water starch and other household cleaning products, catering to the needs of modern households.
+
+ 5. Miscellaneous
+
+ Set Wet: A popular brand for men&#x27;s hair styling products, offering a range of gels and waxes to help achieve various hairstyles.
+ Grace: A brand that focuses on personal care products, enhancing beauty and wellness.
+
+ 6. International Brands [...]  3. Comprehensive Product and Service Offerings
+
+Marico Limited offers a diverse range of products across various categories, primarily focusing on health, beauty, and wellness. Here is a comprehensive list of its key products and services:
+
+ 1. Hair Care [...] Parachute Coconut Oil: Marico&#x27;s flagship product, known for its purity and quality, is widely used for hair nourishment and conditioning.
+ Parachute Advansed: This range includes various hair oils and treatments designed to cater to different hair types and needs, promoting healthy hair growth and shine.
+ Nihar Naturals: Offers a selection of herbal hair oils and related products, emphasizing natural ingredients and traditional formulations.
+ Hair &amp; Care: A non-sticky hair oil enriched with natural ingredients, designed for easy application and effective nourishment.
+ Livon: A range of hair serums and leave-in conditioners that provide smoothness and manageability to hair, catering to modern styling needs.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://finance.yahoo.com/quote/MARICO.NS/profile" target="_blank">Marico Limited (MARICO.NS) Company Profile &amp; Facts - Yahoo Finance</a></h3>
+                    <div class="result-url">https://finance.yahoo.com/quote/MARICO.NS/profile</div>
+                    <div class="result-content">Marico Limited, together with its subsidiaries, manufactures and sells branded consumer products in India, Bangladesh, Vietnam, and internationally. It offers coconut oils, refined edible oils, hair oils, anti-lice treatments, fabric care, functional and other processed food, hair creams and gels, hair serums, shampoos, conditioners, shower gels, hair relaxers and straighteners, deodorants, female personal care, baby care, skin care, male grooming and hair styling, packaged food, health care, and hygiene products. The company markets its products under the Parachute, Parachute Advansed, Saffola, Hair &amp; Care, Parachute Advansed, Nihar Naturals, Mediker, Pure Sense, Coco Soul, Revive, Set Wet, Livon, Just Herbs, True Elements, Kaya, Beardo, and Plix, HairCode, Fiancée, Purité de Prôvence, [...] Beardo, and Plix, HairCode, Fiancée, Purité de Prôvence, Ôliv, Lashe&#x27;, Caivil, Hercules, Black Chic, Code 10, Ingwe, X-Men, Studio X, Thuan Phat and Isoplus brand names. It sells its products through distribution network, including regional offices, carrying and forwarding agents, redistribution centers, and distributors. Marico Limited was incorporated in 1988 and is headquartered in Mumbai, India.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.livemint.com/companies/news/saffola-now-a-rs-2-000-crore-plus-brand-says-marico-ceo-weighs-in-on-inflation-11676800409906.html" target="_blank">Saffola now a ₹2,000 crore-plus brand, says Marico CEO; weighs in on inflation | Company Business News</a></h3>
+                    <div class="result-url">https://www.livemint.com/companies/news/saffola-now-a-rs-2-000-crore-plus-brand-says-marico-ceo-weighs-in-on-inflation-11676800409906.html</div>
+                    <div class="result-content">&quot;Food has been one of the significant diversification journeys we have taken in Marico. Our effort was to expand the total addressable market, with the brand Saffola, participating in the healthier food segment,&quot; Gupta added.
+
+ Marico&#x27;s food business grew by 31% in December quarter
+
+The company showed an impressive performance in previous quarter. Its food business grew by 31 per cent in the latest December quarter.
+
+Also Read:Marico Q3 net profit rises 5% to ₹333 cr, revenue up by 2.6%
+
+The company is expanding its footprint in the food segment, and plans to add more healthy food products under its brand Saffola. Saffola has become a lot more than just an edible oil, as it offers its honey, peanut butter, soya chunks, instant noodles, etc. [...] &quot;I think the worst is behind,&quot; said Gupta, adding, &quot;Overall for FMCG, we see a gradual recovery, but that has to be led by rural. Urban has been decent. Saffola master brand, if we put together, it is a ₹2,000-crore-plus brand,&quot; Saugata Gupta told PTI.
+
+Also Read: Marico to invest in more D2C brands; food, digital in focus
+
+He believed that the rural FMCG market is expected to have a turnaround in the next 2-3 quarters. It witnessed a decline in the last 4-5 quarters.
+
+Also Read:Consumer goods makers bet on rural recovery to lift profits
+
+Saugata also added that food continues to do well at the industry level. Whereas, the home and personal care category is struggling a bit. Mainly due to high inflation last year. With easing inflation, Marico MD expects &quot;better margins&quot; in top-line. [...] General trade is already doing well. Whereas, the urban market and modern trade are recovering to pre-COVID levels. He expressed confidence of his company&#x27;s growth in India but expressed hurdles of inflation and currency headwinds in the company&#x27;s growth. &quot;We continue to be resilient and we are confident of double-digit constant currency growth,&quot; said Saugata.
+
+ Marico aims for ₹850 crore revenue in FY24
+
+As the company is expanding its business under different brands, Marico has set a target of ₹850 crore plus revenue in the current financial year.Company&#x27;s business in other premium portfolios like skincare, male grooming etc, which are non-core parts of the portfolio, in the next two years will constitute to mid-teens to Marico&#x27;s overall turnover, he said.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://marico.com/investorspdf/Information_Update_-_Q4FY21.pdf" target="_blank">Information Update for Q4FY21 (Quarter ended March 31, 2021)</a></h3>
+                    <div class="result-url">https://marico.com/investorspdf/Information_Update_-_Q4FY21.pdf</div>
+                    <div class="result-content">and plant-based protein offerings launched this year have seen encouraging trends in their launch markets. Expanding its presence in Foods, the Company launched Saffola Oodles, 5-minute ring-shaped noodles, containing no refined flour and with the goodness of whole grain oats, real vegetables and semolina.  Saffola Honey has been scaling up faster than launch expectations on the back of its inherent purity and trusted brand equity. The brand exited FY21 just short of a double-digit market share in key Modern Trade chains and has garnered 25%+ market share in E-Commerce. The brand is on course to touch revenues of INR 100 cr. in the coming year.  The Premium Personal Care ended with a modest dip in Q4 as growth in Serums was more than offset by the decline in Male Grooming.  In the [...] growth over the medium term in this franchise.  Having crossed the INR 300 cr mark in FY21, the Company will continue to innovate and broaden its play in the Foods category to reach the INR 450-500 cr mark in FY22. Saffola Honey has gained considerable salience since launch this year. The brand will continue to build consumer trust on the back of its superior quality and nutritional value and should touch INR 100 crores in revenues in FY22. The Company will aggressively invest behind Saffola Chyawan Amrut, Saffola Mealmaker Soya Chunks and Saffola Oodles to gain scale and reach critical mass.  The Company aims to build the Premium Personal Care portfolios into growth engines of the future and expects to deliver double-digit value growth over the medium term in these portfolios. In the [...] and immunity boosting benefits to the consumers, Saffola Honey has been gaining salience across channels. The brand has exited just shy of double-digit market share in key Modern Trade chains and crossing 25% market share in E-Commerce. The brand also introduced a table-top squeezy pack in March. Saffola Mealmaker Soya Chunks has gained traction in its launch markets in GT. The brand was extended to newer markets as well as MT &amp; E-Com during the quarter. Saffola Arogyam Chyawan Amrut had a moderate start since its launch. The brand launched a TVC campaign in Q4 that highlighted various traditionally established remedies by consumers to keep up their immunity and overall well-being. We will continue invest behind brand building in this franchise. In line with its aim to strengthen its</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://economictimes.indiatimes.com/topic/marico-news" target="_blank">marico news: Latest News &amp; Videos, Photos about marico news | The Economic Times - Page 1</a></h3>
+                    <div class="result-url">https://economictimes.indiatimes.com/topic/marico-news</div>
+                    <div class="result-content">MARICO NEWS.  Mutual funds load up on bank stocks in September, buy Kotak and ICICI Bank shares worth over Rs 3,000 crore.  India&#x27;s Marico sees second-quarter revenue growing around 30% on better pricing. Marico&#x27;s Q2 consolidated revenue rises ~30% YoY, fueled by price hikes and stronger sales of premium hair oils, compared to 8% growth in the same quarter last year.  Income Tax department concludes survey action on FMCG major Marico. FMCG company Marico announced the Income Tax Department completed its survey. Rajesh Palviya of Axis Securities anticipates a consumption boost from upcoming GST rationalization, benefiting companies like Dabur, Marico, and Trent.  Income Tax department’s survey action underway on Marico. The Income Tax Department conducted a survey on consumer goods company Marico Ltd on Wednesday as part of a nationwide action.  Marico shares fall over 4% as Bangladesh business may get hit. Shares of FMCG firm Marico, known for Saffola and Parachute, fell over 4% on Tuesday due to political turmoil in Bangladesh, where it earns 11-12% of its revenue.  Marico shares gain 1.15% as Sensex rises.  Marico shares up 0.28% as Sensex falls.  Marico shares drop 0.53% as Sensex rises.  Marico shares rise 0.28% as Nifty drops. The stock quoted a 52-week high price of Rs 595.0 and a 52-week low of Rs 462.95.  Marico shares gain 1.01% as Sensex rises.  Marico shares rise 0.4 per cent in Monday&#x27;s trading session.  Marico rises 0.39% as Sensex climbs.  Marico shares down 0.52% as Nifty gains. The stock quoted a 52-week high price of Rs 595.0 and low of Rs 462.95.  Marico stock price up 0.28 per cent as Sensex climbs.  Marico shares up 0.24% as Nifty gains.  Marico shares up 0.29% as Sensex falls.  Marico shares drop 0.28% as Sensex rises.  Marico jumps 5% as FMCG major gives positive revenue growth numbers for Q2.  Stocks in news: Marico, Pidilite, Thermax. Marico Industries on Thursday touched its 52 week low at Rs 46.50 on BSE before recovering to close at Rs 50.20, the same price it closed Wednesday.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bestmediainfo.com/mediainfo/mediainfo-marketing/marico-eyes-saffola-foods-to-surpass-edible-oil-business-says-ceo-9671691" target="_blank">Marico eyes Saffola foods to surpass edible oil business, says CEO</a></h3>
+                    <div class="result-url">https://bestmediainfo.com/mediainfo/mediainfo-marketing/marico-eyes-saffola-foods-to-surpass-edible-oil-business-says-ceo-9671691</div>
+                    <div class="result-content">New Delhi: Marico, which is expanding into the healthy food segment with Saffola brand, expects its food business to surpass the edible oil vertical, said the company&#x27;s Managing Director and Chief Executive Officer Saugata Gupta.
+
+Marico, whose foods business has crossed the Rs 900 crore-mark in FY25, is expanding in the segment by introducing Saffola oats, honey, and snacks, among other products, in the fast-growing wellness space.
+
+The home-grown FMCG major, which also operates with brands like &#x27;True Elements&#x27; and the plant-based nutrition portfolio of Plix, sees a significant opportunity for expansion of TAM (Total Addressable Market), he said. [...] &quot;As far as Saffola is concerned, we continue to grow the foods franchise. And the food franchise is more profitable than the edible oil. The food business does involve a significant TAM expansion,&quot; Gupta told PTI.
+
+For Saffola oats and masala oats, there is a room to improve penetration, distribution, and it needs to be ramped up further with increased awareness and trials, he said.
+
+Marico also aspires to have a &#x27;significant presence&#x27; in the honey and muesli segments where it operates with the Saffola brand. Besides, it also plans to grow in the snack segment by expanding its Saffola Crunchiez. [...] &quot;So overall, we are in a strong position to deliver 25% growth in the food segment. Saffola, as a brand, focuses on offering &quot;better-for-you&quot; products, emphasising healthy choices at every stage of life. This journey will continue, and maybe 3 to 4 years from now, Saffola foods could become bigger than Saffola edible oil,&quot; said Gupta.
+
+In FY25, Marico&#x27;s consolidated revenue, which included international business, crossed the Rs 10,000 crore-mark. Its standalone revenue, which mainly consists of India revenue, was at Rs 7,581 crore.
+
+Marico&#x27;s food business contributed 11% to Marico&#x27;s domestic business in FY25, registering a 33% growth, while Saffola edible oils business contributed 19 per cent to domestic business, recording low single-digit volume growth in the same period.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/insights/merger-acquisition-deals-brief/marico-acquires-cosmix/__hlCavP_Y_oDdX3cTdG2DUBLUm_OnVkQPgbT-zcG1XOs" target="_blank">Marico Acquires Cosmix</a></h3>
+                    <div class="result-url">https://tracxn.com/d/insights/merger-acquisition-deals-brief/marico-acquires-cosmix/__hlCavP_Y_oDdX3cTdG2DUBLUm_OnVkQPgbT-zcG1XOs</div>
+                    <div class="result-content">Logo for Cosmix
+Logo for Marico
+
+ Deal Summary
+
+On Wednesday, February 4, 2026, Marico announced the acquisition of a 60% stake in Cosmix, a superfood powder brand based in Bengaluru, India. The deal value was undisclosed. Marico, founded in 1990 and based in Mumbai, India, is a leading consumer goods company with a portfolio of brands across beauty and wellness, including Parachute and Saffola. Cosmix, founded in 2019, is a direct-to-consumer (D2C) brand specializing in superfood powders. The acquisition aligns with Marico&#x27;s strategy to expand its presence in the rapidly growing health and wellness food sector.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.slideshare.net/slideshow/marico-saffola/204531212" target="_blank">marico - saffola | PPTX</a></h3>
+                    <div class="result-url">https://www.slideshare.net/slideshow/marico-saffola/204531212</div>
+                    <div class="result-content">COMPETITORS ANALYSIS
+Dabur India is the biggest
+rival of Marico. DaburIndia
+was founded in 1884, and
+its headquarters is in
+Ghaziabad, UttarPradesh.
+Dabur India operates inthe
+Household Products
+industry. Dabur India has
+5,461 more employees
+than Marico.
+HUL is Marico&#x27;s 3 rival.
+HUL was founded in1933
+in Mumbai,Maharashtra.
+HUL is in the Personal
+Services industry.HUL
+generates $3.7Bmore
+revenue than Marico
+Emami has been one of
+Marico&#x27;s top competitors.
+Emami is a Public company
+that was founded in
+Kolkata, West Bengal in
+1974. Emami competes in
+the Consumer Goods
+industry. Emami has 1,609
+more employees vs.
+Marico
+ 
+PRODUCT INFORMATION
+ Saffola is a health care brand which brings to you a range of everyday Heart [...] Systems
+THREATS
+-Disruption in Fmcg Sector
+-Political Risks
+-Competition
+-Foreign Currency Exposure
+OPPORTUNITIES
+-StrongEconomicIndications
+-GST Implications Benefits
+-Promising growth in Rural
+Markets
+-Organic/Inorganic Growth
+Opportunities
+SWOT ANALYSIS STP
+ 
+COMPETITORS ANALYSIS
+Dabur India is the biggest
+rival of Marico. DaburIndia
+was founded in 1884, and
+its headquarters is in
+Ghaziabad, UttarPradesh.
+Dabur India operates inthe
+Household Products
+industry. Dabur India has
+5,461 more employees
+than Marico.
+HUL is Marico&#x27;s 3 rival.
+HUL was founded in1933
+in Mumbai,Maharashtra.
+HUL is in the Personal
+Services industry.HUL
+generates $3.7Bmore
+revenue than Marico
+Emami has been one of
+Marico&#x27;s top competitors.
+Emami is a Public company
+that was founded in
+Kolkata, West Bengal in [...] HAIR OIL PARACHUTE, HAIR &amp; CARE, SHANTI AMLA, NIHAR,
+LIVON
+HAIR CARE AFTER SHOWER, SILK &amp; SHINE, MEDIKER, OILOF
+MALABAR
+FOOD AND EDIBLEOIL SIL, SAFFOLA, SWEEKAR OIL
+SKIN CARE KAYACLINIC, SUNDARI, MEDIKER, MANJAL
+DEODRANTS SET WET, ZATAK, REVIVE, XMEN
+PRODUCT PORTFOLIO
+ 
+WEAKNESS
+-Largely dependent on Saffola
+and parachute brands.
+-Limited Global Presence
+STRENGTH
+Massive Distributionnetwork
+-Strongpresence in Asia and
+Africa
+-StrongFinancialPerformance
+-Advanced Quality Check
+Systems
+THREATS
+-Disruption in Fmcg Sector
+-Political Risks
+-Competition
+-Foreign Currency Exposure
+OPPORTUNITIES
+-StrongEconomicIndications
+-GST Implications Benefits
+-Promising growth in Rural
+Markets
+-Organic/Inorganic Growth
+Opportunities
+SWOT ANALYSIS STP
+ 
+COMPETITORS ANALYSIS
+Dabur India is the biggest</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.boardinfinity.com/blog/company-marico" target="_blank">Ace Your Interview at Marico: Insights of India&#x27;s FMCG Leader</a></h3>
+                    <div class="result-url">https://www.boardinfinity.com/blog/company-marico</div>
+                    <div class="result-content">Bank Stock Performance
+
+ Financial Metrics Table
+
+ 5. Key Competitors of Marico
+
+Marico Limited faces competition from several prominent companies in the fast-moving consumer goods (FMCG) sector. Here are the top five competitors, along with an overview of their services and market positions:
+
+ 1. Hindustan Unilever Limited (HUL)
+
+ Overview: HUL is one of the largest FMCG companies in India, with a diverse portfolio that includes personal care, home care, and food products.
+ Services: The company offers brands like Dove, Surf Excel, and Lipton, focusing on health, hygiene, and nutrition.
+ Market Position: HUL holds a significant market share in various categories, leveraging strong distribution networks and extensive marketing strategies.
+
+ 2. Procter &amp; Gamble (P&amp;G) [...]  2. Skin Care
+
+ Parachute Advansed Body Lotion: A moisturizing lotion designed to keep the skin hydrated and nourished, suitable for daily use.
+
+ 3. Edible Oils
+
+ Saffola: A leading brand offering a variety of heart-healthy cooking oils, including Saffola Gold and Saffola Active, promoting a healthy lifestyle.
+
+ 4. Home Care
+
+ Revive: A brand that includes cold water starch and other household cleaning products, catering to the needs of modern households.
+
+ 5. Miscellaneous
+
+ Set Wet: A popular brand for men&#x27;s hair styling products, offering a range of gels and waxes to help achieve various hairstyles.
+ Grace: A brand that focuses on personal care products, enhancing beauty and wellness.
+
+ 6. International Brands</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.business-standard.com/article/companies/after-honey-marico-gets-into-instant-noodles-under-saffola-brand-121021900928_1.html" target="_blank">After honey, Marico gets into instant noodles under Saffola brand | Company News - Business Standard</a></h3>
+                    <div class="result-url">https://www.business-standard.com/article/companies/after-honey-marico-gets-into-instant-noodles-under-saffola-brand-121021900928_1.html</div>
+                    <div class="result-content">The entry is the first significant step by a key fast-moving consumer goods company in six years since the Maggi controversy happened.
+
+The move is significant since it signals the growing importance of foods in Marico&#x27;s overall strategy, sector experts said. It also comes six months after Marico stepped into honey, a Rs 1,500-crore category dominated by players such as Dabur.
+
+Instant noodles in India has Nestle&#x27;s Maggi with an estimated market share of 60 per cent, while ITC&#x27;s Sunfeast Yippee noodles is estimated to have a share of 22 per cent. CG Foods&#x27; Wai Wai noodles is estimated to have a share of around 9 per cent, industry experts said. [...] Apart from edible oils, honey and noodles, Marico also plays in the oats segment, covering nearly all meal occasions including breakfast, lunch and In-between snacking.
+
+Instant noodles will be retailed on the company’s own direct-to-consumer platform Saffola stores, apart from online platforms such as Amazon, BigBasket, Grofers, and Flipkart. It could be pushed into offline stores in the future.
+
+Topics : Marico FMCGs FMCG companies</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://startuptalky.com/marico-success-story" target="_blank">Marico Limited - Company Profile | Indian FMCG Company</a></h3>
+                    <div class="result-url">https://startuptalky.com/marico-success-story</div>
+                    <div class="result-content">Marico - Competitors
+
+Top competitors of Marico :
+
+ Hindustan Unilever
+ Procter &amp; Gamble
+ Dabur
+ Advantice Health
+ Emami
+ Gillette India
+ Bajaj Consumer
+ Colgate
+
+Coca-Cola India | Company profile | All You Need To Know
+
+Company Profile is an initiative by StartupTalky to publish verified informationon different startups and organizations. The content in this post has beenapproved by Coca-Cola. Coca-Cola India, is one of the country’s leading beverage companies, offering arange of healthy, safe, high quality, re…
+
+StartupTalkySarika Anand
+
+ Marico - Challenges Faced [...]  What companies do Marico compete with?
+
+Top competitors of Marico are Hindustan Unilever, Procter &amp; Gamble, Dabur, Advantice Health, Emami, Gillette India, Bajaj Consumer and Colgate.
+
+Topics:
+
+🏭 Companies 🛍️ Retail &amp; FMCG
+
+ Must have tools for startups - Recommended by StartupTalky
+
+Convert Visitors into Leads SeizeLead   Website Builder SquareSpace   Run your business Smoothly Systeme.io   Stock Images Shutterstock
+
+ Stories You May Like
+
+How Does Google Pay Make Money? | Google Pay Business Model 
+
+🏭 Companies
+
+ How Does Google Pay Make Money? | Google Pay Business Model [...] &gt; &quot;The big picture is that we want to be present in the foods segment, in the premium as well as mass categories. For the premium segment, we are going to adopt a digital-first approach. This calls for doing multiple things including creating new categories and tapping categories that are huge in the digital space. We started by prioritizing Saffola Fittify and Coco Soul as digital-first brands to see the response we got. Over time, we have learnt that there is a demand for these categories, but at this time, the market size is very small in the country. Hence, we are focusing on creating categories digitally,&quot; said Sanjay Mishra, COO of Marico.
+
+ About Marico and How it Works?</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/marico/alternatives-competitors" target="_blank">Top Marico Alternatives, Competitors</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/marico/alternatives-competitors</div>
+                    <div class="result-content">Unilever
+
+  Unilever operates as a global consumer goods company. It develops, manufactures, markets, and sells fast-moving consumer goods (FMCG). The company offers a various prod…
+
+  Marico vs. Unilever
+
+  View more in-depth data on:
+
+  + Competitors
+  + Products
+  + Customer References and more
+
+  Compare Marico and Unilever
+
+New call-to-action
+
+ Top10Maricocompetitors
+
+ PurePlay Skin Sciences
+ Hindustan Unilever
+ Tata Consumer Products
+ Bajaj Consumer Care
+ Cholayil
+ ITC
+ Lotus Herbals
+ Miric Biotech
+ Nestle India
+ Unilever
+
+ Compare Marico to Competitors
+
+C
+
+Cholayil [...] Hindustan Unilever Logo
+
+  Hindustan Unilever
+
+  Hindustan Unilever focused on fast-moving consumer goods (FMCG) within the personal care, home care, and nutrition sectors. It offers a range of products designed to me…
+
+  Marico vs. Hindustan Unilever
+
+  View more in-depth data on:
+
+  + Competitors
+  + Products
+  + Customer References and more
+
+  Compare Marico and Hindustan Unilever
+ Tata Consumer Products Logo
+
+  Tata Consumer Products
+
+  Tata Consumer Products focuses in the consumer goods sector. It offers food and beverage products including packaged tea, coffee, mineral water, salt, spices, herbal su…
+
+  Marico vs. Tata Consumer Products
+
+  View more in-depth data on:
+
+  + Competitors
+  + Products
+  + Customer References and more [...] Compare Marico and Tata Consumer Products
+ Bajaj Consumer Care Logo
+
+  Bajaj Consumer Care
+
+  Bajaj Consumer Care is a FMCG brand with a focus on hair care, skin care, personal care, and ethnic range products. The company offers a range of products including hai…
+
+  Marico vs. Bajaj Consumer Care
+
+  View more in-depth data on:
+
+  + Competitors
+  + Products
+  + Customer References and more
+
+  Compare Marico and Bajaj Consumer Care
+ Cholayil Logo
+
+  Cholayil
+
+  Cholayil Pvt Ltd operates in the FMCG industry and offers a range of Ayurvedic personal care solutions through its flagship brand Medimix and other brands including Cut…
+
+  Marico vs. Cholayil
+
+  View more in-depth data on:
+
+  + Competitors
+  + Products
+  + Customer References and more
+
+  Compare Marico and Cholayil
+ ITC Logo</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

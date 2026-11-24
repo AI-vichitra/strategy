@@ -5,7 +5,6 @@ import styles from './BrandKitForm.module.css';
 export interface BrandColors {
   primary?: string;
   secondary?: string;
-  accent?: string;
 }
 
 export interface BrandKit {
@@ -16,7 +15,7 @@ export interface BrandKit {
 interface BrandKitFormProps {
   brandKit: BrandKit;
   onChange: (bk: BrandKit) => void;
-  apiBase: string;
+  apiBase: string | undefined;
   authToken?: string;
 }
 
@@ -26,8 +25,9 @@ const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const COLOR_FIELDS: { key: keyof BrandColors; label: string; fallback: string }[] = [
   { key: 'primary', label: 'Primary', fallback: '#D4A843' },
   { key: 'secondary', label: 'Secondary', fallback: '#6B6560' },
-  { key: 'accent', label: 'Accent', fallback: '#B8912E' },
 ];
+// Accent is backend-managed (extracted from the logo when vivid, otherwise
+// derived from primary at export time) — not a user-settable field here.
 
 const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
@@ -46,6 +46,12 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [colorDrafts, setColorDrafts] = useState<BrandColors>(safeBrandKit.colors ?? {});
+  // Which color fields currently hold a logo-derived value rather than
+  // something the user typed/picked themselves — lets a new upload safely
+  // refresh only the still-auto-filled fields, and lets removing the logo
+  // clear only those, never a manual edit.
+  const [autoFilled, setAutoFilled] = useState<Partial<Record<keyof BrandColors, boolean>>>({});
+  const [paletteHint, setPaletteHint] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -63,8 +69,20 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
     onChange({ ...safeBrandKit, colors: hasAny ? nextColors : undefined });
   };
 
+  // A direct edit always makes the field the user's own — it stops being
+  // something a future logo upload is allowed to overwrite.
+  const markManual = (key: keyof BrandColors) => {
+    setAutoFilled((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
   const handleColorTextChange = (key: keyof BrandColors, value: string) => {
     setColorDrafts((prev) => ({ ...prev, [key]: value }));
+    markManual(key);
     if (value.trim() === '') {
       commitColor(key, undefined);
       return;
@@ -76,11 +94,13 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
   const handleSwatchChange = (key: keyof BrandColors, value: string) => {
     const normalized = normalizeHex(value) || value.toUpperCase();
     setColorDrafts((prev) => ({ ...prev, [key]: normalized }));
+    markManual(key);
     commitColor(key, normalized);
   };
 
   const uploadLogo = async (file: File) => {
     setUploadError(null);
+    setPaletteHint(false);
     if (!ALLOWED_TYPES.includes(file.type)) {
       setUploadError('Unsupported file type. Use PNG, JPEG, SVG, or WebP.');
       return;
@@ -108,7 +128,42 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
         return;
       }
       const data = await res.json();
-      onChange({ ...safeBrandKit, logo_url: data.logo_url });
+      const palette = data.palette ?? {};
+
+      // Re-extract primary/secondary for THIS logo, refreshing any field that
+      // isn't a manual user edit — a field previously auto-filled from a
+      // different logo gets overwritten (or cleared, if this logo doesn't
+      // yield that color), instead of silently keeping the old logo's value.
+      // Only primary/secondary are user-settable; accent (which the backend
+      // may still include in `palette`) is intentionally ignored here — it's
+      // resolved server-side at export time instead.
+      const nextColors: BrandColors = { ...(safeBrandKit.colors ?? {}) };
+      const nextAutoFilled: Partial<Record<keyof BrandColors, boolean>> = { ...autoFilled };
+      (['primary', 'secondary'] as const).forEach((key) => {
+        if (!autoFilled[key] && (colorDrafts[key] ?? '').trim() !== '') return; // manual edit — leave it
+
+        const extracted: string | undefined = palette[key];
+        if (extracted) {
+          nextColors[key] = extracted.startsWith('#') ? extracted : `#${extracted}`;
+          nextAutoFilled[key] = true;
+        } else {
+          delete nextColors[key];
+          delete nextAutoFilled[key];
+        }
+      });
+
+      const hasAnyColor = Object.values(nextColors).some(Boolean);
+      const nextBrandKit: BrandKit = {
+        ...safeBrandKit,
+        logo_url: data.logo_url,
+        colors: hasAnyColor ? nextColors : undefined,
+      };
+
+      setColorDrafts(nextColors);
+      setAutoFilled(nextAutoFilled);
+      setPaletteHint(Object.keys(nextAutoFilled).length > 0);
+
+      onChange(nextBrandKit);
     } catch {
       setUploadError('Upload failed. Please try again.');
     } finally {
@@ -131,7 +186,18 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
 
   const handleRemoveLogo = () => {
     const { logo_url, ...rest } = safeBrandKit;
-    onChange(rest);
+    // Drop the colors that came FROM this logo so the next upload starts
+    // clean; a color the user manually set (not in `autoFilled`) survives.
+    const remainingColors: BrandColors = { ...(rest.colors ?? {}) };
+    (['primary', 'secondary'] as const).forEach((key) => {
+      if (autoFilled[key]) delete remainingColors[key];
+    });
+    const hasAnyColor = Object.values(remainingColors).some(Boolean);
+
+    setColorDrafts(remainingColors);
+    setAutoFilled({});
+    setPaletteHint(false);
+    onChange({ ...rest, colors: hasAnyColor ? remainingColors : undefined });
   };
 
   return (
@@ -217,6 +283,19 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
               );
             })}
           </div>
+          {paletteHint && (
+            <div className={styles.paletteHint}>
+              <span>Colors auto-filled from your logo</span>
+              <button
+                type="button"
+                className={styles.paletteHintDismiss}
+                onClick={() => setPaletteHint(false)}
+                aria-label="Dismiss"
+              >
+                &#x2715;
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

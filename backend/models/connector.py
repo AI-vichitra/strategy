@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BLOB, DateTime, ForeignKey
+from sqlalchemy import Column, String, LargeBinary, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from backend.database import Base
@@ -11,7 +11,7 @@ class ConnectorCredential(Base):
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     connector_id = Column(String(100), nullable=False)
     connector_type = Column(String(50), nullable=False)
-    encrypted_credentials = Column(BLOB, nullable=False)
+    encrypted_credentials = Column(LargeBinary, nullable=False)
     status = Column(String(50), nullable=True)
     connected_at = Column(DateTime, server_default=func.now())
 

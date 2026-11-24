@@ -540,9 +540,14 @@ def test_invalid_model_string_falls_back_to_deterministic_without_crashing(monke
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Hotfix 4d.1 — tolerate an installed anthropic SDK that rejects a kwarg
-# (e.g. `temperature`) by stripping it and retrying, instead of failing out
-# to the deterministic planner.
+# Hotfix 4d.1 — tolerate an installed anthropic SDK that rejects a kwarg by
+# stripping it and retrying, instead of failing out to the deterministic
+# planner. `temperature` itself is no longer sent at all (the installed SDK
+# dropped it from messages.create()'s signature entirely, and the API
+# rejects it even via extra_body with a 400) — _default_llm_completion sends
+# output_config={"effort": "low"} instead, so this test exercises the retry
+# loop against THAT kwarg to prove it still protects against a future
+# SDK/API change, without resurrecting the removed `temperature` kwarg.
 # ─────────────────────────────────────────────────────────────────────────────
 
 def test_anthropic_call_retries_without_unsupported_kwarg_and_succeeds(monkeypatch, caplog):
@@ -565,7 +570,7 @@ def test_anthropic_call_retries_without_unsupported_kwarg_and_succeeds(monkeypat
         def create(self, **kwargs):
             calls.append(kwargs)
             if len(calls) == 1:
-                raise TypeError("Messages.create() got an unexpected keyword argument 'temperature'")
+                raise TypeError("Messages.create() got an unexpected keyword argument 'output_config'")
             return _FakeResponse()
 
     class _FakeClient:
@@ -582,10 +587,12 @@ def test_anthropic_call_retries_without_unsupported_kwarg_and_succeeds(monkeypat
 
     assert text == '{"sections": []}'
     assert len(calls) == 2  # first call failed, retried once, succeeded
-    assert "temperature" not in calls[1]  # the unsupported kwarg was stripped on retry
-    assert "temperature" in calls[0]  # the original call DID try it first
+    assert "temperature" not in calls[0]  # never sent at all any more
+    assert "temperature" not in calls[1]
+    assert "output_config" in calls[0]  # the original call DID try it first
+    assert "output_config" not in calls[1]  # stripped on retry
     assert any(
-        "retried anthropic call without unsupported kwarg(s): temperature" in r.message
+        "retried anthropic call without unsupported kwarg(s): output_config" in r.message
         for r in caplog.records
     )
 

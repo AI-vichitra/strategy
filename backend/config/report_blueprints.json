@@ -15,7 +15,7 @@
       "description": "Global and local market landscape relevant to the analysis",
       "required": true,
       "subsections": ["Industry Overview", "Market Size & Growth", "Key Trends & Drivers"],
-      "content_guidance": "Include relevant data points, market size figures, growth rates. Use tables for comparative data."
+      "content_guidance": "Industry Overview: 1-2 explained paragraphs, not a single line. Market Size & Growth: 4-5 detailed, explained points covering market size, growth rate, segment breakdowns, and the specific drivers behind the numbers — each point 1-2 sentences. A precise number (market size, CAGR, growth rate) may ONLY appear when the evidence actually contains it with a citable source; where the evidence has no such figure, describe the market's scale and trajectory qualitatively instead of stating an unsourced precise number — '4-5 points' means 4-5 substantive points, not 4-5 invented statistics. Key Trends & Drivers: 4-5 trends, each stated and then explained (what it is, why it matters, what evidence supports it), not a labeled one-liner. Use tables for comparative data where helpful."
     },
     {
       "order": 2,
@@ -24,7 +24,7 @@
       "description": "Target audience analysis, behavior patterns, and consumer insights",
       "required": true,
       "subsections": ["Target Segments", "Consumer Behavior", "Perception & Sentiment"],
-      "content_guidance": "Define 2-4 key consumer segments. Include behavioral data and perception analysis."
+      "content_guidance": "Target Segments: define 4-5 key consumer segments; for each, explain its distinct needs and behaviours in 1-2 sentences, grounded in the research where it provides evidence for that segment rather than a generic persona label. Consumer Behavior: 4-5 detailed, explained behavioural points, each grounded in research evidence or clearly-reasoned market context, not a bare one-line label. Perception & Sentiment: explain both the positive and negative sides of perception in 2-4 sentences, citing specific evidence (ratings, named reviews/incidents) where the research supports it rather than a single generic statement."
     },
     {
       "order": 3,
@@ -33,7 +33,7 @@
       "description": "Competitor identification, analysis, and positioning",
       "required": true,
       "subsections": ["Key Competitors", "Competitive Analysis", "Market Positioning"],
-      "content_guidance": "Identify 4-6 key competitors. Use a comparison TABLE for competitive analysis. Include positioning insights."
+      "content_guidance": "Key Competitors: identify 4-6 key competitors; for EACH, write a short profile (2-3 sentences) covering its market positioning, one notable strength, and one notable fact drawn from its own research — not a single one-line label. Competitive Analysis: use a comparison TABLE, but make each Strengths/Weaknesses entry specific and evidence-grounded (cite a fact, rating, or incident from that competitor's own research where available), not a generic phrase. Market Positioning: a full paragraph (4-6 sentences) explaining how the competitive set is positioned relative to each other and to the target brand — not a single summary line."
     },
     {
       "order": 4,
@@ -42,7 +42,7 @@
       "description": "Synthesized insights from market, consumer, and competitive analysis",
       "required": true,
       "subsections": ["Consumer Insights", "Market & Competitive Insights"],
-      "content_guidance": "3-5 actionable insights derived from the analysis above. Each insight should connect data to strategic implication."
+      "content_guidance": "Consumer Insights: 4-5 detailed insights, each framed as an observation (grounded in the Consumer Landscape analysis above) followed by its strategic implication, in 1-2 sentences each — not a bare label. Market & Competitive Insights: 4-5 detailed insights in the same observation-then-implication format, each grounded in the Market Context, Competitive Landscape, or Brand Audit analysis above."
     }
   ],
   "agent_blueprints": {
@@ -50,12 +50,20 @@
       "display_name": "Brand Positioning",
       "type_specific_sections": [
         {
+          "order": 3.5,
+          "key": "brand_audit",
+          "title": "Brand Audit",
+          "description": "A direct, evidence-based audit of the TARGET brand itself — its own strengths and, separately, its own weaknesses and vulnerabilities. This is not a competitor comparison (that belongs in Competitive Landscape) and not aspirational positioning (that belongs in Strategic Approach / Positioning Map) — it is a candid look at the brand as the research actually describes it.",
+          "subsections": ["Strengths", "Weaknesses & Vulnerabilities"],
+          "content_guidance": "The risk and depth research for the TARGET brand is provided in FULL below (not a sample). Before writing Weaknesses & Vulnerabilities, check the evidence against EACH of these categories separately, in this order, and give EVERY category that has a documented issue its OWN bullet — do not merge two or more categories into one combined/vague bullet: (1) customer rating/review-platform evidence (name the platform and the exact rating/score, e.g. 'rated 1.4/5 on Trustpilot'); (2) delivery/timeline issues (name the specific project AND the specific delay duration or date, e.g. 'a 7-year delay on The Views'); (3) legal, regulatory, or litigation matters (name the specific matter, e.g. 'an FIR for forgery filed against the MD'); (4) financial-distress figures — treat EVERY distinct financial metric as its own sub-item, not just whichever one you mention first: check separately for (4a) a net-worth or total-liabilities figure, (4b) a debt-service coverage ratio (DSCR) or any other named coverage/leverage ratio, (4c) a borrowings/debt figure, (4d) a credit-rating status. If the evidence contains more than one of these, give EACH its own bullet — e.g. 'negative net worth of roughly Rs 2,929 crore' is one bullet and, separately, 'a DSCR of 0.21' is another bullet; citing only the net-worth figure and silently dropping a DSCR or borrowings figure that IS in the evidence is incomplete and not acceptable; (5) any other distinct named incident the evidence documents. Skip a category only if the evidence genuinely has nothing in it — never skip one that has a fact just to keep the list short, and never combine two categories' facts (or two distinct figures within the same category) into a single line ('legal and financial challenges' is NOT acceptable when the evidence names a specific FIR and a specific net-worth figure — those are two separate bullets). For Strengths, similarly list every genuine strength the evidence or research context actually supports. Do not pad with generic filler, and do not invent a rating, date, figure, or incident the evidence does not contain — if a category genuinely has nothing specific, state it generally or omit that category. Cite each specific figure per the source-citation rule."
+        },
+        {
           "order": 5,
           "key": "strategic_approach",
           "title": "Strategic Approach",
           "description": "Recommended strategic direction and positioning options",
           "subsections": ["Strategic Options", "Recommended Approach", "Rationale"],
-          "content_guidance": "Present 2-3 strategic options. Recommend one with clear rationale."
+          "content_guidance": "Present 3-5 strategic options, each explained in 1-2 sentences covering what it is AND its key trade-off. Recommend one with clear, evidence-grounded rationale (2-4 sentences)."
         },
         {
           "order": 6,
@@ -63,7 +71,7 @@
           "title": "Positioning Map",
           "description": "Visual positioning analysis showing brand placement vs competitors",
           "subsections": ["Positioning Axes", "Current Position", "Target Position", "White Space Opportunities"],
-          "content_guidance": "Define 2 key positioning axes. Describe where the brand and competitors sit. Identify white-space opportunities. Reference a positioning map chart."
+          "content_guidance": "Define 2 key positioning axes most relevant given the research (prefer an axis the evidence can actually support, such as Trust or Quality, when documented evidence exists for it, over a vaguer label chosen to avoid grounding). Describe where the brand and each competitor sits on both axes with brief grounded reasoning, not just coordinates. Identify 2-3 white-space opportunities, each explained in 1-2 sentences. Reference a positioning map chart."
         },
         {
           "order": 7,
@@ -71,7 +79,7 @@
           "title": "Strategy Build",
           "description": "Detailed strategic implementation plan",
           "subsections": ["Positioning Statement", "Key Messaging Framework", "Content Strategy", "Channel Strategy"],
-          "content_guidance": "Include a clear positioning statement. Build messaging hierarchy. Outline content pillars and channel recommendations."
+          "content_guidance": "Include a clear positioning statement. Build a messaging hierarchy of 3-4 pillars, each with its core message, 1-2 proof points drawn from the research where available, and target audience. Outline 3-4 content pillars and channel recommendations, each with a brief (1-2 sentence) rationale for why it fits this brand's specific situation, not a generic channel list."
         },
         {
           "order": 8,
@@ -79,7 +87,7 @@
           "title": "Measurement & Roadmap",
           "description": "KPIs, implementation timeline, and risk assessment",
           "subsections": ["Key Performance Indicators", "Phased Roadmap", "Budget Considerations", "Risk Assessment"],
-          "content_guidance": "Define 5-8 measurable KPIs in a TABLE. Create a 3-phase roadmap (30/60/90 days or Q1/Q2/Q3). Include budget ranges and top risks."
+          "content_guidance": "Define 5-8 measurable KPIs in a TABLE. Create a 3-phase roadmap (30/60/90 days or Q1/Q2/Q3), each phase with 2-3 explained actions, not just a label. Include budget ranges. Risk Assessment should name 3-5 top risks — where the research documents a specific risk for this brand (a delivery, regulatory, or financial issue), name it specifically rather than only listing generic macro/industry risks."
         }
       ]
     },

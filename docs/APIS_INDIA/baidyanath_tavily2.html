@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAIDYANATH - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BAIDYANATH</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.baidyanath.com" target="_blank" class="meta-url">https://www.baidyanath.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Baidyanath, established in 1917, is India's oldest and largest producer of Ayurvedic medicines and herbal supplements, with over 700 formulations and 14 GMP-certified manufacturing units. The company's mission is to be a global leader in Ayurveda, expanding into product categories that complement its offerings and to build a thriving community around Ayurveda. Its vision is to be the most trusted name in Ayurveda, bringing natural wellness into every home, innovating Ayurvedic wisdom for modern lifestyles, and expanding globally as an ambassador of authentic Ayurveda. Baidyanath has recently ventured into the fast-moving consumer goods (FMCG) segment with natural juices and plans to introduce oral healthcare, personal hygiene, and skin care products. The company aims to cater to the growing consumer shift towards natural, organic, and ayurvedic products, particularly appealing to the youth.. ### Our Mission    To be part of every household in the country, and a global leader in Ayurveda.   Expand strategically into product categories that complement our existing offerings and maximise value for customers.   To be a leading force in the global Ayurvedic revolution, making Ayurveda a household name synonymous with natural wellness.   To build a thriving community around Ayurveda, fostering collaboration, education, and empowerment.  ## Director’s Perspective  A vision rooted in Ayurveda, guided by experience, and driven by innovation for a healthier tomorrow  ###### About  R.K.Sharma  ##### Managing Director [...] ### Our Vision    To be the most trusted name in Ayurveda, bringing natural wellness into every home.   To innovate and adapt Ayurvedic wisdom for modern lifestyles, ensuring accessibility and relevance.   To expand globally as an ambassador of authentic Ayurveda and holistic wellness.   To create sustainable value through ethical practices, quality, and care for nature.   To nurture a community of trust, health, and empowerment built around Ayurveda.  ### Our Mission [...] Cart  Your cart is empty  Welcome To Baidyanath  Established in 1917, Baidyanath has been a pioneer in bringing ancient Ayurvedic wisdom to modern lifestyles. With over 100 years of expertise, 700+ proven formulations, and 14 GMP-certified manufacturing units across India, Baidyanath is India’s largest producer of Ayurvedic Medicines & Herbal Supplements. Trusted globally, the brand exports to 35+ countries and continues to champion holistic wellness through authentic, natural, and effective health solutions  Goodcare  Where Ancient Wisdom Meets Modern Wellness. Title: Baidyanath to make FMCG foray with cosmetics, wellness products, ETRetail # Baidyanath to make FMCG foray with cosmetics, wellness products. Although these segments are growing rapidly, at present there are no herbal remedies available for such lifestyle diseases in the country. * Updated On Dec 6, 2015 at 05:26 PM IST. MUMBAI: The Rs 800-crore Baidyanath Group is set to make a foray into FMCG segment with the launch of cosmetics and wellness range under 'Mantra' brand.<br/><br/><strong>Product & Service Portfolio:</strong> Baidyanath offers a wide range of products and services, primarily focused on Ayurvedic healthcare and wellness. Their offerings include Ayurvedic tablets, syrups, capsules, and chyawanprash, along with medicated oils, herbal juices, and tonics. The company also provides bhasma and pishti preparations, asava and arishta fermented herbal preparations, and churans powders. Baidyanath's portfolio extends to natural health supplements, including gold medicines and rasayan products, and caters to specific health needs like diabetes care, hair and skin care, men's and women's wellness, and classical formulations. All products are manufactured in GMP-certified facilities, ensuring high standards of safety and effectiveness.. # Baidyanath ID: E6PVcBxABVup Website: www.baidyanath.com Headquarters: Kolkata, West Bengal, India LinkedIn: www.linkedin.com/company/baidyanathaofficial · 33,343 followers Industry: Alternative Medicine Industry codes: SIC 86, 80, NAICS 62, 622 Company type: Privately Held Founded: 1917 Business model: B2C SaaS: no Description: Baidyanath is India's most trusted brand for Ayurvedic treatment. [...] ## Products and services Business areas: Ayurvedic Healthcare Products, Herbal Medicine Manufacturing, Wellness Products, Natural Health Supplements Products: Ayurvedic Tablets, Ayurvedic Syrups and Ark, Ayurvedic Capsules, Ayurvedic Bati (Pills), Ayurvedic Chyawanprash, Medicated Oils and Ghritas, Herbal Juices and Tonics, Bhasma and Pishti Preparations, Asava and Aristhas (Fermented Herbal Preparations), Churans (Powders), Gold Medicines and Rasayan Products, Food and Nutrition Supplements. Hair & Skin Care - Baidyanath's natural hair oils and Ayurvedic skincare formulations are crafted with time-tested botanical ingredients to nourish hair from root to tip and restore your skin's natural radiance.  Diabetes Care  - Baidyanath's Ayurvedic blood sugar support range including Basant Kusumakar Ras and Medohar Guggulu which is traditionally used to help maintain healthy blood sugar levels as part of a balanced lifestyle.  Herbal Juices - Baidyanath's herbal juices, including Amla Juice are cold-processed from natural herbs and fruits to preserve their nutritional goodness. These juices help support immunity, aid digestion, and are suitable for the entire family. [...] Men's Wellness - Baidyanath's men's health products - from Musli Pak and Himalayan Shilajit Resin to Ashwagandha Churna - are traditionally used to support stamina, strength, and vitality in men.  Women's Health - Support hormonal balance, nutrition, and overall well-being with Baidyanath's dedicated women's Ayurvedic health range, formulated in accordance with classical Ayurvedic texts.  Classical Formulations (Bhasma, Ras, Rasayan) - Authentic Bhasma, Ras and Rasayanas crafted by qualified Ayurvedic Vaidyas using traditional preparation methods. These time-honoured formulations support rejuvenation, longevity, and deep internal healing. [...] 700+ Authentic Ayurvedic Formulations Baidyanath's portfolio of 700+ formulations spans immunity, digestion, heart health, stress management, skin care, and hair care all developed using pure, natural herbs and backed by classical Ayurvedic principles and modern quality standards.  GMP-Certified Manufacturing Every Baidyanath product is manufactured in GMP-certified facilities under stringent quality control processes.<br/><br/><strong>Recent Developments & News:</strong> Baidyanath, established in 1917, has expanded its footprint into the FMCG segment by launching a range of natural juices, including varieties like amla, aloevera, karela jamun, and giloy. The company, which celebrated its 100th anniversary in 2017, aims to cater to the growing consumer preference for natural, organic, and ayurvedic products, particularly among the youth. Baidyanath Ayurved Executive Director Anurag Sharma stated the company's intent to introduce oral healthcare, personal hygiene, and skin care products soon. The brand continues to innovate and expand its product line, including recent launches such as Shilajit Power Gummies, Organic Ashwagandha, and herbal toothpaste. Baidyanath's mission is to become a global leader in Ayurveda, making natural wellness accessible worldwide. The company exports to over 35 countries and has 14 GMP-certified manufacturing units in India.. NEW DELHI: Kolkata-based Ayurvedic firm Baidyanath has forayed into the FMCG segment by launching range of natural juices in the market, and has plans to introduce oral healthcare, personal hygiene and skin care products soon. The company, which has completed its 100 years in 2017, is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences. "Seeing the shift in consumer preferences and growing shift of youth towards natural organic and ayurvedic products we have decided to foray into FMCG (fast-moving consumer goods) market with health benefit products," Baidyanath Ayurved Executive Director Anurag Sharma said. [...] "Apart from natural juices we plan to foray into oral healthcare, personal hygiene and skin care products soon," he added. Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said in a statement. [...] AbcMedium  AbcLarge  Save  Print  Comment  Synopsis  The company is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences.  1Agencies  Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said..<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Baidyanath, a well-established Indian brand in the Ayurvedic products market, faces competition from several key players. The top companies operating in the Ayurvedic products industry worldwide include Dabur Ltd., Patanjali Ayurved Limited, Himalaya Wellness Company, Emami Group of Companies Pvt Ltd, Kerala Ayurveda Ltd., Vicco Laboratories, Natreon Inc., Amrutanjan Health Care Limited, and Bio Veda Action Research Co. Baidyanath's main competitors include Vicco (87%), Dabur (85%), Himalaya (80%), Emami (75%), and Zandu (70%). Baidyanath is also diversifying into the nutraceuticals market with its Siddhayu brand, which targets men and women’s health, healthy aging, and kids nutrition.. ### When was Baidyanath Group founded?    Baidyanath Group was founded in 1917.  ### Where is Baidyanath Group headquartered?    Baidyanath Group is headquartered in Kolkata, India.  ### What is the size of Baidyanath Group?    Baidyanath Group has 2,500 total employees.  ### What industry is Baidyanath Group in?    Baidyanath Group’s primary industry is Other Consumer Non-Durables.  ### Is Baidyanath Group a private or public company?    Baidyanath Group is a Private company.  ### What is Baidyanath Group’s current revenue?    The current revenue for Baidyanath Group is  .  ### Who are Baidyanath Group’s competitors?    Amway, Omega Protein, Vega (Other Consumer Non-Durables), Orgain, and Amway It Services are some of the 14 competitors of Baidyanath Group.  ### Data Transparency [...] Last    Financing    Details  Baidyanath Group  Manufacturer of ayurvedic products designed to provide health care and herbal treatment. The company manufactures variou  Other Consumer Non-Durables  Kolkata, India  2,500  As of 2021  logo  ##  Ada, MI  logo  ##  Reedville, VA  Add Comparison  PitchBook’s comparison feature gives you a side-by-side look at key metrics for similar companies. Personalize which data points you want to see and create visualizations instantly.  Request a free trial  ## Baidyanath Group Competitors (14)  One of Baidyanath Group’s 14 competitors is Amway, a Corporation company based in Ada, MI. [...] | Company Name | Financing Status | Location | Employees | Total Raised | Last Financing Date/Type | Last Financing Amount |  ---  ---  ---  | Amway | Corporation | Ada, MI |  |  |  |  | | Omega Protein | Private Equity-Backed | Reedville, VA |  |  |  |  | | Vega (Other Consumer Non-Durables) | Private Equity-Backed | Aventura, FL |  |  |  |  | | Orgain | Formerly PE-Backed | Irvine, CA |  |  |  |  | | Amway It Services | Corporation | Kuala Selangor, Malaysia |  |  |  |  |  You’re viewing 5 of 14 competitors. Get the full list »  ## Baidyanath Group Signals  Growth Rate  Weekly   Growth  Weekly Growth  Size Multiple  Key Data Points  Similarweb Unique Visitors  Majestic Referring Domains. CMR found that the Ayurvedic products market, experiencing rapid growth, is also witnessing the emergence of several players that pose significant threats to the established market leaders. Companies like Baidyanath, Vicco Laboratories, Natreon Inc., Amrutanjan Health Care Limited, and Bio Veda Action Research Co. are gaining considerable momentum and are positioned to challenge the dominance of top players in the industry.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.baidyanath.com/pages/about-us" target="_blank">About Baidyanath | India&#x27;s Oldest Ayurveda Brand</a></h3>
+                    <div class="result-url">https://www.baidyanath.com/pages/about-us</div>
+                    <div class="result-content">Our Mission
+
+  To be part of every household in the country, and a global leader in Ayurveda.
+  Expand strategically into product categories that complement our existing offerings and maximise value for customers.
+  To be a leading force in the global Ayurvedic revolution, making Ayurveda a household name synonymous with natural wellness.
+  To build a thriving community around Ayurveda, fostering collaboration, education, and empowerment.
+
+ Director’s Perspective
+
+A vision rooted in Ayurveda, guided by experience, and driven by innovation for a healthier tomorrow
+
+ About
+
+R.K.Sharma
+
+ Managing Director [...]  Our Vision
+
+  To be the most trusted name in Ayurveda, bringing natural wellness into every home.
+  To innovate and adapt Ayurvedic wisdom for modern lifestyles, ensuring accessibility and relevance.
+  To expand globally as an ambassador of authentic Ayurveda and holistic wellness.
+  To create sustainable value through ethical practices, quality, and care for nature.
+  To nurture a community of trust, health, and empowerment built around Ayurveda.
+
+ Our Mission [...] Cart
+
+Your cart is empty
+
+Welcome To Baidyanath
+
+Established in 1917, Baidyanath has been a pioneer in bringing ancient Ayurvedic wisdom to modern lifestyles. With over 100 years of expertise, 700+ proven formulations, and 14 GMP-certified manufacturing units across India, Baidyanath is India’s largest producer of Ayurvedic Medicines &amp; Herbal Supplements. Trusted globally, the brand exports to 35+ countries and continues to champion holistic wellness through authentic, natural, and effective health solutions
+
+Goodcare
+
+Where Ancient Wisdom Meets Modern Wellness</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://retail.economictimes.indiatimes.com/news/food-entertainment/personal-care-pet-supplies-liquor/baidyanath-to-make-fmcg-foray-with-cosmetics-wellness-products/50064846" target="_blank">Baidyanath to make FMCG foray with cosmetics, wellness products, ETRetail</a></h3>
+                    <div class="result-url">https://retail.economictimes.indiatimes.com/news/food-entertainment/personal-care-pet-supplies-liquor/baidyanath-to-make-fmcg-foray-with-cosmetics-wellness-products/50064846</div>
+                    <div class="result-content">Title: Baidyanath to make FMCG foray with cosmetics, wellness products, ETRetail
+ Baidyanath to make FMCG foray with cosmetics, wellness products. Although these segments are growing rapidly, at present there are no herbal remedies available for such lifestyle diseases in the country. * Updated On Dec 6, 2015 at 05:26 PM IST. MUMBAI: The Rs 800-crore Baidyanath Group is set to make a foray into FMCG segment with the launch of cosmetics and wellness range under &#x27;Mantra&#x27; brand. &quot;We are entering into chemical-free cosmoceutical sector under the brand Mantra. We plan to introduce herbal medicines in newly emerging therapeutic segments, including diabetology, cardiovascular diseases and hepatology,&quot; Shree Baidyanath Ayurved Bhawan Executive Director Anurag Sharma told PTI here. Kolkata-based Shree Baidyanath Ayurved Bhawan (Baidyanath) have been pioneering ayurvedic healthcare since 1917, with 10 ultramodern manufacturing facilities, offering more than 700 formulations in various parts of the country. &quot;We have got Mantra cleared by the USFDA and successfully launched the products in the US market. We are now launching in India to start with tier-I cities by March 2016. The 40 products under Mantra brand will get manufactured at the company&#x27;s facilities in Himachal Pradesh,&quot; Sharma said. The cosmoceutical sector is estimated at USD 20 billion and growing at 25 per cent per annum. The R&amp;D facility actively collaborates with various academic institutions and government-run hospitals to assess the applicability of its research findings to practical situations, he added. Set up close to the source of the herbal ingredients, most of our units are GMP and ISO certified. Our commitment is to deliver authentic and effective Ayurvedic remedies that are affordable. For this purpose, the company has set aside substantial funds to be invested in R&amp;D projects. The company has recently launched ayurvedic mouth freshener brand name, Ullas, which is totally tobacco and nicotine free and made with government approved herbal ingredients. On the company&#x27;s growth plan, Sharma said, we are targeting to achieve Rs 100 crore sales from Mantra brand in the two years period. With the launch of more products, the company aims to achieve 25-28 per cent CAGR and turnover of Rs 1,200 crore in next 3-4 years period. * Published On Dec 6, 2015 at 05:26 PM IST.  All about ETRetail industry right on your smartphone!</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://m.economictimes.com/industry/cons-products/fmcg/baidyanath-forays-into-fmcg-segment/articleshow/62608119.cms" target="_blank">fmcg: Baidyanath forays into FMCG segment - The Economic Times</a></h3>
+                    <div class="result-url">https://m.economictimes.com/industry/cons-products/fmcg/baidyanath-forays-into-fmcg-segment/articleshow/62608119.cms</div>
+                    <div class="result-content">Title: fmcg: Baidyanath forays into FMCG segment - The Economic Times
+Products›FMCG›Baidyanath forays into FMCG segment.  The Economic Times daily newspaper is available online now.  Baidyanath forays into FMCG segment. Baidyanath forays into FMCG segment. The company is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences. Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said. NEW DELHI: Kolkata-based Ayurvedic firm Baidyanath has forayed into the FMCG segment by launching range of natural juices in the market, and has plans to introduce oral healthcare, personal hygiene and skin care products soon. The company, which has completed its 100 years in 2017, is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences. &quot;Seeing the shift in consumer preferences and growing shift of youth towards natural organic and ayurvedic products we have decided to foray into FMCG (fast-moving consumer goods) market with health benefit products,&quot; Baidyanath Ayurved Executive Director Anurag Sharma said. &quot;Apart from natural juices we plan to foray into oral healthcare, personal hygiene and skin care products soon,&quot; he added. Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said in a statement. &quot;We have forayed into FMCG market with natural juices with small ready to-drink Tetrapaks for youngsters to consume on the go and One litre packs for family. The packaging has to be aspirational as the youth prefers convenience-based products that boast a health proposition,&quot; it said. Baidyanath has a portfolio of 700 Ayurveda-based formulation. *(You can now subscribe to our Economic Times WhatsApp channel)*. (Catch all the Business News, Breaking News and Latest News Updates on The Economic Times.). Subscribe to The Economic Times Prime and read the ET ePaper online. *(You can now subscribe to our Economic Times WhatsApp channel)*. (Catch all the Business News, Breaking News and Latest News Updates on The Economic Times.). Subscribe to The Economic Times Prime and read the ET ePaper online. The Economic TimesThe Economic Times. Subscribe to ourET Investment Opportunities.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://economictimes.indiatimes.com/industry/cons-products/fmcg/baidyanath-forays-into-fmcg-segment/articleshow/62608119.cms" target="_blank">fmcg: Baidyanath forays into FMCG segment - The Economic Times</a></h3>
+                    <div class="result-url">https://economictimes.indiatimes.com/industry/cons-products/fmcg/baidyanath-forays-into-fmcg-segment/articleshow/62608119.cms</div>
+                    <div class="result-content">Title: fmcg: Baidyanath forays into FMCG segment - The Economic Times
+Nifty23,812.15-365.5. Motilal Oswal Midcap Fund Direct-Growth. English EditionEnglish Editionहिन्दीગુજરાતીमराठीবাংলাಕನ್ನಡമലയാളംதமிழ்తెలుగు. Products›FMCG›Baidyanath forays into FMCG segment.  The Economic Times daily newspaper is available online now.  Baidyanath forays into FMCG segment. The company is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences. Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said. NEW DELHI: Kolkata-based Ayurvedic firm Baidyanath has forayed into the FMCG segment by launching range of natural juices in the market, and has plans to introduce oral healthcare, personal hygiene and skin care products soon. The company, which has completed its 100 years in 2017, is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences. &quot;Seeing the shift in consumer preferences and growing shift of youth towards natural organic and ayurvedic products we have decided to foray into FMCG (fast-moving consumer goods) market with health benefit products,&quot; Baidyanath Ayurved Executive Director Anurag Sharma said. &quot;Apart from natural juices we plan to foray into oral healthcare, personal hygiene and skin care products soon,&quot; he added. Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said in a statement.  Live Events. &quot;We have forayed into FMCG market with natural juices with small ready to-drink Tetrapaks for youngsters to consume on the go and One litre packs for family. The packaging has to be aspirational as the youth prefers convenience-based products that boast a health proposition,&quot; it said. Baidyanath has a portfolio of 700 Ayurveda-based formulation. Add ET Logo as a Reliable and Trusted News Source. *(You can now subscribe to our Economic Times WhatsApp channel)*. (Catch all the Business News, Breaking News and Latest News Updates on The Economic Times.). Subscribe to The Economic Times Prime and read the ET ePaper online. The Economic TimesThe Economic Times. Stories you might be interested in. Subscribe to ourET Investment Opportunities.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://brandequity.economictimes.indiatimes.com/news/business-of-brands/baidyanath-set-to-enter-fmcg-space-with-cosmetics-wellness-brand-mantra/50070704" target="_blank">Baidyanath set to enter FMCG space with cosmetics, wellness brand &#x27;Mantra&#x27;, ETBrandEquity</a></h3>
+                    <div class="result-url">https://brandequity.economictimes.indiatimes.com/news/business-of-brands/baidyanath-set-to-enter-fmcg-space-with-cosmetics-wellness-brand-mantra/50070704</div>
+                    <div class="result-content">Title: Baidyanath set to enter FMCG space with cosmetics, wellness brand &#x27;Mantra&#x27;, ETBrandEquity
+ Baidyanath set to enter FMCG space with cosmetics, wellness brand &#x27;Mantra&#x27;. Have launched products in the US market. * Updated On Dec 7, 2015 at 09:07 AM IST. The Rs 800-crore Kolkata-based Baidyanath Group is set to make a foray into FMCG segment with the launch of cosmetics and wellness range under &#x27;Mantra&#x27; brand. &quot;We are entering into chemical-free cosmoceutical sector under the brand Mantra. We plan to introduce herbal medicines in newly emerging therapeutic segments, including diabetology, cardiovascular diseases and hepatology,&quot; Shree Baidyanath Ayurved Bhawan&#x27;s executive director Anurag Sharma told PTI. &quot;We have got Mantra cleared by the USFDA and successfully launched the products in the US market. We are now launching in India to start with tier-I cities by March 2016. The 40 products under Mantra brand will get manufactured at the company&#x27;s facilities in Himachal Pradesh,&quot; Sharma said. The cosmoceutical sector is estimated at USD 20 billion and growing at 25 per cent per annum. Although these segments are growing rapidly, at present there are no herbal remedies available for such lifestyle diseases in the country. &quot;The R&amp;D facility actively collaborates with various academic institutions and government-run hospitals to assess the applicability of its research findings to practical situations. Set up close to the source of the herbal ingredients, most of our units are GMP and ISO certified. The company has recently launched ayurvedic mouth freshener brand name, Ullas, which is totally tobacco and nicotine free and made with government approved herbal ingredients. On the company&#x27;s growth plan, Sharma said, &quot;We are targeting to achieve Rs 100 crore sales from Mantra brand in the two years period. With the launch of more products, the company aims to achieve 25-28 per cent CAGR and turnover of Rs 1,200 crore in next 3-4 years.&quot;. * Published On Dec 7, 2015 at 08:57 AM IST. Choose your reason below and click on the submit button.  Subscribe to Newsletter to get latest insights &amp; analysis in your inbox.  All about ETBrandEquity industry right on your smartphone! * Download the ETBrandEquity App and get the Realtime updates and Save your favourite articles.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/E6PVcBxABVup" target="_blank">Baidyanath</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/E6PVcBxABVup</div>
+                    <div class="result-content">Baidyanath
+ID: E6PVcBxABVup
+Website: www.baidyanath.com
+Headquarters: Kolkata, West Bengal, India
+LinkedIn: www.linkedin.com/company/baidyanathaofficial · 33,343 followers
+Industry: Alternative Medicine
+Industry codes: SIC 86, 80, NAICS 62, 622
+Company type: Privately Held
+Founded: 1917
+Business model: B2C
+SaaS: no
+Description: Baidyanath is India&#x27;s most trusted brand for Ayurvedic treatment. [...]  Products and services
+Business areas: Ayurvedic Healthcare Products, Herbal Medicine Manufacturing, Wellness Products, Natural Health Supplements
+Products: Ayurvedic Tablets, Ayurvedic Syrups and Ark, Ayurvedic Capsules, Ayurvedic Bati (Pills), Ayurvedic Chyawanprash, Medicated Oils and Ghritas, Herbal Juices and Tonics, Bhasma and Pishti Preparations, Asava and Aristhas (Fermented Herbal Preparations), Churans (Powders), Gold Medicines and Rasayan Products, Food and Nutrition Supplements</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.baidyanathayurved.com" target="_blank">Baidyanath - Official Store | Chyawanprash, Shilajit &amp; 700+ Products
+– Baidyanath Ayurved</a></h3>
+                    <div class="result-url">https://www.baidyanathayurved.com</div>
+                    <div class="result-content">Hair &amp; Skin Care - Baidyanath&#x27;s natural hair oils and Ayurvedic skincare formulations are crafted with time-tested botanical ingredients to nourish hair from root to tip and restore your skin&#x27;s natural radiance.
+
+Diabetes Care  - Baidyanath&#x27;s Ayurvedic blood sugar support range including Basant Kusumakar Ras and Medohar Guggulu which is traditionally used to help maintain healthy blood sugar levels as part of a balanced lifestyle.
+
+Herbal Juices - Baidyanath&#x27;s herbal juices, including Amla Juice are cold-processed from natural herbs and fruits to preserve their nutritional goodness. These juices help support immunity, aid digestion, and are suitable for the entire family. [...] Men&#x27;s Wellness - Baidyanath&#x27;s men&#x27;s health products - from Musli Pak and Himalayan Shilajit Resin to Ashwagandha Churna - are traditionally used to support stamina, strength, and vitality in men.
+
+Women&#x27;s Health - Support hormonal balance, nutrition, and overall well-being with Baidyanath&#x27;s dedicated women&#x27;s Ayurvedic health range, formulated in accordance with classical Ayurvedic texts.
+
+Classical Formulations (Bhasma, Ras, Rasayan) - Authentic Bhasma, Ras and Rasayanas crafted by qualified Ayurvedic Vaidyas using traditional preparation methods. These time-honoured formulations support rejuvenation, longevity, and deep internal healing. [...] 700+ Authentic Ayurvedic Formulations Baidyanath&#x27;s portfolio of 700+ formulations spans immunity, digestion, heart health, stress management, skin care, and hair care all developed using pure, natural herbs and backed by classical Ayurvedic principles and modern quality standards.
+
+GMP-Certified Manufacturing Every Baidyanath product is manufactured in GMP-certified facilities under stringent quality control processes. Advanced production technology combined with rigorous testing ensures that each product meets the highest standards of safety, purity, and effectiveness.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.distacart.com/collections/baidyanath" target="_blank">Buy Baidyanath Products Online - Ayurvedic Medicines &amp; Supplements</a></h3>
+                    <div class="result-url">https://www.distacart.com/collections/baidyanath</div>
+                    <div class="result-content">The formulations include Baidyanathtablets, Baidyanath syrup, Baidyanath brain tablet, Baidyanath Bhasma, Baidyanath calcium tablets, oils, and more.
+
+There are two more branches available under Baidyanath that provide many Ayurvedic health supplements and wellness products. These include:
+
+ Baidyanath Jhansi
+ Baidyanath Vansaar
+
+You can also buy various Ayurvedic products online from these brands. The extensive portfolio of Baidyanath herbal products helps customers to choose the right product or medicine online. You can choose your preferences accordingly.
+
+ Discover Baidyanath Ayurvedic Medicine for Everyday Wellness [...] North Indian SnacksSouth Indian Snacks
+
+Indian Pickles
+
+Veg Pickles
+
+Millets
+
+Foxtail MilletKodo MilletLittle MilletPearl MilletBarnyard MilletBrowntop MilletSorghumMillet Flour
+
+Ghee and Oils
+
+GheeCow GheeBuffalo GheeCold Pressed Oils
+
+Drinks &amp; Bevarages
+
+Health DrinksInstant Drink MixesMilk PowderHerbal Drinks
+
+Tea and Coffee
+
+Tea PowdersGreen TeaHerbal TeaMasala TeaCoffee Powder
+
+Dry Fruits
+
+Cashew NutsAlmondsDatesDried FruitsEdible Seeds
+
+Flours
+
+AttaRice FlourMaidaBesanRava and SoojiJackfruit Flour
+
+Biscuits &amp; Cookies
+
+CookiesBiscuits
+
+Pulses &amp; Dals
+
+Moong DalChana DalUrad DalToor DalSoya Chunks
+
+Masalas &amp; Spices
+
+Whole SpicesBiryani MasalaTurmeric PowderGaram MasalaCuminFenugreekCoriander
+
+Cooking Paste
+
+Ginger Garlic PasteTamarind PastePuliogare Paste
+
+Breakfast Cereals [...] Face Makeup
+
+FoundationCompactFace PrimerConcealerBB and CC creamsHighlightersBlushBronzerContourLoose PowderMakeup RemoverSindoor
+
+Face Care Tools
+
+Face Care ToolsHair Removal
+
+Eye Makeup
+
+KajalEyelinerMascaraEye ShadowEyebrow EnhancerFalse EyelashesEye Makeup Remover
+
+Eye Care
+
+Under Eye Creams and SerumsEye MasksEyebrow &amp; Eyelash Oil
+
+Nails
+
+Nail PolishNail Art Kits
+
+Lips Makeup
+
+LipstickLiquid LipstickLip CrayonLip TintLip LinerLip Gloss
+
+Lip Care
+
+Lip BalmsLip ScrubsLip MasksLip Oil
+
+Masks
+
+Sheet MasksFace MasksFace BleachFace PackFacial Kit
+
+Men&#x27;s Grooming
+
+Beard CareShaving Cream, Foams &amp; GelsPre &amp; Post ShavesMen Face CareMen Hair CareMen Body CareMen Grooming Kit
+
+Tools &amp; Brushes
+
+Face BrushEye BrushLip BrushBlush Brush
+
+Maternity Care</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://baidyanath.co.in" target="_blank">Baidyanath | Official Website | Ayurveda Since 1917</a></h3>
+                    <div class="result-url">https://baidyanath.co.in</div>
+                    <div class="result-content">Skip to content
+
+Original product
+
+Free shipping
+
+Loyalty program
+
+ 
+
+ Baidyanath | Official Website | Ayurveda Since 1917Baidyanath | Official Website | Ayurveda Since 1917
+
+ Dosha Check
+ Free Doctor Consultation
+ Export
+ E-Books
+ Certification
+
+ Asav / Aristha &amp; Kadha
+ Bati /Tablets/Capsule
+ Bhasma/Ras Rasayan
+ ChyawanPrash
+ Combo Pack
+ Gold Product
+ Guggulu
+ Herbal Churana
+ Herbal Juices
+ Herbal Tea
+ Honey / Ghee /Ghrit
+ Mantra Herbal
+ Medicinal Oils/ Ointments
+ Oil / Shampoo/Cream
+ Shilajit / Kaser
+ Syrups/Ark
+
+ Cardiac Care
+ Cough &amp; Cold Care
+ Diabetic Care
+ Digestive Care
+ Hair Care
+ Immunity Booster
+ Joint And Bone Health
+ Liver care
+ Memory &amp; Brain Power
+ Respiratory Wellness
+ Sexual Wellness
+ Skin Care
+ Stress Relief
+ Weight Management [...] Save 9%Ayurvedant Karela ChurnaAyurvedant Karela Churna
+
+Ayurvedant Karela Churna Sale priceRs. 103.00 Regular priceRs. 113.00
+
+ 
+
+Save 10%Ayurvedant Karela tabAyurvedant Karela tab
+
+Ayurvedant Karela tab Sale priceRs. 179.00 Regular priceRs. 199.00
+
+ 
+
+Ayurvedant Diawin Juice
+
+Ayurvedant Diawin Juice Sale priceRs. 540.00
+
+    
+
+View all
+
+ Bone and Joint Care
+
+   
+
+Save 5%Premium Cow Desi GheePremium Cow Desi Ghee
+
+Premium Cow Desi Ghee Sale priceRs. 745.00 Regular priceRs. 785.00
+
+ 
+
+On saleMaharasnadi Kadha Spl with GugguluMaharasnadi Kadha Spl with Guggulu
+
+Maharasnadi Kadha Spl with Guggulu Sale priceFrom Rs. 140.00 Regular priceRs. 150.00
+
+Add to Cart
+
+ 
+
+Baidyanath Erand Tel Castor OilBaidyanath Erand Tel Castor Oil
+
+Baidyanath Erand Tel Castor Oil Sale priceFrom Rs. 70.00</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.amazon.in/stores/BAIDYANATH/page/E16073B6-59F6-48C0-95C4-90E0895258F5" target="_blank">BAIDYANATH</a></h3>
+                    <div class="result-url">https://www.amazon.in/stores/BAIDYANATH/page/E16073B6-59F6-48C0-95C4-90E0895258F5</div>
+                    <div class="result-content">See products
+
+Image 8: Text reads &quot;Baidyanath ASLI AYURVEDA&quot;, &quot;Oli OIL HERBAL BODY OIL&quot;, &quot;Formulated with Pure Oils, Seeds &amp; Almond Oil&quot;, &quot;The Nourishing Care Your Skin Needs!&quot;, &quot;Nourishes dry, flaky skin&quot;, &quot;Calms itchy skin&quot;, &quot;Non-sticky formula&quot;, &quot;Absorbs in 1 Minute&quot;. Hand holding yellow herbal body oil bottle with brand logo.
+
+See products
+
+Image 9: Text reads &quot;Strong Immunity Stronger You!&quot;. Product lineup of Baidyanath Chyawanprash jars in various flavors. Red and yellow containers with illustrations of fruits and people. Text &quot;NEW&quot; on some jars. Wooden surface with green background.
+
+See products [...] See products
+
+Image 10: Text reads &quot;India&#x27;s Gut Health Hero 12,52,424 Packs Sold&quot;. Product image of Baidyanath Isabgol, a natural laxative. Shows powder being sprinkled into water glass. Text highlights: &quot;Gentle relief from constipation&quot;, &quot;Natural Laxative&quot;, &quot;Cleanest and Purest Husk&quot;.
+
+See products
+
+Image 11
+
+See products
+
+Image 12: Orange-flavored gut health supplement jar displayed with fresh oranges, orange juice, and powder. Product advertised for gut health benefits with &#x27;Shop Now&#x27; call-to-action.
+
+See products
+
+Image 13: Text reads &quot;Reduces Hairfall in 4 weeks&quot;. Baidyanath Red Onion Hair Oil bottle held by hand. Product claims to reduce hairfall, contains no paraben, no color, no silicone, no mineral oil. For all hair types. Red onion image shown.
+
+See products [...] All)
+
+   Amazon Pay 
+   Mobiles 
+   Prime 
+   Today&#x27;s Deals 
+   Coupons 
+   Flights 
+   Fresh Meat 
+   Grocery &amp; Gourmet Foods 
+   Electronics 
+   New Releases 
+   Bestsellers 
+   Fashion 
+   Computers 
+   Custom Products 
+   Sports, Fitness &amp; Outdoors 
+   Pet Supplies 
+   Home &amp; Kitchen 
+   Video Games 
+   Books 
+   Kindle eBooks 
+   Baby 
+   Toys &amp; Games 
+   Car &amp; Motorbike 
+   Customer Service 
+   Gift Cards 
+   Home Improvement 
+   Audible 
+   Beauty &amp; Personal Care 
+   AmazonBasics 
+   Subscribe &amp; Save 
+
+Image 3: Apay_Travel
+
+[](
+
+Image 4: Text reads &quot;Saidyanath Ayurveda&quot;, &quot;All Your Daily Needs in one go!&quot;. Display of various Ayurvedic product bottles including shampoo, oil, and supplements against a green and white gradient background.
+
+Image 5: BAIDYANATH home page</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://m.economictimes.com/industry/cons-products/fmcg/baidyanath-forays-into-fmcg-segment/articleshow/62608119.cms" target="_blank">fmcg: Baidyanath forays into FMCG segment - The Economic Times</a></h3>
+                    <div class="result-url">https://m.economictimes.com/industry/cons-products/fmcg/baidyanath-forays-into-fmcg-segment/articleshow/62608119.cms</div>
+                    <div class="result-content">NEW DELHI: Kolkata-based Ayurvedic firm Baidyanath has forayed into the FMCG segment by launching range of natural juices in the market, and has plans to introduce oral healthcare, personal hygiene and skin care products soon.  
+  
+The company, which has completed its 100 years in 2017, is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences.  
+  
+&quot;Seeing the shift in consumer preferences and growing shift of youth towards natural organic and ayurvedic products we have decided to foray into FMCG (fast-moving consumer goods) market with health benefit products,&quot; Baidyanath Ayurved Executive Director Anurag Sharma said. [...] &quot;Apart from natural juices we plan to foray into oral healthcare, personal hygiene and skin care products soon,&quot; he added.  
+  
+Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said in a statement. [...] AbcMedium
+
+AbcLarge
+
+Save
+
+Print
+
+Comment
+
+Synopsis
+
+The company is eyeing to catch up the growing consumer shift towards natural, organic and ayurvedic products as well as to cater to growing youth preferences.
+
+1Agencies
+
+Launched in amla, aloevera, karela jamun and giloy varities, these will be available across retail outlets, the company said.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://retail.economictimes.indiatimes.com/news/food-entertainment/personal-care-pet-supplies-liquor/baidyanath-forays-into-fmcg-segment/62612710" target="_blank">Baidyanath forays into FMCG segment</a></h3>
+                    <div class="result-url">https://retail.economictimes.indiatimes.com/news/food-entertainment/personal-care-pet-supplies-liquor/baidyanath-forays-into-fmcg-segment/62612710</div>
+                    <div class="result-content">NEW DELHI: Kolkata-based Ayurvedic firm Baidyanath has forayed into the FMCG segment by launching range of natural juices in the market,</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.baidyanath.com/collections/new-launch?page=4" target="_blank">New Launches | Baidyanath Ayurvedic Products – Page 4</a></h3>
+                    <div class="result-url">https://www.baidyanath.com/collections/new-launch?page=4</div>
+                    <div class="result-content">Discover Baidyanath&#x27;s latest Ayurvedic launches , including Shilajit Power Gummies, Organic Ashwagandha &amp; herbal toothpaste. Free shipping ₹599+.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.baidyanath.com/pages/about-us" target="_blank">About Baidyanath | India&#x27;s Oldest Ayurveda Brand</a></h3>
+                    <div class="result-url">https://www.baidyanath.com/pages/about-us</div>
+                    <div class="result-content">Director, Goodcare Pharma VP, Baidyanath Ayurved
+
+Neha Sharma is a visionary leader driving Ayurveda’s global reach with innovation, sustainability, and consumer-first healthcare solutions. After beginning her career at The Ayurvedic Company of Great Britain, she returned to India in 2007 to expand her family legacy at Baidyanath. In 2022, she spearheaded the domestic launch of Goodcare Pharma, with a 2C philosophy – Clean Formulas &amp; Conscious Packaging. Under her leadership, the brand continues to grow and make Ayurveda accessible through science-backed healthcare, shaping the future of holistic wellness in India and beyond
+
+Global Expansion
+
+Taking Ayurveda beyond borders, bringing wellness to the world
+
+ Authenticity
+
+ Innovation
+
+ Quality
+
+ Trust &amp; Care [...]  Our Mission
+
+  To be part of every household in the country, and a global leader in Ayurveda.
+  Expand strategically into product categories that complement our existing offerings and maximise value for customers.
+  To be a leading force in the global Ayurvedic revolution, making Ayurveda a household name synonymous with natural wellness.
+  To build a thriving community around Ayurveda, fostering collaboration, education, and empowerment.
+
+ Director’s Perspective
+
+A vision rooted in Ayurveda, guided by experience, and driven by innovation for a healthier tomorrow
+
+ About
+
+R.K.Sharma
+
+ Managing Director [...] Cart
+
+Your cart is empty
+
+Welcome To Baidyanath
+
+Established in 1917, Baidyanath has been a pioneer in bringing ancient Ayurvedic wisdom to modern lifestyles. With over 100 years of expertise, 700+ proven formulations, and 14 GMP-certified manufacturing units across India, Baidyanath is India’s largest producer of Ayurvedic Medicines &amp; Herbal Supplements. Trusted globally, the brand exports to 35+ countries and continues to champion holistic wellness through authentic, natural, and effective health solutions
+
+Goodcare
+
+Where Ancient Wisdom Meets Modern Wellness</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/E6PVcBxABVup" target="_blank">Baidyanath</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/E6PVcBxABVup</div>
+                    <div class="result-content">Baidyanath
+ID: E6PVcBxABVup
+Website: www.baidyanath.com
+Headquarters: Kolkata, West Bengal, India
+LinkedIn: www.linkedin.com/company/baidyanathaofficial · 33,343 followers
+Industry: Alternative Medicine
+Industry codes: SIC 86, 80, NAICS 62, 622
+Company type: Privately Held
+Founded: 1917
+Business model: B2C
+SaaS: no
+Description: Baidyanath is India&#x27;s most trusted brand for Ayurvedic treatment. [...]  Products and services
+Business areas: Ayurvedic Healthcare Products, Herbal Medicine Manufacturing, Wellness Products, Natural Health Supplements
+Products: Ayurvedic Tablets, Ayurvedic Syrups and Ark, Ayurvedic Capsules, Ayurvedic Bati (Pills), Ayurvedic Chyawanprash, Medicated Oils and Ghritas, Herbal Juices and Tonics, Bhasma and Pishti Preparations, Asava and Aristhas (Fermented Herbal Preparations), Churans (Powders), Gold Medicines and Rasayan Products, Food and Nutrition Supplements [...]  Headcount
+- Now: 135 · +34 yearly (33.7%) · +135 quarterly · +3 monthly
+  - Southern Asia: 64
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Technology
+- Detected: 38
+- facebook · last seen 2026-09-20
+- linkedin · last seen 2026-09-20
+- youtube · last seen 2026-09-20
+- google sheets · last seen 2026-09-14
+- tableau · last seen 2026-09-14
+- power bi · last seen 2026-09-14
+- adobe · last seen 2026-09-08
+- adobe creative suite · last seen 2026-09-08</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://pitchbook.com/profiles/company/170989-48" target="_blank">Baidyanath Group 2026 Company Profile: Valuation, Funding &amp; Investors | PitchBook</a></h3>
+                    <div class="result-url">https://pitchbook.com/profiles/company/170989-48</div>
+                    <div class="result-content">When was Baidyanath Group founded?
+
+  Baidyanath Group was founded in 1917.
+  Where is Baidyanath Group headquartered?
+
+  Baidyanath Group is headquartered in Kolkata, India.
+  What is the size of Baidyanath Group?
+
+  Baidyanath Group has 2,500 total employees.
+  What industry is Baidyanath Group in?
+
+  Baidyanath Group’s primary industry is Other Consumer Non-Durables.
+  Is Baidyanath Group a private or public company?
+
+  Baidyanath Group is a Private company.
+  What is Baidyanath Group’s current revenue?
+
+  The current revenue for Baidyanath Group is  .
+  Who are Baidyanath Group’s competitors?
+
+  Amway, Omega Protein, Vega (Other Consumer Non-Durables), Orgain, and Amway It Services are some of the 14 competitors of Baidyanath Group.
+
+ Data Transparency [...] Last   
+Financing   
+Details
+
+Baidyanath Group
+
+Manufacturer of ayurvedic products designed to provide health care and herbal treatment. The company manufactures variou
+
+Other Consumer Non-Durables
+
+Kolkata, India
+
+2,500
+
+As of 2021
+
+logo
+
+
+
+Ada, MI
+
+logo
+
+
+
+Reedville, VA
+
+Add Comparison
+
+PitchBook’s comparison feature gives you a side-by-side look at key metrics for similar companies. Personalize which data points you want to see and create visualizations instantly.
+
+Request a free trial
+
+ Baidyanath Group Competitors (14)
+
+One of Baidyanath Group’s 14 competitors is Amway, a Corporation company based in Ada, MI. [...] | Company Name | Financing Status | Location | Employees | Total Raised | Last Financing Date/Type | Last Financing Amount |
+ ---  ---  --- 
+| Amway | Corporation | Ada, MI |  |  |  |  |
+| Omega Protein | Private Equity-Backed | Reedville, VA |  |  |  |  |
+| Vega (Other Consumer Non-Durables) | Private Equity-Backed | Aventura, FL |  |  |  |  |
+| Orgain | Formerly PE-Backed | Irvine, CA |  |  |  |  |
+| Amway It Services | Corporation | Kuala Selangor, Malaysia |  |  |  |  |
+
+You’re viewing 5 of 14 competitors. Get the full list »
+
+ Baidyanath Group Signals
+
+Growth Rate
+
+Weekly  
+Growth
+
+Weekly Growth
+
+Size Multiple
+
+Key Data Points
+
+Similarweb Unique Visitors
+
+Majestic Referring Domains</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cognitivemarketresearch.com/articles/which-are-the-top-manufacturing-companies-of-ayurvedic-products-market" target="_blank">Which are the top manufacturing Companies of Ayurvedic Products Market?</a></h3>
+                    <div class="result-url">https://www.cognitivemarketresearch.com/articles/which-are-the-top-manufacturing-companies-of-ayurvedic-products-market</div>
+                    <div class="result-content">CMR found that the Ayurvedic products market, experiencing rapid growth, is also witnessing the emergence of several players that pose significant threats to the established market leaders. Companies like Baidyanath, Vicco Laboratories, Natreon Inc., Amrutanjan Health Care Limited, and Bio Veda Action Research Co. are gaining considerable momentum and are positioned to challenge the dominance of top players in the industry. Baidyanath, a well-established Indian brand, is focusing on expanding its product portfolio with a wide range of Ayurvedic medicines and health supplements. Known for its traditional formulations, Baidyanath’s aggressive marketing strategies and distribution network across both domestic and international markets, particularly in Asia and North America, position it as a [...]  Top Companies Operating in the Ayurvedic Products Industry Worldwide
+
+ Dabur Ltd.
+ Patanjali Ayurved Limited
+ Himalaya Wellness Company
+ Emami Group of Companies Pvt Ltd
+ Kerala Ayurveda Ltd.
+ Baidyanath
+ Vicco Laboratories
+ Natreon Inc.
+ Amrutanjan Health Care Limited
+ Bio Veda Action Research Co.
+ Criteria for Comparing Companies in the Ayurvedic Products Market</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/120617418/Baidhnath-project" target="_blank">Baidyanath Ayurvedic Market Analysis | PDF | Ayurveda - Scribd</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/120617418/Baidhnath-project</div>
+                    <div class="result-content">The Baidyanath has the 90% &amp; the followed competitors are Vicco(87%), Dabur(85%), Himalaya(80%), Emami(75%), and Zandu(70%) as major competitors.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/E6PVcBxABVup" target="_blank">Baidyanath</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/E6PVcBxABVup</div>
+                    <div class="result-content">Baidyanath
+ID: E6PVcBxABVup
+Website: www.baidyanath.com
+Headquarters: Kolkata, West Bengal, India
+LinkedIn: www.linkedin.com/company/baidyanathaofficial · 33,343 followers
+Industry: Alternative Medicine
+Industry codes: SIC 86, 80, NAICS 62, 622
+Company type: Privately Held
+Founded: 1917
+Business model: B2C
+SaaS: no
+Description: Baidyanath is India&#x27;s most trusted brand for Ayurvedic treatment. [...]  Products and services
+Business areas: Ayurvedic Healthcare Products, Herbal Medicine Manufacturing, Wellness Products, Natural Health Supplements
+Products: Ayurvedic Tablets, Ayurvedic Syrups and Ark, Ayurvedic Capsules, Ayurvedic Bati (Pills), Ayurvedic Chyawanprash, Medicated Oils and Ghritas, Herbal Juices and Tonics, Bhasma and Pishti Preparations, Asava and Aristhas (Fermented Herbal Preparations), Churans (Powders), Gold Medicines and Rasayan Products, Food and Nutrition Supplements [...]  Web traffic
+- Monthly visits: 168,270 (24.2% change)
+- Pages per visit: 2.04
+- Average visit duration: 105 seconds
+- Bounce rate: 69%
+
+ Reputation
+- Open roles: 2
+
+ Similar companies
+- factset
+- bloomberg
+- malt handling
+- instafinancials
+- s&amp;p capital iq
+- meura
+- crediwatch
+- the john m. ellsworth company</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.nutraingredients.com/Article/2025/05/27/nutra-is-the-future-why-indian-ayurveda-giant-baidyanath-is-entering-into-supplements-space" target="_blank">‘Nutra is the future’: Why Indian Ayurveda giant Baidyanath is entering into supplements space</a></h3>
+                    <div class="result-url">https://www.nutraingredients.com/Article/2025/05/27/nutra-is-the-future-why-indian-ayurveda-giant-baidyanath-is-entering-into-supplements-space</div>
+                    <div class="result-content">“We have about 700 products in Ayurveda from our parent company Baidyanth. We know the science of Ayurveda, we manufacture the products and we have now come out with nutraceuticals, we want to serve people with good, safe, well-documented products.”
+
+He explained that a reason for venturing into nutraceuticals was part of the firm’s diversification project to go beyond Ayurveda and herbal care products.
+
+“We are diversifying into different segments...Worldwide, nutraceuticals are the future.
+
+“We are focusing on men and women’s health, geriatric, and kids, which are our three primary focuses, as these are the populations that most require safe and efficacious products.” [...]  The 108-year-old Indian Ayurveda powerhouse Baidyanath is venturing into the global nutraceuticals market, having launched its first set of nutraceuticals products under the brand Siddhayu at Vitafoods Europe 2025.
+
+The Siddhayu brand was first launched by Baidyanath in 2008, selling close to 100 types of personal care and herbal therapeutics in 40 countries since then.
+
+This year, the brand is adding botanical-based nutraceuticals into its portfolio.
+
+The first stage of the launch consists of 27 products targeted at three key areas: 1) men and women’s health 2) healthy ageing and 3) kids nutrition.
+
+There are also products for weight management, gut, cardiac, and general health. [...] Products for women’s health, for instance, target urinary tract infection (UTI), premenstrual syndrome (PMS), and beauty-from-within amongst others.
+
+For the seniors, products for promoting joint health have been formulated, while an oral probiotic has been launched for kids.
+
+ Explore related questions
+
+Unlike its parent company, these products are not Ayurveda-based, but are developed using scientifically backed ingredients, such as botanicals.
+
+One example is Cycle Care - a product for PMS. It contains Rhuleave-K, which is a patented blend of bioactive compounds derived from turmeric, Boswellia, and sesame supplied by fellow Indian firm Arjuna Natural. The formula is designed to offer rapid relief from menstrual cramps.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

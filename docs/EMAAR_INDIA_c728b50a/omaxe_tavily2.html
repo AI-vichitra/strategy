@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMAXE - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>OMAXE</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">Real Estate</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://omaxe-group.com" target="_blank" class="meta-url">https://omaxe-group.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Omaxe Group, founded in 1987 by Mr. Rohtaas Goel, has grown into a prominent real estate developer in India, specializing in residential, commercial, and township developments. The company began with construction and contracting, entered the real estate sector in 2001, and became listed on the BSE and NSE in 2007. Omaxe's portfolio spans large-scale planning and execution, focusing on residential neighborhoods, commercial centers, shopping destinations, office environments, and mixed-use developments. The company's strategy emphasizes smart infrastructure, strategic locations, green spaces, and sustainable construction. Omaxe's mission is to build places where communities, commerce, and long-term value can grow, and its vision is to shape modern India through responsible urbanization and affordable luxury. The company has delivered over 13.50+ million sq. meters of real estate and has a presence in over 31 cities across India.. Omaxe Group  Book a Site Visit  Omaxe Group  ## Omaxe Group Building India Since 1987.  Residential, Commercial & Township Development  LEARN MORE  about Omaxe  ## Since 1987, Omaxe has shaped trusted real estate destinations across India.  Omaxe Limited began with construction and contracting in 1987, entered real estate in 2001, and became listed on BSE and NSE in 2007.  Omaxe Group plans residential and business environments across growing Indian cities, combining township homes, group housing, SCO streets, retail hubs, malls and office spaces with clear location logic, delivery discipline and customer-first communication.  38 years of Omaxe growth  ### 38 Years of Growth  Omaxe delivered real estate development  ### 13.02 Million Sq. Delivered  Omaxe presence across cities [...] Omaxe presence across cities  ### Presence Across 31+ Cities  Branded Projects  ## Explore Omaxe developments designed for living, business and investment.  The portfolio connects family living, daily-use retail and workplace demand in destinations where access, surrounding infrastructure, open areas and future usability matter to both end users and investors.  No projects available at the moment. Please check back soon.  Omaxe journey founded on execution and trust  Omaxe Journey  ## Founded on Execution and Trust.  Omaxe began with a strong construction foundation and grew by focusing on dependable execution, practical planning and relationships built over time. That experience continues to guide how the group approaches residential, retail and commercial real estate.<br/><br/><strong>Product & Service Portfolio:</strong> Omaxe Group offers a wide range of real estate products and services, including residential and commercial properties across multiple cities in India. Their portfolio includes apartments, villas, group housing, integrated townships, shopping malls, retail spaces, office complexes, and IT parks. Omaxe's projects are designed to provide smart infrastructure, strategic locations, green spaces, and sustainable construction. They have a history of delivering over 13.02 million sq. of real estate development and have been recognized as one of the best property developers in India. Omaxe also provides leasing services and civil engineering. Their projects are planned with long-term relevance in mind, focusing on the needs of urban and suburban communities.. Omaxe builds residential and commercial ecosystems across growth cities, bringing homes, retail hubs, SCOs and office environments into locations planned for access, utility and long-term relevance.  Integrated Omaxe township with green surroundings  ### Integrated townships for lifestyle and business growth.  Planned communities with homes, conveniences, open areas and commercial activity for families, businesses and investors.  Omaxe property options for buyers and investors  ### Property options for buyers, entrepreneurs and investors.  Apartments, villas, floors, plots, SCOs, shops, offices and malls designed for living, business visibility and investment goals.  ## Real Estate Solutions Across Places. [...] ## Real Estate Solutions Across Places.  Explore Omaxe residential and commercial projects across New Chandigarh / Mullanpur, Ludhiana, Derabassi, Patiala and Amritsar, including townships, apartments, villas, plotted developments, SCOs, malls, retail streets and office destinations.  Buyers can compare Omaxe properties with practical details such as location access, usable layouts, open areas, project stage, documentation, support channels and written communication.  Omaxe Portfolio  ## What Buyers Should Know About Omaxe.  ### Residential Development  Homes include apartments, floors, villas, plots, penthouses and township residences for families reviewing layouts, amenities, access, safety and daily convenience.  ### Commercial Spaces [...] ### Commercial Spaces  Business spaces include SCOs, shops, offices, malls, food courts and high-street formats for buyers reviewing frontage, access, parking, catchment and permitted use.  ### Trust and Due Diligence  Review official project details, RERA information where applicable, floor plans, payment terms, price breakup, possession status and written confirmations.  Omaxe In Numbers  ## Scale, Delivery and Trust.  Omaxe delivered development scale  0  million sq. delivered  0  cities with presence  Omaxe city presence  Omaxe sustained growth  0  years of sustained growth  0K  families in New Chandigarh  Omaxe families in New Chandigarh  Omaxe project gallery highlight  ### Omaxe Project Highlight  Residential and Commercial Development  Omaxe project gallery highlight. Decades of Expertise: Over 39 years of industry presence  Pan-India Projects: Residential and commercial properties in over 31 cities  Customer-Centric Approach: Transparent dealings and timely delivery  Award-Winning Projects:  Recognized among the best property developers in India  Whether you're an investor, homebuyer, or business owner, we offer properties tailored to meet your lifestyle and financial goals.  ### Premium Projects by Top Real Estate Builders in India  Omaxe’s diverse portfolio includes:   Residential Communities: Apartments, villas, and integrated townships  Commercial Hubs: Malls, retail spaces, office complexes, and IT parks  Mixed-Use Developments: Combining leisure, work, and lifestyle seamlessly [...] Explore the range of our residential and commercial properties spread across 31 cities  ### Commercial Property  #### Omaxe Chowk  Location: New Delhi  Project Type: Wholesale, Retail & Food Court  Know More  Project Type: Wholesale, Retail & Food Court  ### Residential Property  #### The Resort  Location: Lucknow  Project Type: 3/4 BHK (with servant) + Penthouse  Know More  Project Type: 3/4 BHK (with servant) + Penthouse  ### Commercial Property  #### World Street  Location: Faridabad  Project Type: Mixed Use Land  Know More  Project Type: Mixed Use Land  ### Residential Property  #### The Legends  Location: Lucknow  Project Type: 4 BHK + Additional Space for Work from Home ( ...  Know More  Project Type: 4 BHK + Additional Space for Work from Home ( ...  ### Commercial Property [...] We take pride in being among the most reliable real estate builders in India, delivering unmatched architecture, urban convenience, and futuristic design.  ## Explore the Best Property Developers in India  Your search for the best property developer in India ends here. Omaxe is driven by the vision to shape modern India through responsible urbanization and affordable luxury.<br/><br/><strong>Recent Developments & News:</strong> Omaxe, a prominent real estate company, has been actively involved in several significant projects and financial maneuvers. The company plans to invest ₹6,200 crore to develop 19 hotels, partnering with Lemon Tree Hotels for 10 projects across India with 4,000 rooms. Omaxe also announced a ₹4,000 crore investment to manage these hotels. The company has been developing large-scale townships, including a 450-acre township in Indore and a mixed-use destination in Dwarka, Delhi. Despite these ambitious projects, Omaxe has faced financial challenges, reporting a net loss of ₹696.80 crore in FY26 and ₹153.20 crore in Q3 FY26. However, there was a notable improvement in Q2 FY27 with a net loss of ₹25.55 crore. The Securities and Exchange Board of India (Sebi) imposed a three-month market access ban and a fine on Omaxe for violating minimum public shareholding norms.. omaxe to invest 1 200 crore to develop 450 acre township in indore  ### Omaxe acquires 260 acres of land in Punjab    "In the future, we also see the opportunity to expand this township through new land acquisitions," said Mohit Goel, managing director of Omaxe.      omaxe acquires 260 acres of land in punjab  ### Omaxe to invest Rs 600 crore in Faridabad’s retail project    The development is part of Omaxe World Street, 27 acre of which is already operational and has over 250 brands.      omaxe to invest rs 600 crore in faridabad s retail project  ### Omaxe's net loss widens to Rs 239.48 crore in Q2 FY25    Omaxe's net consolidated total income stood at Rs 398.32 crore in Q2 FY25, a growth of 47.62 per cent from Rs 269.82 crore it recorded in the similar quarter last year. [...] sebi bans omaxe five others for violating minimum public shareholding norms  ### Omaxe plans ₹6,200 crore investment to develop 19 hotels     omaxe plans 6 200 crore investment to develop 19 hotels  ### Omaxe's net loss widens to ₹696.80 crore in FY26     omaxe s net loss widens to 696 80 crore in fy26  ### DMart opens over 50,000 sq ft store at Omaxe Connaught Place, Greater Noida     dmart opens over 50 000 sq ft store at omaxe connaught place greater noida  ### Omaxe posts net loss of ₹153.20 crore in Q3 FY26     omaxe posts net loss of 153 20 crore in q3 fy26  ### Omaxe to invest ₹500 crore to develop mixed-use Omaxe Chowk project in Ludhiana     omaxe to invest 500 crore to develop mixed use omaxe chowk project in ludhiana  ### Omaxe repays ₹80 crore loans to SWAMIH fund [...] ## Omaxe losses narrow to ₹25.55 crore in Q2 FY27    ### Omaxe Ltd has disclosed a consolidated net loss of Rs 25.55 crore for its September quarter, reflecting a noteworthy improvement from last year's loss of Rs 166.42 crore. The company reported a total income surge to Rs 613.91 crore for the second quarter, contributing to an impressive Rs 1,052.85 crore for the first half. Established in 1987, Omaxe remains a significant player in the real estate sector.   ### Omaxe to invest ₹4,000 crore in 10 hotel projects operated by Lemon Tree Hotels     omaxe to invest 4 000 crore in 10 hotel projects operated by lemon tree hotels  ### Sebi bans Omaxe, five others for violating minimum public shareholding norms. | Announcement  Omaxe Ltdhas informed BSE that the meeting of the Board of Directors of the Company is scheduled on 27/10/2026 ,inter alia, to consider and approve Un-Audited Financial Results (Standalone & Consolidated) for Quarter and Half Year ended on September 30, 2026 and Other Matters.  ### Omaxe Intimation W.R.T.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Omaxe-Group's key competitors include Emaar, Wanda Group, and Godrej Properties, according to Tracxn. Emaar, a public company founded in 1997 in Dubai, is a leading provider of real estate development properties with $98M in funding and a Tracxn score of 82/100. Wanda Group, based in Beijing and acquired in 1988, offers commercial hotels, resorts, and apartments management and development services with $7B in funding and a Tracxn score of 74/100. Godrej Properties, a public company from Mumbai founded in 1990, develops residential and commercial real estate projects with a Tracxn score of 69/100. Other competitors include Max Estates, Howard Hughes, Signature Global, and Oberoi Realty, among others, all with varying degrees of funding and Tracxn scores ranging from 63/100 to 69/100.. ## Omaxe-Group's Competitors and alternates  Top competitorsof Omaxe-GroupincludeEmaar, Wanda Group and Godrej Properties. Here is the list of Top 10 competitors of Omaxe-Group, ranked by Tracxn score:  Rank  Company Details  Short Description  Total Funding  Investors  Tracxn Score  1st  Emaar  1997, Dubai (United Arab Emirates), Public  Provider of real estate development properties  $98M  82/100  2nd  Wanda Group  1988, Beijing (China), Acquired  Provider of commercial hotels, resorts, and apartments management & development services  $7B  74/100  3rd  Godrej Properties  1990, Mumbai (India), Public  Developer of residential and commercial real estate projects  \-  69/100  4th  Provider of real estate development and management services  \-  69/100  5th  Max Estates [...] \-  69/100  5th  Max Estates  2016, Noida (India), Public  Provider of residential & commercial development services  \-  \-  69/100  6th  Provider of sustainable project development services  \-  66/100  7th  Provider of property and real estate development services  \-  66/100  8th  Howard Hughes  2010, Dallas (United States), Public  Developer of residential & commercial properties  \-  65/100  9th  Provider of real estate and commercial project development services  $538M  65/100  10th  Signature Global  2014, Delhi (India), Public  Provider of real estate, property, and affordable home development services  $52.3M  64/100  34296th  Omaxe-Group  2021, Unfunded  Developer of retail spaces, food courts, and restaurants within a sports complex  \-  \-  16/100 [...] ## Omaxe-Group - About the company  Omaxe-Group is an unfunded company, founded in 2021. It operates as a Developer of retail spaces, food courts, and restaurants within a sports complex. Omaxe-Group has not raised any funding yet. The company has 36074 active competitors, including 355 funded and 2111 that have exited. Its top competitorsinclude companies like Emaar, Wanda Group and Godrej Properties.  ### Company Details. ## Employee Count of OMAXE LIMITED  | Date | Employee Count | ---| | Mar 23 | 635 | | Mar 22 | 617 | | Mar 21 | 249 | | Mar 20 | 766 | | Mar 19 | 278 | | Mar 18 | 973 | | Mar 17 | 551 |  ## Competitors & Alternates of OMAXE LIMITED  Rank  Company Details  Short Description  Total Funding  Investors  Tracxn Score  1st  Emaar  1997, Dubai (United Arab Emirates), Public  Provider of real estate development properties  $98M  82/100  2nd  Godrej Properties  1990, Mumbai (India), Public  Developer of residential & commercial properties  \-  73/100  3rd  Wanda Group  1988, Beijing (China), Late Stage  Provider of commercial hotels, resorts, and apartments management & development services  $7B  72/100  4th [...] $7B  72/100  4th  Provider of facility management, material handling, food catering, real estate advisory, and development services  $146M  69/100  5th  Provider of real estate and commercial project development services  $538M  69/100  6th  Provider of real estate development and management services  \-  68/100  7th  Max Estates  2016, Noida (India), Public  Provider of residential & commercial development services  \-  \-  67/100  8th  Prateek Group  2005, Noida (India), Seed  Developer of commercial and residential real estate projects  $31.6M  66/100  9th  Provider of sustainable project development services  \-  66/100  10th  Valmont  1946, Omaha (United States), Public  Developer of real estate properties and electricity products  \-  63/100  223rd.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://omaxe-group.com" target="_blank">Omaxe Group | Real Estate Developer in India</a></h3>
+                    <div class="result-url">https://omaxe-group.com</div>
+                    <div class="result-content">Omaxe Group
+
+Book a Site Visit
+
+Omaxe Group
+
+ Omaxe Group Building India Since 1987.
+
+Residential, Commercial &amp; Township Development
+
+LEARN MORE
+
+about Omaxe
+
+ Since 1987, Omaxe has shaped trusted real estate destinations across India.
+
+Omaxe Limited began with construction and contracting in 1987, entered real estate in 2001, and became listed on BSE and NSE in 2007.
+
+Omaxe Group plans residential and business environments across growing Indian cities, combining township homes, group housing, SCO streets, retail hubs, malls and office spaces with clear location logic, delivery discipline and customer-first communication.
+
+38 years of Omaxe growth
+
+ 38 Years of Growth
+
+Omaxe delivered real estate development
+
+ 13.02 Million Sq. Mtr. Delivered
+
+Omaxe presence across cities [...] Omaxe presence across cities
+
+ Presence Across 31+ Cities
+
+Branded Projects
+
+ Explore Omaxe developments designed for living, business and investment.
+
+The portfolio connects family living, daily-use retail and workplace demand in destinations where access, surrounding infrastructure, open areas and future usability matter to both end users and investors.
+
+No projects available at the moment. Please check back soon.
+
+Omaxe journey founded on execution and trust
+
+Omaxe Journey
+
+ Founded on Execution and Trust.
+
+Omaxe began with a strong construction foundation and grew by focusing on dependable execution, practical planning and relationships built over time. That experience continues to guide how the group approaches residential, retail and commercial real estate. [...] Each project is shaped around clear development goals, usable spaces and long-term relevance for families, entrepreneurs and investors.
+
+Omaxe planned growth across India
+
+Omaxe Journey
+
+ Planned Growth Across India.
+
+Omaxe&#x27;s growth across Indian cities is driven by location-led planning, infrastructure awareness and an understanding of how people live, shop, work and invest.
+
+The portfolio brings together townships, homes, SCO spaces, retail environments and office destinations designed to support everyday convenience and future demand.
+
+ Real Estate Solutions for Homebuyers, Businesses and Investors.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.omaxe.com" target="_blank">Best Real Estate Developer Company in India | Real Estate Builders | Omaxe</a></h3>
+                    <div class="result-url">https://www.omaxe.com</div>
+                    <div class="result-content">At Omaxe, we envision creating a better tomorrow for India, and in order to turn that vision into reality, we have worked relentlessly since 1987 to provide world-class real estate services for people.
+
+The brand ‘Omaxe’ was founded in 1987 by visionary first-generation entrepreneur &amp; civil engineer Mr. Rohtaas Goel to undertake construction and contracting business. Subsequently, the company diversified into the real estate sector in 2001 and got listed on both stock exchanges (BSE and NSE) in 2007.
+
+Read More
+
+ 39
+
+ Years of sustained growth and innovation
+
+ 13
+
+ .50+
+
+ Million Sq. Mtr. Area Delivered
+
+As on 31st March 2026
+
+ Explore Our Exclusive Residential and Commercial Projects [...] Decades of Expertise: Over 39 years of industry presence
+ Pan-India Projects: Residential and commercial properties in over 31 cities
+ Customer-Centric Approach: Transparent dealings and timely delivery
+ Award-Winning Projects:  Recognized among the best property developers in India
+
+Whether you&#x27;re an investor, homebuyer, or business owner, we offer properties tailored to meet your lifestyle and financial goals.
+
+ Premium Projects by Top Real Estate Builders in India
+
+Omaxe’s diverse portfolio includes:
+
+ Residential Communities: Apartments, villas, and integrated townships
+ Commercial Hubs: Malls, retail spaces, office complexes, and IT parks
+ Mixed-Use Developments: Combining leisure, work, and lifestyle seamlessly [...] We take pride in being among the most reliable real estate builders in India, delivering unmatched architecture, urban convenience, and futuristic design.
+
+ Explore the Best Property Developers in India
+
+Your search for the best property developer in India ends here. Omaxe is driven by the vision to shape modern India through responsible urbanization and affordable luxury. Our developments prioritize:
+
+ Smart infrastructure
+ Strategic locations
+ Green spaces
+ Sustainable construction
+
+Join thousands of happy customers who trust Omaxe for their real estate investments.
+
+X
+
+Mr. Kuljit Singh Sibea
+
+ Mr. Kuljit Singh SibeaRetd. From Xeon</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://omaxe-group.com/about-us" target="_blank">Know About Omaxe Group | Trusted Real Estate Developer</a></h3>
+                    <div class="result-url">https://omaxe-group.com/about-us</div>
+                    <div class="result-content">Omaxe Group
+
+Book a Site Visit
+
+Omaxe Group
+
+ Omaxe About
+
+ Home
+ About
+
+about Omaxe
+
+ Building places where communities, commerce and long-term value can grow.
+
+Founded in 1987, Omaxe has evolved from a construction-focused enterprise into a real estate group known for large-scale planning and execution.
+
+Its portfolio spans residential neighbourhoods, commercial centres, shopping destinations, office environments and mixed-use developments shaped around accessibility, everyday usability and buyer confidence.
+
+Branded Projects
+
+ Residential and Commercial Developments Across Growth Locations.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/omaxe-limited" target="_blank">Omaxe Limited | LinkedIn</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/omaxe-limited</div>
+                    <div class="result-content">Description: The journey of Omaxe began in 1987, when first-generation entrepreneur Mr. Rohtaas Goel laid the foundation for a construction and contracting business. In 2001, Omaxe entered the real estate sector with its first project by building executive floors in Gurugram. From those modest beginnings to being listed on the NSE and BSE in 2007, Omaxe has grown into a name synonymous with trust, innovation, and excellence. Guided by its motto, “Turning Dreams into Reality,” Omaxe has consistently delivered dream homes and landmark spaces to its customers. This enduring commitment is reflected in the lasting relationships it has built and the countless smiles it has earned over the years. In 2003, Omaxe developed its first integrated township, an 85-acre project in Greater Noida. Since</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://rocketreach.co/omaxe-limited-profile_b5c774c5f42e0d66" target="_blank">Omaxe Limited Information</a></h3>
+                    <div class="result-url">https://rocketreach.co/omaxe-limited-profile_b5c774c5f42e0d66</div>
+                    <div class="result-content">Title: Omaxe Limited Information
+The journey of Omaxe began in 1987, when first-generation entrepreneur Mr. Rohtaas Goel laid the foundation for a construction and contracting business. In 2001, Omaxe entered the real estate sector with its first project by building executive floors in Gurugram. From those modest beginnings to being listed on the NSE and BSE in 2007, Omaxe has grown into a name synonymous with trust, innovation, and excellence. This enduring commitment is reflected in the lasting relationships it has built and the countless smiles it has earned over the years. In 2003, Omaxe developed its first integrated township, an 85-acre project in Greater Noida. Since then, the company has created iconic developments like Omaxe Chowk, a PPP venture with NDMC in Chandni Chowk, and World Street, a high street haven in Faridabad. Today, Omaxe has a footprint in 34 cities across 9 states, with transformative projects like The Omaxe State, India’s first 5-in-1 integrated destination, and integrated Townships like Omaxe New Chandigarh. | **Phone** | +91 11 4189 3100 |. | **Fax** | +91 11 4189 6653 |. | **NAICS** | NAICS Code 53111 Companies, NAICS Code 531 Companies, NAICS Code 5311 Companies, NAICS Code 53 Companies |. **The Omaxe Limited annual revenue** was **$209.2 million** in 2026. **Rohtas Goel** is the Chairman of Omaxe Limited. **1,624** people are employed at Omaxe Limited. The SIC codes for Omaxe Limited are **[65, 653]**. * Omaxe Limited Employee Rohtas Goel&#x27;s profile photo.  Chairman at Omaxe Limited. * Omaxe Limited Employee Avneet Soni&#x27;s profile photo.  President at Omaxe Limited. * Omaxe Limited Employee Shravan Govil&#x27;s profile photo. * Omaxe Limited Employee Deepak Rawat&#x27;s profile photo.  Vice President Marketing at Omaxe Limited. * Omaxe Limited Employee Shubhojit Pakrasi&#x27;s profile photo.  Vice President Leasing and Operations at Omaxe Limited. * Omaxe Limited Employee Binod Singh&#x27;s profile photo.  Vice President-Projects at Omaxe Limited. * Omaxe Limited Employee Rahul Aggarwal&#x27;s profile photo.  Vice President Sales Marketing at Omaxe Limited. * Omaxe Limited Employee Neeraj Arora&#x27;s profile photo. * Omaxe Limited Employee Praveen Verma&#x27;s profile photo.  Additional Vice President at Omaxe Limited. G2 Best Est ROI Mid-Market Summer 2026. G2 Easiest Admin Mid-Market Summer 2026. G2 Best Results Mid-Market Summer 2026. G2 Lead Capture Mid-Market Summer 2026.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://omaxe-group.com/about-us" target="_blank">Know About Omaxe Group | Trusted Real Estate Developer</a></h3>
+                    <div class="result-url">https://omaxe-group.com/about-us</div>
+                    <div class="result-content">Omaxe builds residential and commercial ecosystems across growth cities, bringing homes, retail hubs, SCOs and office environments into locations planned for access, utility and long-term relevance.
+
+Integrated Omaxe township with green surroundings
+
+ Integrated townships for lifestyle and business growth.
+
+Planned communities with homes, conveniences, open areas and commercial activity for families, businesses and investors.
+
+Omaxe property options for buyers and investors
+
+ Property options for buyers, entrepreneurs and investors.
+
+Apartments, villas, floors, plots, SCOs, shops, offices and malls designed for living, business visibility and investment goals.
+
+ Real Estate Solutions Across Places. [...]  Real Estate Solutions Across Places.
+
+Explore Omaxe residential and commercial projects across New Chandigarh / Mullanpur, Ludhiana, Derabassi, Patiala and Amritsar, including townships, apartments, villas, plotted developments, SCOs, malls, retail streets and office destinations.
+
+Buyers can compare Omaxe properties with practical details such as location access, usable layouts, open areas, project stage, documentation, support channels and written communication.
+
+Omaxe Portfolio
+
+ What Buyers Should Know About Omaxe.
+
+ Residential Development
+
+Homes include apartments, floors, villas, plots, penthouses and township residences for families reviewing layouts, amenities, access, safety and daily convenience.
+
+ Commercial Spaces [...]  Commercial Spaces
+
+Business spaces include SCOs, shops, offices, malls, food courts and high-street formats for buyers reviewing frontage, access, parking, catchment and permitted use.
+
+ Trust and Due Diligence
+
+Review official project details, RERA information where applicable, floor plans, payment terms, price breakup, possession status and written confirmations.
+
+Omaxe In Numbers
+
+ Scale, Delivery and Trust.
+
+Omaxe delivered development scale
+
+0
+
+million sq. mtr. delivered
+
+0
+
+cities with presence
+
+Omaxe city presence
+
+Omaxe sustained growth
+
+0
+
+years of sustained growth
+
+0K
+
+families in New Chandigarh
+
+Omaxe families in New Chandigarh
+
+Omaxe project gallery highlight
+
+ Omaxe Project Highlight
+
+Residential and Commercial Development
+
+Omaxe project gallery highlight</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.omaxe.com" target="_blank">Best Real Estate Developer Company in India | Real Estate Builders | Omaxe</a></h3>
+                    <div class="result-url">https://www.omaxe.com</div>
+                    <div class="result-content">Decades of Expertise: Over 39 years of industry presence
+ Pan-India Projects: Residential and commercial properties in over 31 cities
+ Customer-Centric Approach: Transparent dealings and timely delivery
+ Award-Winning Projects:  Recognized among the best property developers in India
+
+Whether you&#x27;re an investor, homebuyer, or business owner, we offer properties tailored to meet your lifestyle and financial goals.
+
+ Premium Projects by Top Real Estate Builders in India
+
+Omaxe’s diverse portfolio includes:
+
+ Residential Communities: Apartments, villas, and integrated townships
+ Commercial Hubs: Malls, retail spaces, office complexes, and IT parks
+ Mixed-Use Developments: Combining leisure, work, and lifestyle seamlessly [...] Explore the range of our residential and commercial properties spread across 31 cities
+
+ Commercial Property
+
+ Omaxe Chowk
+
+Location: New Delhi
+
+Project Type: Wholesale, Retail &amp; Food Court
+
+Know More
+
+Project Type: Wholesale, Retail &amp; Food Court
+
+ Residential Property
+
+ The Resort
+
+Location: Lucknow
+
+Project Type: 3/4 BHK (with servant) + Penthouse
+
+Know More
+
+Project Type: 3/4 BHK (with servant) + Penthouse
+
+ Commercial Property
+
+ World Street
+
+Location: Faridabad
+
+Project Type: Mixed Use Land
+
+Know More
+
+Project Type: Mixed Use Land
+
+ Residential Property
+
+ The Legends
+
+Location: Lucknow
+
+Project Type: 4 BHK + Additional Space for Work from Home ( ...
+
+Know More
+
+Project Type: 4 BHK + Additional Space for Work from Home ( ...
+
+ Commercial Property [...] We take pride in being among the most reliable real estate builders in India, delivering unmatched architecture, urban convenience, and futuristic design.
+
+ Explore the Best Property Developers in India
+
+Your search for the best property developer in India ends here. Omaxe is driven by the vision to shape modern India through responsible urbanization and affordable luxury. Our developments prioritize:
+
+ Smart infrastructure
+ Strategic locations
+ Green spaces
+ Sustainable construction
+
+Join thousands of happy customers who trust Omaxe for their real estate investments.
+
+X
+
+Mr. Kuljit Singh Sibea
+
+ Mr. Kuljit Singh SibeaRetd. From Xeon</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.globaldata.com/company-profile/omaxe-ltd" target="_blank">Omaxe Ltd Company Profile - Overview - GlobalData</a></h3>
+                    <div class="result-url">https://www.globaldata.com/company-profile/omaxe-ltd</div>
+                    <div class="result-content">Omaxe Ltd (Omaxe) is a real estate development company that carries out the construction and development of residential, commercial, and integrated township projects. Its main activities include developing integrated and high-tech townships, group housing, shopping malls, and hotels. Key projects under Omaxe include Omaxe Connaught Place and Omaxe Chowk. Omaxe serves a diverse customer base, providing living spaces and commercial infrastructure to meet the needs of urban and suburban communities. The company collaborates with government and private entities through initiatives such as the BeTogether partnership model. The company operates across multiple geographic locations in India, including Faridabad, Gurugram, Chandigarh, Lucknow, Ludhiana, Agra, and Jaipur. Omaxe is headquartered in [...]  Omaxe Ltd premium industry data and analytics
+
+ 20+
+
+ Construction Projects
+
+Access new construction projects and identify projects matching key criteria such as location, stage, sector, size, funding  and many others.
+
+ 9
+
+ Project Contacts
+
+Target project contacts by company, project and location.
+
+ 1
+
+ ICT Spend &amp; Tech Priorities
+
+IT Client Prospector provides intelligence on Omaxe Ltd’s likely spend across technology areas enabling you to understand the digital strategy.
+
+ Products and Services
+
+| Services |
+
+| Leasing |
+| Real Estate Development |
+| Civil Engineering |
+| XYZ |
+| XYZ |
+| XYZ |
+
+Understand Omaxe Ltd portfolio and identify potential areas for collaboration
+
+Understand Omaxe Ltd portfolio and identify potential areas for collaboration
+Learn more</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://omaxe-group.com" target="_blank">Omaxe Group | Real Estate Developer in India</a></h3>
+                    <div class="result-url">https://omaxe-group.com</div>
+                    <div class="result-content">Omaxe Group
+
+Book a Site Visit
+
+Omaxe Group
+
+ Omaxe Group Building India Since 1987.
+
+Residential, Commercial &amp; Township Development
+
+LEARN MORE
+
+about Omaxe
+
+ Since 1987, Omaxe has shaped trusted real estate destinations across India.
+
+Omaxe Limited began with construction and contracting in 1987, entered real estate in 2001, and became listed on BSE and NSE in 2007.
+
+Omaxe Group plans residential and business environments across growing Indian cities, combining township homes, group housing, SCO streets, retail hubs, malls and office spaces with clear location logic, delivery discipline and customer-first communication.
+
+38 years of Omaxe growth
+
+ 38 Years of Growth
+
+Omaxe delivered real estate development
+
+ 13.02 Million Sq. Mtr. Delivered
+
+Omaxe presence across cities [...] Each project is shaped around clear development goals, usable spaces and long-term relevance for families, entrepreneurs and investors.
+
+Omaxe planned growth across India
+
+Omaxe Journey
+
+ Planned Growth Across India.
+
+Omaxe&#x27;s growth across Indian cities is driven by location-led planning, infrastructure awareness and an understanding of how people live, shop, work and invest.
+
+The portfolio brings together townships, homes, SCO spaces, retail environments and office destinations designed to support everyday convenience and future demand.
+
+ Real Estate Solutions for Homebuyers, Businesses and Investors. [...] Omaxe presence across cities
+
+ Presence Across 31+ Cities
+
+Branded Projects
+
+ Explore Omaxe developments designed for living, business and investment.
+
+The portfolio connects family living, daily-use retail and workplace demand in destinations where access, surrounding infrastructure, open areas and future usability matter to both end users and investors.
+
+No projects available at the moment. Please check back soon.
+
+Omaxe journey founded on execution and trust
+
+Omaxe Journey
+
+ Founded on Execution and Trust.
+
+Omaxe began with a strong construction foundation and grew by focusing on dependable execution, practical planning and relationships built over time. That experience continues to guide how the group approaches residential, retail and commercial real estate.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://acquirestate.com/blog/omaxe-group" target="_blank">Omaxe Group Explained: History, Projects, 2026 Risk</a></h3>
+                    <div class="result-url">https://acquirestate.com/blog/omaxe-group</div>
+                    <div class="result-content">Group housing and residential townships, spanning plotted colonies, independent floors, villas and apartment towers
+ Commercial real estate, including shopping malls, high-street retail (SCOs) and office towers
+ Hospitality-linked assets that sit inside larger integrated townships
+ Contracting and construction services executed for third parties, the same line of work the company started with in 1987 [...] | Omaxe The Resort | South Mullanpur | Low-density residential,  - 9.6 acres | Ongoing | As per project RERA filing |
+| Omaxe World Street | Sectors 6 &amp; 82, New Chandigarh | Retail, SCOs, showrooms, office towers | Phased, ongoing | PBRERA-SAS80-PC0195 / REA1305 |
+| Omaxe Mulberry | North Mullanpur | Villas | Delivered | As per project RERA filing |
+| Omaxe Silver Birch | North Mullanpur | Apartments | Delivered | As per project RERA filing |
+| Omaxe Greens | Central Derabassi, NH-44 | 2–3 BHK,  - 16 acres | Ongoing | PBRERA-SAS79-PR0039 |
+| Omaxe Greens-2 | Derabassi, NH-152 | 2–3 BHK independent floors and villas,  - 500 units | Ongoing | PBRERA-SAS79-PR0284 | [...]  Is Omaxe Group Worth Your Money In 2026?
+
+The honest answer is: it depends on which part of the offering you are looking at. If you want a delivered, inspectable asset with minimal construction risk, Omaxe Mulberry, Silver Birch or Cassiaalready stand completed and give you something to walk through before you sign.   
+
+If you are comfortable with a phased timeline in exchange for lakeside, premium positioning, The Lakehas a track record stretching back to 2015 with two phases already handed over. If your budget is tighter, Greens and Greens-2in Derabassi keep you inside the same brand ecosystem without the luxury price tag.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://realty.economictimes.indiatimes.com/tag/omaxe" target="_blank">Omaxe - Latest omaxe , Information &amp; Updates - Real Estate -ET Realty</a></h3>
+                    <div class="result-url">https://realty.economictimes.indiatimes.com/tag/omaxe</div>
+                    <div class="result-content">omaxe to invest 1 200 crore to develop 450 acre township in indore
+  Omaxe acquires 260 acres of land in Punjab
+
+  &quot;In the future, we also see the opportunity to expand this township through new land acquisitions,&quot; said Mohit Goel, managing director of Omaxe.
+
+    omaxe acquires 260 acres of land in punjab
+  Omaxe to invest Rs 600 crore in Faridabad’s retail project
+
+  The development is part of Omaxe World Street, 27 acre of which is already operational and has over 250 brands.
+
+    omaxe to invest rs 600 crore in faridabad s retail project
+  Omaxe&#x27;s net loss widens to Rs 239.48 crore in Q2 FY25
+
+  Omaxe&#x27;s net consolidated total income stood at Rs 398.32 crore in Q2 FY25, a growth of 47.62 per cent from Rs 269.82 crore it recorded in the similar quarter last year. [...] sebi bans omaxe five others for violating minimum public shareholding norms
+  Omaxe plans ₹6,200 crore investment to develop 19 hotels
+
+   omaxe plans 6 200 crore investment to develop 19 hotels
+  Omaxe&#x27;s net loss widens to ₹696.80 crore in FY26
+
+   omaxe s net loss widens to 696 80 crore in fy26
+  DMart opens over 50,000 sq ft store at Omaxe Connaught Place, Greater Noida
+
+   dmart opens over 50 000 sq ft store at omaxe connaught place greater noida
+  Omaxe posts net loss of ₹153.20 crore in Q3 FY26
+
+   omaxe posts net loss of 153 20 crore in q3 fy26
+  Omaxe to invest ₹500 crore to develop mixed-use Omaxe Chowk project in Ludhiana
+
+   omaxe to invest 500 crore to develop mixed use omaxe chowk project in ludhiana
+  Omaxe repays ₹80 crore loans to SWAMIH fund [...]  Omaxe losses narrow to ₹25.55 crore in Q2 FY27
+
+   Omaxe Ltd has disclosed a consolidated net loss of Rs 25.55 crore for its September quarter, reflecting a noteworthy improvement from last year&#x27;s loss of Rs 166.42 crore. The company reported a total income surge to Rs 613.91 crore for the second quarter, contributing to an impressive Rs 1,052.85 crore for the first half. Established in 1987, Omaxe remains a significant player in the real estate sector.
+
+  Omaxe to invest ₹4,000 crore in 10 hotel projects operated by Lemon Tree Hotels
+
+   omaxe to invest 4 000 crore in 10 hotel projects operated by lemon tree hotels
+  Sebi bans Omaxe, five others for violating minimum public shareholding norms</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://economictimes.indiatimes.com/omaxe-ltd/stocksupdate/companyid-15334.cms" target="_blank">Omaxe News - Omaxe Announcement, Latest News on Omaxe - The Economic Times</a></h3>
+                    <div class="result-url">https://economictimes.indiatimes.com/omaxe-ltd/stocksupdate/companyid-15334.cms</div>
+                    <div class="result-content">| Announcement
+
+Omaxe Ltdhas informed BSE that the meeting of the Board of Directors of the Company is scheduled on 27/10/2026 ,inter alia, to consider and approve Un-Audited Financial Results (Standalone &amp; Consolidated) for Quarter and Half Year ended on September 30, 2026 and Other Matters.
+
+ Omaxe Intimation W.R.T. Project Launch And Regulatory Approval
+
+ | Announcement
+
+Please find enclosed herewith a copy of intimation w.r.t. Project Launch and Regulatory Approval.
+
+ Omaxe Announcement under Regulation 30 (LODR)-Press Release / Media Release
+
+ | Announcement
+
+Please find enclosed herewith a copy of Press Release titled &quot;Omaxe Partners with Lemon Tree Hotels for 10 Hotels with 4,000 Keys Across India&quot;.
+
+ Omaxe Announcement under Regulation 30 (LODR)-Credit Rating [...]  Omaxe Board Meeting Outcome for Outcome Of Board Meeting And Submission Of Unaudited Financial Results For Q2 FY 2026-27
+
+ | Announcement
+
+Please find enclosed herewith copy of Outcome of Board Meeting held today i.e. 27.10.2026 and Unaudited Financial Results for Q2 FY 2026-27.
+
+ Omaxe Announcement under Regulation 30 (LODR)-Acquisition
+
+ | Announcement
+
+Please find enclosed herewith a copy of intimation w.r.t proposed incorporation.
+
+ Omaxe Closure of Trading Window
+
+ | Announcement
+
+Please find enclosed herewith a copy of Intimation w.r.t. Update on Closure of Trading Window.
+
+ Omaxe Board Meeting Intimation for Approval Of Un-Audited Financial Results (Standalone &amp; Consolidated) For Quarter And Half Y...
+
+ | Announcement [...] | News
+
+The Securities and Exchange Board of India (Sebi) has taken decisive action against Omaxe and five associated entities for breaching public shareholding regulations. Omaxe and its promoters were accused of creating a deceptive public shareholding framework, involving funds used to repurchase its shares via various means. As a result, Omaxe faces a three-month market access ban, while the others have a one-year restriction, alongside a hefty fine totaling Rs 1.
+
+ Omaxe Shareholder Meeting / Postal Ballot-Scrutinizer&#x27;&#x27;s Report
+
+ | Announcement
+
+Please find enclosed herewith the copy of Scrutinizer&#x27;&#x27;s Report and Voting Results for the 37th Annual General Meeting of the Company held on September 25, 2026.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://leadiq.com/c/omaxe-limited/5a1d7d44240000240056e5c5" target="_blank">Omaxe Limited Company Overview, Contact Details &amp; Competitors | LeadIQ</a></h3>
+                    <div class="result-url">https://leadiq.com/c/omaxe-limited/5a1d7d44240000240056e5c5</div>
+                    <div class="result-content">Omaxe is also developing The Omaxe State in Dwarka, a cutting-edge mixed-use destination featuring retail, hospitality, sports, and entertainment.
+
+  Oct 19, 2026 | www.business-standard.com
+ Media icon
+
+   Omaxe Limited partners with Lemon Tree Hotels Ltd. to develop and operate 10 hotel projects across India with 4,000 rooms and an estimated investment of ₹4,000 crore.
+
+  Omaxe-Lemon Tree partnership: Projects and room capacity
+
+  Oct 16, 2026 | www.cnbctv18.com
+ Media icon
+
+   Omaxe Limited invests $421M to develop 10 upcoming hotels across India, with Lemon Tree Hotels&#x27; arm managing them under an initial pact dated Oct 16th &#x27;26.
+
+  Omaxe inks pact with Lemon Tree to manage 10 upcoming hotels worth ₹4,000 cr.
+
+  Oct 16, 2026 | www.thehindubusinessline.com
+ Media icon [...] LinkedIn logoCrunchbase logo
+
+ Section iconCompany Overview
+
+Phone number
+:   +91-11-4189-\\\\
+
+Website
+:   omaxe.com
+
+NAICS Code
+:   531 - Real Estate
+
+Founded
+:   1987
+
+Employees
+:   1001-5000
+
+ Section iconMedia &amp; News
+
+ Media icon
+
+   Omaxe Limited reports $42.7M in consolidated revenue from operations for the June 2026 quarter, up 44% year over year.
+
+  Oct 24, 2026 | synergyinfracon.com
+ Media icon
+
+   Neeraj leaves Omaxe Limited after serving as Vice President and takes a new role at Gera Developments, where he drives construction execution.
+
+  Oct 21, 2026 | www.ians.in
+ Media icon
+
+   Omaxe Limited develops The Omaxe State in India as a mixed-use destination featuring retail, hospitality, sports, and entertainment.
+
+  Oct 19, 2026 | www.business-standard.com [...] Oct 16, 2026 | www.thehindubusinessline.com
+ Media icon
+
+  [ Omaxe Limited organises Sufi Night at The Forest Spa in Noida, India, bringing together around 500 attendees for music and community engagement on Oct 14th &#x27;26.
+
+  New Delhi [India], October 14: Omaxe Ltd., one of India&#x27;s leading real estate developers, recently organised a Sufi Night at The Forest Spa, Sector 93B, Noida, bringing together around 500 attendees for an evening of music and community engagement.
+
+  Oct 14, 2026 | www.newdelhinews.net](
+ Media icon
+
+   On Sep 25th &#x27;26 in India, Sebi barred Omaxe Limited from accessing the securities market for three months and imposed part of a total Rs 1.92 crore fine for allegedly violating minimum public shareholding norms.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://trendlyne.com/latest-news/only-news/969/OMAXE/omaxe-ltd" target="_blank">Omaxe News and Updates</a></h3>
+                    <div class="result-url">https://trendlyne.com/latest-news/only-news/969/OMAXE/omaxe-ltd</div>
+                    <div class="result-content">16 Oct 2026, 03:51PM · Omaxe inks pact with Lemon Tree to manage 10 upcoming hotels worth 4,000 cr. Business Line ; 25 Sep 2026.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.business-standard.com/topic/omaxe" target="_blank">Latest News Headlines, Videos and Photo Galleries on Omaxe</a></h3>
+                    <div class="result-url">https://www.business-standard.com/topic/omaxe</div>
+                    <div class="result-content">Omaxe to invest Rs 2,700 cr to modernise 6 bus terminals in Uttar Pradesh · Omaxe to invest Rs 2,800 cr in real estate projects under BeTogether brand · SAT</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/omaxe-group/__hGn0aZSyQADgt2159WDg9C8ZlIjjs-9YqPe2DktauF4" target="_blank">Omaxe-Group - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/omaxe-group/__hGn0aZSyQADgt2159WDg9C8ZlIjjs-9YqPe2DktauF4</div>
+                    <div class="result-content">Omaxe-Group&#x27;s Competitors and alternates
+
+Top competitorsof Omaxe-GroupincludeEmaar, Wanda Group and Godrej Properties. Here is the list of Top 10 competitors of Omaxe-Group, ranked by Tracxn score:
+
+Rank
+
+Company Details
+
+Short Description
+
+Total Funding
+
+Investors
+
+Tracxn Score
+
+1st
+
+Emaar
+
+1997, Dubai (United Arab Emirates), Public
+
+Provider of real estate development properties
+
+$98M
+
+82/100
+
+2nd
+
+Wanda Group
+
+1988, Beijing (China), Acquired
+
+Provider of commercial hotels, resorts, and apartments management &amp; development services
+
+$7B
+
+74/100
+
+3rd
+
+Godrej Properties
+
+1990, Mumbai (India), Public
+
+Developer of residential and commercial real estate projects
+
+\-
+
+69/100
+
+4th
+
+Provider of real estate development and management services
+
+\-
+
+69/100
+
+5th
+
+Max Estates [...] \-
+
+69/100
+
+5th
+
+Max Estates
+
+2016, Noida (India), Public
+
+Provider of residential &amp; commercial development services
+
+\-
+
+\-
+
+69/100
+
+6th
+
+Provider of sustainable project development services
+
+\-
+
+66/100
+
+7th
+
+Provider of property and real estate development services
+
+\-
+
+66/100
+
+8th
+
+Howard Hughes
+
+2010, Dallas (United States), Public
+
+Developer of residential &amp; commercial properties
+
+\-
+
+65/100
+
+9th
+
+Provider of real estate and commercial project development services
+
+$538M
+
+65/100
+
+10th
+
+Signature Global
+
+2014, Delhi (India), Public
+
+Provider of real estate, property, and affordable home development services
+
+$52.3M
+
+64/100
+
+34296th
+
+Omaxe-Group
+
+2021, Unfunded
+
+Developer of retail spaces, food courts, and restaurants within a sports complex
+
+\-
+
+\-
+
+16/100 [...]  Omaxe-Group - About the company
+
+Omaxe-Group is an unfunded company, founded in 2021. It operates as a Developer of retail spaces, food courts, and restaurants within a sports complex. Omaxe-Group has not raised any funding yet. The company has 36074 active competitors, including 355 funded and 2111 that have exited. Its top competitorsinclude companies like Emaar, Wanda Group and Godrej Properties.
+
+ Company Details</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/legal-entities/india/omaxe-limited/__KVizjiUn-dQC_IFrnaBoeeBT2MWLTNNfZDV0f7AfxXI" target="_blank">OMAXE LIMITED - 2026 Company Profile &amp; Financials - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/legal-entities/india/omaxe-limited/__KVizjiUn-dQC_IFrnaBoeeBT2MWLTNNfZDV0f7AfxXI</div>
+                    <div class="result-content">Employee Count of OMAXE LIMITED
+
+| Date | Employee Count |
+---|
+| Mar 23 | 635 |
+| Mar 22 | 617 |
+| Mar 21 | 249 |
+| Mar 20 | 766 |
+| Mar 19 | 278 |
+| Mar 18 | 973 |
+| Mar 17 | 551 |
+
+ Competitors &amp; Alternates of OMAXE LIMITED
+
+Rank
+
+Company Details
+
+Short Description
+
+Total Funding
+
+Investors
+
+Tracxn Score
+
+1st
+
+Emaar
+
+1997, Dubai (United Arab Emirates), Public
+
+Provider of real estate development properties
+
+$98M
+
+82/100
+
+2nd
+
+Godrej Properties
+
+1990, Mumbai (India), Public
+
+Developer of residential &amp; commercial properties
+
+\-
+
+73/100
+
+3rd
+
+Wanda Group
+
+1988, Beijing (China), Late Stage
+
+Provider of commercial hotels, resorts, and apartments management &amp; development services
+
+$7B
+
+72/100
+
+4th [...] $7B
+
+72/100
+
+4th
+
+Provider of facility management, material handling, food catering, real estate advisory, and development services
+
+$146M
+
+69/100
+
+5th
+
+Provider of real estate and commercial project development services
+
+$538M
+
+69/100
+
+6th
+
+Provider of real estate development and management services
+
+\-
+
+68/100
+
+7th
+
+Max Estates
+
+2016, Noida (India), Public
+
+Provider of residential &amp; commercial development services
+
+\-
+
+\-
+
+67/100
+
+8th
+
+Prateek Group
+
+2005, Noida (India), Seed
+
+Developer of commercial and residential real estate projects
+
+$31.6M
+
+66/100
+
+9th
+
+Provider of sustainable project development services
+
+\-
+
+66/100
+
+10th
+
+Valmont
+
+1946, Omaha (United States), Public
+
+Developer of real estate properties and electricity products
+
+\-
+
+63/100
+
+223rd</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://leadiq.com/c/omaxe-limited/5a1d7d44240000240056e5c5" target="_blank">Omaxe Limited Company Overview, Contact Details &amp; Competitors | LeadIQ</a></h3>
+                    <div class="result-url">https://leadiq.com/c/omaxe-limited/5a1d7d44240000240056e5c5</div>
+                    <div class="result-content">Geographic footprint Presence in 34 cities across 9 states offers multi-city engagement potential for project-based sales, property management services, and regional partnerships with local developers and contractors.
+
+Financial scale Revenue in the mid-range hundreds of millions with substantial funding and recent asset investments indicate capacity for larger joint ventures, equity partnerships, and long-term project financing discussions.
+
+Public market visibility Being listed on NSE/BSE and ongoing asset investments provide credibility for enterprise sales, investor relations-driven partnerships, and opportunities to align with government-linked or PPP projects tied to urban development.
+
+ Similar companies to Omaxe Limited
+
+ Oberoi Realty logo
+
+   Oberoi Realty [...] LeadIQ logo
+
+Learn more at LeadIQ.com
+
+ Insights
+
+Hospitality expansion Omaxe is Diversifying into a dedicated hospitality vertical with plans to develop 19 hotels across 13 cities in five states over the next 4-5 years, signaling new cross-sell opportunities to families and businesses seeking integrated lifestyle and lodging experiences.
+
+Integrated townships Strong track record in large-scale integrated townships and high street developments (e.g., The Omaxe State, Omaxe Chowk, World Street) creates upsell opportunities for commercial spaces, retail, and hospitality within master-planned communities. [...] Omaxe Limited is a real estate developer and operator headquartered in Delhi, India, with origins dating to 1987 when founder Rohtaas Goel started a construction and contracting business. It entered the real estate sector in 2001 with its first project in Gurugram and later joined the NSE and BSE in 2007. The company has developed integrated townships and landmark spaces, including an 85-acre township in Greater Noida, Omaxe Chowk in Chandni Chowk, and World Street in Faridabad. Today, Omaxe operates across 34 cities in 9 states, pursuing large-scale, mixed-use developments such as The Omaxe State and integrated townships like Omaxe New Chandigarh. Its projects serve homebuyers and commercial tenants by delivering integrated living, retail, and community spaces, with an emphasis on</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://craft.co/omaxe/competitors" target="_blank">Top Omaxe Competitors and Alternatives</a></h3>
+                    <div class="result-url">https://craft.co/omaxe/competitors</div>
+                    <div class="result-content">Omaxe&#x27;s main competitors include Daniel Gale Sotheby&#x27;s International Realty, CENTURY 21 New Millennium, New Hope Service Holdings and Seeff Properties.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://markets.apistemic.com/companies/omaxe-limited-moxqg" target="_blank">Top Omaxe Limited Competitors &amp; Lookalikes</a></h3>
+                    <div class="result-url">https://markets.apistemic.com/companies/omaxe-limited-moxqg</div>
+                    <div class="result-content">Discover Omaxe Limited&#x27;s top competitors: Mahindra Lifespace Developers Ltd., Oberoi Realty, Ashiana Housing Limited and others. Get real-time market</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

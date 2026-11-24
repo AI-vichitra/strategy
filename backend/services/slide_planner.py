@@ -733,7 +733,7 @@ _PROVIDER_CHEAP_MODEL_ENV = {
     "openai": ("OPENAI_PLANNER_MODEL", "gpt-4o-mini"),
     "groq": ("GROQ_PLANNER_MODEL", "openai/gpt-oss-120b"),
     "mistral": ("MISTRAL_PLANNER_MODEL", "open-mistral-7b"),
-    "anthropic": ("ANTHROPIC_PLANNER_MODEL", "claude-3-5-haiku-20241022"),
+    "anthropic": ("ANTHROPIC_PLANNER_MODEL", "claude-haiku-5-5"),
 }
 
 
@@ -744,7 +744,7 @@ _PROVIDER_KEY_ENV = {
     "groq": "GROQ_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
 }
-_DEFAULT_ANTHROPIC_PLANNER_MODEL = "claude-3-5-haiku-20241022"
+_DEFAULT_ANTHROPIC_PLANNER_MODEL = "claude-haiku-5-5"
 
 
 def _provider_key_present(provider: str) -> bool:
@@ -807,9 +807,18 @@ def _default_llm_completion(system_prompt: str, user_prompt: str) -> str:
         kwargs = {
             "model": model,
             "max_tokens": 4096,
-            "temperature": 0.1,
             "system": system_prompt,
             "messages": [{"role": "user", "content": user_prompt}],
+            # temperature is gone from this API entirely — not just absent
+            # from the SDK's typed create() signature (TypeError), but
+            # actively rejected server-side even via extra_body (400
+            # "Extra inputs are not permitted"). There is no sampling knob
+            # left to ask for determinism with; output_config.effort="low"
+            # is the closest available lever (least exploratory/most
+            # literal), so extraction passes use that instead of silently
+            # running at an uncontrolled default via the strip-and-retry
+            # path below.
+            "output_config": {"effort": "low"},
         }
         stripped: List[str] = []
         while True:

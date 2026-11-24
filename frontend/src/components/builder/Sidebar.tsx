@@ -32,7 +32,7 @@ export default function Sidebar() {
 
   const fetchProjects = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       if (!token) {
         window.location.href = '/auth';
@@ -116,7 +116,7 @@ export default function Sidebar() {
     if (!confirm('Are you sure you want to delete this chat?')) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       if (!token) return;
       const headers: Record<string, string> = { 'Authorization': `Bearer ${token}` };

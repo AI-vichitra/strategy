@@ -27,6 +27,22 @@ async def get_questions(
     return {"questions": questions}
 
 
+# ── GET /api/chat/providers — which LLM providers are usable + real models ───
+@router.get("/providers")
+async def get_providers(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Log-safe provider availability for the model selector: per provider an id,
+    display name, whether a key is configured (BOOLEAN only — never any key
+    value, prefix, or length), and the model name that would actually run.
+    Also reports the report mode and, in advanced mode, the config-pinned
+    provider (so the UI can show that a manual selection won't apply).
+    """
+    from backend.services.ai_service import get_provider_availability
+    return get_provider_availability()
+
+
 # ── POST /api/chat/ — RAG-powered streaming chat ─────────────────────────────
 @router.post("/")
 async def chat_stream(

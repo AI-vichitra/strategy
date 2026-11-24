@@ -11,6 +11,8 @@ import shutil
 import subprocess
 import tempfile
 
+from fastapi import HTTPException
+
 
 def _find_soffice() -> str:
     """Locate the LibreOffice binary cross-platform. Raises RuntimeError with
@@ -43,7 +45,13 @@ def _find_soffice() -> str:
 
 def docx_bytes_to_pdf(docx_bytes: bytes) -> bytes:
     """Convert .docx bytes to PDF bytes via LibreOffice headless."""
-    soffice = _find_soffice()
+    try:
+        soffice = _find_soffice()
+    except RuntimeError:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF export is unavailable in this environment. Use DOCX or PPTX export.",
+        )
 
     work_dir = tempfile.mkdtemp(prefix="pdf_convert_")
     profile_dir = tempfile.mkdtemp(prefix="pdf_profile_")

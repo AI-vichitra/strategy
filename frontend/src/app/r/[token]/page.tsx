@@ -32,7 +32,7 @@ export default function PublicReportPage() {
 
     const fetchReport = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+        const apiBase = process.env.NEXT_PUBLIC_API_URL;
         // Public endpoint — intentionally no auth header.
         const res = await fetch(`${apiBase}/api/public/reports/${token}`);
         if (!res.ok) {

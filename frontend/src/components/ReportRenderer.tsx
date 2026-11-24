@@ -989,6 +989,9 @@ export const RechartsBlock = memo(({ children, className, ...props }: any) => {
 RechartsBlock.displayName = 'RechartsBlock';
 
 export const markdownComponents = {
+  a: ({ node, children, ...props }: any) => (
+    <a {...props} target="_blank" rel="noopener noreferrer">{children}</a>
+  ),
   code: ({ node, inline, className, children, ...props }: any) => {
     const match = /language-(\w+)/.exec(className || '');
     if (!inline && match && match[1] === 'recharts') {
