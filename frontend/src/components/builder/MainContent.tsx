@@ -24,6 +24,16 @@ import SectionEditor from '../SectionEditor';
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
 type ReportInfo = { id: string; title: string; agent_type: string };
 
+// Must match the notice text ai_service.stream_chat embeds directly in a
+// truncated report's content (backend/services/ai_service.py). No separate
+// persisted flag exists (see TASK: "skip Message persistence") — a reloaded
+// message's own content is the only record of truncation, so detecting it
+// here is what makes the banner survive a reload/reopen.
+const TRUNCATION_MARKER = 'GENERATION TRUNCATED';
+function isTruncatedContent(content: string): boolean {
+  return content.includes(TRUNCATION_MARKER);
+}
+
 // ── Per-agent questionnaire configs ───────────────────────────────
 const agentQuestions: Record<string, Question[]> = {
   'SEO Audit': [
@@ -608,6 +618,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
   const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
   const [providerNote, setProviderNote] = useState<string>('');
+  // Truncation detail for the CURRENTLY streaming message only (from the
+  // backend's 'truncated' SSE event) — transient, never persisted. A
+  // persisted/reloaded message carries no separate flag: the truncation
+  // notice is embedded directly in its content (see TRUNCATION_MARKER
+  // below), which is what the banner falls back to after reload.
+  type TruncationDetail = { provider: string; model: string; max_tokens: number; output_chars: number };
+  const [liveTruncation, setLiveTruncation] = useState<TruncationDetail | null>(null);
   const [promptText, setPromptText] = useState('');
   const [userContext, setUserContext] = useState('');
   const [showBanner, setShowBanner] = useState(false);
@@ -1006,6 +1023,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       await loadProjectsAndBrands();
       if (projectParam) {
         await loadProjectById(projectParam);
+        // A draft typed on the project details page's "new chat" field, if any —
+        // pre-fills the input so the onboarding form is still reviewed before send.
+        const pendingMessage = typeof window !== 'undefined' ? sessionStorage.getItem('pending_chat_message') : null;
+        if (pendingMessage) {
+          sessionStorage.removeItem('pending_chat_message');
+          setPromptText(pendingMessage);
+        }
         // Clear the param so a refresh doesn't force-reload the same chat.
         nextRouter.replace('/build');
       }
@@ -1304,6 +1328,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
     const userMsg: Message = { role: 'user', content: baseContent };
     const thinking: Message = { role: 'thinking', content: '' };
+    setLiveTruncation(null);
 
     // Build conversation history (only user + assistant, skip thinking/error)
     const history = [...messages, { role: 'user', content: apiUserContent }]
@@ -1453,6 +1478,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 { role: 'error', content: payload.content },
               ]);
               return;
+            } else if (payload.type === 'truncated') {
+              // The in-report notice text already arrived as a preceding
+              // 'token' event (part of assistantText) — this event only adds
+              // the structured detail (exact model/token-limit/output size)
+              // for a sharper live banner than parsing that prose would give.
+              setLiveTruncation(payload.content);
             }
           } catch { /* skip malformed lines */ }
         }
@@ -1803,6 +1834,28 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                           )}
                         </div>
                       </div>
+
+                      {isTruncatedContent(msg.content) && (
+                        <div
+                          role="alert"
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5',
+                            borderRadius: '8px', padding: '8px 12px', margin: '0 0 12px',
+                            fontSize: '13px', fontWeight: 600,
+                          }}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <span>
+                            {i === latestAssistantIdx && liveTruncation
+                              ? `Truncated — ${liveTruncation.provider}/${liveTruncation.model} hit its token limit (max_tokens=${liveTruncation.max_tokens}) after ${liveTruncation.output_chars.toLocaleString()} characters.`
+                              : 'This report was cut off before completion — see the notice below.'}
+                          </span>
+                        </div>
+                      )}
 
                       {msg.id && reportsByMessageId[msg.id] && editingReportId === reportsByMessageId[msg.id].id ? (
                         <SectionEditor

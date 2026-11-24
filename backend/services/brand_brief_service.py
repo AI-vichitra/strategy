@@ -1,7 +1,7 @@
 """
 Brand Brief Service
 ====================
-Generates the structured 6-field Brand Brief (schemas.brand.BRAND_BRIEF_KEYS)
+Generates the structured 9-field Brand Brief (schemas.brand.BRAND_BRIEF_KEYS)
 from whatever onboarding-time evidence is available. Built on
 slide_planner's one-shot completion pattern (_default_llm_completion /
 _resolve_planner_provider_and_model) and its _extract_json parser — but with
@@ -24,7 +24,7 @@ gain the pipeline's evidence, and the generation prompt is written to say
 "Not available" per-field rather than invent when they don't support a claim.
 
 Never raises: a missing LLM key, a completion failure, or an unparseable
-response all degrade to the all-"Not available" 6-key shape (logging why),
+response all degrade to the all-"Not available" 9-key shape (logging why),
 so this can never block onboarding. NOT yet threaded into
 ai_service.build_system_prompt — storage/generation only in this change.
 """
@@ -54,16 +54,27 @@ _EMPTY_BRIEF: Dict[str, str] = {key: "" for key in BRAND_BRIEF_KEYS}
 # grounded in a brand's full website copy legitimately runs long (e.g. a real
 # products_services list). At 2048 the combined reasoning+JSON intermittently
 # truncated mid-object, failing the parse on some runs and not others — the
-# instability this budget removes. 4096 fits both comfortably on every run
-# measured.
-_MAX_TOKENS = 4096
+# instability this budget removes. 4096 fit the original 6-key brief
+# comfortably; raised to 6144 for the 9-key brief (business_model,
+# proof_points, market_context added) — same reasoning-then-JSON shape, just
+# three more fields' worth of output to fit after the reasoning spend.
+_MAX_TOKENS = 6144
 _TEMPERATURE = 0.2
 
 _SYSTEM_PROMPT = (
     "You are a brand strategist producing a structured Brand Brief from ONLY the evidence "
-    "blocks provided below. Output a single JSON object with exactly these six string keys: "
+    "blocks provided below. Output a single JSON object with exactly these nine string keys: "
     "what_we_do, positioning, target_audience, differentiators, products_services, "
-    "tone_of_voice.\n\n"
+    "tone_of_voice, business_model, proof_points, market_context.\n\n"
+    "FIELD NOTES for the three added fields:\n"
+    "- business_model: state which of B2B / B2C / D2C / B2B2C the brand operates as, with a "
+    "one-line basis for that call (e.g. who it sells to and how). Only make the call when the "
+    "evidence actually shows who the brand sells to and through what channel.\n"
+    "- proof_points: notable clients, case studies, awards, certifications, or other concrete, "
+    "named evidence of credibility — not generic claims of quality or leadership.\n"
+    "- market_context: market trends and cultural factors specifically relevant to the brand's "
+    "target market — not generic industry commentary that would apply to any brand in the "
+    "category.\n\n"
     "EVIDENCE PRIORITY:\n"
     "- The brand's OWN WEBSITE text and its UPLOADED REFERENCE DOCUMENTS are the PRIMARY "
     "evidence and outrank everything else. They are the authoritative source for "
@@ -97,6 +108,7 @@ def _build_user_prompt(
     reference_docs_text: str,
     tavily_context: str,
     tavily_sources: Optional[List[str]],
+    market_context_evidence: str = "",
 ) -> str:
     meta_lines = [f"Brand: {brand_name}"]
     if category:
@@ -118,11 +130,110 @@ def _build_user_prompt(
     if tavily_context.strip():
         src_note = f" (sources: {', '.join(tavily_sources)})" if tavily_sources else ""
         evidence_blocks.append(f"[CORROBORATING — Third-party web research{src_note}]\n{tavily_context.strip()}")
+    if market_context_evidence.strip():
+        # Already fully labelled by _research_market_context_evidence (its own
+        # "[CORROBORATING — Market Research — {geography}]" header) — appended
+        # as-is, same as the other pre-formatted blocks above.
+        evidence_blocks.append(market_context_evidence.strip())
 
     if not evidence_blocks:
         evidence_blocks.append("[No evidence available — every field must be \"Not available\".]")
 
     return "\n".join(meta_lines) + "\n\n" + "\n\n".join(evidence_blocks)
+
+
+# ── Scoped market-context research: ONE extra, bounded Tavily search ────────
+# Narrow fix for market_context otherwise defaulting to "Not available" for
+# lack of any dedicated evidence (website/reference-doc/brand-context text
+# rarely discusses market trends). Fails safe exactly like every other
+# evidence source here: Tavily unavailable, the search erroring, or finding
+# nothing all degrade to "" (logged), never raising — onboarding must never
+# block on this.
+_MARKET_CONTEXT_MAX_RESULTS = 5
+_MARKET_CONTEXT_SNIPPET_CHARS = 500  # mirrors brand_context_service.py's own per-snippet cap
+
+
+def _target_market_geography(target_market: Optional[dict]) -> str:
+    """Builds a short, human-readable geography string from the structured
+    target_market shape ({region, cities, custom_region} —
+    schemas.brand.normalize_target_market's canonical shape), for use in a
+    search query. Mirrors the frontend's formatTargetMarket formatting.
+    Returns "" when there's nothing usable (no target_market, or an unset
+    region) — the caller treats that as "skip the search"."""
+    if not target_market:
+        return ""
+    region = (target_market.get("region") or "").strip().lower()
+    if not region:
+        return ""
+    if region == "global":
+        return "global"
+    if region == "other":
+        return (target_market.get("custom_region") or "").strip()
+    cities = [c for c in (target_market.get("cities") or []) if c]
+    label = region.capitalize()
+    return f"{label} ({', '.join(cities)})" if cities else label
+
+
+def _research_market_context_evidence(category: str, target_market: Optional[dict]) -> str:
+    """Runs ONE extra, scoped Tavily search (basic depth, bounded results) for
+    market trends/consumer behaviour in the brand's category + target market,
+    so market_context has dedicated evidence instead of defaulting to "Not
+    available" purely for lack of anything to draw on.
+
+    Only runs when both a category/focus AND a usable geography are present;
+    otherwise returns "" immediately (field stays "Not available" as before
+    this change). Never raises — any failure (no Tavily key, the search call
+    erroring, nothing returned) is caught, logged once as a WARNING, and
+    degrades to "", identical to every other evidence source's failure mode
+    in this module.
+
+    Returns a single ready-to-append, already-labelled evidence block
+    ("[CORROBORATING — Market Research — {geography}]\n..."), or "" when
+    skipped or failed.
+    """
+    geography = _target_market_geography(target_market)
+    focus = (category or "").strip()
+    if not focus or not geography:
+        return ""
+
+    try:
+        from datetime import datetime
+        from tavily import TavilyClient
+        from backend.services.ai_service import _is_denied_source
+
+        api_key = os.getenv("TAVILY_API_KEY")
+        if not api_key:
+            return ""
+        client = TavilyClient(api_key=api_key)
+
+        current_year = datetime.now().year
+        query = f"{focus} market trends consumer behaviour {geography} {current_year}"
+
+        response = client.search(
+            query=query,
+            search_depth="basic",
+            max_results=_MARKET_CONTEXT_MAX_RESULTS,
+            include_answer=True,
+        )
+
+        snippets = []
+        for r in response.get("results", []) or []:
+            url = r.get("url", "")
+            if not url or _is_denied_source(url):
+                continue
+            snippet = (r.get("content") or "")[:_MARKET_CONTEXT_SNIPPET_CHARS]
+            if snippet:
+                snippets.append(f"- {r.get('title', '')}: {snippet}")
+
+        if not snippets:
+            logger.info(f"[BRAND-BRIEF] market-context research: 0 snippets for {geography}")
+            return ""
+
+        logger.info(f"[BRAND-BRIEF] market-context research: {len(snippets)} snippets for {geography}")
+        return f"[CORROBORATING — Market Research — {geography}]\n" + "\n".join(snippets)
+    except Exception as e:
+        logger.warning(f"[BRAND-BRIEF] market-context research failed for '{focus}' / '{geography}': {e}")
+        return ""
 
 
 # ── Model resolution: BRAND_BRIEF_PROVIDER / BRAND_BRIEF_MODEL, own pair ─────
@@ -237,16 +348,19 @@ def generate_brand_brief(
     tavily_sources: Optional[List[str]] = None,
 ) -> Dict[str, str]:
     """
-    Generates the 6-key structured Brand Brief. Every evidence input is
+    Generates the 9-key structured Brand Brief. Every evidence input is
     optional; an all-empty call still returns the canonical shape (every
     value "Not available") without ever calling the LLM. NEVER raises.
     """
+    market_context_evidence = _research_market_context_evidence(category, target_market)
+
     user_prompt = _build_user_prompt(
         brand_name, category, target_market, additional_notes,
         website_text, reference_docs_text, tavily_context, tavily_sources,
+        market_context_evidence,
     )
 
-    has_evidence = any(s.strip() for s in (website_text, reference_docs_text, tavily_context))
+    has_evidence = any(s.strip() for s in (website_text, reference_docs_text, tavily_context, market_context_evidence))
     if not has_evidence:
         logger.info(f"[BrandBrief] No evidence available for '{brand_name}' — skipping the LLM call.")
         return dict(_EMPTY_BRIEF)

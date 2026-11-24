@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PATANJALI - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PATANJALI</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.patanjalifoods.com" target="_blank" class="meta-url">https://www.patanjalifoods.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Patanjali Foods, founded in 1986, has grown to become a leading player in the FMCG sector, championing India’s wellness revolution with a mission to provide affordable, quality-driven, and swadeshi products. The company's vision is to build a healthier, happier India through an innovative approach for a sustainable future. Patanjali's strategic growth levers include capitalizing on a robust brand portfolio, extending and expanding product categories, boosting consumer connection, leveraging manufacturing reach, reducing risks, and cultivating a growth culture. The company's pricing model focuses on low-cost and penetrative pricing to compete with established brands, making its products affordable and accessible. Patanjali's marketing strategy emphasizes grassroots-level strategies, including yoga sessions, rural health camps, and word-of-mouth promotion, which have helped it rapidly penetrate rural markets. The company's success is attributed to its unique combination of low pricing, natural and pure ingredients, and strong Swadeshi positioning.. # Patanjali Foods  Description: For almost four decades, Patanjali Foods has championed India’s wellness revolution. Founded in 1986, we began with a simple mission: making swadeshi products, affordable and quality-driven for every household. Today, we are a leading FMCG force, offering a wide range of household essentials. From nourishing foods to trusted home and personal care solutions we meet the highest standards of purity and reliability. Together, we’re building a healthier tomorrow. Rooted in Indian heritage, we instill pride in every Indian home. LinkedIn:  · 90,667 followers Industry: Manufacturing Type: Public Company Headquarters: Haridwar, Uttarakhand, India Social Profiles:     ## Employees - Now: 3,261.<br/><br/><strong>Product & Service Portfolio:</strong> Patanjali Foods offers a variety of products including Ghee (Clarified Butter), Beverages, Rice, Pulses and Spices, Herbal Products, Dry Fruits, Honey, Staples, Roasted Diet & Namkeen, Biscuits, Breakfast Cereals, Jams, Noodles, Pickles, Sauces, Sweets, Tea, Nutrela Soya Nuggets, Nutrela Maxx Millet, Nutrela Maxx Nuts, Sports Nutrition, Nutritional Drinks, Health Supplements, Healthy Aging, Plant-Based, Weight Gainer, and Edible Oils. The company emphasizes natural, healthy, and high-quality food products, with a strong focus on sustainability and supporting local farmers. Patanjali Foods has a legacy of nourishing Indian homes with health and happiness, and it has received awards for its innovations and quality.. # Patanjali Foods ID: DZSLqZwZdxba Website: www.patanjalifoods.com Legal name: Patanjali Foods Ltd. Headquarters: Haridwar, Uttarakhand, India LinkedIn: www.linkedin.com/company/patanjali-foods · 91,379 followers Industry: Manufacturing Company type: Public Company Business model: B2C SaaS: no Social profiles: www.facebook.com/ruchigroup, www.twitter.com/shahradinesh, www.crunchbase.com/organization/ruchi-soya-industries Email: corporate@patanjalifoods.co.in Phone: +91 (731) 4767109, 4767110, +91 73-1251-8124 [...] ## Products and services Business areas: Food and Beverage Manufacturing, FMCG Products, Personal Care and Home Care, Nutraceuticals and Health Supplements, Edible Oils Production Products: Ghee (Clarified Butter), Beverages, Rice, Pulses and Spices, Herbal Products, Dry Fruits, Honey, Staples Foods, Roasted Diet Foods, Namkeen (Savory Snacks), Biscuits and Confectionery Products, Breakfast Cereals, Jams and Preserves, Noodles and Pickles, Sauces and Condiments, Sweets and Tea Products, Nutrela Soya Nuggets and Millet Products, Sports Nutrition Supplements, Nutritional Drinks and Health Supplements [...] Phone: +91 (731) 4767109, 4767110, +91 73-1251-8124 Description: Patanjali Foods is a company that offers a variety of food products, including healthy, natural, and high-quality food products. They have a legacy of nourishing every Indian home with health and happiness. The company has manufacturing facilities and exports to various countries. They have a strong presence in exports and have received awards for their innovations and quality. Patanjali Foods is committed to providing a safe and healthy. Our Legacy  Our Businesses  Food & FMCG  ## Foods  Ghee (Clarified Butter), Beverages, Rice, Pulses and Spices, Herbal Products, Dry Fruits, Honey, Staples, Roasted Diet & Namkeen  ## Biscuits & Confectionery  Biscuits, Breakfast Cereals, Jams, Noodles, Pickles, Sauces, Sweets, Tea  ## Nutrela  Nutrela Soya Nuggets, Nutrela Maxx Millet, Nutrela Maxx Nuts  ## Nutraceuticals  Sports Nutrition, Nutritional Drinks, Health Supplements, Healthy Aging, Plant-Based, Weight Gainer  Edible Oils     Explore     Transforming Agriculture, Empowering Farmers  Explore  We engage in a downstream business focused on oleochemicals. [...] logo     ## Guiding the Future with Wisdom & Purpose     ## Rooted in Tradition, Crafted for Health, Made for Happiness  Explore     ## A smart choice for a fit body and a sharp mind.  Explore Nutrela     ## Nourish your body with nature's finest ingredients.  Explore Nutraceuticals     ## Wholesome cooking starts with the finest oils.  Explore Edible Oils     ## Strong Teeth, Stronger Well-being  Explore Personal Care and Home Care     ## Strength and Care for Resilient, Healthy Hair  Explore Personal Care and Home Care  Nourishing India     with  Health Happiness Heritage  Weaving tradition into everyday essentials, we offer a range of natural, time-tested ingredients. Our foods and other FMCG products nourish and bring goodness to Indian homes.  Our Legacy  Our Businesses  Food & FMCG [...] Our manufacturing operations produce diverse products with versatile applications across industries. These include lubricants, pharmaceuticals, cosmetics and more.<br/><br/><strong>Recent Developments & News:</strong> Patanjali Ayurved's income increased by 23.15% to Rs 9,335.32 crore in FY 2023-24, driven by other income including the OFS of Patanjali Foods and income from other group entities. Patanjali Foods acquired Patanjali Ayurved’s home and personal care business for Rs 1,100 crore, aiming to boost its FMCG market position. The company's revenue from operations decreased by 14.25% to Rs 6,460 crore. Patanjali Foods posted record Q1 2026 revenue of INR 11,337 crores, up 29% year on year, with FMCG revenue rising to INR 2,938 crores. The company plans to invest up to Rs 1,500 crore in the next five years, mostly in scaling up its palm oil business. Patanjali Foods' net profit jumped 86.18% YoY to Rs 335.86 crore, with revenue rising 29.33% to Rs 11,337.45 crore. Patanjali Ayurved, led by Baba Ramdev, saw its total income increase by 23.15% to Rs 9,335.32 crore in the fiscal year 2023-24. This growth was driven by other income, including the OFS of Patanjali Foods and income from other group entities. However, revenue from operations decreased by 14.25% to Rs 6,460.  ### Patanjali Foods gets CCI nod for Rs 1,100-crore buyout of parent's home & personal care business  The Competition Commission of India approved the acquisition of Patanjali Ayurved’s home and personal care business by Patanjali Foods for Rs 1,100 crore. This acquisition aims to boost Patanjali Foods' position in the FMCG market. Patanjali Foods had recorded a revenue of Rs 31,961.62 crore in the last fiscal year. [...] Consumer goods companies are increasing prices and reducing pack sizes.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Patanjali's key competitors in the FMCG and consumer goods market include ITC, Hindustan Unilever Limited (HUL), Nestle India, Britannia, Dabur, and Marico. Patanjali has significantly impacted the market, especially in personal care and food lines, with products like Dant Kranti, Atta noodles, and Kesh Kranti. Patanjali is the second largest FMCG player in India, ahead of Nestle India and other major players like Colgate-Palmolive, GSK Consumer Healthcare, and P&G Hygiene and Healthcare. Patanjali's extensive retail network and plans to expand further into modern trade and new sectors like restaurant chains and apparels indicate its aggressive market strategy.. By RJ Whitehead  Last updated on  ## A guru-steered food and FMCG company has been singled out as the most disruptive force in India’s fast moving consumer goods market as it steers a path towards revenues worth over US$1bn by 2020.  Patanjali Ayurveda has expanded its product portfolio across a wide range of personal care and food lines, and witnessed 146% growth in the 2016 fiscal year with revenues of US$769m.  Put alongside its competitors, including ITC, Hindustan Unilever and Palmolive, which saw sub-double-digit growth over the same period, Patanjali has had a significant impact on the segment through its network of 15,000 exclusive retail units and presence in 3,000 retail chains, an authoritative paper by TechSci Research for Assocham revealed. [...] Patanjali Ayurveda, which is 94% owned by Acharya Bal Krishna, a close disciple of Baba Ramdev,“has turned out to be the most disruptive force in the Indian FMCG market,” it said.  Initially the company focused on the development of Ayurvedic medicines, but as it has ramped up the manufacture of food items and cosmetics, it has also “significantly increased” its market share.  “Many of its product launches have impacted share of other FMCG companies in that product category. Some of its flagship brands which have wrested the market share of its competitors include Dant Kranti, Atta noodles and Kesh Kranti”, the paper said.. The main competitors of Patanjali are 1. Dabur India - Toothpastes 4. Nestle Ltd - Cereals, Dairy 5. Patanjali competitors include ITC, Nestlé India, Britannia and Dabur. 12 Alternatives ITC ITC Add to compare Diversified FMCG Conglomerate Enterprise.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://in.linkedin.com/company/patanjali-foods" target="_blank">Patanjali Foods | LinkedIn</a></h3>
+                    <div class="result-url">https://in.linkedin.com/company/patanjali-foods</div>
+                    <div class="result-content">Patanjali Foods
+
+Description: For almost four decades, Patanjali Foods has championed India’s wellness revolution. Founded in 1986, we began with a simple mission: making swadeshi products, affordable and quality-driven for every household. Today, we are a leading FMCG force, offering a wide range of household essentials. From nourishing foods to trusted home and personal care solutions we meet the highest standards of purity and reliability. Together, we’re building a healthier tomorrow. Rooted in Indian heritage, we instill pride in every Indian home.
+LinkedIn:  · 90,667 followers
+Industry: Manufacturing
+Type: Public Company
+Headquarters: Haridwar, Uttarakhand, India
+Social Profiles:   
+
+ Employees
+- Now: 3,261</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://nepjol.info/index.php/voice/article/download/72773/55516/211460" target="_blank">Strengths</a></h3>
+                    <div class="result-url">https://nepjol.info/index.php/voice/article/download/72773/55516/211460</div>
+                    <div class="result-content">11,526 crore for the fiscal year 2016-17. Founded by Ramdev Baba and Acharya Balkrishna in 2006, the company has grown from 173rd in FMCG rankings in 2006 to 15th in 2017, and achieved the No. 1 spot in 2018 according to the Brand Trust Report of India. Ramdev Baba has stated in interviews that profits from Patanjali products go to charity. Success Factors Patanjali&#x27;s success is attributed to its unique combination of low pricing, natural and pure ingredients, and strong Swadeshi positioning. However, a critical yet often overlooked aspect of Patanjali&#x27;s growth is its innovative sales and distribution strategy. Foundation and Expansion Patanjali began with Patanjali Yogpeeth in Haridwar, one of India&#x27;s largest yoga institutes. The organization, founded by Swami Ramdevji Maharaj and [...] innovation in enhancing market share. It also identifies product shortages and limited distribution as key concerns. Recommendations for Patanjali include diversifying brand ambassadors, capitalizing on the organic sector’s growth, expanding its online presence, and targeting youth consumers. Addressing these areas can boost market presence, customer satisfaction, and overall business success. This research highlights Patanjali’s transition from a minor player to a leading FMCG giant since its 2006 inception, driven by low pricing, natural ingredients, and a strong Swadeshi position. Despite high consumer satisfaction, challenges like overreliance on Baba Ramdev and distribution issues must be addressed for sustained growth. Keywords:Patanjali Ayurveda, consumer satisfaction, marketing [...] induced consumers for the consumptions of the patanjali products. Effective pricing policy of the Patanjali has also attracted to the consumers of low income and middle-income group. The goodwill of Ramdev Baba has also helped the company largely for its establishment in the customer’s heart. Observations, questionnaires, feedback helped me to understand growing influence of the company. Its strong marketing strategy has also led to success. Consumers of patanjali has also involved in word of mouth promotion due to no side effects and natural ingredients.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.patanjalifoods.com/our-strategy-and-purpose" target="_blank">Our Strategy &amp; Purpose | Patanjali Foods</a></h3>
+                    <div class="result-url">https://www.patanjalifoods.com/our-strategy-and-purpose</div>
+                    <div class="result-content">logo
+
+ 
+
+ Our Strategy &amp; Purpose
+
+Empowering Growth Through   
+ an Innovative Approach   
+ for a Sustainable Future
+
+Our journey is guided by a vision of a healthier, happier India.
+
+To achieve this, we&#x27;ve built a strong foundation. This spans the entire value chain, from sourcing to manufacturing to distribution. This strategic approach allows us to navigate the dynamic FMCG and healthcare markets, seizing opportunities and overcoming challenges.
+
+Strategic Growth Levers
+
+Through our ten strategic levers, we position ourselves across the entire value chain.
+
+These levers align with our focus on diversifying into the FMCG and healthcare segments. They enable us to capitalise on market opportunities, address challenges for long-term success and growth in the sectors. [...]  Capitalise on Robust Brand Portfolio
+
+  Our strategic brand investments have strengthened our portfolio. We have expanded our reach and enhanced consumer engagement across diverse segments.
+  Extend and Expand Product Categories
+
+  We stay abreast of evolving consumer needs through robust research and development. We continually expand our product offerings to deliver optimal value.
+  Boost Consumer Connection
+
+  We continuously strengthen our distribution network to ensure our products are readily available to consumers across India. We also target underserved rural and semi-urban areas, bringing health and wellness to every doorstep.
+  Leverage Manufacturing Reach [...] Our commitment to sustainability extends beyond our products. Through initiatives in oil palm plantation and renewable energy, we strive to preserve the environment and contribute to a healthier future.
+  Reduce Risks
+
+  We prioritise risk mitigation and self-sufficiency to build our nation&#x27;s agricultural resilience. By expanding oil palm cultivation in India, we aim to reduce import dependency.
+  Cultivate a Growth Culture
+
+  We foster a culture of continuous learning and growth, empowering our employees to embrace challenges, innovate, and contribute to our shared vision.
+
+Explore more
+
+Our Innovations
+
+601, Part B-2,  
+ Metro Tower 6th Floor,  
+ Vijay Nagar, AB Road Indore - 452 010
+
++91 (731) 4767109 / 4767110  
+ corporate@patanjalifoods.co.in</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://joirem.com/wp-content/uploads/journal/published_paper/volume-03/issue-6/J_c9x1mNae.pdf" target="_blank">[PDF] IMPACT OF PATANJALI PRODUCTS ON RURAL MARKETING ...</a></h3>
+                    <div class="result-url">https://joirem.com/wp-content/uploads/journal/published_paper/volume-03/issue-6/J_c9x1mNae.pdf</div>
+                    <div class="result-content">Ayurvedic and “swadeshi” appeal of its products, resonating strongly with rural sentiments that Favor traditional remedies.  According to a Nielsen FMCG Report, rural consumers increasingly prefer natural and herbal products. Patanjali’s herbal-based toothpaste, hair oils, and chyawanprash have seen high rural adoption.  The availability of low-cost SKUs (sachets, 50g/100ml packs) has made these products affordable and accessible in rural India. b) Pricing Strategy – Affordability as a Competitive Advantage  Patanjali’s pricing model undercuts established players like HUL and Dabur by 15–20%, making it highly attractive to price-sensitive rural consumers.  Secondary reports from KPMG and Economic Times indicate that rural buyers often perceive Patanjali as offering better value for [...]  Pricing: Low-cost and penetrative pricing help Patanjali compete with mainstream FMCG brands. Journal Publication of International Research for Engineering and Management (JOIREM) Volume: 03 Issue: 06 | June-2025 © 2025, JOIREM |www.joirem.com| Page 4  Distribution: Patanjali uses traditional retailers, rural stockists, and health centres, supported by mobile vans and yoga camps.  Promotion: Grassroots-level strategies including yoga sessions, rural health camps, and word-of-mouth generate awareness and brand credibility. Other companies like HUL and ITC also implement rural strategies, but Patanjali’s unique mix of health-focused messaging and Swadeshi branding has proven to be a strong differentiator. 2.6 Patanjali’s Positioning in Rural India Patanjali has rapidly penetrated rural</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bsssbhopal.edu.in/uploads/naac/criteria_1/students_projects/226%20Riya%20Khanna.pdf" target="_blank">PATANJALI AYURVED - BSSS</a></h3>
+                    <div class="result-url">https://bsssbhopal.edu.in/uploads/naac/criteria_1/students_projects/226%20Riya%20Khanna.pdf</div>
+                    <div class="result-content">Patanjali is educating people about the benefits of using their products and is also using price comparison as an effective marketing strategy. The pricing strategy is clearly penetrative pricing because Patanjali knows that it cannot conquer the market with higher prices. Plus, if the ingredients are natural and domestic, the cost of the product is lesser too. There is a drop of 25-30 percent of price in almost every product when compared to International Brands which is helping Patanjali reach each and every household in India. [...] SEGMENTATION, TARGET, POSITIONING Like any other FMCG company, it uses a mix of demographic and psychographic segmentation strategies to make its offerings appropriate/ relevant to the particular set of customer groups.
+It uses an undifferentiated targeting strategy, as the main objective Patanjali is to offer healthy products to all people. It uses product based and value-based positioning strategies to establish a sense of trust and satisfaction of being healthy in the mind of the customers.
+MARKETING MIX OF PATANJALI Products in the marketing mix of Patanjali Ayurved Baba Ramdev is constantly pushing Indian people to start using Indian brands and save the economical growth of the company. Patanjali is planning to take over all reputed brands dealing in beverages and foods. [...] Patanjali has been widely considered as a game changer in the Indian market. What started as Patanjali Ayurveda Ltd. (PAL), a small pharmacy, underwent an evolutionary transformation and accelerated its growth. The company became a dominating name in the Indian FMCG (Fast Moving Consumer Goods) sector, also known as CPG (Consumer Packaged Goods). The company has revolutionized the Indian market by creating a society that focuses on Yoga and Ayurveda as a form of natural living.
+The company has a diversified product range. These include biscuits, noodles, ghee, footwear, apparel, and more. Its operational capacity consists of 15,000 stores, 100 mega-marts, and 5000 distributors.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/DZSLqZwZdxba" target="_blank">Patanjali Foods</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/DZSLqZwZdxba</div>
+                    <div class="result-content">Patanjali Foods
+ID: DZSLqZwZdxba
+Website: www.patanjalifoods.com
+Legal name: Patanjali Foods Ltd.
+Headquarters: Haridwar, Uttarakhand, India
+LinkedIn: www.linkedin.com/company/patanjali-foods · 91,379 followers
+Industry: Manufacturing
+Company type: Public Company
+Business model: B2C
+SaaS: no
+Social profiles: www.facebook.com/ruchigroup, www.twitter.com/shahradinesh, www.crunchbase.com/organization/ruchi-soya-industries
+Email: corporate@patanjalifoods.co.in
+Phone: +91 (731) 4767109, 4767110, +91 73-1251-8124 [...]  Products and services
+Business areas: Food and Beverage Manufacturing, FMCG Products, Personal Care and Home Care, Nutraceuticals and Health Supplements, Edible Oils Production
+Products: Ghee (Clarified Butter), Beverages, Rice, Pulses and Spices, Herbal Products, Dry Fruits, Honey, Staples Foods, Roasted Diet Foods, Namkeen (Savory Snacks), Biscuits and Confectionery Products, Breakfast Cereals, Jams and Preserves, Noodles and Pickles, Sauces and Condiments, Sweets and Tea Products, Nutrela Soya Nuggets and Millet Products, Sports Nutrition Supplements, Nutritional Drinks and Health Supplements [...] Phone: +91 (731) 4767109, 4767110, +91 73-1251-8124
+Description: Patanjali Foods is a company that offers a variety of food products, including healthy, natural, and high-quality food products. They have a legacy of nourishing every Indian home with health and happiness. The company has manufacturing facilities and exports to various countries. They have a strong presence in exports and have received awards for their innovations and quality. Patanjali Foods is committed to providing a safe and healthy</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.patanjalifoods.com" target="_blank">Home | Patanjali Foods</a></h3>
+                    <div class="result-url">https://www.patanjalifoods.com</div>
+                    <div class="result-content">Our Legacy
+
+Our Businesses
+
+Food &amp; FMCG
+
+ Foods
+
+Ghee (Clarified Butter), Beverages, Rice, Pulses and Spices, Herbal Products, Dry Fruits, Honey, Staples, Roasted Diet &amp; Namkeen
+
+ Biscuits &amp; Confectionery
+
+Biscuits, Breakfast Cereals, Jams, Noodles, Pickles, Sauces, Sweets, Tea
+
+ Nutrela
+
+Nutrela Soya Nuggets, Nutrela Maxx Millet, Nutrela Maxx Nuts
+
+ Nutraceuticals
+
+Sports Nutrition, Nutritional Drinks, Health Supplements, Healthy Aging, Plant-Based, Weight Gainer
+
+Edible Oils
+
+ 
+
+Explore
+
+ 
+
+Transforming Agriculture, Empowering Farmers
+
+Explore
+
+We engage in a downstream business focused on oleochemicals. [...] logo
+
+ 
+
+ Guiding the Future with Wisdom &amp; Purpose
+
+ 
+
+ Rooted in Tradition, Crafted for Health, Made for Happiness
+
+Explore
+
+ 
+
+ A smart choice for a fit body and a sharp mind.
+
+Explore Nutrela
+
+ 
+
+ Nourish your body with nature&#x27;s finest ingredients.
+
+Explore Nutraceuticals
+
+ 
+
+ Wholesome cooking starts with the finest oils.
+
+Explore Edible Oils
+
+ 
+
+ Strong Teeth, Stronger Well-being
+
+Explore Personal Care and Home Care
+
+ 
+
+ Strength and Care for Resilient, Healthy Hair
+
+Explore Personal Care and Home Care
+
+Nourishing India   
+ with
+
+Health Happiness Heritage
+
+Weaving tradition into everyday essentials, we offer a range of natural, time-tested ingredients. Our foods and other FMCG products nourish and bring goodness to Indian homes.
+
+Our Legacy
+
+Our Businesses
+
+Food &amp; FMCG [...] Our manufacturing operations produce diverse products with versatile applications across industries. These include lubricants, pharmaceuticals, cosmetics and more. Strategically situated in Gandhidham, Gujarat, our facility affirms our commitment to maintaining high-quality standards.
+
+ 
+
+Powering the Future, Sustainably
+
+With a strong focus on sustainability, we have ventured into the wind and solar energy segment to reduce our carbon footprint.
+
+84.6 MW
+
+Wind Power Installed Capacity
+
+125 MU
+
+Clean Electricity Generated
+
+Wind Power Generation
+
+A Legacy of Nourishing India   
+  for three Decades
+
+Established in 1986, Patanjali Foods, a pioneer in Soya Foods and top player in edible oils has grown into a leading FMCG player nourishing India with healthy and sustainable food solutions.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://jier.org/index.php/journal/article/download/407/394/656" target="_blank">Journal of Informatics Education and Research</a></h3>
+                    <div class="result-url">https://jier.org/index.php/journal/article/download/407/394/656</div>
+                    <div class="result-content">The range of products offered by Patanjali includes a variety of goods in the food and beverage, personal care, health supplement, and even clothing sectors. Patanjali Dant Kanti toothpaste, Patanjali Aloe Vera gel, Patanjali Ayurvedic medications, and Patanjali herbal teas are some of its best-known products. Because they are inexpensive, easily accessible, and thought to have health benefits, these items have attracted a devoted following. Its commitment to promoting Swadeshi (made in India) goods is one of the things that distinguishes Patanjali in the FMCG market. Indians greatly identify with this since it supports the nation&#x27;s drive for independence and economic expansion. The &quot;Swadeshi&quot; branding used by Patanjali has also helped it spread quickly across the country.
+
+ Evolution [...] Patanjali is a well-known Indian consumer goods and Ayurvedic product brand that bears the name of the legendary sage Patanjali. One of the top FMCG (Fast Moving Consumer Goods) businesses in India, Patanjali was founded in 2006 by yoga master Baba Ramdev and Ayurveda specialist Acharya Balkrishna. The cornerstone of the business is the dissemination of conventional Indian wisdom and healthy natural practices. Ayurveda, a traditional holistic medical system that has its roots in India and has been practiced for thousands of years, is emphasized by Patanjali. Ayurveda places a strong emphasis on achieving total health and well-being by harmonizing the body, mind, and spirit. The assortment of goods offered by Patanjali includes items for personal care, food and drink, health supplements, [...] Patanjali is a well-known Indian consumer goods and Ayurvedic product brand that bears the name of the legendary sage Patanjali. One of the top FMCG (Fast Moving Consumer Goods) businesses in India, Patanjali was founded in 2006 by yoga master Baba Ramdev and Ayurveda specialist Acharya Balkrishna. The cornerstone of the business is the dissemination of conventional Indian wisdom and healthy natural practices. Ayurveda, a traditional holistic medical system that has its roots in India and has been practiced for thousands of years, is emphasized by Patanjali. Ayurveda places a strong emphasis on achieving total health and well-being by harmonizing the body, mind, and spirit. The assortment of goods offered by Patanjali includes items for personal care, food and drink, health supplements,</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.ijcrt.org/papers/IJCRT2104628.pdf" target="_blank">a comprehensive project report on a study of consumer perception ...</a></h3>
+                    <div class="result-url">https://www.ijcrt.org/papers/IJCRT2104628.pdf</div>
+                    <div class="result-content">the company highlights the positives of cow’s ghee, which automatically helps sale of Patanjali Ghee. In the recent past, the company’s print advertising has seen a marked increase. Patanjali range of products Patanjali has a wide range of products with the theme of Ayurvedic/herbal being common across all categories. It has four business divisions: food and beverages, cosmetics and health, health drinks and home care. The highest revenue grossing products are Patanjali cow ghee, Dant Kanti, Kesh Kanti, Patanjali Atta noodles and Patanjali Aloe Vera juice and gel. The customer base of Patanjali is ridiculously huge and with each passing day, it is growing bigger. A major ramp-up came when Patanjali was relaunched by Baba Ramdev in 2014. After that it has not looked back. The company is [...] cereals, coffee, tea, bottled water, snacks. Its wellknown products are Nescafe, Maggie, and Kit Kat, Munch, Mill&#x27;)&#x27; Bar, Eclairs, Milkmaid etc. Nestle products are available across the globe. It has been contributing to the India&#x27;s growth over decades by building trust and commitment with the people of India. Patanjali Ayurvedic and Herbal Products Patanjali Ayurveda Limited is an Indian FMCG company. Located in the industrial area of Haridwar, the company manufactures mineral and herbal products. It has also manufacturing units in Nepal under the trademark Nepal Gramudhyog and imports majority of herbs in India from Himalayas of Nepal. According to CLSA and HSBC, Patanjali is the fastest growing FMCG Company in India. It is valued at 3,000 Crore (US$450 million) and some predict [...] from farmers and cuts on middleman to boost profits. Hence, they can reduce their raw material procurement cost and are able to produce goods at a much cheaper rate. Retail outlets Initially, Patanjali shunned the conventional distribution network, preferring to rely on its own channels of super distributors, distributors, Chikitsalayas (franchise dispensaries) and Arogya Kendras (health center’s which sell Ayurvedic remedies). Once it turned to retail outlets from 2011, revenue began to multiply manifold. Variety of products Already, a few Patanjali products have made major inroads - apart from desi ghee, its toothpaste Dant Kranti, for instance, launched in March 2010, brought in revenues of Rs 200 crore in 2014/15. Patanjali has also ventured out to produce many other new items that</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://bsssbhopal.edu.in/uploads/naac/criteria_1/students_projects/226%20Riya%20Khanna.pdf" target="_blank">PATANJALI AYURVED</a></h3>
+                    <div class="result-url">https://bsssbhopal.edu.in/uploads/naac/criteria_1/students_projects/226%20Riya%20Khanna.pdf</div>
+                    <div class="result-content">Patanjali has been widely considered as a game changer in the Indian market. What started as Patanjali Ayurveda Ltd. (PAL), a small pharmacy, underwent an evolutionary transformation and accelerated its growth. The company became a dominating name in the Indian FMCG (Fast Moving Consumer Goods) sector, also known as CPG (Consumer Packaged Goods). The company has revolutionized the Indian market by creating a society that focuses on Yoga and Ayurveda as a form of natural living.
+The company has a diversified product range. These include biscuits, noodles, ghee, footwear, apparel, and more. Its operational capacity consists of 15,000 stores, 100 mega-marts, and 5000 distributors. [...] 2. NATURAL FOOD PRODUCTS This category includes a wide range of food products, extending from biscuits, jams &amp; noodles to spices &amp; pulses, a number of products come under this section. This is a rather important sector of products for PAL since people trust Patanjali for being herbal &amp; chemical-free. 3. AYURVEDIC MEDICINES This category has been the USP for Patanjali, making them the kings they are today. The company owes a big share of their sales profit to the ayurvedic medicines category. Before entering the FMCG sector, Patanjali had been selling Ayurvedic Medicines under the name of Divya Pharmaceuticals. These medicines, being effective to consumers have been a good enough reason for Patanjali’s rise today 4. HERBAL HOME CARE This category of products includes products required for</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://economictimes.indiatimes.com/industry/patanjali" target="_blank">Patanjali: Patanjali News &amp; Patanjali Latest Updates | The Economic Times</a></h3>
+                    <div class="result-url">https://economictimes.indiatimes.com/industry/patanjali</div>
+                    <div class="result-content">Patanjali Ayurved, led by Baba Ramdev, saw its total income increase by 23.15% to Rs 9,335.32 crore in the fiscal year 2023-24. This growth was driven by other income, including the OFS of Patanjali Foods and income from other group entities. However, revenue from operations decreased by 14.25% to Rs 6,460.
+
+ Patanjali Foods gets CCI nod for Rs 1,100-crore buyout of parent&#x27;s home &amp; personal care business
+
+The Competition Commission of India approved the acquisition of Patanjali Ayurved’s home and personal care business by Patanjali Foods for Rs 1,100 crore. This acquisition aims to boost Patanjali Foods&#x27; position in the FMCG market. Patanjali Foods had recorded a revenue of Rs 31,961.62 crore in the last fiscal year. [...] Consumer goods companies are increasing prices and reducing pack sizes. Automobile manufacturers and tyre companies also announced significant price hikes. Rising commodity and energy costs are pressuring company margins. India&#x27;s retail inflation has moved above the Reserve Bank of India&#x27;s target. Policymakers are watching for broader inflation spread across the economy.
+
+ Patanjali Foods to buy group company&#x27;s non-food business for Rs 1,100 crore
+
+Patanjali Foods and Patanjali Ayurved have also agreed to enter into a licensing agreement, permitting Patanjali Foods to use the trademarks and associated intellectual property rights owned by the latter, the company said. Analysts said the acquisition would accelerate the company&#x27;s objective of transitioning to an overall FMCG company. [...]  Patanjali Foods tumbles 4% after over 1 crore shares change hands via block deal
+
+Patanjali Foods Share Price: Shares of Patanjali Foods fell by 4% on the BSE today, hitting a day’s low of Rs 1,855.10. The drop followed a block deal involving 1.2 crore shares, or 3.3% of the company’s equity, valued at Rs 2,223.4 crore. The floor price for the deal was set at Rs 1,815, with the promoters likely being the sellers.
+
+ Aiming to make Patanjali &amp; Ruchi Soya No. 1 FMCG firm in 5 years: Ramdev
+
+&quot;We have set a target to make Patanjali Ayurved and Ruchi Soya, India&#x27;s largest food and FMCG company in next five years,&quot; Ramdev told reporters.
+
+ Patanjali products get exclusive space at stores as sales soar</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.investing.com/news/transcripts/earnings-call-transcript-patanjali-foods-posts-record-q1-2026-revenue-beat-93CH-4862147" target="_blank">Earnings call transcript: Patanjali Foods posts record Q1 2026 revenue beat By Investing.com</a></h3>
+                    <div class="result-url">https://www.investing.com/news/transcripts/earnings-call-transcript-patanjali-foods-posts-record-q1-2026-revenue-beat-93CH-4862147</div>
+                    <div class="result-content">The company also said it expects:
+
+- FMCG revenue to cross INR 12,500 crores this year, up from INR 11,000-plus crores last year.
+- FMCG EBITDA growth of 12% to 15% for the year.
+- Overall EBITDA margin growth of 10% to 12% year on year.
+- TSP/Nutrela EBITDA margins to stay in the 16% to 18% range.
+- Edible oil margins to move gradually toward 5% plus over time.
+
+Management highlighted several longer-term growth drivers:
+
+- Oil palm plantation, which it expects to become a larger profit generator.
+- Expansion in high-margin categories such as HPC, Nutrela and biscuits.
+- Continued product launches across biscuits, dental care, skincare and home care.
+- Growth in e-commerce and quick commerce, with a target to lift their share of revenue to 20% within 18 months from 15% now. [...]  Key Takeaways
+
+- Revenue from operations reached INR 11,337 crores, the company’s highest quarterly level for the fourth consecutive quarter.
+- Edible oils remained the largest business, with quarterly revenue of INR 8,505 crores, supported by mustard oil sales.
+- FMCG revenue rose to INR 2,938 crores, with biscuits, skincare, dental care and Nutrela among the main growth drivers.
+- E-commerce and quick commerce channels grew 25% year on year and now contribute 15% of revenue.
+- Management kept a positive tone on FY27, pointing to growth in food, FMCG, and oil palm plantation, even as staples and ethnic foods faced pressure.
+
+ Company Performance [...] The company also said it expects to reach an annualized EBITDA run rate of INR 2,500 crores within the next 18 months.
+
+ Executive Commentary
+
+Chief Executive Sanjiv Asthana said the company had delivered “our fourth consecutive quarter of highest-ever quarterly revenues,” adding that revenue from operations stood at INR 11,337 crores, up 29% year on year.
+
+He also pointed to the company’s pricing discipline, saying, “We took calibrated price increases in the edible oil segment while using targeted discounts in our FMCG portfolio to remain competitive.”
+
+On the company’s long-term positioning, Asthana said Patanjali’s advantage rests on “health, wellness, yoga, Ayurveda, and what I’d call the Indianness of our proposition.”</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.patanjalifoods.com/news" target="_blank">News | Patanjali Foods</a></h3>
+                    <div class="result-url">https://www.patanjalifoods.com/news</div>
+                    <div class="result-content">Patanjali Foods: पतंजलि फूड्स ने शेयरधारकों के लिए बड़ा अपडेट दिया है. कंपनी अगले पांच साल में 1,500 करोड़ का निवेश करने की योजना बनाई है. जिसमें सबसे अधिक इन्वेस्टमेंट पाम ऑयल के कारोबार में किया जाएगा.
+
+New Delhi, Jun 18 Patanjali Foods Ltd plans to invest up to Rs 1,500 crore in the next five years on capital expenditure, mostly for scaling up its palm..
+
+Patanjali Foods ने प्रीमियम सेगमेंट श्रेणी में अपनी पेशकश का एक नया सेट लॉन्च किया है। CNBC-TV18 के साथ एक साक्षात्कार में पतंजलि फूड्स के सीईओ Sanjeev Asthana ने कहा कि अपने प्रीमियम उत्पादों के साथ एक बड़ा मंच स्थापित करने का कंपनी का लक्ष्य है। हम वैल्यू ऑफरिंग में बहुत बड़े हैं
+
+New Delhi: Patanjali Foods CEO Sanjeev Asthana with... [...] Patanjali Food Q3 Results: Patanjali Foods Ltd on Wednesday reported 15 percent rise in net profit to Rs 269.19 crore for the quarter ended December 2022 as against a net profit of Rs 234.07 crore in the year-ago period.
+
+A worker checks a fresh fruit bunch of oil palm during harvest at a palm oil plantation in Khammam district in southern state of Telangana...
+
+Patanjali Foods CEO Sanjeev Asthana talks to CNBC-TV18 about the company&#x27;s quarterly performance, the company&#x27;s outlook for its palm oil segment, its FMCG margin, and more.
+
+Patanjali Foods&#x27; CEO Sanjeev Asthana spoke about the company&#x27;s Q1 results, margin contractions in the said quarter, FMCG business and more [...] Patanjali Foods reported a 32% year-on-year decline in net profit for the quarter ended September
+
+18-20% margin target in FY23.. ₹5/share dividend announced to shareholders: Sanjeev Kumar
+
+Transferring food portfolio of Patanjali to Ruchi Soya may result in volume of ₹4,000 crore with a
+
+Patanjali Ayurved, which owns 98.9 per cent of Ruchi Soya Industries, is gearing up for a
+
+Asthana has done his post graduate in business management from Institute of Rural
+
+Sanjeev Asthana has been appointed for a period of three years from the date of joining
+
+KARNAL: Yoga guru Ramdev today said Patanjali will soon foray into dairy business, adding that the
+
+HARIDWAR: Nepal prime minister, Pushpa Kamal Dahal, who is on a on a four-day visit to the country</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.niftytrader.in/markets/patanjali-foods-q1-fy27-fmcg-margin-profit" target="_blank">Patanjali Foods Q1 Profit Soars 86%. Why FMCG Margins Are the Catch</a></h3>
+                    <div class="result-url">https://www.niftytrader.in/markets/patanjali-foods-q1-fy27-fmcg-margin-profit</div>
+                    <div class="result-content">Patanjali Foods therefore enters FY27 with strong headline earnings, but the next question for the stock is whether FMCG margins can recover before the business mix shifts further toward the FMCG segment.
+
+ Need to Know
+
+- Net profit jumps 86.18% YoY to Rs 335.86 crore
+- Revenue rises 29.33% to Rs 11,337.45 crore, a fresh quarterly high
+- EBITDA climbs 69%; margin expands to 4.83%
+- FMCG revenue grows 35.4%, far ahead of 8-10% FY27 guidance
+- FMCG EBIT margin falls to 5.91% from 9.56% in Q4 FY26
+- Edible oil margin hits 5.22%, above the 2-4% guided range
+- Board declares Rs 2.30/share combined interim dividend per the August 14 outcome filing; record date August 21
+- Stock remains ~42% below its Rs 615.20 52-week high [...] The board also approved the reappointment of Acharya Balkrishna as Chairman and Non-Executive Non-Independent Director, subject to shareholder approval, and set the AGM for September 29, 2026. Management is scheduled to host an earnings call later on August 17 to discuss the results.
+
+ Stock Price Action: A Muted Move
+
+Patanjali Foods shares were up about half a percent to trade near Rs 355 on Monday, a modest move given the scale of the profit increase. The stock’s current PE stands at roughly 19.6x, with ROE at 18.18% and a free-float market cap of about Rs 12,248 crore.
+
+ Peer Comparison (Q1 FY27, in Rs Crore)
+
+The table below is directional rather than like-for-like, as business mix, product categories and revenue recognition differ across these companies. [...]  Dividend: Rs 2.30 Per Share, Record Date August 21
+
+Per the company’s August 14 board meeting outcome filed with the exchanges, Patanjali Foods declared a 3rd interim dividend of Rs 1.50 per share (75% of the Rs 2 face value) for FY26, along with a 1st interim dividend of Rs 0.80 per share (40% of face value) for FY27, a combined payout of Rs 2.30 per share.
+
+The record date for both dividends is August 21, 2026, with payment due on or before September 12, 2026. Investors need to hold shares before the record date to qualify.
+
+ Management Commentary and the ICRA Rating Context</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.storyboard18.com/brand-marketing/patanjali-foods-q1-fmcg-revenue-jumps-35-brand-building-and-focused-ad-spends-fuel-growth-107835.htm" target="_blank">Patanjali Foods Q1 FMCG revenue jumps 35%; brand building and focused ad spends fuel growth - Storyboard18</a></h3>
+                    <div class="result-url">https://www.storyboard18.com/brand-marketing/patanjali-foods-q1-fmcg-revenue-jumps-35-brand-building-and-focused-ad-spends-fuel-growth-107835.htm</div>
+                    <div class="result-content">Also read: Patanjali Foods receives Rs 1,353 crore GST demand notice over alleged FY23 discrepancies
+
+Doodh becomes a major biscuit brand
+
+The biscuits business emerged as one of the strongest growth engines within FMCG.
+
+Revenue from the division reached a record ₹560.14 crore, up 27.33% year on year and 17.21% sequentially.
+
+The Doodh biscuit brand, which Patanjali Foods describes as a ₹1,300 crore brand, generated approximately ₹400 crore in quarterly revenue. Value-added biscuits also continued to gain traction.
+
+The performance gives the company another platform to build its FMCG portfolio beyond its traditional staples and personal-care categories.
+
+Nutrela sees volume-led momentum [...] Brand building becomes a growth lever
+
+Patanjali Foods said its Q1 performance was supported by sustained brand-building efforts and focused distribution expansion initiatives, particularly in its Edible Oils and Biscuits businesses.
+
+The company said it is focused on investing in brands and expanding its product portfolio across categories, price points and segments to cater to a wide range of consumer preferences. Its portfolio includes Patanjali, Ruchi Gold, Nutrela, Dant Kanti, Mahakosh and Sunrich.
+
+CEO Sanjeev Asthana said the company&#x27;s fourth consecutive highest-ever quarterly revenue was supported by sustained brand-building and focused distribution expansion. [...] ADVERTISEMENT
+
+Patanjali Foods is stepping up its focus on brand building, portfolio expansion and targeted advertising as it looks to accelerate growth in its FMCG business, which delivered a 35.39% year-on-year increase in revenue to ₹2,937.75 crore in Q1 FY27.
+
+The FMCG segment contributed 25.65% of consolidated revenue and 29.56% of consolidated EBITDA, generating EBITDA of ₹189.52 crore at a margin of 6.45%.
+
+For the company as a whole, revenue from operations rose 29.33% year on year to ₹11,337.45 crore, marking its fourth consecutive highest-ever quarterly revenue, according to CEO Sanjeev Asthana.
+
+Brand building becomes a growth lever</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.foodnavigator.com/Article/2017/01/04/Patanjali-Ayurveda-outpaces-rivals-in-disrupted-Indian-market" target="_blank">Patanjali Ayurveda outpaces rivals in ‘disrupted’ Indian market</a></h3>
+                    <div class="result-url">https://www.foodnavigator.com/Article/2017/01/04/Patanjali-Ayurveda-outpaces-rivals-in-disrupted-Indian-market</div>
+                    <div class="result-content">By RJ Whitehead
+
+Last updated on
+
+ A guru-steered food and FMCG company has been singled out as the most disruptive force in India’s fast moving consumer goods market as it steers a path towards revenues worth over US$1bn by 2020.
+
+Patanjali Ayurveda has expanded its product portfolio across a wide range of personal care and food lines, and witnessed 146% growth in the 2016 fiscal year with revenues of US$769m.
+
+Put alongside its competitors, including ITC, Hindustan Unilever and Palmolive, which saw sub-double-digit growth over the same period, Patanjali has had a significant impact on the segment through its network of 15,000 exclusive retail units and presence in 3,000 retail chains, an authoritative paper by TechSci Research for Assocham revealed. [...] Patanjali Ayurveda, which is 94% owned by Acharya Bal Krishna, a close disciple of Baba Ramdev,“has turned out to be the most disruptive force in the Indian FMCG market,” it said.
+
+Initially the company focused on the development of Ayurvedic medicines, but as it has ramped up the manufacture of food items and cosmetics, it has also “significantly increased” its market share.
+
+“Many of its product launches have impacted share of other FMCG companies in that product category. Some of its flagship brands which have wrested the market share of its competitors include Dant Kranti, Atta noodles and Kesh Kranti”, the paper said.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.quora.com/Who-are-the-competitors-of-Patanjali" target="_blank">Who are the competitors of Patanjali? - Quora</a></h3>
+                    <div class="result-url">https://www.quora.com/Who-are-the-competitors-of-Patanjali</div>
+                    <div class="result-content">The main competitors of Patanjali are 1. HUL. Shampoo 3. Dabur India - Toothpastes 4. Nestle Ltd - Cereals, Dairy 5. Marico - Oils 6. Himalaya</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.zoominfo.com/competitors/patanjali-foods-ltd/453100288" target="_blank">Patanjali Competitors &amp; Alternatives (2026) - ZoomInfo</a></h3>
+                    <div class="result-url">https://www.zoominfo.com/competitors/patanjali-foods-ltd/453100288</div>
+                    <div class="result-content">Patanjali competitors include ITC, Nestlé India, Britannia and Dabur. 12 Alternatives ITC ITC Add to compare Diversified FMCG Conglomerate Enterprise. Nestlé</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://knowledge.wharton.upenn.edu/article/yoga-guru-mastering-consumer-goods-market-india" target="_blank">How a Yoga Guru Is Mastering the Consumer Goods Market in India - Knowledge at Wharton</a></h3>
+                    <div class="result-url">https://knowledge.wharton.upenn.edu/article/yoga-guru-mastering-consumer-goods-market-india</div>
+                    <div class="result-content">India’s branded FMCG segment is estimated to be more than $65 billion at present and, according to a study by the Confederation of Indian Industry and Boston Consulting Group, it is expected to grow to $220billion-$240 billion by 2025. Media reports say that Patanjali, which began as a small pharmacy in 1997 and ventured into FMCG In 2006, is now the second largest FMCG player in India after HUL, which clocked Rs.30,782 crore ($4.7 billion) for the trailing four quarters. (India accounts for around 8% of Unilever’s sales and is the biggest among emerging markets). Patanjali is reportedly ahead of giants like Nestle India (Rs.9,159 crore/$1.4 billion), Colgate-Palmolive (Rs.4,010 crore / $622 million), GSK Consumer Healthcare (Rs.3,784 crore/$587 million) and P&amp;G Hygiene and Healthcare [...] However, a January 2017 Edelweiss report seems more optimistic. It states: “Patanjali has over 5,000 retail outlets and its products are available through around 1 million shops. By FY18, it plans to scale up its shop portfolio to over 3 million. Apart from this its products have strong presence across modern trade. Once it has 3 million outlets, its penetration will be comparable to the likes of Britannia, Colgate, Dabur, etc., though below HUL’s network of over 7 million shops.”
+
+Patanjali watchers also say that any major impact that Patanjali makes on global multinationals is likely to be restricted to India.
+
+New Battle Fronts [...] New Battle Fronts
+
+In the meanwhile, Ramdev wants to open other battle fronts. To challenge restaurant chains such as McDonald’s, KFC and Subway, Patanjali plans to enter this segment. “We are working on the business plan and branding,” Ramdev told press reporters, adding that the company is working to put together around 400 vegetarian recipes. “When we get these recipes together, all these multinationals serving chicken or mutton will have a hard time countering us.” Patanjali is also planning to enter the apparel business with jeans and sportswear and compete with firms like Levi’s, Nike and Adidas.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.ijfmr.com/papers/2022/6/2655.pdf" target="_blank">A Case Study of FMCG Company: Patanjali Ayurved Limited - IJFMR</a></h3>
+                    <div class="result-url">https://www.ijfmr.com/papers/2022/6/2655.pdf</div>
+                    <div class="result-content">Source: In terms of positioning, Patanjali has a multiple approach; “Prakriti ka Aashirwaad” means “Blessings of Nature”, is the brand slogan of Patanjali(Singh &amp; Gopal, 2016).All Patanjali products are available on its website www.patanjaliayurved.net and delivered to respective address. Patanjali&#x27;s approach of carpet-bombing consumers with a wide range of items rather than concentrating its efforts on a single or a few significant achievements, which relies on spreading itself thin across numerous FMCG categories (Chakraborty, 2016). 6.1.1 PATANJALI AYURVED LIMITED PRODUCT PORTFOLIO Patanjali has spread its wing in all the segments of FMCG giving strong competition to its rivals. It deals in food products, natural health care, personal care, medicines, home care, apparels, etc. 6.2 [...] International Journal for Multidisciplinary Research (IJFMR) E-ISSN: 2582-2160 ● Website: www.ijfmr.com ● Email: editor@ijfmr.com IJFMR22062655 Volume 4, Issue 6, November-December 2022 1 A Case Study of FMCG Company: Patanjali Ayurved Limited Madhuri Yadav Research Scholar, Department of Commerce, C.M.P Degree College, University of Allahabad, Prayagraj (India) ABSTRACT Patanjali Ayurved Limited has seen remarkable expansion to date, poses a serious threat to FMCG companies like Colgate-Palmolive, India Tobacco Company Limited (ITC), Hindustan Unilever Limited (HUL), and Godrej Consumer Products. This paper aims to identify the factors that contributed to Patanjali&#x27;s rapid ascent to popularity and growth as well as the marketing mix tactics used to penetrate the fiercely competitive [...] nations. (Patanjali presence,2022) Natural Food Products Natural Health Care Natural Personal Care Ayurvedic Medicine &amp; Nutraceuticals Herbal Home Care Patanjali Publication &amp; Samridhi Card Paridhan International Journal for Multidisciplinary Research (IJFMR) E-ISSN: 2582-2160 ● Website: www.ijfmr.com ● Email: editor@ijfmr.com IJFMR22062655 Volume 4, Issue 6, November-December 2022 6 Source:  At present PAL have 307 Mega store, 1016 Patanjali Chikitsalya, 1886 Patanjali Arogya Kendra and 759 Patanjali Gramin Arogya Kendra all this help in sale of Patanjali goods and services within India and across India (patanjaliayurved.org,2022).Future Group, Reliance Retail, Hyper City, and Star Bazaar are just a few of the retail giants with whom Patanjali has collaborated (Shrivastava, 2022).</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

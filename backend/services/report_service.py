@@ -10,7 +10,7 @@ edits or deletions of the underlying chat history.
 import json
 import re
 import logging
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 from sqlalchemy import func
 from sqlalchemy.future import select
@@ -50,6 +50,7 @@ async def create_report_snapshot(
     content: str,
     message_id: Optional[str] = None,
     extracted_palette: Optional[Dict[str, str]] = None,
+    truncation_info: Optional[Dict[str, Any]] = None,
 ) -> Report:
     from backend.services import output_validator
 
@@ -76,6 +77,9 @@ async def create_report_snapshot(
         version=next_version,
         chart_count=chart_count,
         extracted_palette=json.dumps(extracted_palette) if extracted_palette else None,
+        # Only ever written when generation was actually cut off (see
+        # stream_chat) — null means the report completed normally.
+        truncation_info=json.dumps(truncation_info) if truncation_info else None,
     )
     db.add(report)
     await db.commit()

@@ -125,6 +125,7 @@ _NEW_COLUMNS = [
     ("brand_configs", "brand_brief", "TEXT", "TEXT"),
     ("brand_configs", "logo_url", "TEXT", "TEXT"),
     ("users", "avatar_url", "TEXT", "TEXT"),
+    ("reports", "truncation_info", "TEXT", "TEXT"),
 ]
 
 

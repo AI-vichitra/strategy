@@ -188,7 +188,7 @@ def normalize_social_handles(value: Any, brand_handle: Optional[str] = None) -> 
     return {}
 
 
-# ── Brand Brief: structured 6-field brand summary ────────────────────────────
+# ── Brand Brief: structured 9-field brand summary ────────────────────────────
 # Will eventually replace the free-text brand_context in the report-generation
 # prompt; not yet threaded there (see build_system_prompt).
 BRAND_BRIEF_KEYS = (
@@ -198,6 +198,9 @@ BRAND_BRIEF_KEYS = (
     "differentiators",
     "products_services",
     "tone_of_voice",
+    "business_model",
+    "proof_points",
+    "market_context",
 )
 
 _DEFAULT_BRAND_BRIEF: Dict[str, str] = {key: "" for key in BRAND_BRIEF_KEYS}
@@ -372,3 +375,36 @@ class BrandStatusResponse(BaseModel):
     id: str
     pipeline_status: str   # pending | running | complete | failed
     social_scraped: bool
+
+
+# ── Project details drawer edits (post-onboarding field updates) ────────────
+class BrandBriefUpdate(BaseModel):
+    what_we_do: str = ""
+    positioning: str = ""
+    target_audience: str = ""
+    differentiators: str = ""
+    products_services: str = ""
+    tone_of_voice: str = ""
+    business_model: str = ""
+    proof_points: str = ""
+    market_context: str = ""
+
+
+class SocialHandlesUpdate(BaseModel):
+    instagram: str = ""
+    linkedin: str = ""
+    x: str = ""
+    youtube: str = ""
+    facebook: str = ""
+    tiktok: str = ""
+
+
+class BrandContextUpdate(BaseModel):
+    website_url: str
+    category: str
+    target_market: str
+
+
+class ReferenceDocAdd(BaseModel):
+    ref_id: str
+    filename: str

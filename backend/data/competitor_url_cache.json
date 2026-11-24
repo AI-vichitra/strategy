@@ -1,4 +1,8 @@
 {
+  "24mantra": {
+    "name": "24 Mantra",
+    "url": "https://24mantra.com"
+  },
   "anantraj": {
     "name": "Anant Raj",
     "url": "https://anantrajlimited.com"
@@ -6,6 +10,10 @@
   "ats": {
     "name": "ATS",
     "url": "https://www.atsprop.com"
+  },
+  "baidyanath": {
+    "name": "Baidyanath",
+    "url": "https://www.baidyanath.com"
   },
   "dlf": {
     "name": "DLF",
@@ -41,7 +49,11 @@
   },
   "omaxe": {
     "name": "Omaxe",
-    "url": "https://omaxe-group.com"
+    "url": "https://omaxe.com"
+  },
+  "patanjali": {
+    "name": "Patanjali",
+    "url": "https://www.patanjalifoods.com"
   },
   "prestige": {
     "name": "Prestige",

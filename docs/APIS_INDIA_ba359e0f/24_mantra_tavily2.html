@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24 MANTRA - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>24 MANTRA</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">FMCG & Consumer Goods</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://24mantra.com" target="_blank" class="meta-url">https://24mantra.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> 24 Mantra, founded in 2004 and based in Hyderabad, Andhra Pradesh, India, is a pioneer in the organic food sector, offering a wide range of organic products including Masala Mixes, Snacks, Cereals, Culinary Pastes, Juices, Oils, Flakes, Spices, Health Foods, and Spice Powders. The company works with 45,000 farmers across 15 states on 2,25,000 acres to promote sustainable farming practices. It has expanded its product line to include Ready to Drink (RTD) and Ready to Cook (RTC) variants, such as Millet Dosa, Ragi Idly, Gojji Avalaki, and Kanda Poha. The company's vertically integrated supply chain supports over 27,000 farmers and has built a loyal customer base of more than 3 lakh households across India. In recent years, 24 Mantra has integrated into a larger FMCG ecosystem through its acquisition by ITC, which has brought stronger distribution, working capital support, and scale efficiencies while maintaining its core farm-to-fork model.. 24 Mantra is a company dedicated to providing organic food products, ensuring complete transparency from cultivation to packaging. The company serves health-conscious consumers who prioritize organic and natural food options. Operating in the organic food market, 24 Mantra follows a business model that involves sourcing produce directly from farmers, processing it under stringent quality controls, and selling it through various retail channels. The company generates revenue by selling its organic products both online and in physical stores. By maintaining a close relationship with farmers and ensuring rigorous quality checks, 24 Mantra guarantees that its products are safe, natural, and of high quality. The company also engages customers through farm visits and trial kits, enhancing their [...] # 24 Mantra Organic  Organic food products ensuring transparency from farm to fork with rigorous quality checks  ## About 24 Mantra Organic. ## Company Performance Metrics  - Rajashekar Reddy Seelam: Founder  24 Mantra Organic is a specialty food shop for farmers, livelihood, customers a sustainable lifestyle, and a sustainable planet.<br/><br/><strong>Product & Service Portfolio:</strong> 24 Mantra, a pioneer in organic foods, offers a diverse range of over 200 products including grocery staples like grains, pulses, and atta; vegetables, fruits, and millet-based traditional breakfast options. The company has expanded its product line to include Ready to Drink (RTD) and Ready to Cook (RTC) variants such as Millet Dosa, Ragi Idly, Gojji Avalaki, and Kanda Poha. They also provide a variety of organic snacks, cereals, culinary pastes, juices, oils, flakes, spices, health foods, and diabetic-friendly foods. The company works with 45,000 farmers across 15 states on 2,25,000 acres to ensure organic integrity and transparency from cultivation to packaging. Products are available in more than 1500 outlets across 15 states in India and in 34 countries worldwide.. 24 Mantra has a product range of more than 200 + products comprising of grocery staples  – Grains, Pulses, Atta; vegetables, fruits , delicious cookies without Maida, assortment of teas and traditional breakfast options with a variety of millets etc.  The company has diversified further by introducing the Ready to Drink (RTD) and Ready to Cook (RTC) variants. The ready to cook variants comprises of Millet Dosa, Ragi Idly, Gojji Avalaki and Kanda Poha. With a loyal customer base of more than 3 lakh households across the country; 24 Mantra with its consistent quality is set to revolutionize our eating habits for the better. The products are available across 15 states with more than 1500 + outlets and even in US, UK.  Read More [...] Smart Food  Select Page  24 Mantra by Sresta Foods  Road No-5,  Banjara Hills, Hyderabad-500034.  Phone – 1800120002424  Email – renuka@24mantra.com  Founded in 2004, Sresta is a pioneer in organic foods. Through the brand name 24 Mantra, Sresta is one of the India’s largest organic food brands and works with 45,000 farmers in 15 states on 2,25,000 acres to make a positive difference. [...] Around the World, Asia-Pacific, India, Millets, Millets and Sorghum, Sorghum  Resilient grain needs a fillip to gain ground   ## Resilient grain needs a fillip to gain ground  Around the World, Asia-Pacific, Barnyard Millet, Browntop Millet, Finger millet, Foxtail Millet, India, Kodo Millet, Little Millet, Millets, Millets and Sorghum, Pearl millet, Proso Millet, Sorghum  Popularising Nutri Millets                       ## Popularising Nutri Millets  Around the World, Asia-Pacific, India, Millets, Millets and Sorghum, Pearl millet, Sorghum  ‘Millet-based products set to gain increasing acceptance’   ## ‘Millet-based products set to gain increasing acceptance’. ## Company Performance Metrics  - Rajashekar Reddy Seelam: Founder  24 Mantra Organic is a specialty food shop for farmers, livelihood, customers a sustainable lifestyle, and a sustainable planet.<br/><br/><strong>Recent Developments & News:</strong> Diversified conglomerate ITC Limited finalized its acquisition of Sresta Natural Bioproducts, the owner of the 24 Mantra Organic brand, for Rs 472.50 crore on June 13, 2025. The deal includes an upfront payment of Rs 400 crore and an additional consideration of up to Rs 72.50 crore payable over the next 24 months. This acquisition aligns with ITC's strategy to augment its future-ready portfolio and strengthen its presence in the high-growth organic packaged foods segment both domestically and internationally. Sresta Natural Bioproducts offers over 100 organic products, including grocery staples, spices, condiments, edible oils, and beverages, with a significant international presence, especially among the Indian diaspora.. Diversified group ITC Limited on Thursday (April 17) said it has signed a definitive agreement to acquire 100% of the share capital of Sresta Natural Bioproducts Private Limited (SNBPL), the company behind the ‘24 Mantra Organic’ brand, for a consideration of up to ₹472.5 crore. The acquisition marks a significant move by ITC to expand its footprint in the fast-growing organic packaged foods segment.  Under the terms of the deal, ITC will pay ₹400 crore upfront at the time of closing, with an additional amount of up to ₹72.5 crore payable over the next 24 months, subject to customary adjustments and performance-related conditions. The transaction is being executed on a cash-free, debt-free basis. [...] # ITC to acquire organic FMCG staples brand 24 Mantra Organic for ₹472.5 crore  Jomy Jos Pullokaran  - Published OnApr 17, 2025 | 22:40 IST - Last Updated OnApr 17, 2025 | 23:03 IST  ITC to acquire organic FMCG staples brand 24 Mantra Organic for ₹472.5 crore  ## Under the terms of the deal, ITC will pay ₹400 crore upfront at the time of closing, with an additional amount of up to ₹72.5 crore payable over the next 24 months. Shares of ITC Ltd ended at ₹427.25, up by ₹3.10, or 0.73%, on the BSE. [...] SNBPL’s vertically integrated supply chain promotes sustainable livelihoods for its network of approximately 27,500 farmers spread across approximately 1.4 lakh acres of certified organic land in 10 states. The strong network of farmers and certified organic sourcing capability are key sources of competitive advantage for the company.  Hemant Malik, Wholetime Director of ITC, said, "We are excited to have 24 Mantra Organic as part of ITC’s Foods Business’s portfolio of nutrition-led healthy foods products. 24 Mantra Organic has built a robust backend and sourcing network, which is core to its trusted organic products portfolio.  Also Read: Tariff uncertainty can open new doors for India: ITC’s Sanjiv Puri.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> 24 Mantra's key competitors in the FMCG & Consumer Goods sector include Hector Beverages, RJ Corp, ZOFF Foods, MTR Foods, Ajinomoto, ITC, and AWL Agri Business. Hector Beverages is a retailer of beverages, dry fruits, and nut-based food products with $185M in funding. RJ Corp is a brand of food & beverage products with $41.1M in funding. ZOFF Foods is an online retailer of Indian spices, seasonings, dry fruits, and combos with $7.16M in funding. MTR Foods is an internet first brand of multi-category food & beverages. Ajinomoto is a multi-category food and beverage manufacturer. ITC is a provider of diversified products across FMCG, paperboards, packaging, agri-business, and IT. AWL Agri Business is a provider of edible oils, packaged rice, and pulses products. In the organic food segment, ITC, which acquired 24 Mantra Organic, competes with Tata Consumer's Organic India, Organic Tattva, and BigBasket’s organic brand, among others.. | 4th | Logo for MTR Foods  MTR Foods 1924, Bengaluru  (India), Acquired | Internet first brand of multi category food & beverages | $4M | Aquarius Investment Advisors, J P Morgan ... & 18 others | 63/100 | | 5th | Logo for Ajinomoto  Ajinomoto 1909, Tokyo  (Japan), Public | Multi category food and beverage manufacturer  Europa, Yusen Logistics | 61/100 | | 6th | Logo for ITC  ITC 1910, Kolkata  (India), Public | Provider of diversified products across FMCG, paperboards, packaging, agri-business, and IT  Baring Private Equity Partners | 60/100 | | 7th | Logo for AWL Agri Business  AWL Agri Business 1999, Ahmedabad  (India), Acquired | Provider of edible oils, packaged rice, and pulses products  Brand Capital | 59/100 | [...] | Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |  ---  ---  --- | | 1st | Logo for Hector Beverages  Hector Beverages 2009, Bengaluru  (India), Series D | Retailer of beverages, dry fruits, and nut-based food products | $185M | Peak XV Partners, Sofina  & 36 others | 73/100 | | 2nd | Logo for RJ Corp  RJ Corp 1980, Gurugram  (India), Series B | Brand of food & beverage products | $41.1M | Devayani Overseas, ICICI Venture  & 16 others | 66/100 | | 3rd | Logo for ZOFF Foods  ZOFF Foods 2018, Raipur  (India), Series A | Online retailer of Indian spices, seasonings, dry fruits, and combos | $7.16M | JM Financial Private Equity, Chhattisgarh Investments ... & 7 others | 65/100 | [...] Logo for Hector Beverages Logo for RJ Corp Logo for ZOFF Foods Logo for MTR Foods Logo for Ajinomoto Logo for ITC Logo for AWL Agri Business Logo for Pushp Logo for Patanjali Ayurved Logo for Parle Products Logo for 24 Mantra lock  ## 24 Mantra's Latest cap tables and shareholding.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://dealroom.co/companies/24-mantra-organic" target="_blank">24 Mantra Organic — venture-backed company profile | Dealroom</a></h3>
+                    <div class="result-url">https://dealroom.co/companies/24-mantra-organic</div>
+                    <div class="result-content">24 Mantra is a company dedicated to providing organic food products, ensuring complete transparency from cultivation to packaging. The company serves health-conscious consumers who prioritize organic and natural food options. Operating in the organic food market, 24 Mantra follows a business model that involves sourcing produce directly from farmers, processing it under stringent quality controls, and selling it through various retail channels. The company generates revenue by selling its organic products both online and in physical stores. By maintaining a close relationship with farmers and ensuring rigorous quality checks, 24 Mantra guarantees that its products are safe, natural, and of high quality. The company also engages customers through farm visits and trial kits, enhancing their [...]  24 Mantra Organic
+
+Organic food products ensuring transparency from farm to fork with rigorous quality checks
+
+ About 24 Mantra Organic</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.crunchbase.com/organization/24-mantra-organic" target="_blank">24 Mantra Organic - Crunchbase Company Profile &amp; Funding</a></h3>
+                    <div class="result-url">https://www.crunchbase.com/organization/24-mantra-organic</div>
+                    <div class="result-content">Company Performance Metrics
+
+- Rajashekar Reddy Seelam: Founder
+
+24 Mantra Organic is a specialty food shop for farmers, livelihood, customers a sustainable lifestyle, and a sustainable planet. It also offers products such as Masala Mixes, Snacks, Cereals, Culinary Pastes, Juices, Oils, Flakes, Spices, Health Foods, and Spice Powders.
+
+Today, they are India’s largest organic foods brand and work with 45,000
+
+farmers in 15 states on 2,25,000 acres to make a positive difference to their lives. All the 24 Mantra products are also offered in larger packs for foodservice.
+
+24 Mantra Organic was founded in 2004 and is based in Hyderabad, Andhra Pradesh, India.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.smartfood.org/24-mantra" target="_blank">24 Mantra - Smart Food</a></h3>
+                    <div class="result-url">https://www.smartfood.org/24-mantra</div>
+                    <div class="result-content">Smart Food
+
+Select Page
+
+24 Mantra by Sresta Foods
+
+Road No-5,
+
+Banjara Hills, Hyderabad-500034.
+
+Phone – 1800120002424
+
+Email – renuka@24mantra.com
+
+Founded in 2004, Sresta is a pioneer in organic foods. Through the brand name 24 Mantra, Sresta is one of the India’s largest organic food brands and works with 45,000 farmers in 15 states on 2,25,000 acres to make a positive difference. [...] 24 Mantra has a product range of more than 200 + products comprising of grocery staples  – Grains, Pulses, Atta; vegetables, fruits , delicious cookies without Maida, assortment of teas and traditional breakfast options with a variety of millets etc.
+
+The company has diversified further by introducing the Ready to Drink (RTD) and Ready to Cook (RTC) variants. The ready to cook variants comprises of Millet Dosa, Ragi Idly, Gojji Avalaki and Kanda Poha. With a loyal customer base of more than 3 lakh households across the country; 24 Mantra with its consistent quality is set to revolutionize our eating habits for the better. The products are available across 15 states with more than 1500 + outlets and even in US, UK.
+
+Read More [...] The founder, Mr. Rajashekar Reddy Seelam, who is also a member of Smart Food Business advisory panel, belongs to an agricultural family. Having grown up seeing farmers and their lives at close quarters, his thoughts always lingered towards improving this livelihood. Mr. N. Balasubramanian (aka Bala), CEO at 24 Mantra Organic; quit his lucrative jobs in the FMCG sector to support the cause. Having built many popular F&amp;B brands, he felt, this was his opportunity to really make a difference to the society. He joined 24 Mantra in the initial years and since that the duo has been on a mission to transform the organic cultivation in India into a sustainable and a profitable one.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://etedge-insights.com/trending/24-mantra-organic-itc-shaping-the-future-of-indias-organic-food-industry" target="_blank">24 Mantra Organic &amp; ITC: Shaping the future of India’s organic food industry - ET Edge Insights</a></h3>
+                    <div class="result-url">https://etedge-insights.com/trending/24-mantra-organic-itc-shaping-the-future-of-indias-organic-food-industry</div>
+                    <div class="result-content">Today, the brand’s vertically integrated supply chain promotes sustainable livelihoods for a network of over 27,000 farmers spread across approx. 1.4 lakh acres of certified organic land.
+
+On the consumer side, this translated into direct engagement, with efforts focused on educating households about what organic really meant, why it mattered, and how it could fit into everyday consumption.
+
+To succeed, the brand had to ensure year-round availability for consumers. Even the distribution network had to be built from scratch. With mainstream retailers unwilling to stock an unproven category, the brand opened its own stores in 2005—a direct retail bet that proved critical to building early consumer relationships.
+
+If awareness was the first barrier, trust quickly became the defining equity. [...] “For the organic category, this translated into a sharp rise in adoption, with a significantly larger base of consumers experimenting with organic products,” said Seelam.
+
+In recent years, the brand has seen a strategic pivot, with its integration into a larger FMCG ecosystem through its acquisition by ITC — bringing in stronger distribution, working capital support, distributed manufacturing and scale efficiencies while strengthening its core farm-to-fork model. [...] “ITC’s acquisition of 24 Mantra Organic is aimed at not only strengthening the brand’s presence in the high-growth organic foods space but also fuel the overall segment growth and increase exports of organic food out of India. In keeping with distributed leadership philosophy of ITC, the team at 24 Mantra has been fully empowered to operate with the support of ITC’s deep institutional strengths in Agri-sourcing, R&amp;D, agile product development, integrated manufacturing, consumer insights &amp; marketing, digital infrastructure, and omni-channel distribution network. With an impressive array of 100+ products enabling our consumers to live a fully organic lifestyle, the focus is on gradually expanding the portfolio’s presence across regions and all channels of e-com, Q-com, modern trade and</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.owler.com/company/24mantra" target="_blank">24 Mantra&#x27;s Competitors, Revenue, Number of Employees ... - Owler</a></h3>
+                    <div class="result-url">https://www.owler.com/company/24mantra</div>
+                    <div class="result-content">24 Mantra is a producer, marketer and seller of organic food products. 24 Mantra was founded in 2004. 24 Mantra&#x27;s headquarters is located in Hyderabad, Andhra</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.smartfood.org/24-mantra" target="_blank">24 Mantra - Smart Food</a></h3>
+                    <div class="result-url">https://www.smartfood.org/24-mantra</div>
+                    <div class="result-content">24 Mantra has a product range of more than 200 + products comprising of grocery staples  – Grains, Pulses, Atta; vegetables, fruits , delicious cookies without Maida, assortment of teas and traditional breakfast options with a variety of millets etc.
+
+The company has diversified further by introducing the Ready to Drink (RTD) and Ready to Cook (RTC) variants. The ready to cook variants comprises of Millet Dosa, Ragi Idly, Gojji Avalaki and Kanda Poha. With a loyal customer base of more than 3 lakh households across the country; 24 Mantra with its consistent quality is set to revolutionize our eating habits for the better. The products are available across 15 states with more than 1500 + outlets and even in US, UK.
+
+Read More [...] Smart Food
+
+Select Page
+
+24 Mantra by Sresta Foods
+
+Road No-5,
+
+Banjara Hills, Hyderabad-500034.
+
+Phone – 1800120002424
+
+Email – renuka@24mantra.com
+
+Founded in 2004, Sresta is a pioneer in organic foods. Through the brand name 24 Mantra, Sresta is one of the India’s largest organic food brands and works with 45,000 farmers in 15 states on 2,25,000 acres to make a positive difference. [...] Around the World, Asia-Pacific, India, Millets, Millets and Sorghum, Sorghum
+
+Resilient grain needs a fillip to gain ground 
+
+ Resilient grain needs a fillip to gain ground
+
+Around the World, Asia-Pacific, Barnyard Millet, Browntop Millet, Finger millet, Foxtail Millet, India, Kodo Millet, Little Millet, Millets, Millets and Sorghum, Pearl millet, Proso Millet, Sorghum
+
+Popularising Nutri Millets                     
+
+ Popularising Nutri Millets
+
+Around the World, Asia-Pacific, India, Millets, Millets and Sorghum, Pearl millet, Sorghum
+
+‘Millet-based products set to gain increasing acceptance’ 
+
+ ‘Millet-based products set to gain increasing acceptance’</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.crunchbase.com/organization/24-mantra-organic" target="_blank">24 Mantra Organic - Crunchbase Company Profile &amp; Funding</a></h3>
+                    <div class="result-url">https://www.crunchbase.com/organization/24-mantra-organic</div>
+                    <div class="result-content">Company Performance Metrics
+
+- Rajashekar Reddy Seelam: Founder
+
+24 Mantra Organic is a specialty food shop for farmers, livelihood, customers a sustainable lifestyle, and a sustainable planet. It also offers products such as Masala Mixes, Snacks, Cereals, Culinary Pastes, Juices, Oils, Flakes, Spices, Health Foods, and Spice Powders.
+
+Today, they are India’s largest organic foods brand and work with 45,000
+
+farmers in 15 states on 2,25,000 acres to make a positive difference to their lives. All the 24 Mantra products are also offered in larger packs for foodservice.
+
+24 Mantra Organic was founded in 2004 and is based in Hyderabad, Andhra Pradesh, India.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://dealroom.co/companies/24-mantra-organic" target="_blank">24 Mantra Organic — venture-backed company profile | Dealroom</a></h3>
+                    <div class="result-url">https://dealroom.co/companies/24-mantra-organic</div>
+                    <div class="result-content">24 Mantra is a company dedicated to providing organic food products, ensuring complete transparency from cultivation to packaging. The company serves health-conscious consumers who prioritize organic and natural food options. Operating in the organic food market, 24 Mantra follows a business model that involves sourcing produce directly from farmers, processing it under stringent quality controls, and selling it through various retail channels. The company generates revenue by selling its organic products both online and in physical stores. By maintaining a close relationship with farmers and ensuring rigorous quality checks, 24 Mantra guarantees that its products are safe, natural, and of high quality. The company also engages customers through farm visits and trial kits, enhancing their [...]  24 Mantra Organic
+
+Organic food products ensuring transparency from farm to fork with rigorous quality checks
+
+ About 24 Mantra Organic [...] through farm visits and trial kits, enhancing their connection to the source of their food.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://24mantraorganic.com" target="_blank">24 Mantra Organic – 24mantra Organic</a></h3>
+                    <div class="result-url">https://24mantraorganic.com</div>
+                    <div class="result-content">To Get Extra Energy
+
+Organic Peanut Chikki - 24mantra Organic
+Organic Sesame Chikki - 24mantra Organic
+Organic Bombay Mixture - 24mantra Organic
+Organic Masala Peanut - 24mantra Organic
+Organic Mullu Murukku - 24mantra Organic
+Organic Shakkar Para - 24mantra Organic
+Organic Thick Sev - 24mantra Organic
+Organic Flax Seeds - 24mantra Organic
+Organic Chia Seed - 24mantra Organic
+Organic Moringa Powder - 24mantra Organic
+Organic Wheat Grass Powder - 24mantra Organic
+Organic Quinoa - 24mantra Organic
+Organic Jaggery Powder - 24mantra Organic
+Organic Sugar - 24mantra Organic
+Organic Wild Honey - 24mantra Organic
+Organic Brown Sugar - 24mantra Organic
+
+ Our strength [...]  Diabetic Friendly Food
+
+ More to Shop
+
+Foxtail Millet - 24mantra Organic
+Little Millet - 24mantra Organic
+Organic Chilli Powder - 24mantra Organic
+Organic Turmeric Powder - 24mantra Organic
+Organic Fenugreek Seeds - 24mantra Organic
+Organic Red Stick Chilly - 24mantra Organic
+Organic Coriander Seed - 24mantra Organic
+Organic Mustard Seeds Small - 24mantra Organic
+Organic Cumin Seed - 24mantra Organic
+Saindhava Lavana Powder - 24mantra Organic
+Organic Chilli Powder - 24mantra Organic
+Organic Turmeric Powder - 24mantra Organic
+Organic Fenugreek Seeds - 24mantra Organic
+Organic Red Stick Chilly - 24mantra Organic
+Organic Coriander Seed - 24mantra Organic
+Organic Mustard Seeds Small - 24mantra Organic
+Organic Cumin Seed - 24mantra Organic
+
+ Real Voices Real Emotions [...]  Why Choose 24 Mantra Organic
+
+See the care in every step : Explore our farm-to-fork process in detail, where meticulous attention and stringent precautions guarantee organic integrity and showcase our commitment to transparent practices.
+
+1,90,000+ acres
+
+ 1,90,000+ acres
+
+2M+ Consumers
+
+ 2M+ Consumers
+
+34,000+ Farmers
+
+ 34,000+ Farmers
+
+Introducing 24 Mantra Organic Traceability
+
+ Trace your products
+
+It&#x27;s important to know about your food journey from farm to pack, now it&#x27;s easy to know your farmer and where your food is coming from !
+
+ To Get Extra Energy</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://24mantraorganic.com/pages/why-choose-24-mantra-organic" target="_blank">Why Choose 24 Mantra Organic ? – 24mantra Organic</a></h3>
+                    <div class="result-url">https://24mantraorganic.com/pages/why-choose-24-mantra-organic</div>
+                    <div class="result-content">Modified Atmosphere Treatment : Our carbon dioxide-based modified atmosphere technology ensures grains and spices are treated without chemicals, making them safer and purer.
+
+Machine Cleaning : We utilize cutting-edge machinery such as pre-cleaners, gravity separators, and sortex machines to ensure grains are cleaned to the highest purity standards.
+
+Traditional cleaning : While automated systems handle the majority of cleaning tasks, manual intervention remains crucial for specific ingredients, such as small grains. Experienced females are designated to clean such products through traditional hand picking process under hygienic conditions to offer clean products.
+
+ Packing at certified facility : [...] Packaging : Our packaging facilities are adhering to stringent quality standards, oversees the entire product journey, from farm to final delivery. This integrated approach ensures complete control over the organic integrity of our products and allows us to deliver the highest quality offerings to our discerning consumers.
+
+Shipping : 24 Mantra Organic, a leading Indian brand in the global organic food market, distributes its products across India and to 34 countries worldwide, including the USA, Canada, Europe, Southeast Asia, the GCC region, Australia, and Africa. This extensive global reach underscores our commitment to providing access to premium organic products to diverse consumers
+
+Introducing 24 Mantra Organic Traceability
+
+ Trace your Products [...]  Direct procurement ensures authenticity :
+
+Typically for every 100 – 150 farmers have a Supervisor. We procure the crop from the farm. Rather at the farmer’s doorstep. Procurement centers are set up at the sites to reduce production risks and farmers are contacted directly without any middlemen. In fact the payments are all done through banks and online transfers to ensure authenticity and transparency. This has helped us carve a niche and cemented our relationships with thousands of farmers across several States of India. Each bag coded for the item name, variety, farmer code, group code | season | year and quantity for traceability
+
+ India’s first certified (MAT) Modified Atmosphere Treatment Facility :</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cnbctv18.com/market/stocks/itc-share-price-to-acquire-organic-fmcg-staples-brand-mantra-organic-for-rs-472-5-crore-19590766.htm" target="_blank">ITC to acquire organic FMCG staples brand 24 Mantra Organic for ₹472.5 crore - CNBC TV18</a></h3>
+                    <div class="result-url">https://www.cnbctv18.com/market/stocks/itc-share-price-to-acquire-organic-fmcg-staples-brand-mantra-organic-for-rs-472-5-crore-19590766.htm</div>
+                    <div class="result-content">Diversified group ITC Limited on Thursday (April 17) said it has signed a definitive agreement to acquire 100% of the share capital of Sresta Natural Bioproducts Private Limited (SNBPL), the company behind the ‘24 Mantra Organic’ brand, for a consideration of up to ₹472.5 crore. The acquisition marks a significant move by ITC to expand its footprint in the fast-growing organic packaged foods segment.
+
+Under the terms of the deal, ITC will pay ₹400 crore upfront at the time of closing, with an additional amount of up to ₹72.5 crore payable over the next 24 months, subject to customary adjustments and performance-related conditions. The transaction is being executed on a cash-free, debt-free basis. [...]  ITC to acquire organic FMCG staples brand 24 Mantra Organic for ₹472.5 crore
+
+Jomy Jos Pullokaran
+
+- Published OnApr 17, 2025 | 22:40 IST
+- Last Updated OnApr 17, 2025 | 23:03 IST
+
+ITC to acquire organic FMCG staples brand 24 Mantra Organic for ₹472.5 crore
+
+ Under the terms of the deal, ITC will pay ₹400 crore upfront at the time of closing, with an additional amount of up to ₹72.5 crore payable over the next 24 months. Shares of ITC Ltd ended at ₹427.25, up by ₹3.10, or 0.73%, on the BSE. [...] SNBPL’s vertically integrated supply chain promotes sustainable livelihoods for its network of approximately 27,500 farmers spread across approximately 1.4 lakh acres of certified organic land in 10 states. The strong network of farmers and certified organic sourcing capability are key sources of competitive advantage for the company.
+
+Hemant Malik, Wholetime Director of ITC, said, &quot;We are excited to have 24 Mantra Organic as part of ITC’s Foods Business’s portfolio of nutrition-led healthy foods products. 24 Mantra Organic has built a robust backend and sourcing network, which is core to its trusted organic products portfolio.
+
+Also Read: Tariff uncertainty can open new doors for India: ITC’s Sanjiv Puri</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://timesofindia.indiatimes.com/business/india-business/itc-to-acquire-24-mantra-organic-brand-for-rs-472-5-crore/articleshow/120388904.cms" target="_blank">ITC to acquire 24 Mantra Organic brand for Rs 472.5 crore - The Times of India</a></h3>
+                    <div class="result-url">https://timesofindia.indiatimes.com/business/india-business/itc-to-acquire-24-mantra-organic-brand-for-rs-472-5-crore/articleshow/120388904.cms</div>
+                    <div class="result-content">Diversified conglomerate ITC Ltd on Thursday announced that it will acquire Sresta Natural Bioproducts Pvt Ltd (SNBPL), the company behind the 24 Mantra Organic brand, for Rs 472.50 crore, in a move to strengthen its presence in the high-growth organic packaged foods space.According to a regulatory filing, ITC has signed a share purchase agreement to acquire a 100% stake in SNBPL, which is engaged in manufacturing and selling a wide portfolio of organic food products under the 24 Mantra Organic brand.&quot;The acquisition is in line with the strategy to augment the company&#x27;s future-ready portfolio. The transaction will fortify ITC&#x27;s presence and market standing in the high-growth organic products segment in both Indian and overseas markets,&quot; it said, as reported by PTI.SNBPL offers over 100 [...] Next’ strategy, spearheaded by Chairman Sanjiv Puri, which emphasizes building a future-ready portfolio catering to evolving consumer preferences for health and wellness.&quot;We are excited to have 24 Mantra Organic as part of ITC&#x27;s Foods Business&#x27;s portfolio of nutrition-led healthy foods products. 24 Mantra Organic has built a robust backend and sourcing network which is core to its trusted organic products portfolio,&quot; said ITC Wholetime Director Hemant Malik.Rajashekar Reddy Seelam, founder and Managing Director of SNBPL, welcomed the deal, saying, &quot;ITC shares a common vision to promote sustainable livelihoods for farmers and ensure healthy lifestyles for consumers. We are confident that ITC&#x27;s strengths in product development expertise and distribution strength across channels will help in [...] markets,&quot; it said, as reported by PTI.SNBPL offers over 100 organic products, including grocery staples, spices, condiments, edible oils, and beverages. It also enjoys a significant international presence, especially among the Indian diaspora, due to its established organic sourcing and distribution network.&quot;The share acquisition is expected to be completed in Q1 of FY 2025-26 or such later date as may be mutually agreed upon by the Parties,&quot; ITC noted in its filing.The deal, valued at up to Rs 472.50 crore on a cash-free, debt-free basis, includes an upfront payment of Rs 400 crore at closing and a potential earn-out of up to Rs 72.50 crore over the subsequent 24 months.ITC stated that the acquisition aligns with its ‘ITC Next’ strategy, spearheaded by Chairman Sanjiv Puri, which</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.just-food.com/news/itc-deal-24-mantra-owner" target="_blank">ITC seals deal to buy organic foods brand 24 Mantra owner</a></h3>
+                    <div class="result-url">https://www.just-food.com/news/itc-deal-24-mantra-owner</div>
+                    <div class="result-content">Skip to site menu Skip to page content
+
+JF
+
+ News
+
+ ITC seals deal to buy organic packaged foods brand 24 Mantra owner
+
+Sresta Natural’s range includes more than 100 organic items across categories such as, spices, condiments and edible oils.
+
+April 22, 2025
+
+Share
+
+ Copy Link
+ Share on X
+ Share on Linkedin
+ Share on Facebook
+
+  
+
+The acquisition is part of ITC’s strategy to “build a portfolio of future-facing winning brands” in emerging consumer categories. Credit: T. Schneider / Shutterstock.com.
+
+Indian conglomerate ITC has struck a deal to acquire Sresta Natural Bioproducts, the owner of the 24 Mantra Organic brand, for Rs4.73bn ($55.2m). [...] Sresta Natural reported a consolidated turnover of Rs3.06bn for its 2023/24 financial year.
+
+Approximately 50% of its revenue was generated from international markets, mainly the US, the filing said.
+
+The company’s sourcing base includes approximately 27,500 farmers cultivating around 140,000 acres of organic farmland across ten Indian states.
+
+Rajashekar Reddy Seelam, the founder and managing director of Sresta Natural, will remain “associated” with the business for two years to support the transition following the acquisition.
+
+Seelam said: “After 21 years of partnering with Indian farmers to create trusted organic products, we are excited that ITC will be driving the next phase of growth for 24 Mantra Organic. [...] An additional “founders consideration” of up to Rs725m is payable over the next two years, contingent on undisclosed “pre-agreed performance criteria”, ITC said.
+
+Hemant Malik, an ITC director, said: “24 Mantra Organic has built a robust backend and sourcing network which is core to its trusted organic products portfolio.”
+
+He added: “We are confident that 24 Mantra Organic will fortify ITC’s presence and market standing in the high growth organic products space, in both Indian and overseas markets.”
+
+Set up in 2004, Sresta Natural Bioproducts has a product range that includes more than 100 organic items across categories such as grocery staples, spices, condiments, edible oils, and beverages, ITC said.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://retail.economictimes.indiatimes.com/news/food-entertainment/personal-care-pet-supplies-liquor/itc-completes-acquisition-of-24-mantra-organic-brand-owner-sresta-natural/121848411" target="_blank">ITC Acquisition: ITC completes acquisition of 24 Mantra Organic brand owner Sresta Natural, ETRetail</a></h3>
+                    <div class="result-url">https://retail.economictimes.indiatimes.com/news/food-entertainment/personal-care-pet-supplies-liquor/itc-completes-acquisition-of-24-mantra-organic-brand-owner-sresta-natural/121848411</div>
+                    <div class="result-content">- FMCG
+- 2 minRead
+
+ ITC completes acquisition of 24 Mantra Organic brand owner Sresta Natural
+
+ITC has finalized its all-cash acquisition of Sresta Natural Bioproducts, the owner of &#x27;24 Mantra Organic brand&#x27;, for Rs 472.50 crore. The deal, completed on June 13, 2025, includes an upfront payment and a deferred consideration. This acquisition will strengthen ITC&#x27;s position in the rapidly expanding organic food sector, both domestically and internationally.
+
+- Updated On Jun 14, 2025 at 05:04 PM IST
+- Readby 541Professionals
+
+ Comments
+
+What are your thoughts? [...] Multi-conglomerate ITC has completed the acquisition of Sresta Natural Bioproducts, which owns the &#x27;24 Mantra Organic brand&#x27; in an all-cash deal valued at Rs 472.50 crore.This will help ITC to expand its play in the fast-growing organic food products segment.&quot;The company has completed the acquisition of 100 per cent of the share capital of SNBPL on 13th June, 2025,&quot; ITC said in a regulatory filing. On the acquisition cost, ITC said it had an upfront consideration of Rs 400 crore on a cash-free debt-free basis and addition, consideration of up to Rs 72.50 crore, which is payable in the next 24 months. In April ITC had informed it had signed a share purchase agreement with Sresta Natural Bioproducts Private Limited (SNBPL) to acquire 100 per cent stake in the company. This acquisition is &quot;in [...] 100 per cent stake in the company. This acquisition is &quot;in line with the strategy to augment the company&#x27;s future-ready portfolio, the transaction is expected to fortify ITC&#x27;s presence and market standing in the high-growth organic products segment in both Indian and overseas market,&quot; the Kolkata-headquartered firm said.SNBPL&#x27;s portfolio comprises a wide range of over 100 organic products, spanning branded grocery staples, spices and condiments, edible oils, and beverages, among others. Besides, it has a strong international presence with a deep connection with the Indian diaspora. The domestic organic food products industry offers a &quot;significant opportunity&quot; for growth on the back of increasing health and environmental consciousness, a rise in household incomes and new-age distribution</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.youtube.com/watch?v=QK9S1i35kGc" target="_blank">ITC Acquiring 24 Mantra Organic while Nazara Tech to expand Inorganically</a></h3>
+                    <div class="result-url">https://www.youtube.com/watch?v=QK9S1i35kGc</div>
+                    <div class="result-content">existing products from the market and replacing them with the new warning. Until that time the common people should be aware about this fact checking before asking for any such brand directly to the chemist. Last year even the US FDA and drug administration commonly known as US FDA proposed the removal of a fixed rose combination as an active ingredient in OTC medication for nasal congestion relief after they found it was ineffective. In second news, ITC acquiring organic packaged staple brand 24 mantra organic for 472.5 cr. India&#x27;s FMCG major ITC to acquire SRA natural byproducts which own the organic packaged stable brand 24 mantra organic for 472.5 cr in all cash deal where in this deal 400 cr will be paid upfront and the remaining 72.5 cr will be paid over a period of two years.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/24-mantra/__7hAYI18VmH9O-1FKVUnSwYP5t1iFJ7i_6eDRWqLdWwE" target="_blank">24 Mantra - 2026 Company Profile, Team, Competitors &amp; Financials - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/24-mantra/__7hAYI18VmH9O-1FKVUnSwYP5t1iFJ7i_6eDRWqLdWwE</div>
+                    <div class="result-content">| 4th | Logo for MTR Foods  MTR Foods 1924, Bengaluru  (India), Acquired | Internet first brand of multi category food &amp; beverages | $4M | Aquarius Investment Advisors, J P Morgan ... &amp; 18 others | 63/100 |
+| 5th | Logo for Ajinomoto  Ajinomoto 1909, Tokyo  (Japan), Public | Multi category food and beverage manufacturer  Europa, Yusen Logistics | 61/100 |
+| 6th | Logo for ITC  ITC 1910, Kolkata  (India), Public | Provider of diversified products across FMCG, paperboards, packaging, agri-business, and IT  Baring Private Equity Partners | 60/100 |
+| 7th | Logo for AWL Agri Business  AWL Agri Business 1999, Ahmedabad  (India), Acquired | Provider of edible oils, packaged rice, and pulses products  Brand Capital | 59/100 | [...] | Rank | Company Details | Short Description | Total Funding | Investors | Tracxn Score |
+ ---  ---  --- |
+| 1st | Logo for Hector Beverages  Hector Beverages 2009, Bengaluru  (India), Series D | Retailer of beverages, dry fruits, and nut-based food products | $185M | Peak XV Partners, Sofina  &amp; 36 others | 73/100 |
+| 2nd | Logo for RJ Corp  RJ Corp 1980, Gurugram  (India), Series B | Brand of food &amp; beverage products | $41.1M | Devayani Overseas, ICICI Venture  &amp; 16 others | 66/100 |
+| 3rd | Logo for ZOFF Foods  ZOFF Foods 2018, Raipur  (India), Series A | Online retailer of Indian spices, seasonings, dry fruits, and combos | $7.16M | JM Financial Private Equity, Chhattisgarh Investments ... &amp; 7 others | 65/100 | [...] Logo for Hector Beverages
+Logo for RJ Corp
+Logo for ZOFF Foods
+Logo for MTR Foods
+Logo for Ajinomoto
+Logo for ITC
+Logo for AWL Agri Business
+Logo for Pushp
+Logo for Patanjali Ayurved
+Logo for Parle Products
+Logo for 24 Mantra
+lock
+
+ 24 Mantra&#x27;s Latest cap tables and shareholding</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.newindianexpress.com/business/2025/Nov/29/itc-bets-big-on-organic-food-market-with-24-mantra" target="_blank">ITC bets big on organic food market with 24 Mantra</a></h3>
+                    <div class="result-url">https://www.newindianexpress.com/business/2025/Nov/29/itc-bets-big-on-organic-food-market-with-24-mantra</div>
+                    <div class="result-content">Organic products carry a price premium of 40%, making the category a sharp lever in ITC’s premiumisation strategy. While still small within ITC’s foods portfolio, Rustagi said the organic business will be a “significant contributor to future growth,” as packaged foods regain double-digit momentum post-inflation.
+
+“Our first ambition is to become the market leaders again in the organic segment,” Rustagi said.
+
+Competition
+
+Within organic, there are players like Tata Consumer (Organic India), Organic Tattva, BigBasket’s organic brand, some retailers, and many smaller players. Then there are the “natural” ones like Patanjali. Tata Consumer’s Organic India made sales turnover of Rs 280 crore last year against 24 Mantra Organic’s Rs 300 crore. [...] The organic packaged food segment in India has gained momentum with the entry of large FMCG players like ITC and Tata Consumer Products Ltd. ITC, which recently acquired Hyderabad-based 24 Mantra Organic, is doubling down on the fast-growing packaged organic food market, banking on rising consumer awareness, improved affordability through integrated sourcing, and significant export opportunities. The FMCG major is positioning itself to accelerate growth in a segment growing at 15–20% annually.
+
+“Organic is a category of huge interest to consumers, the economy and farmers. There is also a lot of export potential,” said Anuj Kumar Rustagi, chief executive, Staples, Food Division, ITC, told TNIE. [...] Building a future-ready food portfolio
+
+ITC entered the organic segment through Aashirvaad atta, but scale demanded a wider presence and farm-level infrastructure — something that takes 3–5 years to build.
+
+“Organic has to start at the farm. Just because you work with farmers doesn’t mean the produce is organic,” Rustagi said. The company valued 24 Mantra’s deep backend -- a certified network of 27,000 farmers across 1.4 lakh acres.
+
+24 Mantra brings over 140 organic products, enabling ITC to serve households looking to convert their entire pantry to organic — something that would have taken the conglomerate 8–10 years to build on its own.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.instagram.com/p/DRy1rYsD7nf?hl=en" target="_blank">ITC is scaling its organic foods play with 24 Mantra ... - Instagram</a></h3>
+                    <div class="result-url">https://www.instagram.com/p/DRy1rYsD7nf?hl=en</div>
+                    <div class="result-content">Competition: established brands in staples, such as ITC and Tata Consumer Products, and many organic specialists. Consistent quality: batch-to-</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.linkedin.com/posts/marksmen-daily_strategy-fmcg-itc-activity-7320021209578930176--kQ2" target="_blank">ITC acquires 24 Mantra Organic, expands into organic food market | Marksmen Daily posted on the topic | LinkedIn</a></h3>
+                    <div class="result-url">https://www.linkedin.com/posts/marksmen-daily_strategy-fmcg-itc-activity-7320021209578930176--kQ2</div>
+                    <div class="result-content">Prasuma (ready-to-cook frozen foods) and Yoga Bar (Sprout Life Foods), showcases ITC’s intent to build a robust portfolio around health, sustainability, and premiumization.   This is all part of a deliberate strategic playbook. ITC is deploying capital smartly, acquiring brands with strong recall, distinct positioning, and synergy with its agribusiness, sourcing, and distribution strengths. In FY24, its non-tobacco FMCG business crossed ₹21,000 crore in gross revenue, fast becoming its next growth engine.   As India’s health and lifestyle preferences evolve, ITC is aligning itself with the future. Organic food, clean baby care, frozen convenience, and natural personal care aren’t trends—they’re tomorrow’s everyday essentials. And ITC is betting big on becoming the house of brands that [...] From being a tobacco company to simply being transformative, ITC Limited’s journey is one of India’s boldest brand reinventions. With its latest ₹472.5 crore acquisition of 24 Mantra Organic, ITC steps firmly into India’s ₹10,000 crore organic food market. More than just a product play, this is a strategic re-entry into the edible oil category—this time with a health-conscious twist. 24 Mantra’s lineup of cold-pressed oils, organic staples, and a strong export footprint across the US makes it a perfect fit for ITC’s wellness-driven evolution.   Simultaneously, ITC is doubling down on its investment in Mother Sparsh, an ayurvedic baby care brand that’s winning the trust of new-age parents. This, along with the earlier acquisition of Prasuma (ready-to-cook frozen foods) and Yoga Bar (Sprout</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/24mantra/alternatives-competitors" target="_blank">Top 24 Mantra Organic Alternatives, Competitors</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/24mantra/alternatives-competitors</div>
+                    <div class="result-content">24 Mantra Organic
+
+ 24 Mantra Organic&#x27;s alternatives and competitors
+
+See how 24 Mantra Organic compares to similar products. 24 Mantra Organic&#x27;s top competitors include Organic India, Nimble Growth, and Green and Grains.
+
+Organic India is a company that focuses on the health and wellness industry. The company offers a range of products through its e-commerce website including healthy pac…
+
+View more in-depth data on:
+
+- Competitors
+- Products
+- Customer References and more
+
+&lt;!--THE END--&gt; [...] - Products
+  - Customer References and more
+- Organic Amrit focuses on providing eco-sustainable and certified organic food products within the organic agriculture and processing sector. Their offerings include a r…
+  
+  24 Mantra Organic vs. Organic Amrit
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more
+- Sreevatsa Organic Farm Products specializes in certified organic food products and operates within the organic farming and retail sectors. The company offers a range of…
+  
+  24 Mantra Organic vs. Sreevatsa Organic Farm Products
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more [...] - Products
+  - Customer References and more
+- Jivabhumi is an online platform that provides organic food products across various categories. The company has items including ready-to-cook meals, snacks, ghee, fruits…
+  
+  24 Mantra Organic vs. Jivabhumi
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more
+- Shanti Overseas is an export house focusing on organic agricultural products. The company specializes in the production and export of organic soyabean seeds, soyabean m…
+  
+  24 Mantra Organic vs. Shanti Overseas
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>
