@@ -1778,6 +1778,9 @@ _BRAND_BRIEF_LABELS = {
     "differentiators": "Differentiators",
     "products_services": "Products & Services",
     "tone_of_voice": "Tone of Voice",
+    "business_model": "Business Model",
+    "proof_points": "Proof Points",
+    "market_context": "Market Context",
 }
 
 

@@ -94,7 +94,7 @@ function normalizeSocialHandleInput(platform: SocialPlatform, raw: string): { ur
   return { url: `https://${host}${path}`, error: '' };
 }
 
-// ── Brand Brief: structured 6-field brand summary ────────────────────────────
+// ── Brand Brief: structured 9-field brand summary ────────────────────────────
 // Mirrors backend.schemas.brand.BRAND_BRIEF_KEYS exactly, including order.
 const BRAND_BRIEF_KEYS = [
   'what_we_do',
@@ -103,6 +103,9 @@ const BRAND_BRIEF_KEYS = [
   'differentiators',
   'products_services',
   'tone_of_voice',
+  'business_model',
+  'proof_points',
+  'market_context',
 ] as const;
 type BrandBriefKey = typeof BRAND_BRIEF_KEYS[number];
 
@@ -113,6 +116,9 @@ const BRAND_BRIEF_LABELS: Record<BrandBriefKey, string> = {
   differentiators: 'Differentiators',
   products_services: 'Products & Services',
   tone_of_voice: 'Tone of Voice',
+  business_model: 'Business Model',
+  proof_points: 'Proof Points',
+  market_context: 'Market Context',
 };
 
 const BRAND_BRIEF_PLACEHOLDERS: Record<BrandBriefKey, string> = {
@@ -122,6 +128,9 @@ const BRAND_BRIEF_PLACEHOLDERS: Record<BrandBriefKey, string> = {
   differentiators: 'e.g. In-house design studio; IGBC Platinum-certified green buildings.',
   products_services: 'e.g. Residential towers, villas, plotted developments, commercial complexes.',
   tone_of_voice: 'e.g. Confident, design-forward, data-backed.',
+  business_model: 'e.g. B2C — sells directly to homebuyers through company-owned sales galleries.',
+  proof_points: 'e.g. Delivered 50+ projects; winner of CNBC-Awaaz Real Estate Award 2023.',
+  market_context: 'e.g. Rising demand for gated communities in Tier-1 Indian cities post-2023.',
 };
 
 function StrategySetupInner() {
@@ -669,7 +678,7 @@ function StrategySetupInner() {
   };
 
   const handleFinalConfirm = async () => {
-    // Brand Brief — required: at least one of the six fields (pre-filled
+    // Brand Brief — required: at least one of the nine fields (pre-filled
     // fields make this low-friction in the normal case; a thin brand can
     // still fill just one by hand).
     const trimmedBrief: Record<string, string> = {};

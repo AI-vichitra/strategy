@@ -494,6 +494,72 @@
   padding: 6px;
 }
 
+/* ── Source Documents (Context drawer) ─────────────────────────────────── */
+.sourceDocsList {
+  display: flex;
+  flex-direction: column;
+}
+
+.sourceDocItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.sourceDocItem:last-child {
+  border-bottom: none;
+}
+
+.removeDocBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+}
+.removeDocBtn:hover {
+  color: #c0392b;
+}
+.removeDocBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addFileBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+  transition: background 0.15s, color 0.15s;
+}
+.addFileBtn:hover {
+  background: #D4A843;
+  color: #fff;
+}
+
+.addFileBtnDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.uploadError {
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
 /* ── Instructions (brand brief) ────────────────────────────────────────── */
 .briefList {
   display: flex;
