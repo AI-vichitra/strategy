@@ -48,6 +48,14 @@ def _get_output_dir(brand_slug: str) -> str:
     return path
 
 
+_ACTIVE_PIPELINE_BRAND_IDS: set = set()
+
+
+def is_pipeline_active(brand_config_id: str) -> bool:
+    """Returns True if a background research pipeline is actively running in this process."""
+    return bool(brand_config_id and brand_config_id in _ACTIVE_PIPELINE_BRAND_IDS)
+
+
 async def run_brand_research_pipeline(
     brand_config_id: str,
     brand_name: str,
@@ -61,6 +69,7 @@ async def run_brand_research_pipeline(
     Full async pipeline. Designed to run as a FastAPI BackgroundTask.
     db_session_factory is the SQLAlchemy async_sessionmaker.
     """
+    _ACTIVE_PIPELINE_BRAND_IDS.add(brand_config_id)
     from backend.services import tavily_service, connector_service, firecrawl_service, exa_service
     from backend.schemas.brand import extract_instagram_username
 
@@ -218,6 +227,18 @@ async def run_brand_research_pipeline(
                 tavily_service.run_depth_research, comp_name, comp_url, category, output_dir
             )
             logger.info(f"[Pipeline] Depth research {'saved' if _comp_depth_result else 'empty/failed'} for '{comp_name}'")
+            # ── Competitor logo scrape ─────────────────────────────────────────
+            if comp_url and not comp.get("logo_url"):
+                try:
+                    from backend.services import logo_scraper_service
+                    # Guard: don't scrape if competitor URL matches brand URL
+                    if comp_url.strip().rstrip("/") != (brand_url or "").strip().rstrip("/"):
+                        c_logo = await asyncio.to_thread(logo_scraper_service.scrape_and_save_logo, comp_url, comp_name)
+                        if c_logo:
+                            comp["logo_url"] = c_logo
+                except Exception as e:
+                    logger.debug(f"[Pipeline] Competitor logo scrape attempt for '{comp_name}': {e}")
+
             logger.info(f"[Pipeline] Step 3: competitor {_comp_idx}/{_n_competitors} = '{comp_name}' — done.")
 
         # ── Step 4: Social handle discovery ───────────────────────────────────
@@ -283,8 +304,17 @@ async def run_brand_research_pipeline(
         logger.info(f"[Pipeline] Step 6 done: kb_json persisted to DB ({len(kb_json_str)} chars) for brand_config_id={brand_config_id}")
 
         # ── Update DB: complete ───────────────────────────────────────────────
+        competitors_with_logos = json.dumps([
+            {
+                "name": c.get("name", ""),
+                "url": c.get("website_url") or c.get("url") or "",
+                "logo_url": c.get("logo_url") or ""
+            }
+            for c in selected_competitors if c.get("name")
+        ])
         update_data = {
             "pipeline_status": "complete",
+            "competitors": competitors_with_logos,
             "brand_handle": brand_handle,
             "social_handles": json.dumps(merged_social_handles) if merged_social_handles else None,
             "confirmed_competitor_handles": json.dumps([h["handle"] for h in discovered_handles]),
@@ -298,6 +328,8 @@ async def run_brand_research_pipeline(
         _elapsed = time.monotonic() - _pipeline_started_at
         logger.error(f"[Pipeline] FAILED for brand '{brand_name}' after {_elapsed:.1f}s: {e}", exc_info=True)
         await _update_db(db_session_factory, brand_config_id, {"pipeline_status": "failed"})
+    finally:
+        _ACTIVE_PIPELINE_BRAND_IDS.discard(brand_config_id)
 
 
 async def _run_instagram_scraper(handles: List[dict], output_dir: str, brand_slug: str):

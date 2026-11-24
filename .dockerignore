@@ -1,0 +1,10 @@
+venv/
+frontend/
+docs/
+.git/
+.gitignore
+__pycache__/
+*.pyc
+.postman/
+postman/
+scratch/

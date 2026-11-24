@@ -1,5 +1,6 @@
 .container {
-  min-height: 100vh;
+  min-height: calc(100vh / 0.9);
+  min-height: 100%;
   background-color: #FAF8F5;
   background-image: radial-gradient(ellipse at 50% 0%, rgba(212, 168, 67, 0.08) 0%, transparent 60%);
   display: flex;
@@ -769,6 +770,75 @@
 }
 
 /* Social Handles */
+.socialHandlesSection {
+  margin-top: 24px;
+}
+.socialHandlesTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.infoTooltipWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.infoTooltipBtn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #8C827A;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.infoTooltipBtn:hover,
+.infoTooltipBtn:focus-visible {
+  color: #1A1A1A;
+  outline: none;
+}
+.infoTooltipContent {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2D2A26;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 280px;
+  text-align: left;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.2s;
+  z-index: 100;
+}
+.infoTooltipContent::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #2D2A26 transparent transparent transparent;
+}
+.infoTooltipWrapper:hover .infoTooltipContent,
+.infoTooltipWrapper:focus-within .infoTooltipContent {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(-2px);
+}
 .socialHandlesGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -788,6 +858,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.socialHandleIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .socialHandlePlatform {
   font-size: 13px;
@@ -963,4 +1039,16 @@
   margin: 0;
   font-size: 14px;
 }
+
+.candidateLogoImg {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
 

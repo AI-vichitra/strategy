@@ -13,6 +13,7 @@ class BrandConfig(Base):
     brand_name = Column(String, nullable=False)
     website_url = Column(String, nullable=True)
     category = Column(String, nullable=False)
+    logo_url = Column(String, nullable=True)
     brand_context = Column(Text, nullable=True)
     competitors = Column(Text, nullable=True)          # JSON list of {name, url}
     social_metrics = Column(Text, nullable=True)       # Kept for backwards compat / status signals

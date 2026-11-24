@@ -12,9 +12,9 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 
 from backend.models.user import User
-from backend.schemas.user import UserCreate, UserResponse
+from backend.schemas.user import UserCreate, UserResponse, UserUpdate
 from backend.schemas.auth import Token, GoogleAuthRequest
-from backend.dependencies import get_db, SECRET_KEY, ALGORITHM
+from backend.dependencies import get_db, get_current_user, SECRET_KEY, ALGORITHM
 
 router = APIRouter()
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
@@ -78,6 +78,7 @@ async def google_auth(request: GoogleAuthRequest, db: AsyncSession = Depends(get
         )
         email = idinfo.get('email')
         name = idinfo.get('name')
+        picture = idinfo.get('picture')
         
         if not email:
             raise HTTPException(status_code=400, detail="Google authentication failed: No email provided.")
@@ -91,11 +92,23 @@ async def google_auth(request: GoogleAuthRequest, db: AsyncSession = Depends(get
             user = User(
                 email=email,
                 password_hash=hashed_password,
-                full_name=name
+                full_name=name,
+                avatar_url=picture
             )
             db.add(user)
             await db.commit()
             await db.refresh(user)
+        else:
+            updated = False
+            if name and not user.full_name:
+                user.full_name = name
+                updated = True
+            if picture and (not user.avatar_url or user.avatar_url != picture):
+                user.avatar_url = picture
+                updated = True
+            if updated:
+                await db.commit()
+                await db.refresh(user)
 
         access_token = create_access_token(
             data={"sub": user.email}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -106,3 +119,26 @@ async def google_auth(request: GoogleAuthRequest, db: AsyncSession = Depends(get
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Google token: {e}")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Google auth error: {e}")
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if user_update.email and user_update.email != current_user.email:
+        existing = await db.execute(select(User).where(User.email == user_update.email))
+        if existing.scalars().first():
+            raise HTTPException(status_code=400, detail="Email is already in use")
+        current_user.email = user_update.email
+
+    if user_update.full_name is not None:
+        current_user.full_name = user_update.full_name.strip() or None
+
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user

@@ -44,6 +44,16 @@
   flex-shrink: 0;
 }
 
+.competitorLogoImg {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  flex-shrink: 0;
+}
+
 .cardList {
   display: flex;
   flex-direction: column;

@@ -6,6 +6,8 @@ import styles from './page.module.css';
 
 export default function AuthPage() {
   const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,17 +24,12 @@ export default function AuthPage() {
     setError('');
     
     const apiBase = process.env.NEXT_PUBLIC_API_URL;
-    const payload = JSON.stringify({ email, password, full_name: 'New User' });
+    const resolvedName = fullName.trim() || 'New User';
+    const payload = JSON.stringify({ email, password, full_name: resolvedName });
 
     try {
-      let res = await fetch(`${apiBase}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload,
-      });
-
-      if (res.status === 401 || res.status === 404 || res.status === 400 || res.status === 422) {
-        // Auto-Register Fallback
+      if (isSignUp) {
+        // Direct Registration Flow
         const regRes = await fetch(`${apiBase}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -40,31 +37,68 @@ export default function AuthPage() {
         });
 
         if (!regRes.ok) {
-          throw new Error('Failed to register');
+          const regErr = await regRes.json();
+          throw new Error(regErr.detail || 'Failed to register');
         }
 
         const regData = await regRes.json();
-        
-        // If register returns the token directly, use it
         if (regData.access_token) {
           localStorage.setItem('access_token', regData.access_token);
         } else {
-          // Otherwise login again to get the token
-          res = await fetch(`${apiBase}/api/auth/login`, {
+          const loginRes = await fetch(`${apiBase}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: payload,
           });
+          if (!loginRes.ok) {
+            const loginErr = await loginRes.json();
+            throw new Error(loginErr.detail || 'Failed to login after registration');
+          }
+          const loginData = await loginRes.json();
+          if (loginData.access_token) {
+            localStorage.setItem('access_token', loginData.access_token);
+          }
         }
-      }
+      } else {
+        // Sign In Flow
+        let res = await fetch(`${apiBase}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+        });
 
-      if (!localStorage.getItem('access_token')) {
-        if (!res.ok) throw new Error('Failed to login');
-        const data = await res.json();
-        if (data.access_token) {
-          localStorage.setItem('access_token', data.access_token);
-        } else {
-          throw new Error('No token returned');
+        if (res.status === 401 || res.status === 404 || res.status === 400 || res.status === 422) {
+          // Auto-Register Fallback
+          const regRes = await fetch(`${apiBase}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+          });
+
+          if (!regRes.ok) {
+            throw new Error('Failed to login or register');
+          }
+
+          const regData = await regRes.json();
+          if (regData.access_token) {
+            localStorage.setItem('access_token', regData.access_token);
+          } else {
+            res = await fetch(`${apiBase}/api/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: payload,
+            });
+          }
+        }
+
+        if (!localStorage.getItem('access_token')) {
+          if (!res.ok) throw new Error('Failed to login');
+          const data = await res.json();
+          if (data.access_token) {
+            localStorage.setItem('access_token', data.access_token);
+          } else {
+            throw new Error('No token returned');
+          }
         }
       }
 
@@ -138,10 +172,42 @@ export default function AuthPage() {
             </div>
             <span className={styles.logoText}>StratAI</span>
           </div>
-          <h1 className={styles.title}>Welcome Back</h1>
-          <p className={styles.subtitle}>Sign in to your account to continue</p>
+          <div className={styles.tabContainer}>
+            <button
+              type="button"
+              className={`${styles.tabBtn} ${!isSignUp ? styles.activeTabBtn : ''}`}
+              onClick={() => { setIsSignUp(false); setError(''); }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className={`${styles.tabBtn} ${isSignUp ? styles.activeTabBtn : ''}`}
+              onClick={() => { setIsSignUp(true); setError(''); }}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <h1 className={styles.title}>{isSignUp ? 'Create Account' : 'Welcome Back'}</h1>
+          <p className={styles.subtitle}>
+            {isSignUp ? 'Sign up with your details to get started' : 'Sign in to your account to continue'}
+          </p>
 
           <form onSubmit={handleSignIn} className={styles.form}>
+            {isSignUp && (
+              <div className={styles.inputGroup}>
+                <label htmlFor="fullName">Full Name</label>
+                <input 
+                  type="text" 
+                  id="fullName" 
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe" 
+                  required={isSignUp}
+                />
+              </div>
+            )}
             <div className={styles.inputGroup}>
               <label htmlFor="email">Email address</label>
               <input 
@@ -166,9 +232,19 @@ export default function AuthPage() {
             </div>
             {error && <div className={styles.errorMsg} style={{ color: '#ef4444', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
             <button type="submit" className={styles.submitBtn}>
-              Sign In
+              {isSignUp ? 'Sign Up' : 'Sign In'}
             </button>
           </form>
+
+          <div className={styles.toggleText}>
+            {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+            <span 
+              className={styles.toggleLink} 
+              onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+            >
+              {isSignUp ? 'Sign In' : 'Sign Up'}
+            </span>
+          </div>
 
           <div style={{ margin: '20px 0', textAlign: 'center', color: '#888', fontSize: '14px' }}>
             OR

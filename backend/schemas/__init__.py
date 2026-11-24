@@ -1,4 +1,4 @@
-from backend.schemas.user import UserCreate, UserResponse
+from backend.schemas.user import UserCreate, UserResponse, UserUpdate
 from backend.schemas.brand import BrandConfigCreate, BrandConfigResponse
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from backend.schemas.message import MessageCreate, MessageResponse

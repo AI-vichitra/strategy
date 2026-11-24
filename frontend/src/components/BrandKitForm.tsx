@@ -44,6 +44,7 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
   const safeBrandKit = brandKit ?? {};
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [colorDrafts, setColorDrafts] = useState<BrandColors>(safeBrandKit.colors ?? {});
   // Which color fields currently hold a logo-derived value rather than
@@ -53,6 +54,26 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
   const [autoFilled, setAutoFilled] = useState<Partial<Record<keyof BrandColors, boolean>>>({});
   const [paletteHint, setPaletteHint] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [safeBrandKit.logo_url]);
+
+  const resolveLogoUrl = (url?: string) => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('data:') ||
+      trimmed.startsWith('blob:')
+    ) {
+      return trimmed;
+    }
+    const base = (apiBase || process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+    const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return `${base}${path}`;
+  };
 
   useEffect(() => {
     setColorDrafts(safeBrandKit.colors ?? {});
@@ -216,11 +237,27 @@ export default function BrandKitForm({ brandKit, onChange, apiBase, authToken }:
           <label className={styles.fieldLabel}>Logo</label>
           {safeBrandKit.logo_url ? (
             <div className={styles.logoPreviewWrap}>
-              <img
-                src={`${apiBase ?? ''}${safeBrandKit.logo_url}`}
-                alt="Brand logo"
-                className={styles.logoPreview}
-              />
+              {imgError ? (
+                <div
+                  className={styles.brokenFallback}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Image could not be loaded. Click to replace."
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4A843" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <span className={styles.brokenText}>Replace</span>
+                </div>
+              ) : (
+                <img
+                  src={resolveLogoUrl(safeBrandKit.logo_url)}
+                  alt="Brand logo"
+                  className={styles.logoPreview}
+                  onError={() => setImgError(true)}
+                />
+              )}
               <button
                 type="button"
                 className={styles.removeBtn}

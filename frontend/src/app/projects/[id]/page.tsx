@@ -19,6 +19,7 @@ interface BrandDetail {
 interface CompetitorItem {
   name: string;
   website_url: string;
+  logo_url?: string;
 }
 
 interface ChatItem {
@@ -260,16 +261,29 @@ export default function ProjectDetailsPage() {
             <p className={styles.emptyList}>No competitors recorded.</p>
           ) : (
             <div className={styles.compList}>
-              {compList.map((c, i) => (
-                <div key={i} className={`${styles.compRow} ${!c.inKB && status === 'complete' ? styles.compRowMissing : ''}`}>
-                  <div className={styles.compDot} />
-                  <span className={styles.compName}>{c.name}</span>
-                  {c.website_url && <span className={styles.compUrl}>{c.website_url}</span>}
-                  {!c.inKB && status === 'complete' && (
-                    <span className={styles.compBadgeMissing}>Not in KB</span>
-                  )}
-                </div>
-              ))}
+              {compList.map((c, i) => {
+                const isBrandLogo = !!(c.logo_url && brand.logo_url && c.logo_url === brand.logo_url);
+                const showLogo = Boolean(c.logo_url && !isBrandLogo);
+                return (
+                  <div key={i} className={`${styles.compRow} ${!c.inKB && status === 'complete' ? styles.compRowMissing : ''}`}>
+                    {showLogo ? (
+                      <img
+                        src={c.logo_url!.startsWith('/') ? `${process.env.NEXT_PUBLIC_API_URL || ''}${c.logo_url}` : c.logo_url!}
+                        alt={c.name}
+                        className={styles.compLogo}
+                        onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className={styles.compDot} />
+                    )}
+                    <span className={styles.compName}>{c.name}</span>
+                    {c.website_url && <span className={styles.compUrl}>{c.website_url}</span>}
+                    {!c.inKB && status === 'complete' && (
+                      <span className={styles.compBadgeMissing}>Not in KB</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -36,11 +36,8 @@ CHUNK_SIZE = 500          # words per chunk
 CHUNK_OVERLAP = 100       # words of overlap between adjacent chunks
 TOP_K = 6                 # chunks retrieved per query
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
-MISTRAL_MODEL = "open-mistral-7b"
-
-# Fallback priority order for LLM providers (mistral verified working;
-# groq follows openai as its immediate fallback)
-LLM_PROVIDER_PRIORITY = ["mistral", "qwen", "openai", "groq", "anthropic"]
+# Fallback priority order for LLM providers (openai first, then groq, then anthropic)
+LLM_PROVIDER_PRIORITY = ["openai", "groq", "anthropic"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Report mode — resolved ONCE per report run, never mutates module state, so
@@ -616,15 +613,13 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
     """
     Returns tuple of (provider, api_key).
     If requested is specified, attempts that provider first if key exists.
-    Supported: mistral, qwen, openai, groq, anthropic
+    Supported: openai, groq, anthropic
     """
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if openai_key.startswith("sk-ant-"):
         openai_key = ""
 
     keys = {
-        "mistral": os.environ.get("MISTRAL_API_KEY", "").strip(),
-        "qwen": os.environ.get("QWEN_API_KEY", "").strip(),
         "openai": openai_key,
         "groq": os.environ.get("GROQ_API_KEY", "").strip(),
         "anthropic": os.environ.get("ANTHROPIC_API_KEY", "").strip(),
@@ -635,10 +630,10 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
         return (req_clean, keys[req_clean])
 
     for prov in LLM_PROVIDER_PRIORITY:
-        if keys[prov]:
+        if keys.get(prov):
             return (prov, keys[prov])
 
-    raise RuntimeError("No valid LLM API key set in environment (MISTRAL_API_KEY, QWEN_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, or ANTHROPIC_API_KEY)")
+    raise RuntimeError("No valid LLM API key set in environment (OPENAI_API_KEY, GROQ_API_KEY, or ANTHROPIC_API_KEY)")
 
 
 # Display names + the model env var/default for each provider. The model
@@ -647,12 +642,11 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
 # would actually run. Anthropic is mode-dependent (ANTHROPIC_MODEL vs
 # ANTHROPIC_MODEL_ADVANCED) and is resolved from _report_mode_params below.
 _PROVIDER_DISPLAY_NAME = {
-    "mistral": "Mistral", "qwen": "Qwen", "openai": "OpenAI",
-    "groq": "Groq", "anthropic": "Claude",
+    "openai": "OpenAI",
+    "groq": "Groq",
+    "anthropic": "Claude",
 }
 _PROVIDER_MODEL_ENV = {
-    "mistral": ("MISTRAL_MODEL", "open-mistral-7b"),
-    "qwen": ("QWEN_MODEL", "qwen-turbo"),
     "openai": ("OPENAI_MODEL", "gpt-4o"),
     "groq": ("GROQ_MODEL", "openai/gpt-oss-120b"),
     # anthropic handled via _report_mode_params["model_env_key"] (mode-dependent)
@@ -683,8 +677,6 @@ def get_provider_availability() -> Dict[str, Any]:
     if openai_key.startswith("sk-ant-"):
         openai_key = ""
     configured = {
-        "mistral": bool(os.environ.get("MISTRAL_API_KEY", "").strip()),
-        "qwen": bool(os.environ.get("QWEN_API_KEY", "").strip()),
         "openai": bool(openai_key),
         "groq": bool(os.environ.get("GROQ_API_KEY", "").strip()),
         "anthropic": bool(os.environ.get("ANTHROPIC_API_KEY", "").strip()),
@@ -3485,31 +3477,49 @@ async def stream_chat(
     # configured — see REPORT_PIPELINE_WAIT_SECONDS in backend/.env.example for
     # the measurement this default is based on.
     if brand and brand.pipeline_status in ("pending", "running"):
-        max_wait_seconds = int(os.environ.get("REPORT_PIPELINE_WAIT_SECONDS", "900"))
-        logger.info(f"[REPORT_GATE] Entering wait: brand='{brand_name}' status='{brand.pipeline_status}' cap={max_wait_seconds}s")
-        waited = 0
-        while waited < max_wait_seconds:
-            await asyncio.sleep(3)
-            waited += 3
-
-            # Re-check status in DB
-            status_res = await db.execute(select(BrandConfig.pipeline_status).where(BrandConfig.id == brand.id))
-            current_status = status_res.scalar_one_or_none()
-
-            if current_status in ("complete", "completed"):
-                logger.info(f"[REPORT_GATE] Wait outcome=completed after {waited}s for '{brand_name}'.")
-                break
-            elif current_status == "failed":
-                logger.warning(f"[REPORT_GATE] Wait outcome=failed after {waited}s for '{brand_name}' — will proceed with whatever knowledge base exists.")
-                break
-            else:
-                # Throttled server-side progress log (every ~30s) — the SSE status
-                # event below still fires every 3s to keep the connection/UI alive.
-                if waited % 30 == 0:
-                    logger.info(f"[REPORT_GATE] Still waiting: status='{current_status}' elapsed={waited}s/{max_wait_seconds}s for '{brand_name}'")
-                yield f"data: {json.dumps({'type': 'status', 'content': f'Building brand knowledge base... ({waited}s)'})}\n\n"
+        from backend.services import pipeline_service
+        if not pipeline_service.is_pipeline_active(brand.id):
+            logger.warning(
+                f"[REPORT_GATE] Brand '{brand_name}' status in DB is '{brand.pipeline_status}' "
+                f"but no pipeline task is active in this process (orphaned from restart). Proceeding immediately without waiting."
+            )
+            try:
+                from sqlalchemy import update
+                await db.execute(
+                    update(BrandConfig).where(BrandConfig.id == brand.id).values(
+                        pipeline_status="complete" if brand.kb_json else "complete"
+                    )
+                )
+                await db.commit()
+                await db.refresh(brand)
+            except Exception as e:
+                logger.warning(f"[REPORT_GATE] Failed to auto-correct orphaned status: {e}")
         else:
-            logger.warning(f"[REPORT_GATE] Wait outcome=timed_out after {max_wait_seconds}s for '{brand_name}' — giving up on waiting.")
+            max_wait_seconds = int(os.environ.get("REPORT_PIPELINE_WAIT_SECONDS", "300"))
+            logger.info(f"[REPORT_GATE] Entering wait: brand='{brand_name}' status='{brand.pipeline_status}' cap={max_wait_seconds}s")
+            waited = 0
+            while waited < max_wait_seconds:
+                await asyncio.sleep(3)
+                waited += 3
+
+                # Re-check status in DB
+                status_res = await db.execute(select(BrandConfig.pipeline_status).where(BrandConfig.id == brand.id))
+                current_status = status_res.scalar_one_or_none()
+
+                if current_status in ("complete", "completed"):
+                    logger.info(f"[REPORT_GATE] Wait outcome=completed after {waited}s for '{brand_name}'.")
+                    break
+                elif current_status == "failed":
+                    logger.warning(f"[REPORT_GATE] Wait outcome=failed after {waited}s for '{brand_name}' — will proceed with whatever knowledge base exists.")
+                    break
+                else:
+                    # Throttled server-side progress log (every ~30s) — the SSE status
+                    # event below still fires every 3s to keep the connection/UI alive.
+                    if waited % 30 == 0:
+                        logger.info(f"[REPORT_GATE] Still waiting: status='{current_status}' elapsed={waited}s/{max_wait_seconds}s for '{brand_name}'")
+                    yield f"data: {json.dumps({'type': 'status', 'content': f'Building brand knowledge base... ({waited}s)'})}\n\n"
+            else:
+                logger.warning(f"[REPORT_GATE] Wait outcome=timed_out after {max_wait_seconds}s for '{brand_name}' — giving up on waiting.")
 
         # `brand` was loaded once, before this wait, and is still tracked by
         # this same `db` session's identity map. A plain `select()` through

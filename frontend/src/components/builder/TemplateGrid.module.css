@@ -5,6 +5,8 @@
   flex-direction: column;
   gap: 24px;
   width: 100%;
+  padding-top: 36px;
+  padding-bottom: 60px;
 }
 
 .headerRow {

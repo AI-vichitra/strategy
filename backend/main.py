@@ -68,6 +68,45 @@ async def _create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _add_missing_columns()
+    await _restore_cached_logos()
+    await _cleanup_orphaned_pipelines()
+
+
+async def _cleanup_orphaned_pipelines():
+    """Reset any pipelines left in 'running' state on server restart."""
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("UPDATE brand_configs SET pipeline_status = 'complete' WHERE pipeline_status = 'running'"))
+            logger.info("[startup] Cleaned up orphaned running pipelines.")
+    except Exception as e:
+        logger.warning(f"[startup] Failed cleaning up orphaned pipelines: {e}")
+
+
+async def _restore_cached_logos():
+    """Restores any missing logo files from DB logo_data to static disk cache."""
+    try:
+        import json
+        async with engine.begin() as conn:
+            result = await conn.execute(text("SELECT brand_kit, logo_data FROM projects WHERE logo_data IS NOT NULL"))
+            rows = result.fetchall()
+            for brand_kit_raw, logo_data in rows:
+                if not brand_kit_raw or not logo_data:
+                    continue
+                try:
+                    bk = json.loads(brand_kit_raw) if isinstance(brand_kit_raw, str) else brand_kit_raw
+                    logo_url = bk.get("logo_url") if isinstance(bk, dict) else None
+                    if logo_url and logo_url.startswith("/static/uploads/logos/"):
+                        rel_path = logo_url.replace("/static/", "").replace("/", os.sep)
+                        full_path = os.path.join(_static_dir, rel_path)
+                        if not os.path.exists(full_path):
+                            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                            with open(full_path, "wb") as f:
+                                f.write(logo_data)
+                            logger.info(f"[startup] Restored cached logo from DB to {full_path}")
+                except Exception as inner_e:
+                    logger.debug(f"[startup] Failed restoring logo: {inner_e}")
+    except Exception as e:
+        logger.info(f"[startup] Skipping logo restoration: {e}")
 
 # Alembic isn't wired up in this project (see models/ — create_all() is the
 # only migration mechanism), so create_all() only creates missing TABLES. A
@@ -84,6 +123,8 @@ _NEW_COLUMNS = [
     ("brand_configs", "additional_notes", "TEXT", "TEXT"),
     ("brand_configs", "social_handles", "TEXT", "TEXT"),
     ("brand_configs", "brand_brief", "TEXT", "TEXT"),
+    ("brand_configs", "logo_url", "TEXT", "TEXT"),
+    ("users", "avatar_url", "TEXT", "TEXT"),
 ]
 
 

@@ -248,6 +248,7 @@ class BrandConfigBase(BaseModel):
     additional_notes: Optional[str] = None
     competitors: Optional[str] = None
     social_metrics: Optional[str] = None
+    logo_url: Optional[str] = None
 
 
 # ── DB create / response ─────────────────────────────────────────────────────
@@ -294,6 +295,7 @@ class BrandConfigResponse(BrandConfigBase):
 class CompetitorInput(BaseModel):
     name: str
     url: Optional[str] = None
+    logo_url: Optional[str] = None
 
 
 class BrandSearchRequest(BaseModel):
@@ -320,6 +322,7 @@ class CompetitorConfirmed(BaseModel):
     name: str
     website_url: Optional[str] = None
     handle: Optional[str] = None
+    logo_url: Optional[str] = None
 
 
 class BrandConfirmRequest(BaseModel):

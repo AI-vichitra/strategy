@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './Sidebar.module.css';
 
 interface Project {
@@ -8,26 +8,115 @@ interface Project {
   agent_type: string;
   created_at: string;
   brand_config_id: string;
+  messages?: any[];
+}
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+}
+
+const GOOGLE_COLORS = [
+  '#1a73e8', // blue
+  '#d93025', // red
+  '#188038', // green
+  '#f29900', // yellow-orange
+  '#a142f4', // purple
+  '#fa7b17', // orange
+  '#007b83', // teal
+  '#e52592', // pink
+];
+
+function getAvatarColor(nameOrEmail: string): string {
+  let hash = 0;
+  for (let i = 0; i < nameOrEmail.length; i++) {
+    hash = nameOrEmail.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % GOOGLE_COLORS.length;
+  return GOOGLE_COLORS[index];
+}
+
+function getInitials(name?: string | null, email?: string): string {
+  if (name && name.trim()) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  if (email) {
+    return email.slice(0, 1).toUpperCase();
+  }
+  return 'U';
 }
 
 export default function Sidebar() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [brands, setBrands] = useState<Record<string, string>>({});
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [activeNavTab, setActiveNavTab] = useState<string>('newChat');
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
-  // Close three dots popover on any outside click
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatar_url]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      if (!token) return;
+      const res = await fetch(`${apiBase}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch user profile', e);
+    }
+  };
+
+  // Close menus on outside click
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest(`.${styles.menuBtn}`)) {
-        return;
+      if (profileRef.current && !profileRef.current.contains(target)) {
+        setProfileMenuOpen(false);
       }
-      setOpenMenuId(null);
+      if (!target.closest(`.${styles.menuBtn}`) && !target.closest(`.${styles.menuPopover}`)) {
+        setOpenMenuId(null);
+      }
     };
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    if (editingProjectId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [editingProjectId]);
+
+  useEffect(() => {
+    fetchUserProfile();
+    const handleProfileUpdate = () => {
+      fetchUserProfile();
+    };
+    window.addEventListener('userProfileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('userProfileUpdated', handleProfileUpdate);
   }, []);
 
   const fetchProjects = async () => {
@@ -61,16 +150,21 @@ export default function Sidebar() {
           window.location.href = '/brand-setup?new=true';
           return;
         }
-        const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
-        if (savedBrandId && data && data.length > 0) {
-          const match = data.find((p: any) => p.brand_config_id === savedBrandId);
-          if (match) {
-            setActiveProjectId(match.id);
-          } else if (!activeProjectId) {
-            setActiveProjectId(data[0].id);
+
+        // Only projects with actual chat messages count as chats done
+        const chatProjects = (data || []).filter(
+          (p: any) => Array.isArray(p.messages) && p.messages.length > 0
+        );
+
+        if (activeProjectId) {
+          const exists = chatProjects.some((p: any) => p.id === activeProjectId);
+          if (!exists) {
+            setActiveProjectId(null);
+            setActiveNavTab('newChat');
           }
-        } else if (data && data.length > 0 && !activeProjectId) {
-          setActiveProjectId(data[0].id);
+        } else {
+          setActiveProjectId(null);
+          setActiveNavTab('newChat');
         }
       }
     } catch (e) {
@@ -84,31 +178,78 @@ export default function Sidebar() {
     fetchProjects();
   }, []);
 
-  // Listen for project changes from MainContent
+  // Listen for project changes and view changes from MainContent
   useEffect(() => {
     const handleProjectChange = (e: Event) => {
       const customEvent = e as CustomEvent;
+      if (customEvent.detail?.title && customEvent.detail?.projectId) {
+        const renamedTitle = customEvent.detail.title;
+        setProjects(prev => prev.map(p => (p.id === customEvent.detail.projectId || (customEvent.detail.brand_config_id && p.brand_config_id === customEvent.detail.brand_config_id)) ? { ...p, title: renamedTitle } : p));
+      }
       if (customEvent.detail?.projectId) {
         setActiveProjectId(customEvent.detail.projectId);
+        setActiveNavTab('chat');
         fetchProjects(); // refresh list
+      } else {
+        setActiveNavTab('newChat');
       }
     };
     
     const handleNewChat = () => {
       setActiveProjectId(null);
+      setActiveNavTab('newChat');
+    };
+
+    const handleViewChanged = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const v = customEvent.detail?.view;
+      if (v === 'files') {
+        setActiveNavTab('files');
+        setActiveProjectId(null);
+      } else if (v === 'connectors') {
+        setActiveNavTab('connectors');
+        setActiveProjectId(null);
+      } else if (v === 'agents') {
+        setActiveNavTab('agents');
+        setActiveProjectId(null);
+      } else if (v === 'projects') {
+        setActiveNavTab('projects');
+        setActiveProjectId(null);
+      } else if (v === 'settings') {
+        setActiveNavTab('settings');
+        setActiveProjectId(null);
+      } else if (v === 'builder') {
+        setActiveProjectId((curr) => {
+          if (!curr) {
+            setActiveNavTab('newChat');
+          } else {
+            setActiveNavTab('chat');
+          }
+          return curr;
+        });
+      }
     };
 
     window.addEventListener('projectChanged', handleProjectChange);
     window.addEventListener('newChat', handleNewChat);
+    window.addEventListener('viewChanged', handleViewChanged);
     return () => {
       window.removeEventListener('projectChanged', handleProjectChange);
       window.removeEventListener('newChat', handleNewChat);
+      window.removeEventListener('viewChanged', handleViewChanged);
     };
   }, []);
 
   const handleOpenProject = (projectId: string) => {
     setActiveProjectId(projectId);
+    setActiveNavTab('chat');
     window.dispatchEvent(new CustomEvent('openProject', { detail: { projectId } }));
+  };
+
+  const handleNavClick = (tabKey: string, eventName: string) => {
+    setActiveNavTab(tabKey);
+    setActiveProjectId(null);
+    window.dispatchEvent(new CustomEvent(eventName));
   };
 
   const handleDeleteProject = async (projectIdToDelete: string, e: React.MouseEvent) => {
@@ -141,28 +282,78 @@ export default function Sidebar() {
     }
   };
 
-  // Group all chat projects by date
-  const groupedProjects = projects.reduce((groups: Record<string, Project[]>, proj) => {
-    const date = new Date(proj.created_at);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    let key = 'Older';
-    if (diffDays === 0) key = 'Today';
-    else if (diffDays === 1) key = 'Yesterday';
-    else if (diffDays <= 7) key = 'This Week';
-    else if (diffDays <= 30) key = 'This Month';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(proj);
-    return groups;
-  }, {});
+  const handleStartRename = (proj: Project, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    setEditingProjectId(proj.id);
+    setEditingTitle(proj.title);
+  };
 
-  const groupOrder = ['Today', 'Yesterday', 'This Week', 'This Month', 'Older'];
+  const handleSaveRename = async (projectId: string) => {
+    const trimmed = editingTitle.trim();
+    setEditingProjectId(null);
+    if (!trimmed) return;
+
+    const currentProj = projects.find(p => p.id === projectId);
+    if (currentProj && currentProj.title === trimmed) return;
+
+    // Optimistically update project title
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, title: trimmed } : p));
+    if (currentProj?.brand_config_id) {
+      setBrands(prev => ({ ...prev, [currentProj.brand_config_id]: trimmed }));
+    }
+
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      if (!token) return;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+
+      const res = await fetch(`${apiBase}/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ title: trimmed })
+      });
+
+      if (res.ok) {
+        window.dispatchEvent(new CustomEvent('projectChanged', { detail: { projectId, title: trimmed, brand_config_id: currentProj?.brand_config_id } }));
+      } else {
+        fetchProjects();
+      }
+    } catch (err) {
+      console.error('Failed to rename project:', err);
+      fetchProjects();
+    }
+  };
+
+  // Chat history should only include projects that have actual chat messages done
+  const chatHistoryProjects = projects.filter(
+    (p) => Array.isArray(p.messages) && p.messages.length > 0
+  );
+
+  // Sort active chat projects so the latest is always on top
+  const sortedProjects = [...chatHistoryProjects].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
+  });
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('brand_config_id');
     localStorage.removeItem('pathChosen');
     window.location.href = '/auth';
+  };
+
+  const displayName = user?.full_name || (user?.email ? user.email.split('@')[0] : 'User');
+  const initials = getInitials(user?.full_name, user?.email);
+
+  const handleOpenSettings = () => {
+    setProfileMenuOpen(false);
+    window.dispatchEvent(new CustomEvent('openSettings'));
   };
 
   return (
@@ -182,30 +373,58 @@ export default function Sidebar() {
       <div className={styles.scrollArea}>
         {/* Nav Group */}
         <nav className={styles.navGroup}>
-          <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('newChat')); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
+          <a
+            href="#"
+            className={`${styles.navItem} ${activeNavTab === 'newChat' && !activeProjectId ? styles.navItemActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('newChat', 'newChat');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Home
+            New Chat
           </a>
-          <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openFiles')); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <a
+            href="#"
+            className={`${styles.navItem} ${activeNavTab === 'files' ? styles.navItemActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('files', 'openFiles');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 10V7l-5-5H6c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7"/>
               <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
               <path d="M16 22h6"/><path d="M19 19v6"/>
             </svg>
             Files Generated
           </a>
-          <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openConnectorsView')); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <a
+            href="#"
+            className={`${styles.navItem} ${activeNavTab === 'connectors' ? styles.navItemActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('connectors', 'openConnectorsView');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
             Connector
           </a>
-          <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openAgents')); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <a
+            href="#"
+            className={`${styles.navItem} ${activeNavTab === 'agents' ? styles.navItemActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('agents', 'openAgents');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7"/>
               <rect x="14" y="3" width="7" height="7"/>
               <rect x="14" y="14" width="7" height="7"/>
@@ -213,105 +432,248 @@ export default function Sidebar() {
             </svg>
             Agents
           </a>
-          <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openProjects')); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <a
+            href="#"
+            className={`${styles.navItem} ${activeNavTab === 'projects' ? styles.navItemActive : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('projects', 'openProjects');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
             Projects
           </a>
+          {/* Workflows tab - commented out for now, to be worked on later
           <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openWorkflow')); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
             Workflow
           </a>
+          */}
         </nav>
-
-        {/* New Chat Button */}
-        <button
-          className={styles.newChatBtn}
-          onClick={() => window.dispatchEvent(new CustomEvent('newChat'))}
-          style={{ marginBottom: '16px' }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          NEW CHAT
-        </button>
 
         {/* Chat History */}
         <div className={styles.historySection}>
           <div className={styles.historyHeader}>Chat History</div>
           {loading ? (
             <div className={styles.historyEmpty}>Loading...</div>
-          ) : projects.length === 0 ? (
-            <div className={styles.historyEmpty}>No chats yet</div>
-          ) : (
-            groupOrder.map(group => {
-              const items = groupedProjects[group];
-              if (!items || items.length === 0) return null;
-              return (
-                <div key={group} className={styles.historyGroup}>
-                  <div className={styles.historyGroupLabel}>{group}</div>
-                  {items.map(proj => (
-                    <div
-                      key={proj.id}
-                      className={`${styles.historyItemWrapper} ${proj.id === activeProjectId ? styles.historyItemActive : ''}`}
-                      onClick={() => handleOpenProject(proj.id)}
-                    >
-                      <div className={styles.historyItemLeft}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.historyItemIcon}>
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          ) : sortedProjects.length === 0 ? null : (
+            <div className={styles.historyList}>
+              {sortedProjects.map(proj => (
+                <div
+                  key={proj.id}
+                  className={`${styles.historyItemWrapper} ${proj.id === activeProjectId && activeNavTab === 'chat' ? styles.historyItemActive : ''}`}
+                  onClick={() => {
+                    if (editingProjectId !== proj.id) {
+                      handleOpenProject(proj.id);
+                    }
+                  }}
+                >
+                  <div className={styles.historyItemLeft}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.historyItemIcon}>
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    {editingProjectId === proj.id ? (
+                      <input
+                        ref={renameInputRef}
+                        type="text"
+                        className={styles.renameInput}
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveRename(proj.id);
+                          } else if (e.key === 'Escape') {
+                            setEditingProjectId(null);
+                          }
+                        }}
+                        onBlur={() => handleSaveRename(proj.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span className={styles.historyItemTitle} title={proj.title}>
+                        {proj.title}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {editingProjectId === proj.id ? (
+                    <div className={styles.renameActions} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={`${styles.renameActionBtn} ${styles.renameSaveBtn}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveRename(proj.id);
+                        }}
+                        title="Save changes"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        <span className={styles.historyItemTitle}>
-                          {proj.title}
-                        </span>
-                      </div>
-                      
-                      <div className={styles.menuContainer}>
-                        <button 
-                          className={styles.menuBtn} 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(openMenuId === proj.id ? null : proj.id);
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-                          </svg>
-                        </button>
-                        {openMenuId === proj.id && (
-                          <div className={styles.menuPopover}>
-                            <button 
-                              className={styles.deleteOption} 
-                              onClick={(e) => handleDeleteProject(proj.id, e)}
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.renameActionBtn} ${styles.renameCancelBtn}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProjectId(null);
+                        }}
+                        title="Cancel"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
                     </div>
-                  ))}
+                  ) : (
+                    <div className={styles.menuContainer}>
+                      <button 
+                        className={`${styles.menuBtn} ${openMenuId === proj.id ? styles.menuBtnActive : ''}`} 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === proj.id ? null : proj.id);
+                        }}
+                        title="More options"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                        </svg>
+                      </button>
+                      {openMenuId === proj.id && (
+                        <div className={styles.menuPopover} onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            type="button"
+                            className={styles.menuOption} 
+                            onClick={(e) => handleStartRename(proj, e)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.menuOptionIcon}>
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            <span>Rename</span>
+                          </button>
+                          <button 
+                            type="button"
+                            className={`${styles.menuOption} ${styles.deleteOption}`} 
+                            onClick={(e) => handleDeleteProject(proj.id, e)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.menuOptionIcon}>
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                              <line x1="10" y1="11" x2="10" y2="17"/>
+                              <line x1="14" y1="11" x2="14" y2="17"/>
+                            </svg>
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              );
-            })
+              ))}
+            </div>
           )}
         </div>
       </div>
 
       {/* Bottom Area */}
-      <div className={styles.bottomArea}>
-        <div className={styles.userProfile}>
-          <div className={styles.avatar}>AS</div>
-          <div className={styles.userInfo}>
-            <span className={styles.userName}>Naveen</span>
-            <button className={styles.logoutBtn} onClick={handleLogout}>Logout</button>
+      <div className={styles.bottomArea} ref={profileRef}>
+        {profileMenuOpen && (
+          <div className={styles.profilePopover}>
+            <div className={styles.popoverHeader}>
+              {user?.avatar_url && !avatarError ? (
+                <img
+                  src={user.avatar_url}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className={styles.avatarImg}
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div
+                  className={styles.avatarCircle}
+                  style={{ backgroundColor: getAvatarColor(displayName) }}
+                >
+                  {initials}
+                </div>
+              )}
+              <div className={styles.popoverHeaderInfo}>
+                <span className={styles.popoverName}>{displayName}</span>
+                <span className={styles.popoverEmail}>{user?.email || ''}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={styles.popoverItem}
+              onClick={handleOpenSettings}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              Settings
+            </button>
+            <button
+              type="button"
+              className={`${styles.popoverItem} ${styles.popoverItemLogout}`}
+              onClick={handleLogout}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Logout
+            </button>
           </div>
+        )}
+
+        <div
+          className={styles.userProfile}
+          onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+          title="Account & Settings"
+        >
+          {user?.avatar_url && !avatarError ? (
+            <img
+              src={user.avatar_url}
+              alt=""
+              referrerPolicy="no-referrer"
+              className={styles.avatarImg}
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <div
+              className={styles.avatarCircle}
+              style={{ backgroundColor: getAvatarColor(displayName) }}
+            >
+              {initials}
+            </div>
+          )}
+          <div className={styles.userInfo}>
+            <span className={styles.userName}>{displayName}</span>
+            <span className={styles.userSubtext}>{user?.email || 'Settings'}</span>
+          </div>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`${styles.profileChevron} ${profileMenuOpen ? styles.profileChevronOpen : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
       </div>
     </aside>

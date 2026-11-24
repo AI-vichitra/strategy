@@ -25,6 +25,7 @@ class CompetitorSocialMedia(BaseModel):
 class CompetitorDetail(BaseModel):
     brand_name: str
     website_url: Optional[str] = None
+    logo_url: Optional[str] = None
     social_media: Optional[CompetitorSocialMedia] = None
 
 class CompetitorDetailsInput(BaseModel):
@@ -56,7 +57,7 @@ class ProjectBase(BaseModel):
     title: str
     description: Optional[str] = None
     questionnaire_answers: Optional[str] = None
-    llm_provider: Optional[str] = "mistral"
+    llm_provider: Optional[str] = "openai"
     competitor_details: Optional[List[CompetitorDetail]] = None
     brand_kit: Optional[BrandKit] = None
 
@@ -79,7 +80,7 @@ class ProjectResponse(BaseModel):
     title: str
     description: Optional[str] = None
     questionnaire_answers: Optional[str] = None
-    llm_provider: Optional[str] = "mistral"
+    llm_provider: Optional[str] = "openai"
     competitor_details: Optional[List[CompetitorDetail]] = None
     brand_kit: Optional[BrandKit] = None
     last_active_at: Optional[datetime] = None

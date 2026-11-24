@@ -116,6 +116,18 @@ async def upload_logo(file: UploadFile = File(...), current_user: User = Depends
 
 @router.post("/", response_model=ProjectResponse)
 async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from backend.models.brand import BrandConfig
+
+    # Auto-resolve brand name if title is generic or not supplied
+    if project.brand_config_id:
+        brand_res = await db.execute(
+            select(BrandConfig.brand_name).where(BrandConfig.id == project.brand_config_id, BrandConfig.user_id == current_user.id)
+        )
+        b_name = brand_res.scalar_one_or_none()
+        if b_name:
+            if not project.title or project.title in ("New Strategy Chat", "New Project", "StratAI"):
+                project.title = b_name
+
     competitor_details_json = _serialize_competitor_details(project.competitor_details)
     brand_kit_json = _serialize_brand_kit(project.brand_kit)
     logo_data, logo_mime = _resolve_logo_bytes(project.brand_kit)
@@ -190,6 +202,14 @@ async def update_project(project_id: str, project_update: ProjectUpdate, db: Asy
     for key, value in update_data.items():
         setattr(project, key, value)
 
+    # If title is updated and project is linked to a BrandConfig, sync brand_name
+    if "title" in update_data and project.brand_config_id:
+        from backend.models.brand import BrandConfig
+        brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id, BrandConfig.user_id == current_user.id))
+        brand = brand_result.scalars().first()
+        if brand:
+            brand.brand_name = project.title
+
     await db.commit()
     res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == project_id))
     return res.scalars().first()
@@ -215,27 +235,39 @@ async def get_project_details(
         select(Project).where(Project.id == project_id, Project.user_id == current_user.id)
     )
     project = result.scalars().first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    
+    brand = None
+    if project:
+        brand_result = await db.execute(
+            select(BrandConfig).where(BrandConfig.id == project.brand_config_id)
+        )
+        brand = brand_result.scalars().first()
+    else:
+        # Check if project_id is actually a brand_config_id
+        brand_result = await db.execute(
+            select(BrandConfig).where(BrandConfig.id == project_id, BrandConfig.user_id == current_user.id)
+        )
+        brand = brand_result.scalars().first()
+        if brand:
+            proj_result = await db.execute(
+                select(Project).where(Project.brand_config_id == brand.id, Project.user_id == current_user.id).order_by(Project.created_at.desc())
+            )
+            project = proj_result.scalars().first()
 
-    brand_result = await db.execute(
-        select(BrandConfig).where(BrandConfig.id == project.brand_config_id)
-    )
-    brand = brand_result.scalars().first()
     if not brand:
-        raise HTTPException(status_code=404, detail="Brand not found")
+        raise HTTPException(status_code=404, detail="Project or Brand not found")
 
-    logo_url = None
+    logo_url = brand.logo_url or None
     colors = None
-    if project.brand_kit:
+    if project and project.brand_kit:
         try:
             bk = json.loads(project.brand_kit)
-            logo_url = bk.get("logo_url")
+            logo_url = bk.get("logo_url") or logo_url
             colors = bk.get("colors")
         except Exception:
             pass
     # Fallback: look for brand_kit from any sibling project when this one has none
-    if not logo_url and not colors and project.brand_config_id:
+    if not logo_url and not colors and project and project.brand_config_id:
         fb_result = await db.execute(
             select(Project.brand_kit)
             .where(
@@ -251,7 +283,7 @@ async def get_project_details(
         if fb_raw:
             try:
                 fb_bk = json.loads(fb_raw)
-                logo_url = fb_bk.get("logo_url")
+                logo_url = fb_bk.get("logo_url") or logo_url
                 colors = fb_bk.get("colors")
             except Exception:
                 pass
@@ -260,9 +292,16 @@ async def get_project_details(
     if brand.competitors:
         try:
             for c in json.loads(brand.competitors):
+                c_logo = c.get("logo_url") or ""
+                # Safeguard: prevent showing the brand's own logo for a competitor
+                if c_logo and brand.logo_url and c_logo == brand.logo_url:
+                    c_logo = ""
+                if c_logo and logo_url and c_logo == logo_url:
+                    c_logo = ""
                 competitors_selected.append({
                     "name": c.get("name", ""),
                     "website_url": c.get("url") or c.get("website_url") or "",
+                    "logo_url": c_logo,
                 })
         except Exception:
             pass
@@ -298,16 +337,18 @@ async def get_project_details(
             pass
 
     last_updated = None
-    if project.last_active_at:
+    if project and project.last_active_at:
         last_updated = project.last_active_at.isoformat()
-    elif project.created_at:
+    elif project and project.created_at:
         last_updated = project.created_at.isoformat()
+    elif brand.created_at:
+        last_updated = brand.created_at.isoformat()
 
     # Collect all chat projects for this brand, ordered newest first
     chats_result = await db.execute(
         select(Project)
         .options(selectinload(Project.messages))
-        .where(Project.brand_config_id == project.brand_config_id, Project.user_id == current_user.id)
+        .where(Project.brand_config_id == brand.id, Project.user_id == current_user.id)
         .order_by(Project.created_at.desc())
     )
     all_chats = chats_result.scalars().all()
@@ -324,7 +365,7 @@ async def get_project_details(
         })
 
     return {
-        "brand_config_id": project.brand_config_id,
+        "brand_config_id": brand.id,
         "brand": {
             "name": brand.brand_name,
             "website_url": brand.website_url,

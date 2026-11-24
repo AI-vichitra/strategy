@@ -13,6 +13,7 @@ export interface CompetitorSocialMedia {
 export interface CompetitorDetail {
   brand_name: string;
   website_url?: string;
+  logo_url?: string;
   social_media?: CompetitorSocialMedia;
 }
 
@@ -74,7 +75,17 @@ function CompetitorCard({
       </button>
 
       <div className={styles.fieldRow}>
-        <label className={styles.fieldLabel}>Brand Name</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          {competitor.logo_url && (
+            <img
+              src={competitor.logo_url.startsWith('/') ? `${process.env.NEXT_PUBLIC_API_URL || ''}${competitor.logo_url}` : competitor.logo_url}
+              alt={competitor.brand_name || 'Logo'}
+              className={styles.competitorLogoImg}
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+            />
+          )}
+          <label className={styles.fieldLabel} style={{ marginBottom: 0 }}>Brand Name</label>
+        </div>
         <input
           ref={nameRef}
           type="text"

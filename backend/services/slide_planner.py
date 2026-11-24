@@ -724,22 +724,16 @@ def _extract_json(text: str) -> Any:
 
 
 _PROVIDER_BASE_URLS = {
-    "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "groq": "https://api.groq.com/openai/v1",
-    "mistral": "https://api.mistral.ai/v1",
 }
 _PROVIDER_CHEAP_MODEL_ENV = {
-    "qwen": ("QWEN_PLANNER_MODEL", "qwen-turbo"),
     "openai": ("OPENAI_PLANNER_MODEL", "gpt-4o-mini"),
     "groq": ("GROQ_PLANNER_MODEL", "openai/gpt-oss-120b"),
-    "mistral": ("MISTRAL_PLANNER_MODEL", "open-mistral-7b"),
     "anthropic": ("ANTHROPIC_PLANNER_MODEL", "claude-haiku-5-5"),
 }
 
 
 _PROVIDER_KEY_ENV = {
-    "mistral": "MISTRAL_API_KEY",
-    "qwen": "QWEN_API_KEY",
     "openai": "OPENAI_API_KEY",
     "groq": "GROQ_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",

@@ -1,0 +1,119 @@
+/* ── Voice Input (Claude-Style Compact Waveform & Controls) ── */
+
+.micBtn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FAF8F5;
+  border: 1px solid #E8E4DC;
+  border-radius: 7px;
+  color: #6B6560;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+}
+
+.micBtn:hover:not(:disabled) {
+  background: #F5F1EB;
+  border-color: #D4A843;
+  color: #1A1A1A;
+  transform: translateY(-1px);
+}
+
+.micBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Active Recording Inline Controls on the Right ── */
+.recordingGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Small Waveform on the Right (just like Claude) ── */
+.compactWaveform {
+  width: 130px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+/* ── Action Buttons (Cancel ✕ & Confirm ✓) ── */
+.cancelBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid #E8E4DC;
+  background: #FAF8F5;
+  color: #6B6560;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cancelBtn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  transform: scale(1.05);
+}
+
+.confirmBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1.5px solid #D4A843;
+  background: #FFFFFF;
+  color: #D4A843;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(212, 168, 67, 0.15);
+}
+
+.confirmBtn:hover {
+  background: linear-gradient(135deg, #D4A843, #B8912E);
+  color: #FFFFFF;
+  transform: scale(1.05);
+  box-shadow: 0 3px 10px rgba(212, 168, 67, 0.3);
+}
+
+/* ── Error Toast ── */
+.errorToast {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: #1A1A1A;
+  color: #fca5a5;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}

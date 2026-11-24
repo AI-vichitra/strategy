@@ -23,7 +23,7 @@
   right: 0;
   width: 100%;
   max-width: 520px;
-  height: 100vh;
+  height: 100%;
   background: #ffffff;
   box-shadow: -12px 0 48px rgba(35, 95, 125, 0.15);
   z-index: 999;

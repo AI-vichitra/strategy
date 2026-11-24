@@ -9,12 +9,14 @@ import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
 import CompetitorForm, { type CompetitorDetail } from '../CompetitorForm';
 import BrandKitForm, { type BrandKit } from '../BrandKitForm';
+import AgentTemplateView, { type TargetAudienceData } from './AgentTemplateView';
 import ExportMenu from '../ExportMenu';
 import ConnectorsPanel from './ConnectorsPanel';
 import ConnectorsView from './ConnectorsView';
 import FilesView from './FilesView';
 import ProjectsView from './ProjectsView';
-import WorkflowView from './WorkflowView';
+// import WorkflowView from './WorkflowView'; // Workflows tab commented out for now
+import SettingsView from './SettingsView';
 import styles from './MainContent.module.css';
 import ReportRenderer from '../ReportRenderer';
 import SectionEditor from '../SectionEditor';
@@ -607,13 +609,15 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
   const [providerNote, setProviderNote] = useState<string>('');
   const [promptText, setPromptText] = useState('');
+  const [userContext, setUserContext] = useState('');
   const [showBanner, setShowBanner] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [qaAnswers, setQaAnswers] = useState<Array<{ question: string; answer: string }>>([]);
   const [competitors, setCompetitors] = useState<CompetitorDetail[]>([]);
   const [brandKit, setBrandKit] = useState<BrandKit>({});
-  const [userContext, setUserContext] = useState('');
+  const [targetAudience, setTargetAudience] = useState<TargetAudienceData>({ region: 'Global', segments: [] });
+  const [additionalNotes, setAdditionalNotes] = useState<string>('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -629,10 +633,14 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [shareCopiedIdx, setShareCopiedIdx] = useState<number | null>(null);
   const [shareErrorIdx, setShareErrorIdx] = useState<number | null>(null);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
-  const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors'>('builder');
+  const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors' | 'settings'>('builder');
   const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('viewChanged', { detail: { view } }));
+  }, [view]);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
@@ -942,16 +950,17 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
 
         if (savedBrandId) {
+          const matchingBrand = (brandsData || []).find((b: any) => b.id === savedBrandId);
           const matchingProj = (data || []).find((p: any) => p.brand_config_id === savedBrandId);
+          const displayTitle = matchingBrand?.brand_name || bMap[savedBrandId] || matchingProj?.title || 'Brand Project';
           if (matchingProj) {
             setActiveProject({
               id: matchingProj.id,
-              title: bMap[matchingProj.brand_config_id] || matchingProj.title || 'Brand Project',
+              title: displayTitle,
               brand_config_id: matchingProj.brand_config_id
             });
             return;
           }
-          const matchingBrand = (brandsData || []).find((b: any) => b.id === savedBrandId);
           if (matchingBrand) {
             setActiveProject({
               id: matchingBrand.id,
@@ -1044,23 +1053,46 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
+    setTargetAudience({ region: 'Global', segments: [] });
+    setAdditionalNotes('');
     setPrefilledOnboarding({ competitors: false, brandKit: false });
 
     // Pre-fill competitor list and brand kit from onboarding data for this brand
     const currentBrandIdForPrefill = activeProject?.brand_config_id || savedBrandId;
     if (currentBrandIdForPrefill) {
       const brand = brandsList.find((b: any) => b.id === currentBrandIdForPrefill);
-      if (brand?.competitors) {
-        try {
-          const onboardingComps = JSON.parse(brand.competitors) as Array<{ name?: string; url?: string; website_url?: string }>;
-          const mapped = onboardingComps
-            .filter((c) => c && typeof c.name === 'string' && c.name.trim())
-            .map((c) => ({ brand_name: c.name!.trim(), website_url: c.url || c.website_url || '', social_media: undefined }));
-          if (mapped.length > 0) {
-            setCompetitors(mapped);
-            setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
-          }
-        } catch {}
+      if (brand) {
+        if (brand.competitors) {
+          try {
+            const onboardingComps = JSON.parse(brand.competitors) as Array<{ name?: string; url?: string; website_url?: string; logo_url?: string }>;
+            const mapped = onboardingComps
+              .filter((c) => c && typeof c.name === 'string' && c.name.trim())
+              .map((c) => ({
+                brand_name: c.name!.trim(),
+                website_url: c.url || c.website_url || '',
+                logo_url: c.logo_url || undefined,
+                social_media: undefined
+              }));
+            if (mapped.length > 0) {
+              setCompetitors(mapped);
+              setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
+            }
+          } catch {}
+        }
+        if (brand.target_market) {
+          try {
+            const tm = typeof brand.target_market === 'string' ? JSON.parse(brand.target_market) : brand.target_market;
+            setTargetAudience({
+              region: tm?.region || 'Global',
+              segments: [],
+              locations: tm?.cities ? (Array.isArray(tm.cities) ? tm.cities.join(', ') : tm.cities) : '',
+              notes: ''
+            });
+          } catch {}
+        }
+        if (brand.additional_notes) {
+          setAdditionalNotes(brand.additional_notes);
+        }
       }
       const projWithKit = projectsList.find((p: any) => p.brand_config_id === currentBrandIdForPrefill && p.brand_kit);
       if (projWithKit?.brand_kit) {
@@ -1082,12 +1114,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const handleRevert = () => {
     setSelectedAgent(null);
     setPromptText('');
-    setUserContext('');
     setAttachedFiles([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
     setQaAnswers([]);
+    setUserContext('');
     setCompetitors([]);
     setBrandKit({});
     setPrefilledOnboarding({ competitors: false, brandKit: false });
@@ -1097,12 +1129,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setView('builder');
     setSelectedAgent(null);
     setPromptText('');
-    setUserContext('');
     setAttachedFiles([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
     setQaAnswers([]);
+    setUserContext('');
     setCompetitors([]);
     setBrandKit({});
     setPrefilledOnboarding({ competitors: false, brandKit: false });
@@ -1155,6 +1187,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 const mapped = details.competitors_selected.map((c: any) => ({
                   brand_name: c.name || '',
                   website_url: c.website_url || '',
+                  logo_url: c.logo_url || undefined,
                   social_media: undefined,
                 }));
                 setCompetitors(mapped);
@@ -1169,10 +1202,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         }
 
         if (proj.brand_config_id) {
-          const brandName = brandsMap[proj.brand_config_id] || 'Brand Project';
+          const brandName = brandsMap[proj.brand_config_id] || (brandsList.find((b: any) => b.id === proj.brand_config_id))?.brand_name || 'Brand Project';
           setActiveProject({
             id: proj.id,
-            title: proj.title || brandName,
+            title: brandName || proj.title || 'Brand Project',
             brand_config_id: proj.brand_config_id,
           });
         }
@@ -1210,7 +1243,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     const onOpenFiles = () => setView('files');
     const onOpenProjects = () => setView('projects');
     const onOpenAgents = () => setView('agents');
-    const onOpenWorkflow = () => setView('workflow');
+    // const onOpenWorkflow = () => setView('workflow'); // Workflows tab commented out for now
+    const onOpenSettings = () => setView('settings');
     window.addEventListener('newChat', onNewChat);
     window.addEventListener('openProject', onOpenProject);
     window.addEventListener('openConnectors', onOpenConnectors);
@@ -1218,7 +1252,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     window.addEventListener('openFiles', onOpenFiles);
     window.addEventListener('openProjects', onOpenProjects);
     window.addEventListener('openAgents', onOpenAgents);
-    window.addEventListener('openWorkflow', onOpenWorkflow);
+    // window.addEventListener('openWorkflow', onOpenWorkflow);
+    window.addEventListener('openSettings', onOpenSettings);
     return () => {
       window.removeEventListener('newChat', onNewChat);
       window.removeEventListener('openProject', onOpenProject);
@@ -1227,7 +1262,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       window.removeEventListener('openFiles', onOpenFiles);
       window.removeEventListener('openProjects', onOpenProjects);
       window.removeEventListener('openAgents', onOpenAgents);
-      window.removeEventListener('openWorkflow', onOpenWorkflow);
+      // window.removeEventListener('openWorkflow', onOpenWorkflow);
+      window.removeEventListener('openSettings', onOpenSettings);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandsMap]);
@@ -1236,9 +1272,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const handleSubmit = async () => {
     if (!promptText.trim()) return;
     let baseContent = promptText.trim();
-    if (userContext.trim()) {
-      baseContent += `\n\n── User Context ──\n${userContext.trim()}`;
-    }
     if (attachedFiles.length > 0) {
       baseContent += `\n\n── Attached Files ──\n` + attachedFiles.map(f => `📄 ${f.name}`).join('\n');
     }
@@ -1249,6 +1282,24 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       apiUserContent = `Generate a complete competitive analysis strategy report for my brand and competitors based on all our scanned website and Instagram knowledge base data. Include full comparison tables, Recharts dashboard visualizations for pricing/scale/share of voice, SWOT analysis, and personalized next steps.`;
     } else if (selectedAgent === 'GTM Strategy' && baseContent.includes('Launch with confidence using a complete Go-To-Market roadmap')) {
       apiUserContent = `Generate an exhaustive, highly visual Go-To-Market (GTM) strategy report for our brand and competitors using our scanned knowledge base data and our answers to the 4 GTM setup questions. Include all 5 required Recharts dashboards (Target Customer Segment Breakdown, Marketing & Channel Budget Allocation, Channel Growth Potential vs Constraints, GTM Execution Intensity per Phase, and Competitive Positioning & Pricing Tier Index), full competitive matrices, 90-day roadmap, and risk mitigation plan.`;
+    }
+
+    if (userContext.trim()) {
+      apiUserContent += `\n\n── User Context ──\n${userContext.trim()}`;
+    }
+    if (qaAnswers.length > 0) {
+      apiUserContent += `\n\n── Strategy Preferences ──\n` + qaAnswers.map(a => `• ${a.question}: ${a.answer}`).join('\n');
+    }
+    const audienceParts: string[] = [];
+    if (targetAudience.region) audienceParts.push(`Region: ${targetAudience.region}`);
+    if (targetAudience.segments && targetAudience.segments.length > 0) audienceParts.push(`Segments: ${targetAudience.segments.join(', ')}`);
+    if (targetAudience.locations) audienceParts.push(`Locations: ${targetAudience.locations}`);
+    if (targetAudience.notes) audienceParts.push(`Notes: ${targetAudience.notes}`);
+    if (audienceParts.length > 0) {
+      apiUserContent += `\n\n── Target Audience ──\n` + audienceParts.join('\n');
+    }
+    if (additionalNotes.trim()) {
+      apiUserContent += `\n\n── Additional Guidelines ──\n${additionalNotes.trim()}`;
     }
 
     const userMsg: Message = { role: 'user', content: baseContent };
@@ -1266,7 +1317,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
     setMessages(prev => [...prev, userMsg, thinking]);
     setPromptText('');
-    setUserContext('');
     setAttachedFiles([]);
     setQaAnswers([]);
     setShowBanner(false);
@@ -1286,11 +1336,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
       if (!targetProjectId || targetProjectId === '') {
         if (activeBrandId) {
+          const brandName = brandsMap[activeBrandId] || (brandsList.find((b: any) => b.id === activeBrandId))?.brand_name;
           const createRes = await fetch(`${apiBase}/api/projects/`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
-              title: selectedAgent || 'New Strategy Chat',
+              title: brandName || selectedAgent || 'Brand Strategy',
               agent_type: selectedAgent || 'StratAI',
               brand_config_id: activeBrandId,
               llm_provider: selectedModel,
@@ -1307,7 +1358,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           if (createRes.ok) {
             const newP = await createRes.json();
             targetProjectId = newP.id;
-            const bTitle = brandsMap[activeBrandId] || newP.title;
+            const bTitle = brandName || brandsMap[activeBrandId] || newP.title;
             setActiveProject({ id: newP.id, title: bTitle, brand_config_id: activeBrandId });
             if (typeof window !== 'undefined') {
               localStorage.setItem('brand_config_id', activeBrandId);
@@ -1453,7 +1504,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-              Go back
+              Back
             </button>
           )}
 
@@ -1466,7 +1517,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              <span>{activeProject ? activeProject.title : 'Select Project'}</span>
+              <span>{activeProject ? (brandsMap[activeProject.brand_config_id || ''] || activeProject.title) : 'Select Project'}</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
             </button>
 
@@ -1574,16 +1625,15 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       <div className={styles.contentArea}>
         {view === 'connectors' ? (
           <ConnectorsView />
+        ) : view === 'settings' ? (
+          <SettingsView onBack={() => setView('builder')} />
+        ) : view === 'projects' ? (
+          <ProjectsView />
+        ) : view === 'files' ? (
+          <FilesView />
         ) : (
-        <div className={`${styles.container} ${isChatting || selectedAgent ? styles.chatContainerPadding : ''}`}>
-
-          {view === 'files' ? (
-            <FilesView />
-          ) : view === 'projects' ? (
-            <ProjectsView />
-          ) : view === 'workflow' ? (
-            <WorkflowView />
-          ) : view === 'agents' ? (
+        <div className={`${styles.container} ${(isChatting || selectedAgent) && view !== 'agents' ? styles.chatContainerPadding : ''}`}>
+          {view === 'agents' ? (
             <TemplateGrid onSelectAgent={handleSelectAgent} />
           ) : isChatting ? (
             /* ── Chat messages view ───────────────────── */
@@ -1808,17 +1858,28 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               <div ref={messagesEndRef} />
             </div>
           ) : selectedAgent ? (
-            /* ── Agent detail (pre-chat) ─────────────── */
-            <div className={styles.agentDetailContainer}>
-              <div className={styles.pageHeader}>
-                <div className={styles.ghostIcon}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="#7c3aed">
-                    <path d="M12 2C6.48 2 2 6.48 2 12v8c0 1.1.9 2 2 2h4v-6h4v6h4v-6h4v6h2c1.1 0 2-.9 2-2v-8c0-5.52-4.48-10-10-10zm-4 10c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm8 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
-                  </svg>
-                </div>
-                <h1 className={styles.title}>{selectedAgent}</h1>
-              </div>
-            </div>
+            /* ── Agent detail (pre-chat multi-tab template view) ─────────────── */
+            <AgentTemplateView
+              selectedAgent={selectedAgent}
+              agentDescription={catalogAgents.find(a => a.title === selectedAgent)?.description}
+              brand={brandsList.find((b: any) => b.id === (activeProject?.brand_config_id || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null)))}
+              competitors={competitors}
+              onUpdateCompetitors={setCompetitors}
+              userContext={userContext}
+              onChangeUserContext={setUserContext}
+              qaAnswers={qaAnswers}
+              onUpdateQaAnswers={setQaAnswers}
+              questions={agentQuestions[selectedAgent]}
+              targetAudience={targetAudience}
+              onChangeTargetAudience={setTargetAudience}
+              additionalNotes={additionalNotes}
+              onChangeAdditionalNotes={setAdditionalNotes}
+              brandKit={brandKit}
+              onChangeBrandKit={setBrandKit}
+              attachedFiles={attachedFiles}
+              onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
+              onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+            />
           ) : (
             /* ── Build your agent (idle home page) ─────── */
             <div className={styles.homeContainer}>
@@ -1834,97 +1895,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 <p className={styles.welcomeSubtitle}>How can I help?</p>
               </div>
 
-              <div className={styles.homeTemplatesSection}>
-                <div className={styles.homeTemplatesHeader}>
-                  <span className={styles.homeTemplatesTitle}>Templates</span>
-                  
-                  {/* Search input with live dropdown */}
-                  <div className={styles.searchContainer} ref={homeSearchContainerRef}>
-                    <div className={styles.searchInputWrapper}>
-                      <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                      </svg>
-                      <input
-                        type="text"
-                        className={styles.searchInput}
-                        placeholder="Search templates..."
-                        value={homeSearchQuery}
-                        onChange={(e) => setHomeSearchQuery(e.target.value)}
-                      />
-                    </div>
-
-                    {homeSearchQuery.trim() !== '' && filteredHomeSearchAgents.length > 0 && (
-                      <div className={styles.searchDropdown}>
-                        {filteredHomeSearchAgents.map((agent) => (
-                          <button
-                            key={agent.id}
-                            type="button"
-                            className={styles.dropdownItem}
-                            onClick={() => {
-                              handleSelectAgent(agent.title);
-                              setHomeSearchQuery('');
-                            }}
-                          >
-                            <div className={styles.dropdownItemContent}>
-                              <span className={styles.dropdownItemTitle}>{agent.title}</span>
-                              <span className={styles.dropdownItemCategory}>
-                                {catalogCategoryNameById[agent.category] || agent.category}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className={styles.homeTemplatesGrid}>
-                  {agentsLoading && (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className={`${styles.homeTemplateCard} ${styles.homeGridSkeletonCard}`} aria-hidden="true" />
-                    ))
-                  )}
-                  {!agentsLoading && agentsError && (
-                    <div className={styles.homeGridErrorState}>
-                      <p>Couldn&apos;t load the agent catalog. {agentsError}</p>
-                      <button type="button" className={styles.homeGridRetryBtn} onClick={refetchAgents}>
-                        Retry
-                      </button>
-                    </div>
-                  )}
-                  {!agentsLoading && !agentsError && catalogAgents.map((agent) => (
-                    <div
-                      key={agent.id}
-                      className={styles.homeTemplateCard}
-                      onClick={() => handleSelectAgent(agent.title)}
-                    >
-                      <div className={styles.homeCardTop}>
-                        <div className={styles.homeCardTitle}>{agent.title}</div>
-                        <div className={styles.homeCardDesc}>{agent.description}</div>
-                      </div>
-                      <div className={styles.homeCardBottom}>
-                        <div className={styles.homeIconGroup}>
-                          {agent.connectors.slice(0, 3).map((conn, idx) => (
-                            <div key={idx} className={styles.homeMiniIcon}>
-                              <img
-                                src={getLogoUrl(getDomain(conn))}
-                                alt={conn}
-                                className={styles.homeMiniIconImg}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                        {agent.connectors.length > 3 && (
-                          <span className={styles.homePlusOne}>
-                            +{agent.connectors.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div className={styles.homeChatboxWrapper}>
                 <ChatInput
                   value={promptText}
@@ -1932,12 +1902,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   showBanner={showBanner}
                   onRevert={handleRevert}
                   onSubmit={handleSubmit}
-                  userContext={userContext}
-                  onChangeUserContext={setUserContext}
                   attachedFiles={attachedFiles}
                   onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
                   onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
                   onOpenConnectors={() => setConnectorsOpen(true)}
+                  onOpenTemplates={() => setView('agents')}
                   selectedModel={selectedModel}
                   onSelectModel={setSelectedModel}
                   providers={providerInfo?.providers}
@@ -1953,52 +1922,19 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       </div>
 
       {/* Chat Input Fixed at Bottom */}
-      {view !== 'files' && view !== 'projects' && view !== 'agents' && (selectedAgent !== null || isChatting) && (
+      {view === 'builder' && (selectedAgent !== null || isChatting) && (
         <div className={styles.chatContainer}>
-          {selectedAgent && messages.length === 0 && (
-            <div className={styles.onboardingForms}>
-              <BrandKitForm
-                brandKit={brandKit}
-                onChange={(kit) => { setBrandKit(kit); setPrefilledOnboarding(prev => ({ ...prev, brandKit: false })); }}
-                apiBase={apiBase}
-                authToken={authToken}
-              />
-              {prefilledOnboarding.brandKit && (
-                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
-              )}
-              <div className={styles.formDivider} />
-              <CompetitorForm
-                competitors={competitors}
-                onChange={(comps) => { setCompetitors(comps); setPrefilledOnboarding(prev => ({ ...prev, competitors: false })); }}
-              />
-              {prefilledOnboarding.competitors && (
-                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
-              )}
-              {showQuestionnaire && agentQuestions[selectedAgent] && (
-                <>
-                  <div className={styles.formDivider} />
-                  <AgentQuestionnaire
-                    questions={agentQuestions[selectedAgent]}
-                    onComplete={handleQuestionnaireComplete}
-                    onDismiss={handleQuestionnaireDismiss}
-                  />
-                </>
-              )}
-            </div>
-          )}
           <ChatInput
             value={promptText}
             onChange={setPromptText}
             showBanner={showBanner}
             onRevert={handleRevert}
             onSubmit={handleSubmit}
-            userContext={userContext}
-            onChangeUserContext={setUserContext}
             attachedFiles={attachedFiles}
             onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
             onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
-            defaultUserContextOpen={!!selectedAgent}
             onOpenConnectors={() => setConnectorsOpen(true)}
+            onOpenTemplates={() => setView('agents')}
             selectedModel={selectedModel}
             onSelectModel={setSelectedModel}
             providers={providerInfo?.providers}
