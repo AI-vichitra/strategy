@@ -20,6 +20,7 @@ from backend.schemas.brand import (
     BrandBriefUpdate,
     SocialHandlesUpdate,
     BrandContextUpdate,
+    ReferenceDocAdd,
 )
 from backend.services import report_service
 from backend.services.brand_theme import extract_palette_from_logo, _decode_logo_image, _looks_like_svg, _LOGO_FORMAT_EXTENSIONS
@@ -274,6 +275,17 @@ async def get_project_details(
         except Exception:
             pass
 
+    reference_docs_list = []
+    if brand.reference_docs:
+        try:
+            for doc in json.loads(brand.reference_docs):
+                reference_docs_list.append({
+                    "ref_id": doc.get("ref_id", ""),
+                    "filename": doc.get("filename", ""),
+                })
+        except Exception:
+            pass
+
     competitors_used = []
     kb_raw = brand.kb_json  # DB is the source of truth; file is a local-cache fallback below
     if kb_raw is None and brand.brand_slug:
@@ -343,6 +355,7 @@ async def get_project_details(
             "social_handles": normalize_social_handles(brand.social_handles, brand.brand_handle),
             "logo_url": logo_url,
             "colors": colors,
+            "reference_docs": reference_docs_list,
         },
         "competitors_selected": competitors_selected,
         "competitors_used": competitors_used,
@@ -436,6 +449,139 @@ async def update_brand_context(
     brand.target_market = payload.target_market
     await db.commit()
     return {"status": "ok"}
+
+
+@router.put("/{project_id}/reference-docs")
+async def add_reference_doc(
+    project_id: str,
+    payload: ReferenceDocAdd,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from backend.models.brand import BrandConfig
+    from backend.services import reference_service
+
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
+    brand = brand_result.scalars().first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    try:
+        docs = json.loads(brand.reference_docs) if brand.reference_docs else []
+    except Exception:
+        docs = []
+
+    if not any(d.get("ref_id") == payload.ref_id for d in docs):
+        text = reference_service.load_reference_text(payload.ref_id)
+        docs.append({"ref_id": payload.ref_id, "filename": payload.filename, "text": text})
+        brand.reference_docs = json.dumps(docs)
+
+        # Fold the new doc into the already-compiled kb_json — the only thing the
+        # RAG index/prompt read at generation time — so it reaches the NEXT report
+        # without a full pipeline re-run. Mirrors pipeline_service.py:646-664
+        # exactly (same label format, same prepend-ahead-of-existing order).
+        # No explicit cache eviction needed: ai_service._get_or_build_index keys
+        # its cache on a hash of kb_json's own content, so writing a changed
+        # kb_json here means the next call computes a different hash and
+        # rebuilds automatically.
+        kb_patched = False
+        if brand.kb_json:
+            try:
+                kb = json.loads(brand.kb_json)
+            except Exception:
+                kb = None
+            if isinstance(kb, dict) and isinstance(kb.get("brand"), dict):
+                existing = kb["brand"].get("WEB_SCRAPPED", "")
+                block = f"[Source: Reference Document — {payload.filename}]\n{text}"
+                kb["brand"]["WEB_SCRAPPED"] = block + "\n\n" + existing
+                brand.kb_json = json.dumps(kb)
+                kb_patched = True
+
+        if kb_patched:
+            logger.info(f"[REF-DOC] folded {payload.filename} into kb_json for {brand.brand_slug}, index cache invalidated")
+        else:
+            logger.warning(f"[REF-DOC] kb_json not present, doc stored but not folded into KB for {project_id}")
+
+        await db.commit()
+
+    return {
+        "status": "ok",
+        "reference_docs": [{"ref_id": d.get("ref_id", ""), "filename": d.get("filename", "")} for d in docs],
+    }
+
+
+@router.delete("/{project_id}/reference-docs/{ref_id}")
+async def delete_reference_doc(
+    project_id: str,
+    ref_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from backend.models.brand import BrandConfig
+
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
+    brand = brand_result.scalars().first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    try:
+        docs = json.loads(brand.reference_docs) if brand.reference_docs else []
+    except Exception:
+        docs = []
+
+    entry = next((d for d in docs if d.get("ref_id") == ref_id), None)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Reference document not found")
+
+    filename = entry.get("filename", "")
+    text = entry.get("text", "")
+
+    # Reverse the exact fold the add path (and the onboarding pipeline,
+    # pipeline_service.py:646-664) applied, so a removed doc also leaves the
+    # RAG corpus, not just the reference_docs list.
+    if brand.kb_json:
+        try:
+            kb = json.loads(brand.kb_json)
+        except Exception:
+            kb = None
+        if isinstance(kb, dict) and isinstance(kb.get("brand"), dict):
+            block = f"[Source: Reference Document — {filename}]\n{text}"
+            web_scrapped = kb["brand"].get("WEB_SCRAPPED", "")
+            if block + "\n\n" in web_scrapped:
+                web_scrapped = web_scrapped.replace(block + "\n\n", "", 1)
+            elif "\n\n" + block in web_scrapped:
+                web_scrapped = web_scrapped.replace("\n\n" + block, "", 1)
+            elif block in web_scrapped:
+                web_scrapped = web_scrapped.replace(block, "", 1)
+            else:
+                logger.warning(f"[REF-DOC] block not found in kb_json for {ref_id} (left kb unchanged)")
+            kb["brand"]["WEB_SCRAPPED"] = web_scrapped
+            brand.kb_json = json.dumps(kb)
+        else:
+            logger.warning(f"[REF-DOC] kb_json not present, doc removed but not unfolded from KB for {project_id}")
+    else:
+        logger.warning(f"[REF-DOC] kb_json not present, doc removed but not unfolded from KB for {project_id}")
+
+    docs = [d for d in docs if d.get("ref_id") != ref_id]
+    brand.reference_docs = json.dumps(docs)
+    await db.commit()
+
+    logger.info(f"[REF-DOC] deleted {filename} ({ref_id}) from project {project_id}")
+
+    return {
+        "status": "ok",
+        "reference_docs": [{"ref_id": d.get("ref_id", ""), "filename": d.get("filename", "")} for d in docs],
+    }
 
 
 @router.delete("/{project_id}")

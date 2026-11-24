@@ -12,7 +12,7 @@ interface TargetMarket {
 }
 
 // Matches backend.schemas.brand.BRAND_BRIEF_KEYS exactly — NOT the generic
-// mission/vision/values shape; normalize_brand_brief always returns all six
+// mission/vision/values shape; normalize_brand_brief always returns all nine
 // keys as strings ("" when unset, never missing).
 interface BrandBrief {
   what_we_do: string;
@@ -21,6 +21,9 @@ interface BrandBrief {
   differentiators: string;
   products_services: string;
   tone_of_voice: string;
+  business_model: string;
+  proof_points: string;
+  market_context: string;
 }
 
 // Matches backend.schemas.brand.SOCIAL_PLATFORMS; normalize_social_handles
@@ -34,6 +37,11 @@ interface SocialHandles {
   tiktok?: string;
 }
 
+interface ReferenceDocItem {
+  ref_id: string;
+  filename: string;
+}
+
 interface BrandDetail {
   name: string;
   website_url: string | null;
@@ -45,6 +53,7 @@ interface BrandDetail {
   social_handles: SocialHandles | null;
   logo_url: string | null;
   colors: { primary?: string; secondary?: string; accent?: string } | null;
+  reference_docs: ReferenceDocItem[];
 }
 
 interface CompetitorItem {
@@ -78,6 +87,9 @@ const BRAND_BRIEF_FIELDS: { key: keyof BrandBrief; label: string }[] = [
   { key: 'differentiators', label: 'Differentiators' },
   { key: 'products_services', label: 'Products & Services' },
   { key: 'tone_of_voice', label: 'Tone of Voice' },
+  { key: 'business_model', label: 'Business Model' },
+  { key: 'proof_points', label: 'Proof Points' },
+  { key: 'market_context', label: 'Market Context' },
 ];
 
 const SOCIAL_PLATFORM_ORDER: (keyof SocialHandles)[] = ['instagram', 'linkedin', 'x', 'youtube', 'facebook', 'tiktok'];
@@ -179,12 +191,18 @@ export default function ProjectDetailsPage() {
   const [socialRows, setSocialRows] = useState<(keyof SocialHandles)[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadError, setDocUploadError] = useState<string | null>(null);
+  const [deletingRefId, setDeletingRefId] = useState<string | null>(null);
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
 
   const resetEditState = () => {
     setDrawerEditing(false);
     setEditForm({});
     setSocialRows([]);
     setSaveError(null);
+    setDocUploadError(null);
+    setDeletingRefId(null);
   };
 
   const openDrawer = (drawer: 'instructions' | 'context' | 'social') => {
@@ -268,6 +286,9 @@ export default function ProjectDetailsPage() {
         differentiators: briefNow?.differentiators || '',
         products_services: briefNow?.products_services || '',
         tone_of_voice: briefNow?.tone_of_voice || '',
+        business_model: briefNow?.business_model || '',
+        proof_points: briefNow?.proof_points || '',
+        market_context: briefNow?.market_context || '',
       });
     } else if (activeDrawer === 'social') {
       const handlesNow = brand.social_handles || {};
@@ -355,7 +376,90 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  const MAX_REFERENCE_DOC_BYTES = 10 * 1024 * 1024;
+
+  const handleReferenceFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (file.size > MAX_REFERENCE_DOC_BYTES) {
+      setDocUploadError('File exceeds the 10MB size limit.');
+      return;
+    }
+
+    setDocUploading(true);
+    setDocUploadError(null);
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await fetch(`${apiBase}/api/brands/upload-reference`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => null);
+        throw new Error(err?.detail || 'Upload failed. Please try again.');
+      }
+      const uploaded = await uploadRes.json();
+
+      const attachRes = await fetch(`${apiBase}/api/projects/${projectId}/reference-docs`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ ref_id: uploaded.ref_id, filename: uploaded.filename }),
+      });
+      if (!attachRes.ok) {
+        const err = await attachRes.json().catch(() => null);
+        throw new Error(err?.detail || 'Failed to save the document. Please try again.');
+      }
+      const attached = await attachRes.json();
+
+      setData(prev => {
+        if (!prev) return prev;
+        return { ...prev, brand: { ...prev.brand, reference_docs: attached.reference_docs || [] } };
+      });
+      setDocUploading(false);
+    } catch (err) {
+      setDocUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+      setDocUploading(false);
+    }
+  };
+
+  const handleRemoveReferenceDoc = async (doc: ReferenceDocItem) => {
+    if (!window.confirm(`Remove "${doc.filename}"?`)) return;
+
+    setDeletingRefId(doc.ref_id);
+    setDocUploadError(null);
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+
+    try {
+      const res = await fetch(`${apiBase}/api/projects/${projectId}/reference-docs/${encodeURIComponent(doc.ref_id)}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || 'Failed to remove the document. Please try again.');
+      }
+      const result = await res.json();
+
+      setData(prev => {
+        if (!prev) return prev;
+        return { ...prev, brand: { ...prev.brand, reference_docs: result.reference_docs || [] } };
+      });
+      setDeletingRefId(null);
+    } catch (err) {
+      setDocUploadError(err instanceof Error ? err.message : 'Failed to remove the document. Please try again.');
+      setDeletingRefId(null);
+    }
+  };
+
   const hasColors = !!brand.colors && !!(brand.colors.primary || brand.colors.secondary || brand.colors.accent);
+  const logoSrc = brand.logo_url ? `${process.env.NEXT_PUBLIC_API_URL ?? ''}${brand.logo_url}` : null;
+  const logoVisible = !!logoSrc && failedLogoUrl !== brand.logo_url;
   const contextItemCount = [
     !!brand.website_url,
     !!brand.category,
@@ -560,8 +664,13 @@ export default function ProjectDetailsPage() {
                   <div className={styles.drawerContextList}>
                     <div className={styles.drawerContextItem}>
                       <span className={styles.fieldLabel}>Logo</span>
-                      {brand.logo_url ? (
-                        <img src={brand.logo_url} alt="Brand logo" className={styles.drawerLogoImg} />
+                      {logoVisible ? (
+                        <img
+                          src={logoSrc ?? undefined}
+                          alt="Brand logo"
+                          className={styles.drawerLogoImg}
+                          onError={() => setFailedLogoUrl(brand.logo_url)}
+                        />
                       ) : (
                         <span className={styles.fieldEmpty}>No logo uploaded</span>
                       )}
@@ -626,6 +735,41 @@ export default function ProjectDetailsPage() {
                           ))}
                         </div>
                       )}
+                    </div>
+
+                    <div className={styles.drawerContextItem}>
+                      <span className={styles.fieldLabel}>Source Documents</span>
+                      {brand.reference_docs.length === 0 ? (
+                        <span className={styles.fieldEmpty}>No source documents added yet</span>
+                      ) : (
+                        <div className={styles.sourceDocsList}>
+                          {brand.reference_docs.map(doc => (
+                            <div key={doc.ref_id} className={styles.sourceDocItem}>
+                              <span className={styles.compactName}>{doc.filename}</span>
+                              <button
+                                type="button"
+                                className={styles.removeDocBtn}
+                                onClick={() => handleRemoveReferenceDoc(doc)}
+                                disabled={deletingRefId === doc.ref_id}
+                                aria-label={`Remove ${doc.filename}`}
+                              >
+                                {deletingRefId === doc.ref_id ? '…' : '✕'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <label className={`${styles.addFileBtn} ${docUploading ? styles.addFileBtnDisabled : ''}`}>
+                        {docUploading ? 'Uploading…' : '+ Add file'}
+                        <input
+                          type="file"
+                          accept=".pdf,.docx,.txt,.md"
+                          onChange={handleReferenceFileSelect}
+                          disabled={docUploading}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      {docUploadError && <div className={styles.uploadError}>{docUploadError}</div>}
                     </div>
                   </div>
                 )
