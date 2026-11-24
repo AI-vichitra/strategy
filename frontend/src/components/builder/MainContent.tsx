@@ -1014,6 +1014,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       await loadProjectsAndBrands();
       if (projectParam) {
         await loadProjectById(projectParam);
+        // A draft typed on the project details page's "new chat" field, if any —
+        // pre-fills the input so the onboarding form is still reviewed before send.
+        const pendingMessage = typeof window !== 'undefined' ? sessionStorage.getItem('pending_chat_message') : null;
+        if (pendingMessage) {
+          sessionStorage.removeItem('pending_chat_message');
+          setPromptText(pendingMessage);
+        }
         // Clear the param so a refresh doesn't force-reload the same chat.
         nextRouter.replace('/build');
       }

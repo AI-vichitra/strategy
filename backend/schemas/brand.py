@@ -369,3 +369,28 @@ class BrandStatusResponse(BaseModel):
     id: str
     pipeline_status: str   # pending | running | complete | failed
     social_scraped: bool
+
+
+# ── Project details drawer edits (post-onboarding field updates) ────────────
+class BrandBriefUpdate(BaseModel):
+    what_we_do: str = ""
+    positioning: str = ""
+    target_audience: str = ""
+    differentiators: str = ""
+    products_services: str = ""
+    tone_of_voice: str = ""
+
+
+class SocialHandlesUpdate(BaseModel):
+    instagram: str = ""
+    linkedin: str = ""
+    x: str = ""
+    youtube: str = ""
+    facebook: str = ""
+    tiktok: str = ""
+
+
+class BrandContextUpdate(BaseModel):
+    website_url: str
+    category: str
+    target_market: str
