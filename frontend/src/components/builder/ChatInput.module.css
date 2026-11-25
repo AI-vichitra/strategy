@@ -261,8 +261,10 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   padding: 6px;
-  z-index: 100;
+  z-index: 1000;
   min-width: 200px;
+  max-height: 60vh;
+  overflow-y: auto;
   animation: uploadMenuIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

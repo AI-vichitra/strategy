@@ -2,8 +2,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter as useNextRouter } from 'next/navigation';
 import TemplateGrid from './TemplateGrid';
-import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
-import { useAgents } from '../../hooks/useAgents';
 import { useTemplates } from '../../hooks/useTemplates';
 import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
@@ -18,6 +16,9 @@ import WorkflowView from './WorkflowView';
 import styles from './MainContent.module.css';
 import ReportRenderer from '../ReportRenderer';
 import SectionEditor from '../SectionEditor';
+import TaskIntakeQuestions, { type TaskIntakeData, type TaskIntakeAnswer } from './TaskIntakeQuestions';
+import TaskBriefSummary from './TaskBriefSummary';
+import { buildTaskBrief, type TaskBrief } from './taskBrief';
 
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
 type ReportInfo = { id: string; title: string; agent_type: string };
@@ -31,6 +32,12 @@ const TRUNCATION_MARKER = 'GENERATION TRUNCATED';
 function isTruncatedContent(content: string): boolean {
   return content.includes(TRUNCATION_MARKER);
 }
+
+// Superseded by the Step-2 task-intake cards (TaskIntakeQuestions /
+// TaskBriefSummary). Typed as `boolean`, not the literal `false` — a literal
+// `false &&` makes TypeScript treat the guarded branch as unreachable and it
+// drops the enclosing `selectedAgent` narrowing there, which this avoids.
+const SHOW_LEGACY_AGENT_QUESTIONNAIRE: boolean = false;
 
 // ── Per-agent questionnaire configs ───────────────────────────────
 const agentQuestions: Record<string, Question[]> = {
@@ -598,10 +605,184 @@ const agentPrompts: Record<string, string> = {
   'Ad Copywriter': `Generate high-converting ad copy sets across Meta and Google Ads tailored to our brand positioning and competitive differentiators.`,
 };
 
-const getDomain = (connectorName: string) => {
-  const c = allConnectorsData.find(c => c.name === connectorName);
-  return c ? c.domain : 'google.com';
+// Collapsed-by-default summary shown once at the top of a task's chat
+// thread, modeled on ReportRenderer.tsx's CollapsibleSection but compact
+// (.taskBriefBar*) since it sits above the conversation rather than inside
+// report content.
+function TaskBriefBar({ brief }: { brief: TaskBrief }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className={styles.taskBriefBar}>
+      <button
+        type="button"
+        className={styles.taskBriefBarHeader}
+        onClick={() => setExpanded(e => !e)}
+        aria-expanded={expanded}
+      >
+        <span className={styles.taskBriefBarTitle}>Task Brief — {brief.task ?? 'Task'}</span>
+        <span className={`${styles.taskBriefBarChevron} ${expanded ? styles.taskBriefBarChevronOpen : ''}`}>
+          ▼
+        </span>
+      </button>
+      {expanded && (
+        <div className={styles.taskBriefBarBody}>
+          <TaskBriefSummary brief={brief} readOnly />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// One-line "Goal: Leads · Scope: Whole brand · …" summary of what the user
+// actually picked/typed/edited across the questions+brief cards (every
+// TaskBriefItem buildTaskBrief/TaskBriefSummary's own edit path tags
+// source:'you') — posted as the user's own right-aligned chat bubble the
+// instant they click Continue, replacing the card. Anything they skipped
+// never got a source:'you' item in the first place, so it's omitted for
+// free; if they skipped everything, falls back to one line rather than
+// posting an empty bubble.
+function buildSelectionSummaryLine(brief: TaskBrief): string {
+  const picked = brief.items.filter(item => item.source === 'you');
+  if (picked.length === 0) return 'Using best judgement for the rest.';
+  return picked.map(item => `${item.name}: ${item.value}`).join(' · ');
+}
+
+// Ordered stage ids for the staged generation-progress stepper. 'kb_wait' is
+// conditional — most generations skip the research-pipeline wait entirely,
+// so it's only shown once the backend's 'status' event actually fires.
+const GEN_STAGE_ORDER = ['preparing', 'kb_wait', 'retrieving', 'composing', 'generating'] as const;
+type GenStageId = typeof GEN_STAGE_ORDER[number];
+
+const GEN_STAGE_LABELS: Record<GenStageId, string> = {
+  preparing: 'Preparing your report',
+  kb_wait: 'Building brand knowledge base',
+  retrieving: 'Retrieving brand research',
+  composing: 'Composing your report',
+  generating: 'Writing your report',
 };
+
+type StepStatus = 'done' | 'active' | 'pending';
+type StepRowData = { key: string; status: StepStatus; label: string };
+
+// Shared checklist row + list markup for every staged progress indicator in
+// this file (GenerationProgress and SetupStepper below) — one place for the
+// done(check)/active(bold)/pending(dimmed) look so the two can never drift
+// apart visually.
+function StepRow({ status, label }: { status: StepStatus; label: string }) {
+  const statusClass = status === 'done' ? styles.genProgressRow_done : status === 'active' ? styles.genProgressRow_active : styles.genProgressRow_pending;
+  return (
+    <div className={`${styles.genProgressRow} ${statusClass}`}>
+      <span className={styles.genProgressIcon}>
+        {status === 'done' ? (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : status === 'active' ? (
+          <span className={styles.genProgressActiveDot} />
+        ) : (
+          <span className={styles.genProgressDot} />
+        )}
+      </span>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function StepList({ rows }: { rows: StepRowData[] }) {
+  return (
+    <div className={styles.genProgress}>
+      {rows.map(r => <StepRow key={r.key} status={r.status} label={r.label} />)}
+    </div>
+  );
+}
+
+// Vertical stepper driven by real backend 'stage'/'status' SSE events plus
+// the client-side "first token received" milestone (see the token branch in
+// handleSubmit's SSE loop) — never a fake timed animation.
+function GenerationProgress({
+  stage,
+  kbWaitText,
+  kbWaitSeen,
+}: {
+  stage: string | null;
+  kbWaitText: string | null;
+  kbWaitSeen: boolean;
+}) {
+  const visibleStages = GEN_STAGE_ORDER.filter(s => s !== 'kb_wait' || kbWaitSeen);
+  const currentIndex = stage ? visibleStages.indexOf(stage as GenStageId) : -1;
+
+  const rows: StepRowData[] = visibleStages.map((s, i) => {
+    const status: StepStatus = currentIndex === -1 ? 'pending' : i < currentIndex ? 'done' : i === currentIndex ? 'active' : 'pending';
+    // While the kb_wait row is active, show the backend's own live text (it
+    // already carries the elapsed-seconds counter) instead of the static
+    // label, so the two never read as duplicated phrasing.
+    const label = s === 'kb_wait' && status === 'active' && kbWaitText ? kbWaitText : GEN_STAGE_LABELS[s];
+    return { key: s, status, label };
+  });
+
+  return <StepList rows={rows} />;
+}
+
+// Shared timer-driven checklist: for any staged loader with no real backend
+// sub-progress to key off (SetupStepper, IntakeStepper below), advances
+// through `labels` on a fixed interval, marking passed stages done and the
+// current one active — same StepList/StepRow look as the backend-driven
+// GenerationProgress above, so every loader in this file matches.
+function TimedStepList({ labels, intervalMs }: { labels: string[]; intervalMs: number }) {
+  const [stageIndex, setStageIndex] = useState(0);
+
+  useEffect(() => {
+    setStageIndex(0);
+    const id = setInterval(() => {
+      setStageIndex(i => (i < labels.length - 1 ? i + 1 : i));
+    }, intervalMs);
+    return () => clearInterval(id);
+    // labels/intervalMs are static per call site (module-level constants),
+    // not expected to change across renders of the same stepper instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const rows: StepRowData[] = labels.map((label, i) => ({
+    key: label,
+    status: i < stageIndex ? 'done' : i === stageIndex ? 'active' : 'pending',
+    label,
+  }));
+
+  return <StepList rows={rows} />;
+}
+
+// Setup-gap checklist for the "Setting up your task…" screen (isSettingUp in
+// the main render below). The create -> PUT -> forced-send sequence in
+// handleBriefConfirm reports no real sub-progress of its own (just an
+// awaited start and finish, nothing in between), so unlike GenerationProgress
+// there is no backend signal to drive stages from; this always runs the
+// timed auto-advance instead.
+const SETUP_STAGE_LABELS = [
+  'Understanding your request',
+  'Gathering context',
+  'Preparing your workspace',
+  'Finalizing',
+];
+const SETUP_STAGE_INTERVAL_MS = 1400;
+
+function SetupStepper() {
+  return <TimedStepList labels={SETUP_STAGE_LABELS} intervalMs={SETUP_STAGE_INTERVAL_MS} />;
+}
+
+// Classify-the-prompt checklist for the "Understanding your request…" screen
+// (isIntakeLoading in the main render below) — the POST /api/tasks/intake
+// call behind it is a single request/response with no intermediate progress
+// either, so this is timed auto-advance too, same as SetupStepper.
+const INTAKE_STAGE_LABELS = [
+  'Understanding your request',
+  'Analyzing your prompt',
+  'Almost there',
+];
+const INTAKE_STAGE_INTERVAL_MS = 1400;
+
+function IntakeStepper() {
+  return <TimedStepList labels={INTAKE_STAGE_LABELS} intervalMs={INTAKE_STAGE_INTERVAL_MS} />;
+}
 
 export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const searchParams = useSearchParams();
@@ -623,11 +804,53 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // below), which is what the banner falls back to after reload.
   type TruncationDetail = { provider: string; model: string; max_tokens: number; output_chars: number };
   const [liveTruncation, setLiveTruncation] = useState<TruncationDetail | null>(null);
+  // Staged generation-progress stepper, driven by real backend 'stage'/
+  // 'status' SSE events plus the client-side "first token" milestone — see
+  // GenerationProgress below. genStage is null outside an active generation.
+  const [genStage, setGenStage] = useState<string | null>(null);
+  const [kbWaitText, setKbWaitText] = useState<string | null>(null);
+  const [kbWaitSeen, setKbWaitSeen] = useState(false);
   const [promptText, setPromptText] = useState('');
   const [showBanner, setShowBanner] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [threadBrief, setThreadBrief] = useState<TaskBrief | null>(null);
   const [qaAnswers, setQaAnswers] = useState<Array<{ question: string; answer: string }>>([]);
+  // Step-2 task-intake state (driven by POST /api/tasks/intake) — additive,
+  // alongside the legacy AgentQuestionnaire state above, which stays in
+  // place but is no longer rendered (see the .onboardingForms block below).
+  const [intakePhase, setIntakePhase] = useState<'idle' | 'questions' | 'brief' | 'confirmed'>('idle');
+  const [isIntakeLoading, setIsIntakeLoading] = useState(false);
+  // True only for the one-time create -> PUT -> send gap right after
+  // Continue is clicked, until handleSubmit's forced re-invoke actually
+  // enqueues the real "thinking" entry for generation. Explicit state (not
+  // derived from intakePhase/messages) because intakePhase stays 'confirmed'
+  // for the rest of the task's lifetime, and messages already contains the
+  // user's prompt + card-selection bubbles by this point (the whole flow now
+  // lives inside the chat), so neither on its own still singles out this gap.
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [intakePayload, setIntakePayload] = useState<TaskIntakeData | null>(null);
+  const [intakeAnswers, setIntakeAnswers] = useState<Record<string, TaskIntakeAnswer> | null>(null);
+  const [confirmedBrief, setConfirmedBrief] = useState<TaskBrief | null>(null);
+  const [classifiedAgent, setClassifiedAgent] = useState<string | null>(null);
+  // Set right before a forced re-invoke of handleSubmit() after a Task Brief
+  // is confirmed, so that one call skips the intake intercept and the
+  // lazy-create gate and sends straight into the already-created project.
+  const forcedProjectIdRef = useRef<string | null>(null);
+  // Stashes the original prompt right before the intake intercept clears
+  // promptText (see setPromptText('') below) — by the time handleBriefConfirm
+  // runs its forced re-invoke of handleSubmit(), promptText is long empty
+  // (the user has spent the whole questions/brief flow since), so handleSubmit
+  // must be handed this ref's value explicitly rather than reading the stale
+  // promptText state (was the cause of the "Setting up your task…" screen
+  // getting stuck forever: handleSubmit's own `if (!prompt.trim()) return`
+  // guard fired on the empty string before ever enqueueing a message).
+  const pendingTaskPromptRef = useRef<string>('');
+  // Synchronous re-entry guard: intakePhase alone isn't enough, since
+  // setIntakePhase() doesn't commit until after the in-flight fetch awaits —
+  // a rapid double-send (double-click, Enter held) would otherwise read
+  // intakePhase==='idle' twice and fire two POST /api/tasks/intake calls.
+  const intakeInFlightRef = useRef(false);
   const [competitors, setCompetitors] = useState<CompetitorDetail[]>([]);
   const [brandKit, setBrandKit] = useState<BrandKit>({});
   const [userContext, setUserContext] = useState('');
@@ -647,7 +870,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [shareErrorIdx, setShareErrorIdx] = useState<number | null>(null);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors'>('builder');
-  const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -918,14 +1140,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [prefilledOnboarding, setPrefilledOnboarding] = useState<{ competitors: boolean; brandKit: boolean }>({ competitors: false, brandKit: false });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [homeSearchQuery, setHomeSearchQuery] = useState('');
-  const homeSearchContainerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
-      if (homeSearchContainerRef.current && !homeSearchContainerRef.current.contains(e.target as Node)) {
-        setHomeSearchQuery('');
-      }
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
@@ -1007,12 +1223,39 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   useEffect(() => {
-    // Capture the project param once at mount — do not re-read on re-renders.
+    // Capture the params once at mount — do not re-read on re-renders.
     const projectParam = searchParams.get('project');
+    const isFreshTask = searchParams.get('new') === '1';
+    const brandParam = searchParams.get('brand');
 
     const init = async () => {
+      // Loads brandsMap/brandsList/projectsList (so the header can show the
+      // brand) and, as a side effect, may auto-reattach activeProject to an
+      // existing project/brand for this user (finding-3b/finding-5). The
+      // fresh-task branch below runs AFTER this and overrides activeProject
+      // with the '' lazy-create sentinel, so that auto-reattach never wins
+      // for this entry path.
       await loadProjectsAndBrands();
-      if (projectParam) {
+      if (isFreshTask) {
+        const freshBrandId = brandParam || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null);
+        if (freshBrandId) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('brand_config_id', freshBrandId);
+          }
+          setActiveProject({ id: '', title: '', brand_config_id: freshBrandId });
+        }
+        setMessages([]);
+        setThreadBrief(null);
+        setIntakePhase('idle');
+        // Same pending-draft pickup as the ?project= path below.
+        const pendingMessage = typeof window !== 'undefined' ? sessionStorage.getItem('pending_chat_message') : null;
+        if (pendingMessage) {
+          sessionStorage.removeItem('pending_chat_message');
+          setPromptText(pendingMessage);
+        }
+        // Clear the params so a refresh doesn't re-run the fresh-task reset.
+        nextRouter.replace('/build');
+      } else if (projectParam) {
         await loadProjectById(projectParam);
         // A draft typed on the project details page's "new chat" field, if any —
         // pre-fills the input so the onboarding form is still reviewed before send.
@@ -1035,16 +1278,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredHomeSearchAgents = catalogAgents.filter(agent =>
-    agent.title.toLowerCase().includes(homeSearchQuery.toLowerCase())
-  );
-
-  const catalogCategoryNameById = useMemo(() => {
-    const map: Record<string, string> = {};
-    catalogCategories.forEach((c) => { map[c.id] = c.name; });
-    return map;
-  }, [catalogCategories]);
-
 
 
   // Scroll to bottom on new messages
@@ -1062,6 +1295,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setActiveProject({ id: '', title: bTitle, brand_config_id: currentBrandId });
     }
     setMessages([]);
+    setThreadBrief(null);
     setPromptText('');
     setUserContext('');
     setAttachedFiles([]);
@@ -1111,6 +1345,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
+    setThreadBrief(null);
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
@@ -1126,11 +1361,21 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
+    setThreadBrief(null);
+    setGenStage(null);
+    setKbWaitText(null);
+    setKbWaitSeen(false);
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
     setPrefilledOnboarding({ competitors: false, brandKit: false });
     setActiveProject(null);
+    setIntakePhase('idle');
+    setIntakePayload(null);
+    setIntakeAnswers(null);
+    setConfirmedBrief(null);
+    intakeInFlightRef.current = false;
+    forcedProjectIdRef.current = null;
     onNewChat?.();
   };
 
@@ -1146,6 +1391,97 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const handleQuestionnaireDismiss = () => setShowQuestionnaire(false);
 
+  const handleBriefConfirm = async (brief: TaskBrief) => {
+    // Clicking Continue both removes the card (isCardOpen goes false the
+    // instant intakePhase leaves 'questions'/'brief') and posts the user's
+    // own one-line summary of what they picked, right-aligned, in its place
+    // — same chat-bubble treatment as a typed message.
+    setIntakePhase('confirmed');
+    setIsSettingUp(true);
+    setMessages(prev => [...prev, { role: 'user', content: buildSelectionSummaryLine(brief) }]);
+    let sent = false;
+    try {
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '')
+        ? activeProject.brand_config_id
+        : (savedBrandId || (brandsList.length > 0 ? brandsList[0].id : (projectsList.length > 0 ? projectsList[0].brand_config_id : null)));
+
+      if (!activeBrandId) {
+        throw new Error('No active brand to create the task project under');
+      }
+
+      const resolvedAgentType = classifiedAgent || selectedAgent || 'StratAI';
+
+      // Mirrors the existing lazy-create body in handleSubmit exactly,
+      // overriding title/agent_type with the classified result.
+      const createRes = await fetch(`${apiBase}/api/projects/`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          title: brief.task || 'New task',
+          agent_type: resolvedAgentType,
+          brand_config_id: activeBrandId,
+          llm_provider: selectedModel,
+          competitor_details: (() => {
+            const filled = competitors.filter((c) => c.brand_name.trim());
+            return filled.length > 0 ? filled : null;
+          })(),
+          brand_kit: (() => {
+            const hasBrandKit = brandKit.logo_url || (brandKit.colors && Object.values(brandKit.colors).some(Boolean));
+            return hasBrandKit ? brandKit : null;
+          })(),
+        }),
+      });
+      if (!createRes.ok) throw new Error(`Failed to create task project (${createRes.status})`);
+      const newP = await createRes.json();
+
+      // POST /api/projects/'s "reuse an existing empty project" branch drops
+      // questionnaire_answers, so persist the confirmed brief explicitly.
+      await fetch(`${apiBase}/api/projects/${newP.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ questionnaire_answers: JSON.stringify(brief) }),
+      });
+
+      setActiveProject({ id: newP.id, title: newP.title, brand_config_id: newP.brand_config_id ?? activeBrandId });
+      setSelectedAgent(resolvedAgentType);
+      setThreadBrief(brief);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('brand_config_id', activeBrandId);
+      }
+
+      // promptText was already cleared back when the Step-2 intercept first
+      // ran (setPromptText('') in handleSubmit) — pendingTaskPromptRef is
+      // what still holds the original text, so hand it to this forced
+      // re-invoke explicitly instead of letting handleSubmit read the
+      // (by-now-empty) promptText state, straight into newP.id.
+      forcedProjectIdRef.current = newP.id;
+      sent = await handleSubmit(pendingTaskPromptRef.current);
+    } catch (err) {
+      console.error('Task brief confirm failed:', err);
+    } finally {
+      // The success path already turned isSettingUp off inside handleSubmit
+      // itself, right as it enqueues the real "thinking" entry — this is a
+      // defensive reset for every other case, so the inline setup stepper
+      // never hangs even if a failure surfaces after the last await.
+      setIsSettingUp(false);
+      // If handleSubmit never got far enough to enqueue that "thinking" entry
+      // (sent===false, whether from a thrown error above or handleSubmit's
+      // own early-return guard), intakePhase would otherwise be stuck on
+      // 'confirmed' with no card and no generation in progress; falling back
+      // to the brief card here, in a finally, clears it even then.
+      if (!sent) {
+        setIntakePhase('brief'); // keep the brief card visible so the user can retry
+      }
+    }
+  };
+
   const loadProjectById = async (projectId: string) => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
@@ -1160,6 +1496,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         setSelectedAgent(proj.agent_type || null);
         if (proj.llm_provider) {
           setSelectedModel(proj.llm_provider);
+        }
+        try {
+          setThreadBrief(proj.questionnaire_answers ? JSON.parse(proj.questionnaire_answers) as TaskBrief : null);
+        } catch {
+          setThreadBrief(null);
         }
         const hasCompetitors = Array.isArray(proj.competitor_details) && proj.competitor_details.length > 0;
         const hasBrandKit = proj.brand_kit && typeof proj.brand_kit === 'object' &&
@@ -1256,10 +1597,109 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandsMap]);
 
-  // Submit message → call backend + stream response
-  const handleSubmit = async () => {
-    if (!promptText.trim()) return;
-    let baseContent = promptText.trim();
+  // Submit message → call backend + stream response. Returns whether the
+  // first user/thinking message actually got enqueued (false on every early
+  // return below) — handleBriefConfirm's forced re-invoke uses this to know
+  // whether it's safe to leave intakePhase==='confirmed' (isChatting will
+  // flip true) or whether it must reset out of the "Setting up…" screen
+  // itself instead of leaving it stuck.
+  const handleSubmit = async (overridePrompt?: string): Promise<boolean> => {
+    const effectivePrompt = overridePrompt ?? promptText;
+    if (!effectivePrompt.trim()) return false;
+
+    // Consumed once per call: set by handleBriefConfirm right before it
+    // re-invokes handleSubmit() so this one call skips the intake intercept
+    // and the lazy-create gate below, sending straight into the project
+    // handleBriefConfirm already created.
+    const forced = forcedProjectIdRef.current;
+    forcedProjectIdRef.current = null;
+
+    // Whether the user's prompt is already sitting in the chat as a
+    // right-aligned bubble — true for the forced re-invoke (handleBriefConfirm
+    // posted its own selection-summary bubble when Continue was clicked) and,
+    // as of the block right below, for the intake intercept itself (it now
+    // posts the raw prompt immediately, switching straight to the chat layout
+    // instead of a blank-page loader first). The later normal-send step's
+    // setMessages(...) must not add a second copy when this is true — but it
+    // is NOT what decides whether `history` (below) needs its own manual
+    // append; see the comment at `history` for why those are different
+    // questions (one is about committed state, the other about this
+    // specific closure's possibly-stale `messages` snapshot).
+    let userBubbleAlreadyShown = !!forced;
+
+    // Step-2 task intake: on the very first turn of a fresh task, classify
+    // the prompt + fetch checkpoints before sending anything, and surface
+    // the question/brief cards instead of sending. intakePhase !== 'idle'
+    // guards re-entry so this only ever fires once per task. NO send, NO
+    // project creation, NO persistence happens here — that's phase 7d.
+    if (!forced && messages.length === 0 && intakePhase === 'idle' && effectivePrompt.trim()) {
+      // Synchronous guard — intakePhase is React state and doesn't commit
+      // until after the await below, so a rapid double-send (double-click,
+      // Enter held down) would otherwise still read intakePhase==='idle'
+      // twice and fire two POST /api/tasks/intake calls. The ref updates
+      // immediately, before any await, so the second call sees it and bails.
+      if (intakeInFlightRef.current) {
+        return false;
+      }
+      intakeInFlightRef.current = true;
+      setIsIntakeLoading(true);
+      // Stashed BEFORE clearing, so the forced handleSubmit() re-invoke that
+      // follows the questions/brief flow (potentially minutes later) can
+      // still send the user's original text — see pendingTaskPromptRef.
+      pendingTaskPromptRef.current = effectivePrompt;
+      // Switch straight to the chat layout right now, like ChatGPT/Claude —
+      // the user's prompt becomes a right-aligned bubble immediately; the
+      // classify step then renders as a left-aligned IntakeStepper entry
+      // below it (see the isChatting branch in the render), never a
+      // full-page loader.
+      setMessages(prev => [...prev, { role: 'user', content: effectivePrompt.trim() }]);
+      userBubbleAlreadyShown = true;
+      setPromptText('');
+
+      const savedBrandIdForIntake = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '')
+        ? activeProject.brand_config_id
+        : (savedBrandIdForIntake || (brandsList.length > 0 ? brandsList[0].id : (projectsList.length > 0 ? projectsList[0].brand_config_id : null)));
+
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const body = activeProject?.id
+          ? { project_id: activeProject.id, prompt: effectivePrompt }
+          : { brand_config_id: activeBrandId, prompt: effectivePrompt };
+
+        const res = await fetch(`${apiBase}/api/tasks/intake`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+          const payload: TaskIntakeData = await res.json();
+          setIntakePayload(payload);
+          setClassifiedAgent(payload.agent_type ?? null);
+          if (payload.questions?.length) {
+            setIntakePhase('questions');
+          } else {
+            setConfirmedBrief(buildTaskBrief(payload, {}));
+            setIntakePhase('brief');
+          }
+          return false; // do NOT proceed to send
+        }
+        console.error('Task intake failed:', res.status);
+      } catch (err) {
+        console.error('Task intake request failed, falling back to normal send:', err);
+      } finally {
+        intakeInFlightRef.current = false;
+        setIsIntakeLoading(false);
+      }
+      // Any failure above falls through to the normal send below — intake
+      // must never block the user from just sending their message.
+    }
+    let baseContent = effectivePrompt.trim();
     if (userContext.trim()) {
       baseContent += `\n\n── User Context ──\n${userContext.trim()}`;
     }
@@ -1279,8 +1719,23 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     const thinking: Message = { role: 'thinking', content: '' };
     setLiveTruncation(null);
 
-    // Build conversation history (only user + assistant, skip thinking/error)
-    const history = [...messages, { role: 'user', content: apiUserContent }]
+    // Build conversation history (only user + assistant, skip thinking/error).
+    // `messages` here is a closure snapshot, fixed as of whichever render
+    // created THIS handleSubmit instance — it reflects a setMessages call
+    // from an EARLIER, already-committed render, but never one made earlier
+    // in this SAME call (the local binding can't change mid-call). Only the
+    // forced path guarantees that gap: handleBriefConfirm (a separate, later
+    // invocation, after real render(s) since the questions/brief flow)
+    // already pushed the original prompt as a bubble, so `messages` here
+    // already ends with that exact turn — and apiUserContent, derived from
+    // the same pendingTaskPromptRef.current text, would duplicate it if
+    // appended again. (The selection-summary bubble handleBriefConfirm posts
+    // alongside that is a pure UI recap — it was never meant to re-enter the
+    // LLM's history as its own turn, forced or not.) The plain, non-forced
+    // path — including intake falling through to a normal send within THIS
+    // SAME call — has no such guarantee, so it must still append, exactly as
+    // before this file's intake-triggered chat layout existed.
+    const history = (forced ? messages : [...messages, { role: 'user', content: apiUserContent }])
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => ({ role: m.role, content: m.content }));
 
@@ -1289,13 +1744,20 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       ? (agentPrompts[selectedAgent] || `You are a helpful ${selectedAgent} agent. Help the user with their request.`)
       : 'You are StratAI, a helpful AI strategy assistant. Help the user with their business strategy, marketing, sales, and growth questions. Be concise, actionable, and data-driven.';
 
-    setMessages(prev => [...prev, userMsg, thinking]);
+    // Exits the inline "Setting up your task…" stepper (if it was showing)
+    // the instant the real generation entry is about to appear, so the chat
+    // flows straight from setup into GenerationProgress with no layout jump.
+    setIsSettingUp(false);
+    setMessages(prev => userBubbleAlreadyShown ? [...prev, thinking] : [...prev, userMsg, thinking]);
     setPromptText('');
     setUserContext('');
     setAttachedFiles([]);
     setQaAnswers([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
+    setGenStage('preparing');
+    setKbWaitText(null);
+    setKbWaitSeen(false);
 
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
@@ -1303,13 +1765,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      let targetProjectId = activeProject?.id;
+      let targetProjectId = forced ?? activeProject?.id;
       const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
-      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '') 
-        ? activeProject.brand_config_id 
+      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '')
+        ? activeProject.brand_config_id
         : (savedBrandId || (brandsList.length > 0 ? brandsList[0].id : (projectsList.length > 0 ? projectsList[0].brand_config_id : null)));
 
-      if (!targetProjectId || targetProjectId === '') {
+      if (!forced && (!targetProjectId || targetProjectId === '')) {
         if (activeBrandId) {
           const createRes = await fetch(`${apiBase}/api/projects/`, {
             method: 'POST',
@@ -1347,7 +1809,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           ...prev.filter(m => m.role !== 'thinking'),
           { role: 'error', content: 'No active project selected. Please select or create a project first.' },
         ]);
-        return;
+        return true;
       }
 
       const res = await fetch(`${apiBase}/api/chat/`, {
@@ -1365,13 +1827,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         if (res.status === 401) {
           localStorage.removeItem('access_token');
           window.location.href = '/auth';
-          return;
+          return true;
         }
         setMessages(prev => [
           ...prev.filter(m => m.role !== 'thinking'),
           { role: 'error', content: `Server error (${res.status}). Make sure the backend is running on port 8000.` },
         ]);
-        return;
+        return true;
       }
 
       const reader = res.body.getReader();
@@ -1392,6 +1854,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           try {
             const payload = JSON.parse(line.slice(6));
             if (payload.type === 'token') {
+              // First token received is the client-side milestone into the
+              // 'generating' stage — the report text itself takes over from
+              // here, so the stepper (mounted on the 'thinking' message) is
+              // about to be replaced anyway.
+              setGenStage('generating');
               assistantText += payload.content;
               setMessages(prev => {
                 const updated = [...prev];
@@ -1407,18 +1874,18 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 return updated;
               });
             } else if (payload.type === 'status') {
-              // Research-pipeline wait can now run for several minutes — surface
-              // the backend's progress text in the thinking bubble instead of a
-              // static spinner, so a long wait doesn't look frozen.
-              setMessages(prev => {
-                const updated = [...prev];
-                const thinkIdx = updated.findIndex(m => m.role === 'thinking');
-                if (thinkIdx !== -1) {
-                  updated[thinkIdx] = { role: 'thinking', content: payload.content };
-                }
-                return updated;
-              });
+              // Research-pipeline wait can now run for several minutes — the
+              // stepper (GenerationProgress) shows this now, not the thinking
+              // message's own content.
+              setGenStage('kb_wait');
+              setKbWaitText(payload.content);
+              setKbWaitSeen(true);
+            } else if (payload.type === 'stage') {
+              // Real backend-emitted stage boundary: 'retrieving' | 'composing'
+              // | 'generating'.
+              setGenStage(payload.stage);
             } else if (payload.type === 'error') {
+              setGenStage(null);
               if (!assistantText) {
                 setActiveProject(null);
               }
@@ -1426,7 +1893,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 ...prev.filter(m => m.role !== 'thinking'),
                 { role: 'error', content: payload.content },
               ]);
-              return;
+              return true;
             } else if (payload.type === 'truncated') {
               // The in-report notice text already arrived as a preceding
               // 'token' event (part of assistantText) — this event only adds
@@ -1452,7 +1919,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         // freshly-snapshotted report becomes downloadable without a page reload.
         await loadProjectById(targetProjectId);
       }
+      setGenStage(null);
     } catch (err) {
+      setGenStage(null);
       setActiveProject(null);
       setMessages(prev => [
         ...prev.filter(m => m.role !== 'thinking'),
@@ -1460,9 +1929,17 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       ]);
     }
 
+    return true;
   };
 
   const isChatting = messages.length > 0;
+  const isCardOpen = intakePhase === 'questions' || intakePhase === 'brief';
+  // Must also exclude selectedAgent — the bottom ChatInput's gate below uses
+  // this standalone (not nested after a selectedAgent check the way the
+  // welcome-heading/grid ternary is), so without !selectedAgent here the
+  // agent-detail screen would read as "home" and the input would stay
+  // hidden there, reproducing the exact bug this gate is meant to fix.
+  const isHome = !selectedAgent && !isCardOpen && !isChatting && !isIntakeLoading;
 
   return (
     <main className={styles.main}>
@@ -1630,6 +2107,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   <span className={styles.chatAgentName}>{selectedAgent}</span>
                 </div>
               )}
+              {threadBrief && <TaskBriefBar brief={threadBrief} />}
               {messages.map((msg, i) =>
                 msg.role === 'user' ? (
                   <div key={i} className={styles.userBubbleWrapper}>
@@ -1646,10 +2124,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                       </svg>
                     </div>
                     <div className={styles.thinkingBubble}>
-                      <span className={styles.thinkingLabel}>{msg.content || 'Thinking'}</span>
-                      <span className={styles.thinkingDots}>
-                        <span /><span /><span />
-                      </span>
+                      <GenerationProgress stage={genStage} kbWaitText={kbWaitText} kbWaitSeen={kbWaitSeen} />
                     </div>
                   </div>
                 ) : msg.role === 'error' ? (
@@ -1857,10 +2332,71 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   </div>
                 )
               )}
-              <div style={{ height: '360px', width: '100%', flexShrink: 0 }} />
+              {/* ── Classify step: left-aligned agent "thinking" entry, like
+                     ChatGPT/Claude — never a full-page loader. ───────────── */}
+              {isIntakeLoading && (
+                <div className={styles.thinkingWrapper}>
+                  <div className={styles.thinkingIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#tg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#d4a843"/></linearGradient></defs>
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div className={styles.thinkingBubble}>
+                    <IntakeStepper />
+                  </div>
+                </div>
+              )}
+              {/* ── Step-2 task-intake card: left-aligned agent message, next
+                     to the icon like every other agent entry — stays a wide
+                     card, just not its own page. ───────────────────────── */}
+              {isCardOpen && (
+                <div className={styles.thinkingWrapper}>
+                  <div className={styles.thinkingIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#tg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#d4a843"/></linearGradient></defs>
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div className={styles.agentCardContent}>
+                    {intakePhase === 'questions' && intakePayload && (
+                      <TaskIntakeQuestions
+                        intake={intakePayload}
+                        onComplete={(answers) => {
+                          setIntakeAnswers(answers);
+                          setConfirmedBrief(buildTaskBrief(intakePayload, answers));
+                          setIntakePhase('brief');
+                        }}
+                      />
+                    )}
+                    {intakePhase === 'brief' && confirmedBrief && (
+                      <TaskBriefSummary
+                        brief={confirmedBrief}
+                        onConfirm={handleBriefConfirm}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* ── Create -> PUT -> send-setup gap right after Continue:
+                     left-aligned agent "thinking" entry too, inline. ─────── */}
+              {isSettingUp && (
+                <div className={styles.thinkingWrapper}>
+                  <div className={styles.thinkingIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#tg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#d4a843"/></linearGradient></defs>
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div className={styles.thinkingBubble}>
+                    <SetupStepper />
+                  </div>
+                </div>
+              )}
+              <div style={{ height: '140px', width: '100%', flexShrink: 0 }} />
               <div ref={messagesEndRef} />
             </div>
-          ) : selectedAgent ? (
+          ) : selectedAgent && !isCardOpen ? (
             /* ── Agent detail (pre-chat) ─────────────── */
             <div className={styles.agentDetailContainer}>
               <div className={styles.pageHeader}>
@@ -1872,7 +2408,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 <h1 className={styles.title}>{selectedAgent}</h1>
               </div>
             </div>
-          ) : (
+          ) : isHome ? (
             /* ── Build your agent (idle home page) ─────── */
             <div className={styles.homeContainer}>
               <div className={styles.homeWelcome}>
@@ -1885,97 +2421,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   </div>
                 </div>
                 <p className={styles.welcomeSubtitle}>How can I help?</p>
-              </div>
-
-              <div className={styles.homeTemplatesSection}>
-                <div className={styles.homeTemplatesHeader}>
-                  <span className={styles.homeTemplatesTitle}>Templates</span>
-                  
-                  {/* Search input with live dropdown */}
-                  <div className={styles.searchContainer} ref={homeSearchContainerRef}>
-                    <div className={styles.searchInputWrapper}>
-                      <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                      </svg>
-                      <input
-                        type="text"
-                        className={styles.searchInput}
-                        placeholder="Search templates..."
-                        value={homeSearchQuery}
-                        onChange={(e) => setHomeSearchQuery(e.target.value)}
-                      />
-                    </div>
-
-                    {homeSearchQuery.trim() !== '' && filteredHomeSearchAgents.length > 0 && (
-                      <div className={styles.searchDropdown}>
-                        {filteredHomeSearchAgents.map((agent) => (
-                          <button
-                            key={agent.id}
-                            type="button"
-                            className={styles.dropdownItem}
-                            onClick={() => {
-                              handleSelectAgent(agent.title);
-                              setHomeSearchQuery('');
-                            }}
-                          >
-                            <div className={styles.dropdownItemContent}>
-                              <span className={styles.dropdownItemTitle}>{agent.title}</span>
-                              <span className={styles.dropdownItemCategory}>
-                                {catalogCategoryNameById[agent.category] || agent.category}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className={styles.homeTemplatesGrid}>
-                  {agentsLoading && (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className={`${styles.homeTemplateCard} ${styles.homeGridSkeletonCard}`} aria-hidden="true" />
-                    ))
-                  )}
-                  {!agentsLoading && agentsError && (
-                    <div className={styles.homeGridErrorState}>
-                      <p>Couldn&apos;t load the agent catalog. {agentsError}</p>
-                      <button type="button" className={styles.homeGridRetryBtn} onClick={refetchAgents}>
-                        Retry
-                      </button>
-                    </div>
-                  )}
-                  {!agentsLoading && !agentsError && catalogAgents.map((agent) => (
-                    <div
-                      key={agent.id}
-                      className={styles.homeTemplateCard}
-                      onClick={() => handleSelectAgent(agent.title)}
-                    >
-                      <div className={styles.homeCardTop}>
-                        <div className={styles.homeCardTitle}>{agent.title}</div>
-                        <div className={styles.homeCardDesc}>{agent.description}</div>
-                      </div>
-                      <div className={styles.homeCardBottom}>
-                        <div className={styles.homeIconGroup}>
-                          {agent.connectors.slice(0, 3).map((conn, idx) => (
-                            <div key={idx} className={styles.homeMiniIcon}>
-                              <img
-                                src={getLogoUrl(getDomain(conn))}
-                                alt={conn}
-                                className={styles.homeMiniIconImg}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                        {agent.connectors.length > 3 && (
-                          <span className={styles.homePlusOne}>
-                            +{agent.connectors.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <div className={styles.homeChatboxWrapper}>
@@ -1996,19 +2441,25 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   providers={providerInfo?.providers}
                   advancedPin={providerInfo?.advanced_pin ?? null}
                   providerNote={providerNote}
+                  hideUserContext={true}
                 />
               </div>
             </div>
-          )}
+          ) : null}
 
         </div>
         )}
       </div>
 
       {/* Chat Input Fixed at Bottom */}
-      {view !== 'files' && view !== 'projects' && view !== 'agents' && (selectedAgent !== null || isChatting) && (
+      {/* isChatting now turns true the moment intake starts (the user's
+          prompt lands in the chat immediately), so it alone can no longer
+          stand in for "nothing to hide" the way it used to — isIntakeLoading/
+          isCardOpen/isSettingUp must each still suppress this bar directly,
+          same as the ChatInput-visibility gate just inside it below. */}
+      {view !== 'files' && view !== 'projects' && view !== 'agents' && (selectedAgent !== null || isChatting) && !isSettingUp && !isIntakeLoading && !isCardOpen && (
         <div className={styles.chatContainer}>
-          {selectedAgent && messages.length === 0 && (
+          {selectedAgent && messages.length === 0 && !isCardOpen && (
             <div className={styles.onboardingForms}>
               <BrandKitForm
                 brandKit={brandKit}
@@ -2027,7 +2478,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               {prefilledOnboarding.competitors && (
                 <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
               )}
-              {showQuestionnaire && agentQuestions[selectedAgent] && (
+              {/* Superseded by the Step-2 task-intake cards (TaskIntakeQuestions /
+                  TaskBriefSummary, now rendered centered in the main content area,
+                  not here) — handlers and state stay in place, but this legacy
+                  card no longer renders. */}
+              {SHOW_LEGACY_AGENT_QUESTIONNAIRE && showQuestionnaire && agentQuestions[selectedAgent] && (
                 <>
                   <div className={styles.formDivider} />
                   <AgentQuestionnaire
@@ -2039,25 +2494,28 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               )}
             </div>
           )}
-          <ChatInput
-            value={promptText}
-            onChange={setPromptText}
-            showBanner={showBanner}
-            onRevert={handleRevert}
-            onSubmit={handleSubmit}
-            userContext={userContext}
-            onChangeUserContext={setUserContext}
-            attachedFiles={attachedFiles}
-            onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
-            onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
-            defaultUserContextOpen={!!selectedAgent}
-            onOpenConnectors={() => setConnectorsOpen(true)}
-            selectedModel={selectedModel}
-            onSelectModel={setSelectedModel}
-            providers={providerInfo?.providers}
-            advancedPin={providerInfo?.advanced_pin ?? null}
-            providerNote={providerNote}
-          />
+          {(!isHome && !isCardOpen && !isIntakeLoading) && (
+            <ChatInput
+              value={promptText}
+              onChange={setPromptText}
+              showBanner={showBanner}
+              onRevert={handleRevert}
+              onSubmit={handleSubmit}
+              userContext={userContext}
+              onChangeUserContext={setUserContext}
+              attachedFiles={attachedFiles}
+              onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
+              onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+              defaultUserContextOpen={!!selectedAgent}
+              onOpenConnectors={() => setConnectorsOpen(true)}
+              selectedModel={selectedModel}
+              onSelectModel={setSelectedModel}
+              providers={providerInfo?.providers}
+              advancedPin={providerInfo?.advanced_pin ?? null}
+              providerNote={providerNote}
+              hideUserContext={true}
+            />
+          )}
         </div>
       )}
 
