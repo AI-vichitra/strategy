@@ -51,7 +51,7 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
-from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates
+from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates, tasks
 from backend.database import engine, Base
 
 # Import every model so Base.metadata is fully populated before create_all runs.
@@ -132,6 +132,7 @@ app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(agents.router)
 app.include_router(pptx_templates.router)
 app.include_router(connectors.router)
+app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
 
 @app.get("/")
 async def root():

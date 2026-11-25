@@ -24,6 +24,7 @@ interface ChatInputProps {
   providers?: { id: string; display_name: string; configured: boolean; model: string }[];
   advancedPin?: string | null;
   providerNote?: string;
+  hideUserContext?: boolean;
 }
 
 export default function ChatInput({
@@ -48,6 +49,7 @@ export default function ChatInput({
   providers,
   advancedPin,
   providerNote,
+  hideUserContext = false,
 }: ChatInputProps) {
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [showModelMenu, setShowModelMenu] = useState(false);
@@ -122,18 +124,20 @@ export default function ChatInput({
     <div className={styles.wrapper}>
 
       {/* User Context Text Area (Always Open) */}
-      <div className={styles.contextBox}>
-        <div className={styles.contextBoxHeader}>
-          <span className={styles.contextBoxTitle}>USER CONTEXT</span>
+      {!hideUserContext && (
+        <div className={styles.contextBox}>
+          <div className={styles.contextBoxHeader}>
+            <span className={styles.contextBoxTitle}>USER CONTEXT</span>
+          </div>
+          <textarea
+            className={styles.contextInput}
+            placeholder="Give additional context to enhance the prompt..."
+            value={userContext}
+            onChange={(e) => onChangeUserContext(e.target.value)}
+            rows={1}
+          />
         </div>
-        <textarea
-          className={styles.contextInput}
-          placeholder="Give additional context to enhance the prompt..."
-          value={userContext}
-          onChange={(e) => onChangeUserContext(e.target.value)}
-          rows={1}
-        />
-      </div>
+      )}
 
       {/* File chips row */}
       {attachedFiles.length > 0 && (
