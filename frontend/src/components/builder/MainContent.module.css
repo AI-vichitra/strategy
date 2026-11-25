@@ -200,7 +200,11 @@
   overflow: visible;
 }
 .chatContainerPadding {
-  padding-bottom: 480px;
+  /* Just enough to clear the floating .chatContainer's actual rendered
+     height (its own padding + a single-line ChatInput + toolbar row) so the
+     last message isn't hidden behind it — not a guess at its tallest
+     possible state, which is what produced an ~840px combined gap before. */
+  padding-bottom: 160px;
 }
 
 
@@ -221,7 +225,11 @@
   left: 0;
   right: 0;
   max-height: calc(100vh - 100px);
-  overflow-y: auto;
+  /* visible, not auto: a non-visible value here clips the model dropdown
+     (ChatInput.module.css's .modelMenu) when it opens upward near this
+     box's top edge. .onboardingForms already self-scrolls at max-height:
+     45vh, so this isn't the only safety net for a tall stack. */
+  overflow: visible;
   padding: 16px 32px 24px 32px;
   display: flex;
   flex-direction: column;
@@ -298,6 +306,7 @@
   width: 100%;
   padding-bottom: 24px;
 }
+
 .gumloopLogo {
   display: flex;
   align-items: center;
@@ -456,6 +465,21 @@
   40% { transform: scale(1.2); opacity: 1; }
 }
 
+/* Wraps the Step-2 task-intake card (TaskIntakeQuestions / TaskBriefSummary)
+   when it's rendered in the LEFT/agent position of the chat stream, next to
+   .thinkingIcon — unlike .assistantBubble/.thinkingBubble, this has no
+   background/border/padding of its own, since both of those components
+   already render their own full white card chrome; this just reserves the
+   same width (flush against the icon, same as every other left-aligned
+   entry) without doubling up the card look. */
+.agentCardContent {
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - 46px);
+  width: calc(100% - 46px);
+  box-sizing: border-box;
+}
+
 /* Assistant response — left aligned */
 .assistantBubble {
   flex: 1;
@@ -514,8 +538,11 @@
   max-width: 1120px;
   margin: 0 auto;
   height: 100%;
-  overflow: hidden;
-  padding: 0;
+  min-height: 0;
+  /* visible, not hidden: hidden here clips the home ChatInput's model
+     dropdown (ChatInput.module.css's .modelMenu) when it opens upward. */
+  overflow: visible;
+  padding: 0 24px 28px;
   gap: 0;
 }
 
@@ -524,8 +551,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   width: 100%;
   padding: 10px 14px 0;
   margin-bottom: 10px;
@@ -570,10 +598,11 @@
 .homeChatboxWrapper {
   flex: 0 0 auto;
   width: 100%;
+  max-width: 820px;
+  margin: 8px auto 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 8px;
   padding: 10px 12px 10px;
   background: linear-gradient(to top, rgba(250, 248, 245, 0.96) 65%, rgba(250, 248, 245, 0) 100%);
   backdrop-filter: blur(8px);
@@ -1579,6 +1608,107 @@
 }
 
 /* ────────────────────────────────────────────────────────────────────────
+   Task Brief bar — compact, collapsed-by-default summary at the top of a
+   task's chat thread (MainContent.tsx). Smaller than .reportAccordion* —
+   this sits above the conversation, not inside report content, so it must
+   not compete visually with the messages below it.
+──────────────────────────────────────────────────────────────────────── */
+.taskBriefBar {
+  margin: 0 0 16px;
+  border: 1px solid #E8E4DC;
+  border-radius: 10px;
+  background: #FAF8F5;
+  overflow: hidden;
+  /* .chatMessages is a flex column that's shorter than its content once
+     there are enough messages, so its children become shrinkable flex
+     items — and a flex item's automatic minimum size collapses to 0 (vs.
+     content-based) the moment it has a non-"visible" overflow, which this
+     card needs for its rounded corners/expand animation. Without
+     flex-shrink:0 that combination let the flexbox shrink algorithm crush
+     this card down to a few px, clipping the header to a thin sliver.
+     .chatAgentHeader never had this because it has no overflow override. */
+  flex-shrink: 0;
+}
+
+.taskBriefBarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.taskBriefBarHeader:hover {
+  background: #F0ECE4;
+}
+
+.taskBriefBarTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.taskBriefBarChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  color: #6B6560;
+  transition: transform 0.2s ease;
+}
+
+.taskBriefBarChevronOpen {
+  transform: rotate(180deg);
+  color: #B45309;
+}
+
+.taskBriefBarBody {
+  padding: 0 14px 14px;
+  animation: reportAccordionSlideDown 0.2s ease;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Task-intake option chips (TaskIntakeQuestions.tsx) — Claude/ChatGPT-style
+   pill chips. Plain CSS classes (not inline styles) so hover can use a real
+   :hover selector instead of JS mouse-tracking state.
+──────────────────────────────────────────────────────────────────────── */
+.intakeChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  border-radius: 999px;
+  color: #6B6560;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.intakeChip:hover {
+  background: #FAF8F5;
+  border-color: #D8D2C5;
+  color: #1A1A1A;
+}
+
+.intakeChipSelected,
+.intakeChipSelected:hover {
+  background: linear-gradient(135deg, #D4A843, #B8912E);
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
    Report PDF Action Bar & Download Controls
 ──────────────────────────────────────────────────────────────────────── */
 .downloadTopBarBtn {
@@ -1761,6 +1891,79 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Shared checklist-stepper markup (StepRow/StepList, MainContent.tsx), used
+   by both GenerationProgress (in-chat, real backend-driven) and SetupStepper
+   (the "Setting up your task…" screen, timer-driven) so they can't drift
+   apart. Compact vertical list; done rows get a check, the active row is
+   bold with a pulsing dot (deliberately NOT a spinning ring — no circular
+   spinner anywhere in this stepper), pending rows dimmest with a plain dot.
+──────────────────────────────────────────────────────────────────────── */
+.genProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 2px 0;
+}
+
+.genProgressRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.genProgressIcon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.genProgressRow_done {
+  color: #6B6560;
+}
+
+.genProgressRow_done .genProgressIcon {
+  color: #16a34a;
+}
+
+.genProgressRow_active {
+  color: #1A1A1A;
+  font-weight: 600;
+}
+
+.genProgressRow_pending {
+  color: #A39E97;
+  opacity: 0.7;
+}
+
+.genProgressDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+.genProgressActiveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #D4A843;
+  display: inline-block;
+  animation: genProgressPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes genProgressPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
 }
 
 
