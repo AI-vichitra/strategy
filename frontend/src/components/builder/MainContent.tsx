@@ -1,28 +1,31 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter as useNextRouter } from 'next/navigation';
 import TemplateGrid, { AgentCard } from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
 import { getAgentIcon } from '../../data/agentIcons';
 import { useAgents } from '../../hooks/useAgents';
+import AgentTemplateView, { type TargetAudienceData } from './AgentTemplateView';
+import SettingsView from './SettingsView';
+import TeamsView from './TeamsView';
+import ShareChatModal from './ShareChatModal';
 import { useTemplates } from '../../hooks/useTemplates';
 import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
 import CompetitorForm, { type CompetitorDetail } from '../CompetitorForm';
 import BrandKitForm, { type BrandKit } from '../BrandKitForm';
-import AgentTemplateView, { type TargetAudienceData } from './AgentTemplateView';
 import ExportMenu from '../ExportMenu';
 import ConnectorsPanel from './ConnectorsPanel';
 import ConnectorsView from './ConnectorsView';
 import FilesView from './FilesView';
 import ProjectsView from './ProjectsView';
-// import WorkflowView from './WorkflowView'; // Workflows tab commented out for now
-import SettingsView from './SettingsView';
-import TeamsView from './TeamsView';
+import WorkflowView from './WorkflowView';
 import styles from './MainContent.module.css';
 import ReportRenderer from '../ReportRenderer';
 import SectionEditor from '../SectionEditor';
-import ShareChatModal from './ShareChatModal';
+import TaskIntakeQuestions, { type TaskIntakeData, type TaskIntakeAnswer } from './TaskIntakeQuestions';
+import TaskBriefSummary from './TaskBriefSummary';
+import { buildTaskBrief, type TaskBrief } from './taskBrief';
 
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
 type ReportInfo = { id: string; title: string; agent_type: string };
@@ -36,6 +39,12 @@ const TRUNCATION_MARKER = 'GENERATION TRUNCATED';
 function isTruncatedContent(content: string): boolean {
   return content.includes(TRUNCATION_MARKER);
 }
+
+// Superseded by the Step-2 task-intake cards (TaskIntakeQuestions /
+// TaskBriefSummary). Typed as `boolean`, not the literal `false` — a literal
+// `false &&` makes TypeScript treat the guarded branch as unreachable and it
+// drops the enclosing `selectedAgent` narrowing there, which this avoids.
+const SHOW_LEGACY_AGENT_QUESTIONNAIRE: boolean = false;
 
 // ── Per-agent questionnaire configs ───────────────────────────────
 const agentQuestions: Record<string, Question[]> = {
@@ -603,8 +612,188 @@ const agentPrompts: Record<string, string> = {
   'Ad Copywriter': `Generate high-converting ad copy sets across Meta and Google Ads tailored to our brand positioning and competitive differentiators.`,
 };
 
+// Collapsed-by-default summary shown once at the top of a task's chat
+// thread, modeled on ReportRenderer.tsx's CollapsibleSection but compact
+// (.taskBriefBar*) since it sits above the conversation rather than inside
+// report content.
+function TaskBriefBar({ brief }: { brief: TaskBrief }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className={styles.taskBriefBar}>
+      <button
+        type="button"
+        className={styles.taskBriefBarHeader}
+        onClick={() => setExpanded(e => !e)}
+        aria-expanded={expanded}
+      >
+        <span className={styles.taskBriefBarTitle}>Task Brief — {brief.task ?? 'Task'}</span>
+        <span className={`${styles.taskBriefBarChevron} ${expanded ? styles.taskBriefBarChevronOpen : ''}`}>
+          ▼
+        </span>
+      </button>
+      {expanded && (
+        <div className={styles.taskBriefBarBody}>
+          <TaskBriefSummary brief={brief} readOnly />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// One-line "Goal: Leads · Scope: Whole brand · …" summary of what the user
+// actually picked/typed/edited across the questions+brief cards (every
+// TaskBriefItem buildTaskBrief/TaskBriefSummary's own edit path tags
+// source:'you') — posted as the user's own right-aligned chat bubble the
+// instant they click Continue, replacing the card. Anything they skipped
+// never got a source:'you' item in the first place, so it's omitted for
+// free; if they skipped everything, falls back to one line rather than
+// posting an empty bubble.
+function buildSelectionSummaryLine(brief: TaskBrief): string {
+  const picked = brief.items.filter(item => item.source === 'you');
+  if (picked.length === 0) return 'Using best judgement for the rest.';
+  return picked.map(item => `${item.name}: ${item.value}`).join(' · ');
+}
+
+// Ordered stage ids for the staged generation-progress stepper. 'kb_wait' is
+// conditional — most generations skip the research-pipeline wait entirely,
+// so it's only shown once the backend's 'status' event actually fires.
+const GEN_STAGE_ORDER = ['preparing', 'kb_wait', 'retrieving', 'composing', 'generating'] as const;
+type GenStageId = typeof GEN_STAGE_ORDER[number];
+
+const GEN_STAGE_LABELS: Record<GenStageId, string> = {
+  preparing: 'Preparing your report',
+  kb_wait: 'Building brand knowledge base',
+  retrieving: 'Retrieving brand research',
+  composing: 'Composing your report',
+  generating: 'Writing your report',
+};
+
+type StepStatus = 'done' | 'active' | 'pending';
+type StepRowData = { key: string; status: StepStatus; label: string };
+
+// Shared checklist row + list markup for every staged progress indicator in
+// this file (GenerationProgress and SetupStepper below) — one place for the
+// done(check)/active(bold)/pending(dimmed) look so the two can never drift
+// apart visually.
+function StepRow({ status, label }: { status: StepStatus; label: string }) {
+  const statusClass = status === 'done' ? styles.genProgressRow_done : status === 'active' ? styles.genProgressRow_active : styles.genProgressRow_pending;
+  return (
+    <div className={`${styles.genProgressRow} ${statusClass}`}>
+      <span className={styles.genProgressIcon}>
+        {status === 'done' ? (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : status === 'active' ? (
+          <span className={styles.genProgressActiveDot} />
+        ) : (
+          <span className={styles.genProgressDot} />
+        )}
+      </span>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function StepList({ rows }: { rows: StepRowData[] }) {
+  return (
+    <div className={styles.genProgress}>
+      {rows.map(r => <StepRow key={r.key} status={r.status} label={r.label} />)}
+    </div>
+  );
+}
+
+// Vertical stepper driven by real backend 'stage'/'status' SSE events plus
+// the client-side "first token received" milestone (see the token branch in
+// handleSubmit's SSE loop) — never a fake timed animation.
+function GenerationProgress({
+  stage,
+  kbWaitText,
+  kbWaitSeen,
+}: {
+  stage: string | null;
+  kbWaitText: string | null;
+  kbWaitSeen: boolean;
+}) {
+  const visibleStages = GEN_STAGE_ORDER.filter(s => s !== 'kb_wait' || kbWaitSeen);
+  const currentIndex = stage ? visibleStages.indexOf(stage as GenStageId) : -1;
+
+  const rows: StepRowData[] = visibleStages.map((s, i) => {
+    const status: StepStatus = currentIndex === -1 ? 'pending' : i < currentIndex ? 'done' : i === currentIndex ? 'active' : 'pending';
+    // While the kb_wait row is active, show the backend's own live text (it
+    // already carries the elapsed-seconds counter) instead of the static
+    // label, so the two never read as duplicated phrasing.
+    const label = s === 'kb_wait' && status === 'active' && kbWaitText ? kbWaitText : GEN_STAGE_LABELS[s];
+    return { key: s, status, label };
+  });
+
+  return <StepList rows={rows} />;
+}
+
+// Shared timer-driven checklist: for any staged loader with no real backend
+// sub-progress to key off (SetupStepper, IntakeStepper below), advances
+// through `labels` on a fixed interval, marking passed stages done and the
+// current one active — same StepList/StepRow look as the backend-driven
+// GenerationProgress above, so every loader in this file matches.
+function TimedStepList({ labels, intervalMs }: { labels: string[]; intervalMs: number }) {
+  const [stageIndex, setStageIndex] = useState(0);
+
+  useEffect(() => {
+    setStageIndex(0);
+    const id = setInterval(() => {
+      setStageIndex(i => (i < labels.length - 1 ? i + 1 : i));
+    }, intervalMs);
+    return () => clearInterval(id);
+    // labels/intervalMs are static per call site (module-level constants),
+    // not expected to change across renders of the same stepper instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const rows: StepRowData[] = labels.map((label, i) => ({
+    key: label,
+    status: i < stageIndex ? 'done' : i === stageIndex ? 'active' : 'pending',
+    label,
+  }));
+
+  return <StepList rows={rows} />;
+}
+
+// Setup-gap checklist for the "Setting up your task…" screen (isSettingUp in
+// the main render below). The create -> PUT -> forced-send sequence in
+// handleBriefConfirm reports no real sub-progress of its own (just an
+// awaited start and finish, nothing in between), so unlike GenerationProgress
+// there is no backend signal to drive stages from; this always runs the
+// timed auto-advance instead.
+const SETUP_STAGE_LABELS = [
+  'Understanding your request',
+  'Gathering context',
+  'Preparing your workspace',
+  'Finalizing',
+];
+const SETUP_STAGE_INTERVAL_MS = 1400;
+
+function SetupStepper() {
+  return <TimedStepList labels={SETUP_STAGE_LABELS} intervalMs={SETUP_STAGE_INTERVAL_MS} />;
+}
+
+// Classify-the-prompt checklist for the "Understanding your request…" screen
+// (isIntakeLoading in the main render below) — the POST /api/tasks/intake
+// call behind it is a single request/response with no intermediate progress
+// either, so this is timed auto-advance too, same as SetupStepper.
+const INTAKE_STAGE_LABELS = [
+  'Understanding your request',
+  'Analyzing your prompt',
+  'Almost there',
+];
+const INTAKE_STAGE_INTERVAL_MS = 1400;
+
+function IntakeStepper() {
+  return <TimedStepList labels={INTAKE_STAGE_LABELS} intervalMs={INTAKE_STAGE_INTERVAL_MS} />;
+}
+
+
 const getDomain = (connectorName: string) => {
-  const c = allConnectorsData.find(c => c.name === connectorName);
+  const c = allConnectorsData.find((item) => item.name.toLowerCase() === connectorName.toLowerCase());
   return c ? c.domain : 'google.com';
 };
 
@@ -681,6 +870,7 @@ function BrandLogoIcon({
 export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const searchParams = useSearchParams();
   const nextRouter = useNextRouter();
+  const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
   type ProviderInfo = {
@@ -698,21 +888,67 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // below), which is what the banner falls back to after reload.
   type TruncationDetail = { provider: string; model: string; max_tokens: number; output_chars: number };
   const [liveTruncation, setLiveTruncation] = useState<TruncationDetail | null>(null);
+  // Staged generation-progress stepper, driven by real backend 'stage'/
+  // 'status' SSE events plus the client-side "first token" milestone — see
+  // GenerationProgress below. genStage is null outside an active generation.
+  const [genStage, setGenStage] = useState<string | null>(null);
+  const [kbWaitText, setKbWaitText] = useState<string | null>(null);
+  const [kbWaitSeen, setKbWaitSeen] = useState(false);
+  
+  const [targetAudience, setTargetAudience] = useState<TargetAudienceData>({ region: 'Global', segments: [] });
+  const [additionalNotes, setAdditionalNotes] = useState<string>('');
+  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ full_name?: string | null; email?: string | null; avatar_url?: string | null } | null>(null);
+  const [isSwitchingProject, setIsSwitchingProject] = useState(false);
+  const [switchingTargetTitle, setSwitchingTargetTitle] = useState('');
+
   const [promptText, setPromptText] = useState('');
-  const [userContext, setUserContext] = useState('');
   const [showBanner, setShowBanner] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [threadBrief, setThreadBrief] = useState<TaskBrief | null>(null);
   const [qaAnswers, setQaAnswers] = useState<Array<{ question: string; answer: string }>>([]);
+  // Step-2 task-intake state (driven by POST /api/tasks/intake) — additive,
+  // alongside the legacy AgentQuestionnaire state above, which stays in
+  // place but is no longer rendered (see the .onboardingForms block below).
+  const [intakePhase, setIntakePhase] = useState<'idle' | 'questions' | 'brief' | 'confirmed'>('idle');
+  const [isIntakeLoading, setIsIntakeLoading] = useState(false);
+  // True only for the one-time create -> PUT -> send gap right after
+  // Continue is clicked, until handleSubmit's forced re-invoke actually
+  // enqueues the real "thinking" entry for generation. Explicit state (not
+  // derived from intakePhase/messages) because intakePhase stays 'confirmed'
+  // for the rest of the task's lifetime, and messages already contains the
+  // user's prompt + card-selection bubbles by this point (the whole flow now
+  // lives inside the chat), so neither on its own still singles out this gap.
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [intakePayload, setIntakePayload] = useState<TaskIntakeData | null>(null);
+  const [intakeAnswers, setIntakeAnswers] = useState<Record<string, TaskIntakeAnswer> | null>(null);
+  const [confirmedBrief, setConfirmedBrief] = useState<TaskBrief | null>(null);
+  const [classifiedAgent, setClassifiedAgent] = useState<string | null>(null);
+  // Set right before a forced re-invoke of handleSubmit() after a Task Brief
+  // is confirmed, so that one call skips the intake intercept and the
+  // lazy-create gate and sends straight into the already-created project.
+  const forcedProjectIdRef = useRef<string | null>(null);
+  // Stashes the original prompt right before the intake intercept clears
+  // promptText (see setPromptText('') below) — by the time handleBriefConfirm
+  // runs its forced re-invoke of handleSubmit(), promptText is long empty
+  // (the user has spent the whole questions/brief flow since), so handleSubmit
+  // must be handed this ref's value explicitly rather than reading the stale
+  // promptText state (was the cause of the "Setting up your task…" screen
+  // getting stuck forever: handleSubmit's own `if (!prompt.trim()) return`
+  // guard fired on the empty string before ever enqueueing a message).
+  const pendingTaskPromptRef = useRef<string>('');
+  // Synchronous re-entry guard: intakePhase alone isn't enough, since
+  // setIntakePhase() doesn't commit until after the in-flight fetch awaits —
+  // a rapid double-send (double-click, Enter held) would otherwise read
+  // intakePhase==='idle' twice and fire two POST /api/tasks/intake calls.
+  const intakeInFlightRef = useRef(false);
   const [competitors, setCompetitors] = useState<CompetitorDetail[]>([]);
   const [brandKit, setBrandKit] = useState<BrandKit>({});
-  const [targetAudience, setTargetAudience] = useState<TargetAudienceData>({ region: 'Global', segments: [] });
-  const [additionalNotes, setAdditionalNotes] = useState<string>('');
+  const [userContext, setUserContext] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ full_name?: string | null; email?: string | null; avatar_url?: string | null } | null>(null);
   const [downloadingPdfIdx, setDownloadingPdfIdx] = useState<number | null>(null);
   const [pdfErrorIdx, setPdfErrorIdx] = useState<number | null>(null);
   const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
@@ -725,22 +961,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [shareCopiedIdx, setShareCopiedIdx] = useState<number | null>(null);
   const [shareErrorIdx, setShareErrorIdx] = useState<number | null>(null);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
-  const initialViewParam = searchParams.get('view');
-  const initialView = ['files', 'projects', 'agents', 'workflow', 'connectors', 'settings', 'teams'].includes(initialViewParam || '')
-    ? initialViewParam as 'files' | 'projects' | 'agents' | 'workflow' | 'connectors' | 'settings' | 'teams'
-    : 'builder';
+  const initialView = searchParams.get('tab') === 'teams' ? 'teams' : 'builder';
   const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors' | 'settings' | 'teams'>(initialView);
-  const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const contentAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('viewChanged', { detail: { view } }));
-    if (contentAreaRef.current) {
-      contentAreaRef.current.scrollTop = 0;
-    }
-  }, [view]);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   const authToken = typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? undefined) : undefined;
@@ -756,20 +980,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         if (res.ok) setProviderInfo(await res.json());
       } catch {
         /* non-blocking: selector falls back to "Loading…" until this succeeds */
-      }
-    })();
-  }, [apiBase, authToken]);
-
-  useEffect(() => {
-    if (!authToken) return;
-    (async () => {
-      try {
-        const res = await fetch(`${apiBase}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${authToken}` }
-        });
-        if (res.ok) setCurrentUser(await res.json());
-      } catch {
-        /* non-blocking */
       }
     })();
   }, [apiBase, authToken]);
@@ -802,36 +1012,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     return -1;
   }, [messages]);
 
-  const resolveReport = async (messageId: string): Promise<ReportInfo | null> => {
-    let reportInfo = (messageId ? reportsByMessageId[messageId] : null) || (Object.values(reportsByMessageId).length > 0 ? Object.values(reportsByMessageId)[0] : null);
-    if (!reportInfo && activeProject?.id) {
-      try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const res = await fetch(`${apiBase}/api/projects/${activeProject.id}/reports`, { headers });
-        if (res.ok) {
-          const list = await res.json();
-          if (list && list.length > 0) {
-            const map: Record<string, ReportInfo> = {};
-            for (const r of list) {
-              const item: ReportInfo = { id: r.id, title: r.title, agent_type: r.agent_type };
-              if (r.message_id) map[r.message_id] = item;
-              if (r.id) map[r.id] = item;
-            }
-            setReportsByMessageId(prev => ({ ...prev, ...map }));
-            return (messageId ? map[messageId] : null) || list[0] || null;
-          }
-        }
-      } catch (err) {
-        console.error('Failed to resolve report:', err);
-      }
-    }
-    return reportInfo;
-  };
-
   const handleDownloadPdf = async (idx: number, messageId: string) => {
-    const reportInfo = await resolveReport(messageId);
+    const reportInfo = reportsByMessageId[messageId];
     if (!reportInfo) return;
     try {
       setPdfErrorIdx(null);
@@ -882,7 +1064,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const fetchReportsForProject = async (projectId: string) => {
-    if (!projectId || !projectId.trim()) return;
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -894,12 +1075,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       const list = await res.json();
       const map: Record<string, ReportInfo> = {};
       for (const r of list) {
-        const item: ReportInfo = { id: r.id, title: r.title, agent_type: r.agent_type };
         if (r.message_id) {
-          map[r.message_id] = item;
-        }
-        if (r.id) {
-          map[r.id] = item;
+          map[r.message_id] = { id: r.id, title: r.title, agent_type: r.agent_type };
         }
       }
       setReportsByMessageId(map);
@@ -909,7 +1086,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const handleDownloadDocx = async (idx: number, messageId: string) => {
-    const reportInfo = await resolveReport(messageId);
+    const reportInfo = reportsByMessageId[messageId];
     if (!reportInfo) return;
     try {
       setDocxErrorIdx(null);
@@ -950,7 +1127,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const handleDownloadPptx = async (idx: number, messageId: string, templateId?: string) => {
-    const reportInfo = await resolveReport(messageId);
+    const reportInfo = reportsByMessageId[messageId];
     if (!reportInfo) return;
     try {
       setPptxErrorIdx(null);
@@ -1013,7 +1190,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const handleShareReport = async (idx: number, messageId: string) => {
-    const reportInfo = await resolveReport(messageId);
+    const reportInfo = reportsByMessageId[messageId];
     if (!reportInfo) return;
     try {
       setShareErrorIdx(null);
@@ -1054,18 +1231,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [brandsMap, setBrandsMap] = useState<Record<string, string>>({});
   const [activeProject, setActiveProject] = useState<{ id: string; title: string; brand_config_id?: string } | null>(null);
   const [prefilledOnboarding, setPrefilledOnboarding] = useState<{ competitors: boolean; brandKit: boolean }>({ competitors: false, brandKit: false });
-  const [isSwitchingProject, setIsSwitchingProject] = useState(false);
-  const [switchingTargetTitle, setSwitchingTargetTitle] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const [homeSearchQuery, setHomeSearchQuery] = useState('');
-  const homeSearchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
-      if (homeSearchContainerRef.current && !homeSearchContainerRef.current.contains(e.target as Node)) {
-        setHomeSearchQuery('');
-      }
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
@@ -1099,17 +1268,16 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
 
         if (savedBrandId) {
-          const matchingBrand = (brandsData || []).find((b: any) => b.id === savedBrandId);
           const matchingProj = (data || []).find((p: any) => p.brand_config_id === savedBrandId);
-          const displayTitle = matchingBrand?.brand_name || bMap[savedBrandId] || matchingProj?.title || 'Brand Project';
           if (matchingProj) {
             setActiveProject({
               id: matchingProj.id,
-              title: displayTitle,
+              title: bMap[matchingProj.brand_config_id] || matchingProj.title || 'Brand Project',
               brand_config_id: matchingProj.brand_config_id
             });
             return;
           }
+          const matchingBrand = (brandsData || []).find((b: any) => b.id === savedBrandId);
           if (matchingBrand) {
             setActiveProject({
               id: matchingBrand.id,
@@ -1148,12 +1316,56 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   useEffect(() => {
-    // Capture the project param once at mount — do not re-read on re-renders.
+    // Capture the params once at mount — do not re-read on re-renders.
     const projectParam = searchParams.get('project');
+    const isFreshTask = searchParams.get('new') === '1';
+    const brandParam = searchParams.get('brand');
 
     const init = async () => {
+      // Loads brandsMap/brandsList/projectsList (so the header can show the
+      // brand) and, as a side effect, may auto-reattach activeProject to an
+      // existing project/brand for this user (finding-3b/finding-5). The
+      // fresh-task branch below runs AFTER this and overrides activeProject
+      // with the '' lazy-create sentinel, so that auto-reattach never wins
+      // for this entry path.
       await loadProjectsAndBrands();
-      if (projectParam) {
+
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        if (token) {
+          const apiBase = process.env.NEXT_PUBLIC_API_URL;
+          const meRes = await fetch(`${apiBase}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meRes.ok) {
+            const userData = await meRes.json();
+            setCurrentUser(userData);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load user info:', err);
+      }
+
+      if (isFreshTask) {
+        const freshBrandId = brandParam || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null);
+        if (freshBrandId) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('brand_config_id', freshBrandId);
+          }
+          setActiveProject({ id: '', title: '', brand_config_id: freshBrandId });
+        }
+        setMessages([]);
+        setThreadBrief(null);
+        setIntakePhase('idle');
+        // Same pending-draft pickup as the ?project= path below.
+        const pendingMessage = typeof window !== 'undefined' ? sessionStorage.getItem('pending_chat_message') : null;
+        if (pendingMessage) {
+          sessionStorage.removeItem('pending_chat_message');
+          setPromptText(pendingMessage);
+        }
+        // Clear the params so a refresh doesn't re-run the fresh-task reset.
+        nextRouter.replace('/build');
+      } else if (projectParam) {
         await loadProjectById(projectParam);
         // A draft typed on the project details page's "new chat" field, if any —
         // pre-fills the input so the onboarding form is still reviewed before send.
@@ -1176,110 +1388,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredHomeSearchAgents = catalogAgents.filter(agent =>
-    agent.title.toLowerCase().includes(homeSearchQuery.toLowerCase())
-  );
-
-  const catalogCategoryNameById = useMemo(() => {
-    const map: Record<string, string> = {};
-    catalogCategories.forEach((c) => { map[c.id] = c.name; });
-    return map;
-  }, [catalogCategories]);
-
 
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  useEffect(() => {
-    if (activeProject?.id) {
-      fetchReportsForProject(activeProject.id);
-    }
-  }, [activeProject?.id]);
-
-  const syncBrandDataForTemplate = (
-    brandId: string,
-    bList: any[] = brandsList,
-    pList: any[] = projectsList
-  ) => {
-    const brand = (bList || []).find((b: any) => b.id === brandId);
-    let brandComps: CompetitorDetail[] = [];
-
-    if (brand) {
-      if (brand.competitors) {
-        try {
-          const onboardingComps = typeof brand.competitors === 'string' ? JSON.parse(brand.competitors) : brand.competitors;
-          if (Array.isArray(onboardingComps)) {
-            brandComps = onboardingComps
-              .filter((c: any) => c && typeof c.name === 'string' && c.name.trim())
-              .map((c: any) => ({
-                brand_name: c.name!.trim(),
-                website_url: c.url || c.website_url || '',
-                logo_url: c.logo_url || undefined,
-                social_media: undefined,
-              }));
-          }
-        } catch {}
-      }
-      if (brand.target_market) {
-        try {
-          const tm = typeof brand.target_market === 'string' ? JSON.parse(brand.target_market) : brand.target_market;
-          const regRaw = tm?.region || 'global';
-          const formattedRegion = typeof regRaw === 'string' ? (regRaw.charAt(0).toUpperCase() + regRaw.slice(1)) : 'Global';
-          setTargetAudience({
-            region: formattedRegion,
-            segments: [],
-            locations: tm?.cities ? (Array.isArray(tm.cities) ? tm.cities.join(', ') : tm.cities) : '',
-            notes: '',
-          });
-        } catch {
-          setTargetAudience({ region: 'Global', segments: [] });
-        }
-      } else {
-        setTargetAudience({ region: 'Global', segments: [] });
-      }
-      if (brand.additional_notes) {
-        setAdditionalNotes(brand.additional_notes);
-      } else {
-        setAdditionalNotes('');
-      }
-    } else {
-      setTargetAudience({ region: 'Global', segments: [] });
-      setAdditionalNotes('');
-    }
-
-    // Fallback: check if an existing project under this brand has competitor_details
-    if (brandComps.length === 0) {
-      const projWithComps = (pList || []).find((p: any) => p.brand_config_id === brandId && Array.isArray(p.competitor_details) && p.competitor_details.length > 0);
-      if (projWithComps) {
-        brandComps = projWithComps.competitor_details;
-      }
-    }
-    setCompetitors(brandComps);
-    setPrefilledOnboarding(prev => ({ ...prev, competitors: brandComps.length > 0 }));
-
-    // Brand Kit
-    const projWithKit = (pList || []).find((p: any) => p.brand_config_id === brandId && p.brand_kit);
-    if (projWithKit?.brand_kit) {
-      setBrandKit(projWithKit.brand_kit);
-      setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
-    } else if (brand?.logo_url || brand?.colors) {
-      setBrandKit({ logo_url: brand.logo_url || null, colors: brand.colors || null });
-      setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
-    } else {
-      setBrandKit({});
-      setPrefilledOnboarding(prev => ({ ...prev, brandKit: false }));
-    }
-
-    // Reset questionnaire, context, and messages
-    setQaAnswers([]);
-    setUserContext('');
-    setAttachedFiles([]);
-    setReferenceFiles([]);
-    setMessages([]);
-  };
 
   const handleSelectAgent = (title: string) => {
     setView('builder');
@@ -1291,6 +1405,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       setActiveProject({ id: '', title: bTitle, brand_config_id: currentBrandId });
     }
     setMessages([]);
+    setThreadBrief(null);
     setPromptText('');
     setUserContext('');
     setAttachedFiles([]);
@@ -1298,14 +1413,29 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
-    setTargetAudience({ region: 'Global', segments: [] });
-    setAdditionalNotes('');
     setPrefilledOnboarding({ competitors: false, brandKit: false });
 
     // Pre-fill competitor list and brand kit from onboarding data for this brand
     const currentBrandIdForPrefill = activeProject?.brand_config_id || savedBrandId;
     if (currentBrandIdForPrefill) {
-      syncBrandDataForTemplate(currentBrandIdForPrefill, brandsList, projectsList);
+      const brand = brandsList.find((b: any) => b.id === currentBrandIdForPrefill);
+      if (brand?.competitors) {
+        try {
+          const onboardingComps = JSON.parse(brand.competitors) as Array<{ name?: string; url?: string; website_url?: string }>;
+          const mapped = onboardingComps
+            .filter((c) => c && typeof c.name === 'string' && c.name.trim())
+            .map((c) => ({ brand_name: c.name!.trim(), website_url: c.url || c.website_url || '', social_media: undefined }));
+          if (mapped.length > 0) {
+            setCompetitors(mapped);
+            setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
+          }
+        } catch {}
+      }
+      const projWithKit = projectsList.find((p: any) => p.brand_config_id === currentBrandIdForPrefill && p.brand_kit);
+      if (projWithKit?.brand_kit) {
+        setBrandKit(projWithKit.brand_kit);
+        setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
+      }
     }
 
     const prompt = title === 'Competition Analysis'
@@ -1321,13 +1451,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const handleRevert = () => {
     setSelectedAgent(null);
     setPromptText('');
+    setUserContext('');
     setAttachedFiles([]);
-    setReferenceFiles([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
+    setThreadBrief(null);
     setQaAnswers([]);
-    setUserContext('');
     setCompetitors([]);
     setBrandKit({});
     setPrefilledOnboarding({ competitors: false, brandKit: false });
@@ -1337,17 +1467,26 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setView('builder');
     setSelectedAgent(null);
     setPromptText('');
+    setUserContext('');
     setAttachedFiles([]);
-    setReferenceFiles([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
+    setThreadBrief(null);
+    setGenStage(null);
+    setKbWaitText(null);
+    setKbWaitSeen(false);
     setQaAnswers([]);
-    setUserContext('');
     setCompetitors([]);
     setBrandKit({});
     setPrefilledOnboarding({ competitors: false, brandKit: false });
     setActiveProject(null);
+    setIntakePhase('idle');
+    setIntakePayload(null);
+    setIntakeAnswers(null);
+    setConfirmedBrief(null);
+    intakeInFlightRef.current = false;
+    forcedProjectIdRef.current = null;
     onNewChat?.();
   };
 
@@ -1363,12 +1502,98 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const handleQuestionnaireDismiss = () => setShowQuestionnaire(false);
 
-  const loadProjectById = async (projectId: string, manageLoading: boolean = true) => {
-    if (manageLoading) {
-      setIsSwitchingProject(true);
-      setSwitchingTargetTitle('Loading project...');
+  const handleBriefConfirm = async (brief: TaskBrief) => {
+    // Clicking Continue both removes the card (isCardOpen goes false the
+    // instant intakePhase leaves 'questions'/'brief') and posts the user's
+    // own one-line summary of what they picked, right-aligned, in its place
+    // — same chat-bubble treatment as a typed message.
+    setIntakePhase('confirmed');
+    setIsSettingUp(true);
+    setMessages(prev => [...prev, { role: 'user', content: buildSelectionSummaryLine(brief) }]);
+    let sent = false;
+    try {
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '')
+        ? activeProject.brand_config_id
+        : (savedBrandId || (brandsList.length > 0 ? brandsList[0].id : (projectsList.length > 0 ? projectsList[0].brand_config_id : null)));
+
+      if (!activeBrandId) {
+        throw new Error('No active brand to create the task project under');
+      }
+
+      const resolvedAgentType = classifiedAgent || selectedAgent || 'StratAI';
+
+      // Mirrors the existing lazy-create body in handleSubmit exactly,
+      // overriding title/agent_type with the classified result.
+      const createRes = await fetch(`${apiBase}/api/projects/`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          title: brief.task || 'New task',
+          agent_type: resolvedAgentType,
+          brand_config_id: activeBrandId,
+          llm_provider: selectedModel,
+          competitor_details: (() => {
+            const filled = competitors.filter((c) => c.brand_name.trim());
+            return filled.length > 0 ? filled : null;
+          })(),
+          brand_kit: (() => {
+            const hasBrandKit = brandKit.logo_url || (brandKit.colors && Object.values(brandKit.colors).some(Boolean));
+            return hasBrandKit ? brandKit : null;
+          })(),
+        }),
+      });
+      if (!createRes.ok) throw new Error(`Failed to create task project (${createRes.status})`);
+      const newP = await createRes.json();
+
+      // POST /api/projects/'s "reuse an existing empty project" branch drops
+      // questionnaire_answers, so persist the confirmed brief explicitly.
+      await fetch(`${apiBase}/api/projects/${newP.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ questionnaire_answers: JSON.stringify(brief) }),
+      });
+
+      setActiveProject({ id: newP.id, title: newP.title, brand_config_id: newP.brand_config_id ?? activeBrandId });
+      setSelectedAgent(resolvedAgentType);
+      setThreadBrief(brief);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('brand_config_id', activeBrandId);
+      }
+
+      // promptText was already cleared back when the Step-2 intercept first
+      // ran (setPromptText('') in handleSubmit) — pendingTaskPromptRef is
+      // what still holds the original text, so hand it to this forced
+      // re-invoke explicitly instead of letting handleSubmit read the
+      // (by-now-empty) promptText state, straight into newP.id.
+      forcedProjectIdRef.current = newP.id;
+      sent = await handleSubmit(pendingTaskPromptRef.current);
+    } catch (err) {
+      console.error('Task brief confirm failed:', err);
+    } finally {
+      // The success path already turned isSettingUp off inside handleSubmit
+      // itself, right as it enqueues the real "thinking" entry — this is a
+      // defensive reset for every other case, so the inline setup stepper
+      // never hangs even if a failure surfaces after the last await.
+      setIsSettingUp(false);
+      // If handleSubmit never got far enough to enqueue that "thinking" entry
+      // (sent===false, whether from a thrown error above or handleSubmit's
+      // own early-return guard), intakePhase would otherwise be stuck on
+      // 'confirmed' with no card and no generation in progress; falling back
+      // to the brief card here, in a finally, clears it even then.
+      if (!sent) {
+        setIntakePhase('brief'); // keep the brief card visible so the user can retry
+      }
     }
-    const startTime = Date.now();
+  };
+
+  const loadProjectById = async (projectId: string) => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -1382,6 +1607,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         setSelectedAgent(proj.agent_type || null);
         if (proj.llm_provider) {
           setSelectedModel(proj.llm_provider);
+        }
+        try {
+          setThreadBrief(proj.questionnaire_answers ? JSON.parse(proj.questionnaire_answers) as TaskBrief : null);
+        } catch {
+          setThreadBrief(null);
         }
         const hasCompetitors = Array.isArray(proj.competitor_details) && proj.competitor_details.length > 0;
         const hasBrandKit = proj.brand_kit && typeof proj.brand_kit === 'object' &&
@@ -1401,7 +1631,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 const mapped = details.competitors_selected.map((c: any) => ({
                   brand_name: c.name || '',
                   website_url: c.website_url || '',
-                  logo_url: c.logo_url || undefined,
                   social_media: undefined,
                 }));
                 setCompetitors(mapped);
@@ -1416,15 +1645,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         }
 
         if (proj.brand_config_id) {
-          const brandName = brandsMap[proj.brand_config_id] || (brandsList.find((b: any) => b.id === proj.brand_config_id))?.brand_name || 'Brand Project';
+          const brandName = brandsMap[proj.brand_config_id] || 'Brand Project';
           setActiveProject({
             id: proj.id,
-            title: brandName || proj.title || 'Brand Project',
+            title: proj.title || brandName,
             brand_config_id: proj.brand_config_id,
           });
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('brand_config_id', proj.brand_config_id);
-          }
         }
         if (proj.messages && proj.messages.length > 0) {
           const loadedMsgs = proj.messages.map((m: any) => ({
@@ -1443,103 +1669,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       }
     } catch (err) {
       console.error('Failed to load project details:', err);
-    } finally {
-      if (manageLoading) {
-        const elapsed = Date.now() - startTime;
-        const minWait = 400;
-        if (elapsed < minWait) {
-          await new Promise((r) => setTimeout(r, minWait - elapsed));
-        }
-        setIsSwitchingProject(false);
-      }
-    }
-  };
-
-  const handleSelectBrandProject = async (item: {
-    brand_config_id: string;
-    title: string;
-    proj_id: string;
-    logo_url?: string | null;
-  }) => {
-    setDropdownOpen(false);
-
-    if (activeProject?.brand_config_id === item.brand_config_id && activeProject?.id === item.proj_id && !isSwitchingProject) {
-      return;
-    }
-
-    setIsSwitchingProject(true);
-    setSwitchingTargetTitle(item.title);
-    const startTime = Date.now();
-
-    try {
-      // 1. Update active project
-      setActiveProject({
-        id: item.proj_id,
-        title: item.title,
-        brand_config_id: item.brand_config_id,
-      });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('brand_config_id', item.brand_config_id);
-      }
-
-      // 2. Fetch fresh projects & brands lists
-      let latestBrands = brandsList;
-      let latestProjects = projectsList;
-      try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL;
-        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const [pRes, bRes] = await Promise.all([
-          fetch(`${apiBase}/api/projects`, { headers }),
-          fetch(`${apiBase}/api/brands`, { headers }),
-        ]);
-        if (pRes.ok && bRes.ok) {
-          latestProjects = await pRes.json();
-          latestBrands = await bRes.json();
-          setProjectsList(latestProjects || []);
-          setBrandsList(latestBrands || []);
-          const bMap: Record<string, string> = {};
-          (latestBrands || []).forEach((b: any) => { bMap[b.id] = b.brand_name; });
-          setBrandsMap(bMap);
-        }
-      } catch (err) {
-        console.error('Failed to reload projects/brands:', err);
-      }
-
-      // 3. Update view data according to current active view:
-      if (!isChatting && selectedAgent) {
-        // User has template questionnaire open -> stay on template, update brand & inputs
-        syncBrandDataForTemplate(item.brand_config_id, latestBrands, latestProjects);
-      } else if (item.proj_id && item.proj_id !== item.brand_config_id) {
-        // Project exists in DB -> open a fresh chat in this project context (don't load old messages)
-        setMessages([]);
-        setSelectedAgent(null);
-        setReportsByMessageId({});
-        syncBrandDataForTemplate(item.brand_config_id, latestBrands, latestProjects);
-      } else {
-        // Idle home view or fresh brand
-        setMessages([]);
-        setReportsByMessageId({});
-        syncBrandDataForTemplate(item.brand_config_id, latestBrands, latestProjects);
-      }
-
-      // 4. Notify sidebar & others
-      window.dispatchEvent(
-        new CustomEvent('projectChanged', {
-          detail: { projectId: item.proj_id, brand_config_id: item.brand_config_id },
-        })
-      );
-    } catch (err) {
-      console.error('Error switching brand project:', err);
-    } finally {
-      const elapsed = Date.now() - startTime;
-      const minWait = 450;
-      if (elapsed < minWait) {
-        await new Promise((r) => setTimeout(r, minWait - elapsed));
-      }
-      setIsSwitchingProject(false);
     }
   };
 
@@ -1557,9 +1686,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     const onOpenFiles = () => setView('files');
     const onOpenProjects = () => setView('projects');
     const onOpenAgents = () => setView('agents');
-    // const onOpenWorkflow = () => setView('workflow'); // Workflows tab commented out for now
-    const onOpenSettings = () => setView('settings');
-    const onOpenTeams = () => setView('teams');
+    const onOpenWorkflow = () => setView('workflow');
     window.addEventListener('newChat', onNewChat);
     window.addEventListener('openProject', onOpenProject);
     window.addEventListener('openConnectors', onOpenConnectors);
@@ -1567,9 +1694,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     window.addEventListener('openFiles', onOpenFiles);
     window.addEventListener('openProjects', onOpenProjects);
     window.addEventListener('openAgents', onOpenAgents);
-    // window.addEventListener('openWorkflow', onOpenWorkflow);
+
+    const onOpenSettings = () => setView('settings');
+    const onOpenTeams = () => setView('teams');
     window.addEventListener('openSettings', onOpenSettings);
     window.addEventListener('openTeams', onOpenTeams);
+
+    window.addEventListener('openWorkflow', onOpenWorkflow);
     return () => {
       window.removeEventListener('newChat', onNewChat);
       window.removeEventListener('openProject', onOpenProject);
@@ -1578,20 +1709,123 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       window.removeEventListener('openFiles', onOpenFiles);
       window.removeEventListener('openProjects', onOpenProjects);
       window.removeEventListener('openAgents', onOpenAgents);
-      // window.removeEventListener('openWorkflow', onOpenWorkflow);
+
       window.removeEventListener('openSettings', onOpenSettings);
       window.removeEventListener('openTeams', onOpenTeams);
+
+      window.removeEventListener('openWorkflow', onOpenWorkflow);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandsMap]);
 
-  // Submit message → call backend + stream response
-  const handleSubmit = async () => {
-    if (!promptText.trim()) return;
-    let baseContent = promptText.trim();
-    const allFiles = [...referenceFiles, ...attachedFiles];
-    if (allFiles.length > 0) {
-      baseContent += `\n\n── Supporting Reference Documents & Files ──\n` + allFiles.map(f => `[File] ${f.name}`).join('\n');
+  // Submit message → call backend + stream response. Returns whether the
+  // first user/thinking message actually got enqueued (false on every early
+  // return below) — handleBriefConfirm's forced re-invoke uses this to know
+  // whether it's safe to leave intakePhase==='confirmed' (isChatting will
+  // flip true) or whether it must reset out of the "Setting up…" screen
+  // itself instead of leaving it stuck.
+  const handleSubmit = async (overridePrompt?: string): Promise<boolean> => {
+    const effectivePrompt = overridePrompt ?? promptText;
+    if (!effectivePrompt.trim()) return false;
+
+    // Consumed once per call: set by handleBriefConfirm right before it
+    // re-invokes handleSubmit() so this one call skips the intake intercept
+    // and the lazy-create gate below, sending straight into the project
+    // handleBriefConfirm already created.
+    const forced = forcedProjectIdRef.current;
+    forcedProjectIdRef.current = null;
+
+    // Whether the user's prompt is already sitting in the chat as a
+    // right-aligned bubble — true for the forced re-invoke (handleBriefConfirm
+    // posted its own selection-summary bubble when Continue was clicked) and,
+    // as of the block right below, for the intake intercept itself (it now
+    // posts the raw prompt immediately, switching straight to the chat layout
+    // instead of a blank-page loader first). The later normal-send step's
+    // setMessages(...) must not add a second copy when this is true — but it
+    // is NOT what decides whether `history` (below) needs its own manual
+    // append; see the comment at `history` for why those are different
+    // questions (one is about committed state, the other about this
+    // specific closure's possibly-stale `messages` snapshot).
+    let userBubbleAlreadyShown = !!forced;
+
+    // Step-2 task intake: on the very first turn of a fresh task, classify
+    // the prompt + fetch checkpoints before sending anything, and surface
+    // the question/brief cards instead of sending. intakePhase !== 'idle'
+    // guards re-entry so this only ever fires once per task. NO send, NO
+    // project creation, NO persistence happens here — that's phase 7d.
+    if (!forced && messages.length === 0 && intakePhase === 'idle' && effectivePrompt.trim()) {
+      // Synchronous guard — intakePhase is React state and doesn't commit
+      // until after the await below, so a rapid double-send (double-click,
+      // Enter held down) would otherwise still read intakePhase==='idle'
+      // twice and fire two POST /api/tasks/intake calls. The ref updates
+      // immediately, before any await, so the second call sees it and bails.
+      if (intakeInFlightRef.current) {
+        return false;
+      }
+      intakeInFlightRef.current = true;
+      setIsIntakeLoading(true);
+      // Stashed BEFORE clearing, so the forced handleSubmit() re-invoke that
+      // follows the questions/brief flow (potentially minutes later) can
+      // still send the user's original text — see pendingTaskPromptRef.
+      pendingTaskPromptRef.current = effectivePrompt;
+      // Switch straight to the chat layout right now, like ChatGPT/Claude —
+      // the user's prompt becomes a right-aligned bubble immediately; the
+      // classify step then renders as a left-aligned IntakeStepper entry
+      // below it (see the isChatting branch in the render), never a
+      // full-page loader.
+      setMessages(prev => [...prev, { role: 'user', content: effectivePrompt.trim() }]);
+      userBubbleAlreadyShown = true;
+      setPromptText('');
+
+      const savedBrandIdForIntake = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
+      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '')
+        ? activeProject.brand_config_id
+        : (savedBrandIdForIntake || (brandsList.length > 0 ? brandsList[0].id : (projectsList.length > 0 ? projectsList[0].brand_config_id : null)));
+
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const body = activeProject?.id
+          ? { project_id: activeProject.id, prompt: effectivePrompt }
+          : { brand_config_id: activeBrandId, prompt: effectivePrompt };
+
+        const res = await fetch(`${apiBase}/api/tasks/intake`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+          const payload: TaskIntakeData = await res.json();
+          setIntakePayload(payload);
+          setClassifiedAgent(payload.agent_type ?? null);
+          if (payload.questions?.length) {
+            setIntakePhase('questions');
+          } else {
+            setConfirmedBrief(buildTaskBrief(payload, {}));
+            setIntakePhase('brief');
+          }
+          return false; // do NOT proceed to send
+        }
+        console.error('Task intake failed:', res.status);
+      } catch (err) {
+        console.error('Task intake request failed, falling back to normal send:', err);
+      } finally {
+        intakeInFlightRef.current = false;
+        setIsIntakeLoading(false);
+      }
+      // Any failure above falls through to the normal send below — intake
+      // must never block the user from just sending their message.
+    }
+    let baseContent = effectivePrompt.trim();
+    if (userContext.trim()) {
+      baseContent += `\n\n── User Context ──\n${userContext.trim()}`;
+    }
+    if (attachedFiles.length > 0) {
+      baseContent += `\n\n── Attached Files ──\n` + attachedFiles.map(f => `📄 ${f.name}`).join('\n');
     }
 
     // Translate UI prompt to backend execution request if initial card prompt is sent
@@ -1602,34 +1836,27 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       apiUserContent = `Generate an exhaustive, highly visual Go-To-Market (GTM) strategy report for our brand and competitors using our scanned knowledge base data and our answers to the 4 GTM setup questions. Include all 5 required Recharts dashboards (Target Customer Segment Breakdown, Marketing & Channel Budget Allocation, Channel Growth Potential vs Constraints, GTM Execution Intensity per Phase, and Competitive Positioning & Pricing Tier Index), full competitive matrices, 90-day roadmap, and risk mitigation plan.`;
     }
 
-    if (userContext.trim()) {
-      apiUserContent += `\n\n── User Context ──\n${userContext.trim()}`;
-    }
-    if (qaAnswers.length > 0) {
-      apiUserContent += `\n\n── Strategy Preferences ──\n` + qaAnswers.map(a => `• ${a.question}: ${a.answer}`).join('\n');
-    }
-    const audienceParts: string[] = [];
-    if (targetAudience.region) audienceParts.push(`Region: ${targetAudience.region}`);
-    if (targetAudience.segments && targetAudience.segments.length > 0) audienceParts.push(`Segments: ${targetAudience.segments.join(', ')}`);
-    if (targetAudience.locations) audienceParts.push(`Locations: ${targetAudience.locations}`);
-    if (targetAudience.notes) audienceParts.push(`Notes: ${targetAudience.notes}`);
-    if (targetAudience.ageDemographics && targetAudience.ageDemographics.length > 0) {
-      audienceParts.push(`Age Demographics: ${targetAudience.ageDemographics.join(', ')}`);
-    }
-    if (targetAudience.incomeTier) audienceParts.push(`Income Tier: ${targetAudience.incomeTier}`);
-    if (audienceParts.length > 0) {
-      apiUserContent += `\n\n── Target Audience ──\n` + audienceParts.join('\n');
-    }
-    if (additionalNotes.trim()) {
-      apiUserContent += `\n\n── Additional Guidelines ──\n${additionalNotes.trim()}`;
-    }
-
     const userMsg: Message = { role: 'user', content: baseContent };
     const thinking: Message = { role: 'thinking', content: '' };
     setLiveTruncation(null);
 
-    // Build conversation history (only user + assistant, skip thinking/error)
-    const history = [...messages, { role: 'user', content: apiUserContent }]
+    // Build conversation history (only user + assistant, skip thinking/error).
+    // `messages` here is a closure snapshot, fixed as of whichever render
+    // created THIS handleSubmit instance — it reflects a setMessages call
+    // from an EARLIER, already-committed render, but never one made earlier
+    // in this SAME call (the local binding can't change mid-call). Only the
+    // forced path guarantees that gap: handleBriefConfirm (a separate, later
+    // invocation, after real render(s) since the questions/brief flow)
+    // already pushed the original prompt as a bubble, so `messages` here
+    // already ends with that exact turn — and apiUserContent, derived from
+    // the same pendingTaskPromptRef.current text, would duplicate it if
+    // appended again. (The selection-summary bubble handleBriefConfirm posts
+    // alongside that is a pure UI recap — it was never meant to re-enter the
+    // LLM's history as its own turn, forced or not.) The plain, non-forced
+    // path — including intake falling through to a normal send within THIS
+    // SAME call — has no such guarantee, so it must still append, exactly as
+    // before this file's intake-triggered chat layout existed.
+    const history = (forced ? messages : [...messages, { role: 'user', content: apiUserContent }])
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => ({ role: m.role, content: m.content }));
 
@@ -1638,13 +1865,20 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       ? (agentPrompts[selectedAgent] || `You are a helpful ${selectedAgent} agent. Help the user with their request.`)
       : 'You are StratAI, a helpful AI strategy assistant. Help the user with their business strategy, marketing, sales, and growth questions. Be concise, actionable, and data-driven.';
 
-    setMessages(prev => [...prev, userMsg, thinking]);
+    // Exits the inline "Setting up your task…" stepper (if it was showing)
+    // the instant the real generation entry is about to appear, so the chat
+    // flows straight from setup into GenerationProgress with no layout jump.
+    setIsSettingUp(false);
+    setMessages(prev => userBubbleAlreadyShown ? [...prev, thinking] : [...prev, userMsg, thinking]);
     setPromptText('');
+    setUserContext('');
     setAttachedFiles([]);
-    setReferenceFiles([]);
     setQaAnswers([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
+    setGenStage('preparing');
+    setKbWaitText(null);
+    setKbWaitSeen(false);
 
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
@@ -1652,20 +1886,19 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      let targetProjectId = activeProject?.id;
+      let targetProjectId = forced ?? activeProject?.id;
       const savedBrandId = typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null;
-      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '') 
-        ? activeProject.brand_config_id 
+      const activeBrandId = (activeProject?.brand_config_id && activeProject.brand_config_id !== '')
+        ? activeProject.brand_config_id
         : (savedBrandId || (brandsList.length > 0 ? brandsList[0].id : (projectsList.length > 0 ? projectsList[0].brand_config_id : null)));
 
-      if (!targetProjectId || targetProjectId === '') {
+      if (!forced && (!targetProjectId || targetProjectId === '')) {
         if (activeBrandId) {
-          const brandName = brandsMap[activeBrandId] || (brandsList.find((b: any) => b.id === activeBrandId))?.brand_name;
           const createRes = await fetch(`${apiBase}/api/projects/`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
-              title: brandName || selectedAgent || 'Brand Strategy',
+              title: selectedAgent || 'New Strategy Chat',
               agent_type: selectedAgent || 'StratAI',
               brand_config_id: activeBrandId,
               llm_provider: selectedModel,
@@ -1682,7 +1915,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           if (createRes.ok) {
             const newP = await createRes.json();
             targetProjectId = newP.id;
-            const bTitle = brandName || brandsMap[activeBrandId] || newP.title;
+            const bTitle = brandsMap[activeBrandId] || newP.title;
             setActiveProject({ id: newP.id, title: bTitle, brand_config_id: activeBrandId });
             if (typeof window !== 'undefined') {
               localStorage.setItem('brand_config_id', activeBrandId);
@@ -1697,7 +1930,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           ...prev.filter(m => m.role !== 'thinking'),
           { role: 'error', content: 'No active project selected. Please select or create a project first.' },
         ]);
-        return;
+        return true;
       }
 
       const res = await fetch(`${apiBase}/api/chat/`, {
@@ -1715,13 +1948,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         if (res.status === 401) {
           localStorage.removeItem('access_token');
           window.location.href = '/auth';
-          return;
+          return true;
         }
         setMessages(prev => [
           ...prev.filter(m => m.role !== 'thinking'),
           { role: 'error', content: `Server error (${res.status}). Make sure the backend is running on port 8000.` },
         ]);
-        return;
+        return true;
       }
 
       const reader = res.body.getReader();
@@ -1742,6 +1975,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           try {
             const payload = JSON.parse(line.slice(6));
             if (payload.type === 'token') {
+              // First token received is the client-side milestone into the
+              // 'generating' stage — the report text itself takes over from
+              // here, so the stepper (mounted on the 'thinking' message) is
+              // about to be replaced anyway.
+              setGenStage('generating');
               assistantText += payload.content;
               setMessages(prev => {
                 const updated = [...prev];
@@ -1757,18 +1995,18 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 return updated;
               });
             } else if (payload.type === 'status') {
-              // Research-pipeline wait can now run for several minutes — surface
-              // the backend's progress text in the thinking bubble instead of a
-              // static spinner, so a long wait doesn't look frozen.
-              setMessages(prev => {
-                const updated = [...prev];
-                const thinkIdx = updated.findIndex(m => m.role === 'thinking');
-                if (thinkIdx !== -1) {
-                  updated[thinkIdx] = { role: 'thinking', content: payload.content };
-                }
-                return updated;
-              });
+              // Research-pipeline wait can now run for several minutes — the
+              // stepper (GenerationProgress) shows this now, not the thinking
+              // message's own content.
+              setGenStage('kb_wait');
+              setKbWaitText(payload.content);
+              setKbWaitSeen(true);
+            } else if (payload.type === 'stage') {
+              // Real backend-emitted stage boundary: 'retrieving' | 'composing'
+              // | 'generating'.
+              setGenStage(payload.stage);
             } else if (payload.type === 'error') {
+              setGenStage(null);
               if (!assistantText) {
                 setActiveProject(null);
               }
@@ -1776,7 +2014,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                 ...prev.filter(m => m.role !== 'thinking'),
                 { role: 'error', content: payload.content },
               ]);
-              return;
+              return true;
             } else if (payload.type === 'truncated') {
               // The in-report notice text already arrived as a preceding
               // 'token' event (part of assistantText) — this event only adds
@@ -1802,7 +2040,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         // freshly-snapshotted report becomes downloadable without a page reload.
         await loadProjectById(targetProjectId);
       }
+      setGenStage(null);
     } catch (err) {
+      setGenStage(null);
       setActiveProject(null);
       setMessages(prev => [
         ...prev.filter(m => m.role !== 'thinking'),
@@ -1810,9 +2050,17 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       ]);
     }
 
+    return true;
   };
 
   const isChatting = messages.length > 0;
+  const isCardOpen = intakePhase === 'questions' || intakePhase === 'brief';
+  // Must also exclude selectedAgent — the bottom ChatInput's gate below uses
+  // this standalone (not nested after a selectedAgent check the way the
+  // welcome-heading/grid ternary is), so without !selectedAgent here the
+  // agent-detail screen would read as "home" and the input would stay
+  // hidden there, reproducing the exact bug this gate is meant to fix.
+  const isHome = !selectedAgent && !isCardOpen && !isChatting && !isIntakeLoading;
 
   return (
     <main className={styles.main}>
@@ -1821,146 +2069,104 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       {/* Top Bar */}
       <header className={styles.topBar}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {view === 'builder' && (selectedAgent || isChatting) && (
+          {(selectedAgent || isChatting || view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') && (
             <button 
               className={styles.shareBtn} 
               style={{ padding: '6px 8px', marginLeft: 0 }} 
-              onClick={handleRevert}
+              onClick={() => {
+                if (view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') {
+                  setView('builder');
+                } else {
+                  handleRevert();
+                }
+              }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-              Back
+              Go back
             </button>
           )}
 
-          {(() => {
-            const activeBrandConfigId = activeProject?.brand_config_id;
-            const activeBrand = brandsList.find((b: any) => b.id === activeBrandConfigId);
-            const activeProj = projectsList.find((p: any) => p.brand_config_id === activeBrandConfigId || p.id === activeProject?.id);
+          <div className={styles.dropdownContainer} ref={dropdownRef}>
+            <button 
+              className={styles.dropdownToggle}
+              onClick={() => {
+                loadProjectsAndBrands();
+                setDropdownOpen(prev => !prev);
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>{activeProject ? activeProject.title : 'Select Project'}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
 
-            let activeLogo: string | null = activeBrand?.logo_url || null;
-            if (!activeLogo && activeProj?.brand_kit) {
-              try {
-                const bk = typeof activeProj.brand_kit === 'string' ? JSON.parse(activeProj.brand_kit) : activeProj.brand_kit;
-                activeLogo = bk?.logo_url;
-              } catch {}
-            }
-            if (!activeLogo && activeProj?.logo_data) {
-              activeLogo = `/api/projects/${activeProj.id}/logo`;
-            }
-            const activeTitle = activeProject ? (brandsMap[activeProject.brand_config_id || ''] || activeProject.title) : 'Select Project';
+            {dropdownOpen && (
+              <div className={styles.dropdownMenu}>
+                <div className={styles.dropdownHeader}>ACTIVE BRAND PROJECTS</div>
+                <div className={styles.dropdownList}>
+                  {(() => {
+                    const displayItems: { brand_config_id: string; title: string; proj_id: string; date?: string }[] = [];
+                    
+                    brandsList.forEach((b: any) => {
+                      const proj = projectsList.find((p: any) => p.brand_config_id === b.id);
+                      displayItems.push({
+                        brand_config_id: b.id,
+                        title: b.brand_name,
+                        proj_id: proj ? proj.id : b.id,
+                        date: b.created_at ? new Date(b.created_at).toLocaleDateString() : undefined
+                      });
+                    });
 
-            return (
-              <div className={styles.dropdownContainer} ref={dropdownRef}>
-                <button 
-                  className={styles.dropdownToggle}
-                  disabled={isSwitchingProject}
-                  onClick={() => {
-                    if (isSwitchingProject) return;
-                    loadProjectsAndBrands();
-                    setDropdownOpen(prev => !prev);
-                  }}
-                >
-                  {isSwitchingProject ? (
-                    <div className={styles.topbarInlineSpinner} />
-                  ) : activeProject ? (
-                    <BrandLogoIcon url={activeLogo} name={activeTitle} size={18} />
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  )}
-                  <span>{isSwitchingProject ? (switchingTargetTitle || 'Loading...') : activeTitle}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-
-                {dropdownOpen && (
-                  <div className={styles.dropdownMenu}>
-                    <div className={styles.dropdownHeader}>ACTIVE BRAND PROJECTS</div>
-                    <div className={styles.dropdownList}>
-                      {(() => {
-                        const displayItems: { brand_config_id: string; title: string; proj_id: string; date?: string; logo_url?: string | null }[] = [];
-                        
-                        brandsList.forEach((b: any) => {
-                          const proj = projectsList.find((p: any) => p.brand_config_id === b.id);
-                          let cardLogo = b.logo_url || null;
-                          if (!cardLogo && proj?.brand_kit) {
-                            try {
-                              const bk = typeof proj.brand_kit === 'string' ? JSON.parse(proj.brand_kit) : proj.brand_kit;
-                              cardLogo = bk?.logo_url;
-                            } catch {}
-                          }
-                          if (!cardLogo && proj?.logo_data) {
-                            cardLogo = `/api/projects/${proj.id}/logo`;
-                          }
-                          displayItems.push({
-                            brand_config_id: b.id,
-                            title: b.brand_name,
-                            proj_id: proj ? proj.id : b.id,
-                            date: b.created_at ? new Date(b.created_at).toLocaleDateString() : undefined,
-                            logo_url: cardLogo,
-                          });
+                    projectsList.forEach((proj: any) => {
+                      if (proj.brand_config_id && !displayItems.some(item => item.brand_config_id === proj.brand_config_id)) {
+                        displayItems.push({
+                          brand_config_id: proj.brand_config_id,
+                          title: brandsMap[proj.brand_config_id] || proj.title || 'Brand Project',
+                          proj_id: proj.id,
+                          date: proj.created_at ? new Date(proj.created_at).toLocaleDateString() : undefined
                         });
+                      }
+                    });
 
-                        projectsList.forEach((proj: any) => {
-                          if (proj.brand_config_id && !displayItems.some(item => item.brand_config_id === proj.brand_config_id)) {
-                            let projLogo = null;
-                            if (proj.brand_kit) {
-                              try {
-                                const bk = typeof proj.brand_kit === 'string' ? JSON.parse(proj.brand_kit) : proj.brand_kit;
-                                projLogo = bk?.logo_url;
-                              } catch {}
-                            }
-                            if (!projLogo && proj.logo_data) {
-                              projLogo = `/api/projects/${proj.id}/logo`;
-                            }
-                            displayItems.push({
-                              brand_config_id: proj.brand_config_id,
-                              title: brandsMap[proj.brand_config_id] || proj.title || 'Brand Project',
-                              proj_id: proj.id,
-                              date: proj.created_at ? new Date(proj.created_at).toLocaleDateString() : undefined,
-                              logo_url: projLogo,
+                    if (displayItems.length === 0) {
+                      return <div className={styles.dropdownEmpty}>No brand projects found</div>;
+                    }
+
+                    return displayItems.map((item) => {
+                      const isActive = activeProject?.brand_config_id === item.brand_config_id;
+                      return (
+                        <button
+                          key={item.brand_config_id}
+                          type="button"
+                          className={`${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ''}`}
+                          onClick={() => {
+                            setActiveProject({
+                              id: item.proj_id,
+                              title: item.title,
+                              brand_config_id: item.brand_config_id,
                             });
-                          }
-                        });
-
-                        if (displayItems.length === 0) {
-                          return <div className={styles.dropdownEmpty}>No brand projects found</div>;
-                        }
-
-                        return displayItems.map((item) => {
-                          const isActive = activeProject?.brand_config_id === item.brand_config_id;
-                          return (
-                            <button
-                              key={item.brand_config_id}
-                              type="button"
-                              className={`${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ''}`}
-                              onClick={() => {
-                                handleSelectBrandProject(item);
-                              }}
-                            >
-                              <BrandLogoIcon url={item.logo_url} name={item.title} size={28} />
-                              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-                                <div style={{ fontWeight: 600, fontSize: '13px', color: '#1A1A1A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {item.title}
-                                </div>
-                                {item.date && (
-                                  <div style={{ fontSize: '10px', color: '#6B6560', marginTop: '1px' }}>
-                                    Created on {item.date}
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-                )}
+                            if (typeof window !== 'undefined') {
+                              localStorage.setItem('brand_config_id', item.brand_config_id);
+                            }
+                            setDropdownOpen(false);
+                            window.dispatchEvent(new CustomEvent('projectChanged', { detail: { projectId: item.proj_id, brand_config_id: item.brand_config_id } }));
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, fontSize: '13px', color: '#1A1A1A' }}>
+                            {item.title}
+                          </div>
+                          {item.date && (
+                            <div style={{ fontSize: '11px', color: '#6B6560', marginTop: '2px' }}>
+                              Created {item.date}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
-            );
-          })()}
+            )}
+          </div>
         </div>
         <div className={styles.spacer} />
         {latestAssistantIdx !== -1 && messages[latestAssistantIdx].id && reportsByMessageId[messages[latestAssistantIdx].id!] && (
@@ -1994,36 +2200,24 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       </header>
 
       {/* Scrollable Content */}
-      <div ref={contentAreaRef} className={styles.contentArea}>
-        {isSwitchingProject && (
-          <div className={styles.switchingOverlay} role="status" aria-live="polite">
-            <div className={styles.switchingCard}>
-              <div className={styles.switchingSpinner} />
-              <div className={styles.switchingTextWrap}>
-                <div className={styles.switchingTitle}>
-                  {switchingTargetTitle ? `Switching to ${switchingTargetTitle}` : 'Loading project...'}
-                </div>
-                <div className={styles.switchingSubtitle}>
-                  Updating workspace and brand data
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className={styles.contentArea}>
         {view === 'connectors' ? (
           <ConnectorsView />
-        ) : view === 'settings' ? (
-          <SettingsView onBack={() => setView('builder')} />
-        ) : view === 'teams' ? (
-          <TeamsView onBack={() => setView('builder')} />
-        ) : view === 'projects' ? (
-          <ProjectsView />
-        ) : view === 'files' ? (
-          <FilesView />
         ) : (
-        <div className={`${styles.container} ${(isChatting || selectedAgent) && view !== 'agents' ? styles.chatContainerPadding : ''}`}>
-          {view === 'agents' ? (
+        <div className={`${styles.container} ${isChatting || selectedAgent ? styles.chatContainerPadding : ''}`}>
+
+          {view === 'files' ? (
+            <FilesView />
+          ) : view === 'projects' ? (
+            <ProjectsView />
+          ) : view === 'workflow' ? (
+            <WorkflowView />
+          ) : view === 'agents' ? (
             <TemplateGrid onSelectAgent={handleSelectAgent} />
+        ) : view === 'settings' ? (
+          <SettingsView />
+        ) : view === 'teams' ? (
+          <TeamsView />
           ) : isChatting ? (
             /* ── Chat messages view ───────────────────── */
             <div className={styles.chatMessages}>
@@ -2038,6 +2232,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   <span className={styles.chatAgentName}>{selectedAgent}</span>
                 </div>
               )}
+              {threadBrief && <TaskBriefBar brief={threadBrief} />}
               {messages.map((msg, i) =>
                 msg.role === 'user' ? (
                   <div key={i} className={styles.userBubbleWrapper}>
@@ -2054,10 +2249,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                       </svg>
                     </div>
                     <div className={styles.thinkingBubble}>
-                      <span className={styles.thinkingLabel}>{msg.content || 'Thinking'}</span>
-                      <span className={styles.thinkingDots}>
-                        <span /><span /><span />
-                      </span>
+                      <GenerationProgress stage={genStage} kbWaitText={kbWaitText} kbWaitSeen={kbWaitSeen} />
                     </div>
                   </div>
                 ) : msg.role === 'error' ? (
@@ -2112,42 +2304,42 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                           <ExportMenu
                             buttonClassName={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
                             formats={[
-                              {
+                              ...(msg.id && reportsByMessageId[msg.id] ? [{
                                 id: 'pdf',
                                 label: 'PDF',
                                 extension: '.pdf',
                                 chip: 'PDF',
-                                onSelect: () => handleDownloadPdf(i, msg.id || ''),
+                                onSelect: () => handleDownloadPdf(i, msg.id!),
                                 loading: downloadingPdfIdx === i,
                                 error: pdfErrorIdx === i,
-                              },
-                              {
+                              }] : []),
+                              ...(msg.id && reportsByMessageId[msg.id] ? [{
                                 id: 'docx',
                                 label: 'Word',
                                 extension: '.docx',
                                 chip: 'DOC',
-                                onSelect: () => handleDownloadDocx(i, msg.id || ''),
+                                onSelect: () => handleDownloadDocx(i, msg.id!),
                                 loading: downloadingDocxIdx === i,
                                 error: docxErrorIdx === i,
-                              },
-                              {
+                              }] : []),
+                              ...(msg.id && reportsByMessageId[msg.id] ? [{
                                 id: 'pptx',
                                 label: 'PowerPoint',
                                 extension: '.pptx',
                                 chip: 'PPT',
-                                onSelect: () => handleDownloadPptx(i, msg.id || ''),
-                                onSelectTemplate: (templateId: string) => handleDownloadPptx(i, msg.id || '', templateId),
+                                onSelect: () => handleDownloadPptx(i, msg.id!),
+                                onSelectTemplate: (templateId: string) => handleDownloadPptx(i, msg.id!, templateId),
                                 templates: pptxTemplates,
                                 loading: downloadingPptxIdx === i,
                                 error: pptxErrorIdx === i,
-                              },
+                              }] : []),
                             ]}
                           />
-                          {((msg.id && reportsByMessageId[msg.id]) || Object.values(reportsByMessageId).length > 0) && (
+                          {msg.id && reportsByMessageId[msg.id] && (
                             <button
                               type="button"
                               className={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
-                              onClick={() => handleShareReport(i, msg.id || '')}
+                              onClick={() => handleShareReport(i, msg.id!)}
                               disabled={sharingReportIdx === i}
                               title="Copy a public, read-only link to this report"
                             >
@@ -2265,137 +2457,243 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   </div>
                 )
               )}
-              <div style={{ height: '360px', width: '100%', flexShrink: 0 }} />
+              {/* ── Classify step: left-aligned agent "thinking" entry, like
+                     ChatGPT/Claude — never a full-page loader. ───────────── */}
+              {isIntakeLoading && (
+                <div className={styles.thinkingWrapper}>
+                  <div className={styles.thinkingIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#tg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#d4a843"/></linearGradient></defs>
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div className={styles.thinkingBubble}>
+                    <IntakeStepper />
+                  </div>
+                </div>
+              )}
+              {/* ── Step-2 task-intake card: left-aligned agent message, next
+                     to the icon like every other agent entry — stays a wide
+                     card, just not its own page. ───────────────────────── */}
+              {isCardOpen && (
+                <div className={styles.thinkingWrapper}>
+                  <div className={styles.thinkingIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#tg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#d4a843"/></linearGradient></defs>
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div className={styles.agentCardContent}>
+                    {intakePhase === 'questions' && intakePayload && (
+                      <TaskIntakeQuestions
+                        intake={intakePayload}
+                        onComplete={(answers) => {
+                          setIntakeAnswers(answers);
+                          setConfirmedBrief(buildTaskBrief(intakePayload, answers));
+                          setIntakePhase('brief');
+                        }}
+                      />
+                    )}
+                    {intakePhase === 'brief' && confirmedBrief && (
+                      <TaskBriefSummary
+                        brief={confirmedBrief}
+                        onConfirm={handleBriefConfirm}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* ── Create -> PUT -> send-setup gap right after Continue:
+                     left-aligned agent "thinking" entry too, inline. ─────── */}
+              {isSettingUp && (
+                <div className={styles.thinkingWrapper}>
+                  <div className={styles.thinkingIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#tg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#d4a843"/></linearGradient></defs>
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div className={styles.thinkingBubble}>
+                    <SetupStepper />
+                  </div>
+                </div>
+              )}
+              <div style={{ height: '140px', width: '100%', flexShrink: 0 }} />
               <div ref={messagesEndRef} />
             </div>
           ) : selectedAgent ? (
-            /* ── Agent detail (pre-chat multi-tab template view) ─────────────── */
-            <AgentTemplateView
-              key={`${activeProject?.brand_config_id || activeProject?.id || 'brand'}-${selectedAgent}`}
-              selectedAgent={selectedAgent}
-              agentDescription={catalogAgents.find(a => a.title === selectedAgent)?.description}
-              brand={brandsList.find((b: any) => b.id === (activeProject?.brand_config_id || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null)))}
-              competitors={competitors}
-              onUpdateCompetitors={setCompetitors}
-              userContext={userContext}
-              onChangeUserContext={setUserContext}
-              qaAnswers={qaAnswers}
-              onUpdateQaAnswers={setQaAnswers}
-              questions={agentQuestions[selectedAgent]}
-              targetAudience={targetAudience}
-              onChangeTargetAudience={setTargetAudience}
-              additionalNotes={additionalNotes}
-              onChangeAdditionalNotes={setAdditionalNotes}
-              brandKit={brandKit}
-              onChangeBrandKit={setBrandKit}
-              attachedFiles={referenceFiles}
-              onAddFiles={(files) => setReferenceFiles(prev => [...prev, ...files])}
-              onRemoveFile={(index) => setReferenceFiles(prev => prev.filter((_, i) => i !== index))}
-            />
-          ) : (
-            /* ── Build your agent (idle home page) ─────── */
-            <div className={styles.homeContainer}>
-              <div className={styles.homeWelcome}>
-                <div className={styles.welcomeHeadingRow}>
-                  <h1 className={styles.welcomeTitle}>Welcome to StratAI</h1>
-                  <div className={styles.welcomePurpleIcon}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
+          /* ── Agent detail (pre-chat multi-tab template view) ─────────────── */
+          <AgentTemplateView
+            key={`${activeProject?.brand_config_id || activeProject?.id || 'brand'}-${selectedAgent}`}
+            selectedAgent={selectedAgent}
+            agentDescription={catalogAgents.find(a => a.title === selectedAgent)?.description}
+            brand={brandsList.find((b: any) => b.id === (activeProject?.brand_config_id || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null)))}
+            competitors={competitors}
+            onUpdateCompetitors={setCompetitors}
+            userContext={userContext}
+            onChangeUserContext={setUserContext}
+            qaAnswers={qaAnswers}
+            onUpdateQaAnswers={setQaAnswers}
+            questions={agentQuestions[selectedAgent]}
+            targetAudience={targetAudience}
+            onChangeTargetAudience={setTargetAudience}
+            additionalNotes={additionalNotes}
+            onChangeAdditionalNotes={setAdditionalNotes}
+            brandKit={brandKit}
+            onChangeBrandKit={setBrandKit}
+            attachedFiles={referenceFiles}
+            onAddFiles={(files) => setReferenceFiles(prev => [...prev, ...files])}
+            onRemoveFile={(index) => setReferenceFiles(prev => prev.filter((_, i) => i !== index))}
+          />
+        ) : (
+          /* ── Build your agent (idle home page) ─────── */
+          <div className={styles.homeContainer}>
+            <div className={styles.homeWelcome}>
+              <div className={styles.welcomeHeadingRow}>
+                <h1 className={styles.welcomeTitle}>Welcome to StratAI</h1>
+                <div className={styles.welcomePurpleIcon}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
-                <p className={styles.welcomeSubtitle}>Your AI-powered strategy workspace</p>
+              </div>
+              <p className={styles.welcomeSubtitle}>Your AI-powered strategy workspace</p>
+            </div>
+
+            <div className={styles.homeChatboxWrapper}>
+              <ChatInput
+                value={promptText}
+                onChange={setPromptText}
+                showBanner={showBanner}
+                onRevert={handleRevert}
+                onSubmit={handleSubmit}
+                attachedFiles={attachedFiles}
+                onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
+                onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+                onOpenConnectors={() => setConnectorsOpen(true)}
+                onOpenTemplates={() => setView('agents')}
+                selectedModel={selectedModel}
+                onSelectModel={setSelectedModel}
+                providers={providerInfo?.providers}
+                advancedPin={providerInfo?.advanced_pin ?? null}
+                providerNote={providerNote}
+              />
+            </div>
+
+            <div className={styles.homeExploreSection}>
+              <div className={styles.homeExploreHeader}>
+                <div className={styles.homeExploreTitleGroup}>
+                  <div className={styles.homeExploreTitleRow}>
+                    <span className={styles.homeExploreSparkle}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                      </svg>
+                    </span>
+                    <h2 className={styles.homeExploreTitle}>Explore templates</h2>
+                  </div>
+                  <p className={styles.homeExploreSubtitle}>
+                    Get started faster with ready-made AI workflows.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={styles.homeExploreAllBtn}
+                  onClick={() => setView('agents')}
+                >
+                  Explore all →
+                </button>
               </div>
 
-              <div className={styles.homeChatboxWrapper}>
-                <ChatInput
-                  value={promptText}
-                  onChange={setPromptText}
-                  showBanner={showBanner}
-                  onRevert={handleRevert}
-                  onSubmit={handleSubmit}
-                  attachedFiles={attachedFiles}
-                  onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
-                  onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
-                  onOpenConnectors={() => setConnectorsOpen(true)}
-                  onOpenTemplates={() => setView('agents')}
-                  selectedModel={selectedModel}
-                  onSelectModel={setSelectedModel}
-                  providers={providerInfo?.providers}
-                  advancedPin={providerInfo?.advanced_pin ?? null}
-                  providerNote={providerNote}
-                />
-              </div>
-
-              <div className={styles.homeExploreSection}>
-                <div className={styles.homeExploreHeader}>
-                  <div className={styles.homeExploreTitleGroup}>
-                    <div className={styles.homeExploreTitleRow}>
-                      <span className={styles.homeExploreSparkle}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                          <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                          <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                          <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                        </svg>
-                      </span>
-                      <h2 className={styles.homeExploreTitle}>Explore templates</h2>
-                    </div>
-                    <p className={styles.homeExploreSubtitle}>
-                      Get started faster with ready-made AI workflows.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.homeExploreAllBtn}
-                    onClick={() => setView('agents')}
-                  >
-                    Explore all →
-                  </button>
-                </div>
-
-                <div className={styles.homeExploreGrid}>
-                  {catalogAgents.slice(0, 9).map((agent) => (
-                    <AgentCard
-                      key={agent.id}
-                      agent={agent}
-                      onSelectAgent={handleSelectAgent}
-                    />
-                  ))}
-                </div>
+              <div className={styles.homeExploreGrid}>
+                {catalogAgents.slice(0, 9).map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onSelectAgent={handleSelectAgent}
+                  />
+                ))}
               </div>
             </div>
+          </div>
           )}
-
         </div>
         )}
       </div>
 
       {/* Chat Input Fixed at Bottom */}
-      {view === 'builder' && (selectedAgent !== null || isChatting) && (
+      {/* isChatting now turns true the moment intake starts (the user's
+          prompt lands in the chat immediately), so it alone can no longer
+          stand in for "nothing to hide" the way it used to — isIntakeLoading/
+          isCardOpen/isSettingUp must each still suppress this bar directly,
+          same as the ChatInput-visibility gate just inside it below. */}
+      {view !== 'files' && view !== 'projects' && view !== 'agents' && (selectedAgent !== null || isChatting) && !isSettingUp && !isIntakeLoading && !isCardOpen && (
         <div className={styles.chatContainer}>
-          <ChatInput
-            value={promptText}
-            onChange={setPromptText}
-            showBanner={showBanner}
-            onRevert={handleRevert}
-            onSubmit={handleSubmit}
-            attachedFiles={attachedFiles}
-            onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
-            onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
-            onOpenConnectors={() => setConnectorsOpen(true)}
-            onOpenTemplates={() => setView('agents')}
-            selectedModel={selectedModel}
-            onSelectModel={setSelectedModel}
-            providers={providerInfo?.providers}
-            advancedPin={providerInfo?.advanced_pin ?? null}
-            providerNote={providerNote}
-          />
+          {selectedAgent && messages.length === 0 && !isCardOpen && (
+            <div className={styles.onboardingForms}>
+              <BrandKitForm
+                brandKit={brandKit}
+                onChange={(kit) => { setBrandKit(kit); setPrefilledOnboarding(prev => ({ ...prev, brandKit: false })); }}
+                apiBase={apiBase}
+                authToken={authToken}
+              />
+              {prefilledOnboarding.brandKit && (
+                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
+              )}
+              <div className={styles.formDivider} />
+              <CompetitorForm
+                competitors={competitors}
+                onChange={(comps) => { setCompetitors(comps); setPrefilledOnboarding(prev => ({ ...prev, competitors: false })); }}
+              />
+              {prefilledOnboarding.competitors && (
+                <p className={styles.prefilledNote}>From your brand setup — edit to override for this report.</p>
+              )}
+              {/* Superseded by the Step-2 task-intake cards (TaskIntakeQuestions /
+                  TaskBriefSummary, now rendered centered in the main content area,
+                  not here) — handlers and state stay in place, but this legacy
+                  card no longer renders. */}
+              {SHOW_LEGACY_AGENT_QUESTIONNAIRE && showQuestionnaire && agentQuestions[selectedAgent] && (
+                <>
+                  <div className={styles.formDivider} />
+                  <AgentQuestionnaire
+                    questions={agentQuestions[selectedAgent]}
+                    onComplete={handleQuestionnaireComplete}
+                    onDismiss={handleQuestionnaireDismiss}
+                  />
+                </>
+              )}
+            </div>
+          )}
+          {(!isHome && !isCardOpen && !isIntakeLoading) && (
+            <ChatInput
+              value={promptText}
+              onChange={setPromptText}
+              showBanner={showBanner}
+              onRevert={handleRevert}
+              onSubmit={handleSubmit}
+              userContext={userContext}
+              onChangeUserContext={setUserContext}
+              attachedFiles={attachedFiles}
+              onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
+              onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+              defaultUserContextOpen={!!selectedAgent}
+              onOpenConnectors={() => setConnectorsOpen(true)}
+              selectedModel={selectedModel}
+              onSelectModel={setSelectedModel}
+              providers={providerInfo?.providers}
+              advancedPin={providerInfo?.advanced_pin ?? null}
+              providerNote={providerNote}
+              hideUserContext={true}
+            />
+          )}
         </div>
       )}
 
       <ConnectorsPanel open={connectorsOpen} onClose={() => setConnectorsOpen(false)} />
 
+      
       {/* Share Chat Modal */}
       <ShareChatModal
         isOpen={shareOpen}
@@ -2404,6 +2702,6 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         projectTitle={activeProject?.title}
         currentUser={currentUser}
       />
-    </main>
+</main>
   );
 }

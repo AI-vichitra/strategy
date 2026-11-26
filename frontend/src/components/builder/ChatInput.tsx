@@ -26,6 +26,7 @@ interface ChatInputProps {
   hideUserContext?: boolean;
   userContext?: string;
   onChangeUserContext?: (val: string) => void;
+  defaultUserContextOpen?: boolean;
 }
 
 const OpenAILogo = ({ size = 16 }: { size?: number }) => (
