@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import VoiceInput from './VoiceInput';
+import FileIcon from '../FileIcon';
 import styles from './ChatInput.module.css';
 
 interface ChatInputProps {
@@ -106,6 +107,17 @@ export default function ChatInput({
       configured: p.configured,
     }));
 
+  // Auto-resize textarea to fit content between min-height (80px) and max-height (240px)
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      if (scrollHeight > 80) {
+        textareaRef.current.style.height = `${Math.min(scrollHeight, 240)}px`;
+      }
+    }
+  }, [value]);
+
   // Reset local isStopping when parent states update
   useEffect(() => {
     if (!isGenerating) {
@@ -151,29 +163,89 @@ export default function ChatInput({
   const currentModelLabel = modelOptions.find(m => m.id === selectedModel)?.label || 'Model';
   const pinnedLabel = advancedPin ? (modelOptions.find(m => m.id === advancedPin)?.label || advancedPin) : null;
 
+  // ── Paste handler: images, files, large text ────────────────────────────
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const { clipboardData } = e;
+    if (!clipboardData) return;
+
+    // 1. Files from clipboard (images, PDFs, etc.)
+    const pastedFiles: File[] = [];
+    if (clipboardData.files && clipboardData.files.length > 0) {
+      Array.from(clipboardData.files).forEach(file => pastedFiles.push(file));
+    } else if (clipboardData.items) {
+      Array.from(clipboardData.items).forEach(item => {
+        if (item.kind === 'file') {
+          const f = item.getAsFile();
+          if (f) pastedFiles.push(f);
+        }
+      });
+    }
+
+    if (pastedFiles.length > 0) {
+      e.preventDefault();
+      // Rename image files with timestamp for uniqueness
+      const renamedFiles = pastedFiles.map(f => {
+        if (f.type.startsWith('image/')) {
+          const ext = f.type.split('/')[1] || 'png';
+          const name = `pasted-image-${Date.now()}.${ext}`;
+          return new File([f], name, { type: f.type });
+        }
+        return f;
+      });
+      onAddFiles(renamedFiles);
+      return;
+    }
+
+    // 2. Large pasted text → "Pasted content" document card
+    const text = clipboardData.getData('text/plain');
+    if (text && (text.length >= 3500 || text.split('\n').length >= 45)) {
+      e.preventDefault();
+      const blob = new Blob([text], { type: 'text/plain' });
+      const pastedFile = new File([blob], 'Pasted content.txt', { type: 'text/plain' });
+      Object.defineProperty(pastedFile, '__isPastedText', { value: true });
+      onAddFiles([pastedFile]);
+      return;
+    }
+    // 3. Normal short text — let the browser handle it (default behavior)
+  };
+
   return (
     <div className={styles.wrapper}>
 
       {/* File chips row */}
       {attachedFiles.length > 0 && (
         <div className={styles.fileChipsRow}>
-          {attachedFiles.map((file, idx) => (
-            <div key={idx} className={styles.fileChip}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              <span className={styles.fileChipName}>{file.name}</span>
-              <button
-                type="button"
-                className={styles.fileChipRemove}
-                onClick={() => onRemoveFile(idx)}
-                aria-label={`Remove ${file.name}`}
-              >
-                &times;
-              </button>
-            </div>
-          ))}
+          {attachedFiles.map((file, idx) => {
+            const isImage = file.type.startsWith('image/');
+            const isPastedText = (file as any).__isPastedText === true;
+            const objUrl = isImage ? URL.createObjectURL(file) : null;
+            return isImage ? (
+              <div key={idx} className={styles.fileChipImg} title={file.name}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={objUrl!} alt={file.name} className={styles.fileChipThumb} onLoad={() => { if (objUrl) URL.revokeObjectURL(objUrl); }} />
+                <button type="button" className={styles.fileChipRemoveImg} onClick={() => onRemoveFile(idx)} aria-label={`Remove ${file.name}`}>&times;</button>
+              </div>
+            ) : isPastedText ? (
+              <div key={idx} className={styles.fileChipPasted} title={file.name}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span className={styles.fileChipName}>{file.name}</span>
+                <button type="button" className={styles.fileChipRemove} onClick={() => onRemoveFile(idx)} aria-label={`Remove ${file.name}`}>&times;</button>
+              </div>
+            ) : (
+              <div key={idx} className={styles.fileChip}>
+                <FileIcon filename={file.name} mimeType={file.type} size={14} />
+                <span className={styles.fileChipName}>{file.name}</span>
+                <button
+                  type="button"
+                  className={styles.fileChipRemove}
+                  onClick={() => onRemoveFile(idx)}
+                  aria-label={`Remove ${file.name}`}
+                >
+                  &times;
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -188,9 +260,10 @@ export default function ChatInput({
             ? "Listening... (speak now)"
             : "Send a message to your agent"
         }
-        rows={1}
+        rows={3}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onPaste={handlePaste}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey && !isGenerating && !isVoiceRecording) {
             e.preventDefault();
@@ -243,14 +316,6 @@ export default function ChatInput({
             {showModelMenu && (
               <div className={styles.modelMenu}>
                 <div className={styles.modelMenuHeader}>MODEL PROVIDER</div>
-                {advancedPin && (
-                  <div
-                    className={styles.modelMenuHeader}
-                    style={{ color: '#D4A843', textTransform: 'none', fontWeight: 600, whiteSpace: 'normal', lineHeight: 1.3 }}
-                  >
-                    Advanced mode: provider is pinned to {pinnedLabel} by configuration — your selection here won’t apply.
-                  </div>
-                )}
                 {providerNote && (
                   <div className={styles.modelMenuHeader} style={{ textTransform: 'none', whiteSpace: 'normal', lineHeight: 1.3 }}>
                     {providerNote}
@@ -298,24 +363,6 @@ export default function ChatInput({
               </div>
             )}
           </div>
-
-          {/* Templates Trigger */}
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={() => onOpenTemplates?.()}
-            aria-label="Open templates"
-            title="Browse Templates"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '0 8px' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <rect x="3" y="3" width="7" height="7"/>
-              <rect x="14" y="3" width="7" height="7"/>
-              <rect x="14" y="14" width="7" height="7"/>
-              <rect x="3" y="14" width="7" height="7"/>
-            </svg>
-            <span style={{ fontSize: '11px', fontWeight: 600 }}>Templates</span>
-          </button>
 
           {/* @ Connectors Trigger */}
           <button

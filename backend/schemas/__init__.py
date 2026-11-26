@@ -3,11 +3,17 @@ from backend.schemas.brand import BrandConfigCreate, BrandConfigResponse
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from backend.schemas.message import MessageCreate, MessageResponse
 from backend.schemas.auth import Token, TokenData
+from backend.schemas.team import (
+    TeamCreate, TeamUpdate, TeamResponse, TeamMemberResponse,
+    InviteMemberRequest, PendingInviteResponse, ResolveInviteResponse, AcceptInviteRequest
+)
 
 __all__ = [
     "UserCreate", "UserResponse",
     "BrandConfigCreate", "BrandConfigResponse",
     "ProjectCreate", "ProjectResponse", "ProjectUpdate",
     "MessageCreate", "MessageResponse",
-    "Token", "TokenData"
+    "Token", "TokenData",
+    "TeamCreate", "TeamUpdate", "TeamResponse", "TeamMemberResponse",
+    "InviteMemberRequest", "PendingInviteResponse", "ResolveInviteResponse", "AcceptInviteRequest"
 ]

@@ -295,9 +295,24 @@
 }
 
 .cardIcon {
-  font-size: 20px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(212, 168, 67, 0.08);
+  border: 1px solid rgba(212, 168, 67, 0.2);
+  color: #B8912E;
   flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover .cardIcon {
+  background: #D4A843;
+  border-color: #D4A843;
+  color: #ffffff;
+  transform: scale(1.05);
 }
 
 .cardTitle {

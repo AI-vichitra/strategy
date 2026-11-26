@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import BrandKitForm, { type BrandKit } from '../../components/BrandKitForm';
 import ReferenceUpload, { type ReferenceDoc } from '../../components/ReferenceUpload';
+import AlertModal from '../../components/AlertModal';
 
 // ── Target Market: structured region + city selection ───────────────────────
 // Mirrors backend.schemas.brand.TargetMarket exactly. Region options and city
@@ -312,6 +313,9 @@ function StrategySetupInner() {
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefError, setBriefError] = useState('');
   const [briefEmptyNote, setBriefEmptyNote] = useState(false);
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string; variant?: 'error' | 'info' | 'success' }>({
+    isOpen: false, title: '', message: '', variant: 'error'
+  });
   const briefRef = useRef<HTMLDivElement>(null);
   const briefPromiseRef = useRef<Promise<Record<string, string>> | null>(null);
 
@@ -673,7 +677,7 @@ function StrategySetupInner() {
       setStep('confirm_competitors');
     } catch (e: any) {
       console.error('Search competitors error:', e);
-      alert(`Error searching competitors: ${e.message}`);
+      setAlertModal({ isOpen: true, title: 'Search Error', message: `Error searching competitors: ${e.message}`, variant: 'error' });
       setStep('form');
     }
   };
@@ -685,7 +689,7 @@ function StrategySetupInner() {
   const handleContinueToBrief = async () => {
     const selectedComps = candidates.filter(c => c.selected);
     if (selectedComps.length === 0) {
-      alert("Please select or add at least one competitor to analyze.");
+      setAlertModal({ isOpen: true, title: 'Selection Required', message: 'Please select or add at least one competitor to analyze.', variant: 'info' });
       return;
     }
 
@@ -795,7 +799,7 @@ function StrategySetupInner() {
       router.push('/build');
     } catch (e: any) {
       console.error('Final confirmation error:', e);
-      alert(`Error confirming configuration: ${e.message}`);
+      setAlertModal({ isOpen: true, title: 'Confirmation Error', message: `Error confirming configuration: ${e.message}`, variant: 'error' });
     }
   };
 
@@ -1432,6 +1436,13 @@ function StrategySetupInner() {
           </div>
         )}
       </div>
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant || 'error'}
+        onClose={() => setAlertModal(a => ({ ...a, isOpen: false }))}
+      />
     </main>
   );
 }

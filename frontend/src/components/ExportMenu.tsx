@@ -149,7 +149,7 @@ export default function ExportMenu({ formats, buttonClassName }: ExportMenuProps
         </svg>
       </button>
 
-      {open && (
+      {open && formats.length > 0 && (
         <div className={styles.menu} role="menu" ref={menuRef}>
           {formats.map((fmt, idx) => {
             const hasTemplates = !!(fmt.templates?.length && fmt.onSelectTemplate);

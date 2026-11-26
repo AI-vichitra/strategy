@@ -88,7 +88,7 @@ export default function ConnectorModal({ connector, status, onClose, onConnect, 
           <div className={styles.logoBox}>
             {!imgError ? (
               <img
-                src={getLogoUrl(connector.domain)}
+                src={getLogoUrl(connector.domain, connector.id)}
                 alt={connector.name}
                 className={styles.logoImg}
                 onError={() => setImgError(true)}

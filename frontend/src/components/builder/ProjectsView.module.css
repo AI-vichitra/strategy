@@ -96,8 +96,14 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 300px));
-  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card {
@@ -110,7 +116,6 @@
   justify-content: space-between;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   height: 200px;
-  max-width: 300px;
   width: 100%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -495,4 +500,52 @@
 .modalCancelBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ── Shared member avatars ───────────────────────────────────────────────── */
+.memberAvatars {
+  display: flex;
+  align-items: center;
+}
+
+.memberAvatar,
+.memberAvatarInitials,
+.memberAvatarMore {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  margin-left: -6px;
+  flex-shrink: 0;
+}
+
+.memberAvatar:first-child,
+.memberAvatarInitials:first-child,
+.memberAvatarMore:first-child {
+  margin-left: 0;
+}
+
+.memberAvatar {
+  object-fit: cover;
+}
+
+.memberAvatarInitials {
+  background: #D4A843;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+}
+
+.memberAvatarMore {
+  background: #E8E4DC;
+  color: #6B6560;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

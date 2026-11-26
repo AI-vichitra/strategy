@@ -15,10 +15,13 @@ from backend.services import report_service, section_service
 router = APIRouter()
 
 
-async def _get_owned_report(db: AsyncSession, report_id: str, user_id: str):
-    report = await report_service.get_report(db, report_id, user_id)
+async def _get_authorized_report(db: AsyncSession, report_id: str, user: User):
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this report")
     return report
 
 
@@ -28,7 +31,7 @@ async def get_sections(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await _get_owned_report(db, report_id, current_user.id)
+    await _get_authorized_report(db, report_id, current_user)
     return await section_service.get_sections(db, report_id)
 
 
@@ -39,7 +42,7 @@ async def create_section(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await _get_owned_report(db, report_id, current_user.id)
+    await _get_authorized_report(db, report_id, current_user)
     return await section_service.create_section(
         db,
         report_id=report_id,
@@ -57,7 +60,7 @@ async def reorder_sections(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await _get_owned_report(db, report_id, current_user.id)
+    await _get_authorized_report(db, report_id, current_user)
     return await section_service.reorder_sections(db, report_id, req.section_ids)
 
 
@@ -69,7 +72,7 @@ async def update_section(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await _get_owned_report(db, report_id, current_user.id)
+    await _get_authorized_report(db, report_id, current_user)
     existing = await section_service.get_section(db, section_id)
     if not existing or existing.report_id != report_id:
         raise HTTPException(status_code=404, detail="Section not found")
@@ -89,7 +92,7 @@ async def delete_section(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await _get_owned_report(db, report_id, current_user.id)
+    await _get_authorized_report(db, report_id, current_user)
     existing = await section_service.get_section(db, section_id)
     if not existing or existing.report_id != report_id:
         raise HTTPException(status_code=404, detail="Section not found")
@@ -103,7 +106,7 @@ async def parse_report_sections(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    report = await _get_owned_report(db, report_id, current_user.id)
+    report = await _get_authorized_report(db, report_id, current_user)
     return await section_service.parse_report_into_sections(db, report_id, report.content)
 
 
@@ -113,6 +116,6 @@ async def get_finalized_content(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await _get_owned_report(db, report_id, current_user.id)
+    await _get_authorized_report(db, report_id, current_user)
     content = await section_service.get_finalized_content(db, report_id)
     return {"content": content}

@@ -1,12 +1,11 @@
 .container {
-  min-height: calc(100vh / 0.9);
   min-height: 100%;
   background-color: #FAF8F5;
   background-image: radial-gradient(ellipse at 50% 0%, rgba(212, 168, 67, 0.08) 0%, transparent 60%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48px 24px 80px;
+  padding: 36px 32px 48px;
   font-family: inherit;
 }
 
@@ -123,37 +122,57 @@
 }
 
 /* ── New-chat input card ───────────────────────────────────────────────────
-   Light-theme adaptation: a bordered input-style container with the brand's
-   gold accent, rather than Claude's dark card (this page is a light/cream
-   theme throughout). */
+   Sleek input-style container with paperclip on left, textarea, and voice/submit on right */
 .newChatCard {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
-  min-height: 72px;
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  padding: 18px 16px 18px 20px;
+  border: 1px solid #E8E4DC;
+  border-radius: 14px;
+  padding: 8px 12px 8px 12px;
   font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 .newChatCard:focus-within {
   border-color: #B8912E;
   box-shadow: 0 4px 14px rgba(212, 168, 67, 0.1);
 }
 
-.newChatIcon {
+/* inner row: attach button (left) + textarea (middle) + voice & submit (right) */
+.newChatRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.newChatAttachBtn {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #8E8880;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+.newChatAttachBtn:hover {
   color: #B8912E;
-  margin-bottom: 4px;
+  background: rgba(212, 168, 67, 0.1);
 }
 
 .newChatInput {
   flex: 1;
   min-height: 24px;
-  max-height: 200px;
+  max-height: 160px;
   border: none;
   outline: none;
   resize: none;
@@ -162,12 +181,19 @@
   font-size: 15px;
   font-weight: 500;
   color: #1A1A1A;
-  line-height: 1.5;
+  line-height: 24px;
   padding: 2px 0;
 }
 .newChatInput::placeholder {
-  color: #6B6560;
+  color: #A39E97;
   font-weight: 500;
+}
+
+.newChatRightActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .newChatSubmitBtn {
@@ -315,7 +341,7 @@
 .drawerPanel {
   width: 420px;
   max-width: 90vw;
-  height: 100vh;
+  height: 100%;
   background: #fff;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
   display: flex;
@@ -484,6 +510,12 @@
 }
 .drawerContextItem:last-child {
   border-bottom: none;
+}
+
+.socialHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .drawerLogoImg {
@@ -836,4 +868,250 @@
   min-height: 60vh;
   gap: 16px;
   color: #6B6560;
+}
+
+/* ── Page shell with sidebar ──────────────────────────────────────────────── */
+.pageShell {
+  display: flex;
+  height: calc(100vh / 0.9);
+  min-height: calc(100vh / 0.9);
+  width: 100%;
+  overflow: hidden;
+  background-color: #FAF8F5;
+}
+
+.pageShell .container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 100%;
+  background-color: #FAF8F5;
+}
+
+/* ── New chat card: attach icon button ───────────────────────────────────── */
+.newChatIconBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: #A39E97;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.newChatIconBtn:hover {
+  color: #B8912E;
+  background: rgba(212, 168, 67, 0.08);
+}
+
+/* ── Attached files row in new chat card ─────────────────────────────────── */
+.chatAttachRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.chatAttachImg {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(212, 168, 67, 0.2);
+}
+
+.chatAttachThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chatAttachRemove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chatAttachChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(212, 168, 67, 0.08);
+  border: 1px solid rgba(212, 168, 67, 0.15);
+  border-radius: 8px;
+  color: #B8912E;
+  font-size: 12px;
+  font-weight: 600;
+}
+.chatAttachChip button {
+  background: none;
+  border: none;
+  color: #A39E97;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+}
+
+/* ── Chat row wrapper for 3-dots ─────────────────────────────────────────── */
+.recentRowWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.recentRowWrap:last-child {
+  border-bottom: none;
+}
+.recentRowWrap .recentRow {
+  flex: 1;
+  border-bottom: none;
+}
+
+.chatMenuBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: #A39E97;
+  cursor: pointer;
+  margin-left: 8px;
+  margin-right: 4px;
+  opacity: 0.7;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.recentRowWrap:hover .chatMenuBtn {
+  opacity: 1;
+}
+.chatMenuBtn:hover {
+  background: rgba(0,0,0,0.06);
+  color: #1A1A1A;
+}
+
+.chatMenuPopover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 100;
+  background: #fff;
+  border: 1px solid #E8E4DC;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  overflow: hidden;
+  min-width: 130px;
+}
+
+.chatMenuOption {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1A1A1A;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.chatMenuOption:hover {
+  background: rgba(0,0,0,0.04);
+}
+.chatMenuOptionDelete {
+  color: #DC2626;
+}
+.chatMenuOptionDelete:hover {
+  background: rgba(220,38,38,0.06);
+}
+
+
+/* ── In-place chat renaming ─────────────────────────────────────────────── */
+.inplaceRenameWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1.5px solid #D4A843;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(212, 168, 67, 0.12);
+}
+
+.inplaceRenameInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1A1A1A;
+  font-family: inherit;
+  padding: 2px 4px;
+}
+
+.inplaceBtnGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inplaceSaveBtn,
+.inplaceCancelBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.inplaceSaveBtn {
+  background: #D4A843;
+  color: #ffffff;
+}
+.inplaceSaveBtn:hover:not(:disabled) {
+  background: #B8912E;
+}
+
+.inplaceCancelBtn {
+  background: #F5F1EB;
+  color: #6B6560;
+}
+.inplaceCancelBtn:hover:not(:disabled) {
+  background: #EFE9E0;
+  color: #1A1A1A;
+}
+
+.chatMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }

@@ -4,7 +4,7 @@
   width: 100%;
   max-width: 960px;
   margin: 0 auto;
-  padding: 16px 24px 32px 24px;
+  padding: 16px 24px 260px 24px;
 }
 
 /* Header */
@@ -18,13 +18,15 @@
 .agentIconWrap {
   width: 48px;
   height: 48px;
-  background: #F4F0FF;
+  background: rgba(212, 168, 67, 0.1);
+  border: 1px solid rgba(212, 168, 67, 0.25);
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.08);
+  color: #B8912E;
+  box-shadow: 0 2px 6px rgba(212, 168, 67, 0.08);
 }
 
 .agentTitle {
@@ -288,12 +290,12 @@
 .competitorChip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: #F9FAFB;
   border: 1px solid #E5E7EB;
   border-radius: 9999px;
-  padding: 4px 10px 4px 5px;
-  font-size: 13px;
+  padding: 4px 12px 4px 4px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #1F2937;
   transition: all 0.2s ease;
@@ -305,8 +307,8 @@
 }
 
 .competitorChipLogo {
-  width: 24px;
-  height: 24px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   object-fit: contain;
   background: #FFFFFF;
@@ -315,10 +317,12 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: #6B7280;
   flex-shrink: 0;
+  padding: 3px;
+  box-sizing: border-box;
 }
 
 .competitorChipRemove {
@@ -326,12 +330,13 @@
   border: none;
   color: #9CA3AF;
   cursor: pointer;
-  font-size: 14px;
-  padding: 0 2px;
+  font-size: 16px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s ease;
+  line-height: 1;
 }
 
 .competitorChipRemove:hover {
@@ -339,8 +344,8 @@
 }
 
 .addCompetitorBtn {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: 1px dashed #D1D5DB;
   background: #F3EEFF;
@@ -349,7 +354,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
@@ -561,4 +566,83 @@
 
 .fileUploadBtn:hover {
   background: #F3EEFF;
+}
+
+/* Custom Add Pill and Inline Add Controls */
+.addCustomPillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 1px dashed #7C3AED;
+  background: rgba(124, 58, 237, 0.04);
+  color: #7C3AED;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addCustomPillBtn:hover {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.inlineCustomInputWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid #7C3AED;
+  border-radius: 9999px;
+  padding: 2px 4px 2px 10px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.inlineCustomInput {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: #1A1A1A;
+  min-width: 110px;
+  max-width: 180px;
+  font-family: inherit;
+}
+
+.inlineCustomAddBtn {
+  background: #7C3AED;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.inlineCustomAddBtn:hover {
+  background: #6D28D9;
+}
+
+.inlineCustomCancelBtn {
+  background: transparent;
+  color: #9CA3AF;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.inlineCustomCancelBtn:hover {
+  color: #EF4444;
+}
+
+.sectionDivider {
+  height: 1px;
+  background: #F3EFEA;
+  margin: 18px 0;
+  width: 100%;
 }

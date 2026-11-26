@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from backend.database import Base
@@ -17,6 +17,17 @@ class User(Base):
     credits_remaining = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Password reset fields
+    reset_token = Column(String(255), nullable=True)
+    reset_token_created_at = Column(DateTime, nullable=True)
+
+    # Team & role hierarchy
+    role = Column(String(20), default="admin", nullable=False)  # 'admin' or 'member'
+    parent_user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    team_name = Column(String(255), nullable=True)
+
     brands = relationship("BrandConfig", back_populates="user", cascade="all, delete-orphan")
     projects = relationship("Project", back_populates="user", cascade="all, delete-orphan")
     connectors = relationship("ConnectorCredential", back_populates="user", cascade="all, delete-orphan")
+    team_memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
+    owned_teams = relationship("Team", back_populates="admin", foreign_keys="[Team.admin_id]")

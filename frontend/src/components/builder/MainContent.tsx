@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter as useNextRouter } from 'next/navigation';
-import TemplateGrid from './TemplateGrid';
+import TemplateGrid, { AgentCard } from './TemplateGrid';
 import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
+import { getAgentIcon } from '../../data/agentIcons';
 import { useAgents } from '../../hooks/useAgents';
 import { useTemplates } from '../../hooks/useTemplates';
 import ChatInput from './ChatInput';
@@ -17,9 +18,11 @@ import FilesView from './FilesView';
 import ProjectsView from './ProjectsView';
 // import WorkflowView from './WorkflowView'; // Workflows tab commented out for now
 import SettingsView from './SettingsView';
+import TeamsView from './TeamsView';
 import styles from './MainContent.module.css';
 import ReportRenderer from '../ReportRenderer';
 import SectionEditor from '../SectionEditor';
+import ShareChatModal from './ShareChatModal';
 
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
 type ReportInfo = { id: string; title: string; agent_type: string };
@@ -605,6 +608,76 @@ const getDomain = (connectorName: string) => {
   return c ? c.domain : 'google.com';
 };
 
+function BrandLogoIcon({
+  url,
+  name,
+  size = 28,
+}: {
+  url?: string | null;
+  name: string;
+  size?: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [url]);
+
+  const src = url
+    ? url.startsWith('/')
+      ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '')}${url}`
+      : url
+    : null;
+
+  const initial = name?.trim() ? name.trim().charAt(0).toUpperCase() : 'B';
+
+  return (
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        minWidth: `${size}px`,
+        minHeight: `${size}px`,
+        borderRadius: size > 24 ? '6px' : '4px',
+        border: '1px solid #EAE6DF',
+        background: '#FAF8F5',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      {src && !imgError ? (
+        <img
+          src={src}
+          alt={name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            padding: size > 24 ? '2px' : '1px',
+            boxSizing: 'border-box',
+          }}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span
+          style={{
+            fontSize: size > 24 ? '12px' : '10px',
+            fontWeight: 700,
+            color: '#78716C',
+            lineHeight: 1,
+            userSelect: 'none',
+          }}
+        >
+          {initial}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const searchParams = useSearchParams();
   const nextRouter = useNextRouter();
@@ -636,8 +709,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [targetAudience, setTargetAudience] = useState<TargetAudienceData>({ region: 'Global', segments: [] });
   const [additionalNotes, setAdditionalNotes] = useState<string>('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ full_name?: string | null; email?: string | null; avatar_url?: string | null } | null>(null);
   const [downloadingPdfIdx, setDownloadingPdfIdx] = useState<number | null>(null);
   const [pdfErrorIdx, setPdfErrorIdx] = useState<number | null>(null);
   const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
@@ -650,13 +725,21 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [shareCopiedIdx, setShareCopiedIdx] = useState<number | null>(null);
   const [shareErrorIdx, setShareErrorIdx] = useState<number | null>(null);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
-  const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors' | 'settings'>('builder');
+  const initialViewParam = searchParams.get('view');
+  const initialView = ['files', 'projects', 'agents', 'workflow', 'connectors', 'settings', 'teams'].includes(initialViewParam || '')
+    ? initialViewParam as 'files' | 'projects' | 'agents' | 'workflow' | 'connectors' | 'settings' | 'teams'
+    : 'builder';
+  const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors' | 'settings' | 'teams'>(initialView);
   const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('viewChanged', { detail: { view } }));
+    if (contentAreaRef.current) {
+      contentAreaRef.current.scrollTop = 0;
+    }
   }, [view]);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
@@ -673,6 +756,20 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         if (res.ok) setProviderInfo(await res.json());
       } catch {
         /* non-blocking: selector falls back to "Loading…" until this succeeds */
+      }
+    })();
+  }, [apiBase, authToken]);
+
+  useEffect(() => {
+    if (!authToken) return;
+    (async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        if (res.ok) setCurrentUser(await res.json());
+      } catch {
+        /* non-blocking */
       }
     })();
   }, [apiBase, authToken]);
@@ -705,8 +802,36 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     return -1;
   }, [messages]);
 
+  const resolveReport = async (messageId: string): Promise<ReportInfo | null> => {
+    let reportInfo = (messageId ? reportsByMessageId[messageId] : null) || (Object.values(reportsByMessageId).length > 0 ? Object.values(reportsByMessageId)[0] : null);
+    if (!reportInfo && activeProject?.id) {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`${apiBase}/api/projects/${activeProject.id}/reports`, { headers });
+        if (res.ok) {
+          const list = await res.json();
+          if (list && list.length > 0) {
+            const map: Record<string, ReportInfo> = {};
+            for (const r of list) {
+              const item: ReportInfo = { id: r.id, title: r.title, agent_type: r.agent_type };
+              if (r.message_id) map[r.message_id] = item;
+              if (r.id) map[r.id] = item;
+            }
+            setReportsByMessageId(prev => ({ ...prev, ...map }));
+            return (messageId ? map[messageId] : null) || list[0] || null;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to resolve report:', err);
+      }
+    }
+    return reportInfo;
+  };
+
   const handleDownloadPdf = async (idx: number, messageId: string) => {
-    const reportInfo = reportsByMessageId[messageId];
+    const reportInfo = await resolveReport(messageId);
     if (!reportInfo) return;
     try {
       setPdfErrorIdx(null);
@@ -757,6 +882,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const fetchReportsForProject = async (projectId: string) => {
+    if (!projectId || !projectId.trim()) return;
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -768,8 +894,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       const list = await res.json();
       const map: Record<string, ReportInfo> = {};
       for (const r of list) {
+        const item: ReportInfo = { id: r.id, title: r.title, agent_type: r.agent_type };
         if (r.message_id) {
-          map[r.message_id] = { id: r.id, title: r.title, agent_type: r.agent_type };
+          map[r.message_id] = item;
+        }
+        if (r.id) {
+          map[r.id] = item;
         }
       }
       setReportsByMessageId(map);
@@ -779,7 +909,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const handleDownloadDocx = async (idx: number, messageId: string) => {
-    const reportInfo = reportsByMessageId[messageId];
+    const reportInfo = await resolveReport(messageId);
     if (!reportInfo) return;
     try {
       setDocxErrorIdx(null);
@@ -820,7 +950,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const handleDownloadPptx = async (idx: number, messageId: string, templateId?: string) => {
-    const reportInfo = reportsByMessageId[messageId];
+    const reportInfo = await resolveReport(messageId);
     if (!reportInfo) return;
     try {
       setPptxErrorIdx(null);
@@ -883,7 +1013,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const handleShareReport = async (idx: number, messageId: string) => {
-    const reportInfo = reportsByMessageId[messageId];
+    const reportInfo = await resolveReport(messageId);
     if (!reportInfo) return;
     try {
       setShareErrorIdx(null);
@@ -924,6 +1054,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [brandsMap, setBrandsMap] = useState<Record<string, string>>({});
   const [activeProject, setActiveProject] = useState<{ id: string; title: string; brand_config_id?: string } | null>(null);
   const [prefilledOnboarding, setPrefilledOnboarding] = useState<{ competitors: boolean; brandKit: boolean }>({ competitors: false, brandKit: false });
+  const [isSwitchingProject, setIsSwitchingProject] = useState(false);
+  const [switchingTargetTitle, setSwitchingTargetTitle] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
@@ -1061,6 +1193,94 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (activeProject?.id) {
+      fetchReportsForProject(activeProject.id);
+    }
+  }, [activeProject?.id]);
+
+  const syncBrandDataForTemplate = (
+    brandId: string,
+    bList: any[] = brandsList,
+    pList: any[] = projectsList
+  ) => {
+    const brand = (bList || []).find((b: any) => b.id === brandId);
+    let brandComps: CompetitorDetail[] = [];
+
+    if (brand) {
+      if (brand.competitors) {
+        try {
+          const onboardingComps = typeof brand.competitors === 'string' ? JSON.parse(brand.competitors) : brand.competitors;
+          if (Array.isArray(onboardingComps)) {
+            brandComps = onboardingComps
+              .filter((c: any) => c && typeof c.name === 'string' && c.name.trim())
+              .map((c: any) => ({
+                brand_name: c.name!.trim(),
+                website_url: c.url || c.website_url || '',
+                logo_url: c.logo_url || undefined,
+                social_media: undefined,
+              }));
+          }
+        } catch {}
+      }
+      if (brand.target_market) {
+        try {
+          const tm = typeof brand.target_market === 'string' ? JSON.parse(brand.target_market) : brand.target_market;
+          const regRaw = tm?.region || 'global';
+          const formattedRegion = typeof regRaw === 'string' ? (regRaw.charAt(0).toUpperCase() + regRaw.slice(1)) : 'Global';
+          setTargetAudience({
+            region: formattedRegion,
+            segments: [],
+            locations: tm?.cities ? (Array.isArray(tm.cities) ? tm.cities.join(', ') : tm.cities) : '',
+            notes: '',
+          });
+        } catch {
+          setTargetAudience({ region: 'Global', segments: [] });
+        }
+      } else {
+        setTargetAudience({ region: 'Global', segments: [] });
+      }
+      if (brand.additional_notes) {
+        setAdditionalNotes(brand.additional_notes);
+      } else {
+        setAdditionalNotes('');
+      }
+    } else {
+      setTargetAudience({ region: 'Global', segments: [] });
+      setAdditionalNotes('');
+    }
+
+    // Fallback: check if an existing project under this brand has competitor_details
+    if (brandComps.length === 0) {
+      const projWithComps = (pList || []).find((p: any) => p.brand_config_id === brandId && Array.isArray(p.competitor_details) && p.competitor_details.length > 0);
+      if (projWithComps) {
+        brandComps = projWithComps.competitor_details;
+      }
+    }
+    setCompetitors(brandComps);
+    setPrefilledOnboarding(prev => ({ ...prev, competitors: brandComps.length > 0 }));
+
+    // Brand Kit
+    const projWithKit = (pList || []).find((p: any) => p.brand_config_id === brandId && p.brand_kit);
+    if (projWithKit?.brand_kit) {
+      setBrandKit(projWithKit.brand_kit);
+      setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
+    } else if (brand?.logo_url || brand?.colors) {
+      setBrandKit({ logo_url: brand.logo_url || null, colors: brand.colors || null });
+      setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
+    } else {
+      setBrandKit({});
+      setPrefilledOnboarding(prev => ({ ...prev, brandKit: false }));
+    }
+
+    // Reset questionnaire, context, and messages
+    setQaAnswers([]);
+    setUserContext('');
+    setAttachedFiles([]);
+    setReferenceFiles([]);
+    setMessages([]);
+  };
+
   const handleSelectAgent = (title: string) => {
     setView('builder');
     setSelectedAgent(title);
@@ -1074,6 +1294,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setPromptText('');
     setUserContext('');
     setAttachedFiles([]);
+    setReferenceFiles([]);
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
@@ -1084,45 +1305,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     // Pre-fill competitor list and brand kit from onboarding data for this brand
     const currentBrandIdForPrefill = activeProject?.brand_config_id || savedBrandId;
     if (currentBrandIdForPrefill) {
-      const brand = brandsList.find((b: any) => b.id === currentBrandIdForPrefill);
-      if (brand) {
-        if (brand.competitors) {
-          try {
-            const onboardingComps = JSON.parse(brand.competitors) as Array<{ name?: string; url?: string; website_url?: string; logo_url?: string }>;
-            const mapped = onboardingComps
-              .filter((c) => c && typeof c.name === 'string' && c.name.trim())
-              .map((c) => ({
-                brand_name: c.name!.trim(),
-                website_url: c.url || c.website_url || '',
-                logo_url: c.logo_url || undefined,
-                social_media: undefined
-              }));
-            if (mapped.length > 0) {
-              setCompetitors(mapped);
-              setPrefilledOnboarding(prev => ({ ...prev, competitors: true }));
-            }
-          } catch {}
-        }
-        if (brand.target_market) {
-          try {
-            const tm = typeof brand.target_market === 'string' ? JSON.parse(brand.target_market) : brand.target_market;
-            setTargetAudience({
-              region: tm?.region || 'Global',
-              segments: [],
-              locations: tm?.cities ? (Array.isArray(tm.cities) ? tm.cities.join(', ') : tm.cities) : '',
-              notes: ''
-            });
-          } catch {}
-        }
-        if (brand.additional_notes) {
-          setAdditionalNotes(brand.additional_notes);
-        }
-      }
-      const projWithKit = projectsList.find((p: any) => p.brand_config_id === currentBrandIdForPrefill && p.brand_kit);
-      if (projWithKit?.brand_kit) {
-        setBrandKit(projWithKit.brand_kit);
-        setPrefilledOnboarding(prev => ({ ...prev, brandKit: true }));
-      }
+      syncBrandDataForTemplate(currentBrandIdForPrefill, brandsList, projectsList);
     }
 
     const prompt = title === 'Competition Analysis'
@@ -1139,6 +1322,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setSelectedAgent(null);
     setPromptText('');
     setAttachedFiles([]);
+    setReferenceFiles([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
@@ -1154,6 +1338,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setSelectedAgent(null);
     setPromptText('');
     setAttachedFiles([]);
+    setReferenceFiles([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
     setMessages([]);
@@ -1178,7 +1363,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const handleQuestionnaireDismiss = () => setShowQuestionnaire(false);
 
-  const loadProjectById = async (projectId: string) => {
+  const loadProjectById = async (projectId: string, manageLoading: boolean = true) => {
+    if (manageLoading) {
+      setIsSwitchingProject(true);
+      setSwitchingTargetTitle('Loading project...');
+    }
+    const startTime = Date.now();
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -1232,6 +1422,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
             title: brandName || proj.title || 'Brand Project',
             brand_config_id: proj.brand_config_id,
           });
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('brand_config_id', proj.brand_config_id);
+          }
         }
         if (proj.messages && proj.messages.length > 0) {
           const loadedMsgs = proj.messages.map((m: any) => ({
@@ -1250,6 +1443,103 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       }
     } catch (err) {
       console.error('Failed to load project details:', err);
+    } finally {
+      if (manageLoading) {
+        const elapsed = Date.now() - startTime;
+        const minWait = 400;
+        if (elapsed < minWait) {
+          await new Promise((r) => setTimeout(r, minWait - elapsed));
+        }
+        setIsSwitchingProject(false);
+      }
+    }
+  };
+
+  const handleSelectBrandProject = async (item: {
+    brand_config_id: string;
+    title: string;
+    proj_id: string;
+    logo_url?: string | null;
+  }) => {
+    setDropdownOpen(false);
+
+    if (activeProject?.brand_config_id === item.brand_config_id && activeProject?.id === item.proj_id && !isSwitchingProject) {
+      return;
+    }
+
+    setIsSwitchingProject(true);
+    setSwitchingTargetTitle(item.title);
+    const startTime = Date.now();
+
+    try {
+      // 1. Update active project
+      setActiveProject({
+        id: item.proj_id,
+        title: item.title,
+        brand_config_id: item.brand_config_id,
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('brand_config_id', item.brand_config_id);
+      }
+
+      // 2. Fetch fresh projects & brands lists
+      let latestBrands = brandsList;
+      let latestProjects = projectsList;
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const [pRes, bRes] = await Promise.all([
+          fetch(`${apiBase}/api/projects`, { headers }),
+          fetch(`${apiBase}/api/brands`, { headers }),
+        ]);
+        if (pRes.ok && bRes.ok) {
+          latestProjects = await pRes.json();
+          latestBrands = await bRes.json();
+          setProjectsList(latestProjects || []);
+          setBrandsList(latestBrands || []);
+          const bMap: Record<string, string> = {};
+          (latestBrands || []).forEach((b: any) => { bMap[b.id] = b.brand_name; });
+          setBrandsMap(bMap);
+        }
+      } catch (err) {
+        console.error('Failed to reload projects/brands:', err);
+      }
+
+      // 3. Update view data according to current active view:
+      if (!isChatting && selectedAgent) {
+        // User has template questionnaire open -> stay on template, update brand & inputs
+        syncBrandDataForTemplate(item.brand_config_id, latestBrands, latestProjects);
+      } else if (item.proj_id && item.proj_id !== item.brand_config_id) {
+        // Project exists in DB -> open a fresh chat in this project context (don't load old messages)
+        setMessages([]);
+        setSelectedAgent(null);
+        setReportsByMessageId({});
+        syncBrandDataForTemplate(item.brand_config_id, latestBrands, latestProjects);
+      } else {
+        // Idle home view or fresh brand
+        setMessages([]);
+        setReportsByMessageId({});
+        syncBrandDataForTemplate(item.brand_config_id, latestBrands, latestProjects);
+      }
+
+      // 4. Notify sidebar & others
+      window.dispatchEvent(
+        new CustomEvent('projectChanged', {
+          detail: { projectId: item.proj_id, brand_config_id: item.brand_config_id },
+        })
+      );
+    } catch (err) {
+      console.error('Error switching brand project:', err);
+    } finally {
+      const elapsed = Date.now() - startTime;
+      const minWait = 450;
+      if (elapsed < minWait) {
+        await new Promise((r) => setTimeout(r, minWait - elapsed));
+      }
+      setIsSwitchingProject(false);
     }
   };
 
@@ -1269,6 +1559,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     const onOpenAgents = () => setView('agents');
     // const onOpenWorkflow = () => setView('workflow'); // Workflows tab commented out for now
     const onOpenSettings = () => setView('settings');
+    const onOpenTeams = () => setView('teams');
     window.addEventListener('newChat', onNewChat);
     window.addEventListener('openProject', onOpenProject);
     window.addEventListener('openConnectors', onOpenConnectors);
@@ -1278,6 +1569,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     window.addEventListener('openAgents', onOpenAgents);
     // window.addEventListener('openWorkflow', onOpenWorkflow);
     window.addEventListener('openSettings', onOpenSettings);
+    window.addEventListener('openTeams', onOpenTeams);
     return () => {
       window.removeEventListener('newChat', onNewChat);
       window.removeEventListener('openProject', onOpenProject);
@@ -1288,6 +1580,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       window.removeEventListener('openAgents', onOpenAgents);
       // window.removeEventListener('openWorkflow', onOpenWorkflow);
       window.removeEventListener('openSettings', onOpenSettings);
+      window.removeEventListener('openTeams', onOpenTeams);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandsMap]);
@@ -1296,8 +1589,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const handleSubmit = async () => {
     if (!promptText.trim()) return;
     let baseContent = promptText.trim();
-    if (attachedFiles.length > 0) {
-      baseContent += `\n\n── Attached Files ──\n` + attachedFiles.map(f => `📄 ${f.name}`).join('\n');
+    const allFiles = [...referenceFiles, ...attachedFiles];
+    if (allFiles.length > 0) {
+      baseContent += `\n\n── Supporting Reference Documents & Files ──\n` + allFiles.map(f => `[File] ${f.name}`).join('\n');
     }
 
     // Translate UI prompt to backend execution request if initial card prompt is sent
@@ -1319,6 +1613,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     if (targetAudience.segments && targetAudience.segments.length > 0) audienceParts.push(`Segments: ${targetAudience.segments.join(', ')}`);
     if (targetAudience.locations) audienceParts.push(`Locations: ${targetAudience.locations}`);
     if (targetAudience.notes) audienceParts.push(`Notes: ${targetAudience.notes}`);
+    if (targetAudience.ageDemographics && targetAudience.ageDemographics.length > 0) {
+      audienceParts.push(`Age Demographics: ${targetAudience.ageDemographics.join(', ')}`);
+    }
+    if (targetAudience.incomeTier) audienceParts.push(`Income Tier: ${targetAudience.incomeTier}`);
     if (audienceParts.length > 0) {
       apiUserContent += `\n\n── Target Audience ──\n` + audienceParts.join('\n');
     }
@@ -1343,6 +1641,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setMessages(prev => [...prev, userMsg, thinking]);
     setPromptText('');
     setAttachedFiles([]);
+    setReferenceFiles([]);
     setQaAnswers([]);
     setShowBanner(false);
     setShowQuestionnaire(false);
@@ -1522,104 +1821,146 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       {/* Top Bar */}
       <header className={styles.topBar}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {(selectedAgent || isChatting || view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') && (
+          {view === 'builder' && (selectedAgent || isChatting) && (
             <button 
               className={styles.shareBtn} 
               style={{ padding: '6px 8px', marginLeft: 0 }} 
-              onClick={() => {
-                if (view === 'files' || view === 'projects' || view === 'agents' || view === 'workflow' || view === 'connectors') {
-                  setView('builder');
-                } else {
-                  handleRevert();
-                }
-              }}
+              onClick={handleRevert}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               Back
             </button>
           )}
 
-          <div className={styles.dropdownContainer} ref={dropdownRef}>
-            <button 
-              className={styles.dropdownToggle}
-              onClick={() => {
-                loadProjectsAndBrands();
-                setDropdownOpen(prev => !prev);
-              }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              <span>{activeProject ? (brandsMap[activeProject.brand_config_id || ''] || activeProject.title) : 'Select Project'}</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
+          {(() => {
+            const activeBrandConfigId = activeProject?.brand_config_id;
+            const activeBrand = brandsList.find((b: any) => b.id === activeBrandConfigId);
+            const activeProj = projectsList.find((p: any) => p.brand_config_id === activeBrandConfigId || p.id === activeProject?.id);
 
-            {dropdownOpen && (
-              <div className={styles.dropdownMenu}>
-                <div className={styles.dropdownHeader}>ACTIVE BRAND PROJECTS</div>
-                <div className={styles.dropdownList}>
-                  {(() => {
-                    const displayItems: { brand_config_id: string; title: string; proj_id: string; date?: string }[] = [];
-                    
-                    brandsList.forEach((b: any) => {
-                      const proj = projectsList.find((p: any) => p.brand_config_id === b.id);
-                      displayItems.push({
-                        brand_config_id: b.id,
-                        title: b.brand_name,
-                        proj_id: proj ? proj.id : b.id,
-                        date: b.created_at ? new Date(b.created_at).toLocaleDateString() : undefined
-                      });
-                    });
+            let activeLogo: string | null = activeBrand?.logo_url || null;
+            if (!activeLogo && activeProj?.brand_kit) {
+              try {
+                const bk = typeof activeProj.brand_kit === 'string' ? JSON.parse(activeProj.brand_kit) : activeProj.brand_kit;
+                activeLogo = bk?.logo_url;
+              } catch {}
+            }
+            if (!activeLogo && activeProj?.logo_data) {
+              activeLogo = `/api/projects/${activeProj.id}/logo`;
+            }
+            const activeTitle = activeProject ? (brandsMap[activeProject.brand_config_id || ''] || activeProject.title) : 'Select Project';
 
-                    projectsList.forEach((proj: any) => {
-                      if (proj.brand_config_id && !displayItems.some(item => item.brand_config_id === proj.brand_config_id)) {
-                        displayItems.push({
-                          brand_config_id: proj.brand_config_id,
-                          title: brandsMap[proj.brand_config_id] || proj.title || 'Brand Project',
-                          proj_id: proj.id,
-                          date: proj.created_at ? new Date(proj.created_at).toLocaleDateString() : undefined
+            return (
+              <div className={styles.dropdownContainer} ref={dropdownRef}>
+                <button 
+                  className={styles.dropdownToggle}
+                  disabled={isSwitchingProject}
+                  onClick={() => {
+                    if (isSwitchingProject) return;
+                    loadProjectsAndBrands();
+                    setDropdownOpen(prev => !prev);
+                  }}
+                >
+                  {isSwitchingProject ? (
+                    <div className={styles.topbarInlineSpinner} />
+                  ) : activeProject ? (
+                    <BrandLogoIcon url={activeLogo} name={activeTitle} size={18} />
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  )}
+                  <span>{isSwitchingProject ? (switchingTargetTitle || 'Loading...') : activeTitle}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+
+                {dropdownOpen && (
+                  <div className={styles.dropdownMenu}>
+                    <div className={styles.dropdownHeader}>ACTIVE BRAND PROJECTS</div>
+                    <div className={styles.dropdownList}>
+                      {(() => {
+                        const displayItems: { brand_config_id: string; title: string; proj_id: string; date?: string; logo_url?: string | null }[] = [];
+                        
+                        brandsList.forEach((b: any) => {
+                          const proj = projectsList.find((p: any) => p.brand_config_id === b.id);
+                          let cardLogo = b.logo_url || null;
+                          if (!cardLogo && proj?.brand_kit) {
+                            try {
+                              const bk = typeof proj.brand_kit === 'string' ? JSON.parse(proj.brand_kit) : proj.brand_kit;
+                              cardLogo = bk?.logo_url;
+                            } catch {}
+                          }
+                          if (!cardLogo && proj?.logo_data) {
+                            cardLogo = `/api/projects/${proj.id}/logo`;
+                          }
+                          displayItems.push({
+                            brand_config_id: b.id,
+                            title: b.brand_name,
+                            proj_id: proj ? proj.id : b.id,
+                            date: b.created_at ? new Date(b.created_at).toLocaleDateString() : undefined,
+                            logo_url: cardLogo,
+                          });
                         });
-                      }
-                    });
 
-                    if (displayItems.length === 0) {
-                      return <div className={styles.dropdownEmpty}>No brand projects found</div>;
-                    }
-
-                    return displayItems.map((item) => {
-                      const isActive = activeProject?.brand_config_id === item.brand_config_id;
-                      return (
-                        <button
-                          key={item.brand_config_id}
-                          type="button"
-                          className={`${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ''}`}
-                          onClick={() => {
-                            setActiveProject({
-                              id: item.proj_id,
-                              title: item.title,
-                              brand_config_id: item.brand_config_id,
-                            });
-                            if (typeof window !== 'undefined') {
-                              localStorage.setItem('brand_config_id', item.brand_config_id);
+                        projectsList.forEach((proj: any) => {
+                          if (proj.brand_config_id && !displayItems.some(item => item.brand_config_id === proj.brand_config_id)) {
+                            let projLogo = null;
+                            if (proj.brand_kit) {
+                              try {
+                                const bk = typeof proj.brand_kit === 'string' ? JSON.parse(proj.brand_kit) : proj.brand_kit;
+                                projLogo = bk?.logo_url;
+                              } catch {}
                             }
-                            setDropdownOpen(false);
-                            window.dispatchEvent(new CustomEvent('projectChanged', { detail: { projectId: item.proj_id, brand_config_id: item.brand_config_id } }));
-                          }}
-                        >
-                          <div style={{ fontWeight: 600, fontSize: '13px', color: '#1A1A1A' }}>
-                            {item.title}
-                          </div>
-                          {item.date && (
-                            <div style={{ fontSize: '11px', color: '#6B6560', marginTop: '2px' }}>
-                              Created {item.date}
-                            </div>
-                          )}
-                        </button>
-                      );
-                    });
-                  })()}
-                </div>
+                            if (!projLogo && proj.logo_data) {
+                              projLogo = `/api/projects/${proj.id}/logo`;
+                            }
+                            displayItems.push({
+                              brand_config_id: proj.brand_config_id,
+                              title: brandsMap[proj.brand_config_id] || proj.title || 'Brand Project',
+                              proj_id: proj.id,
+                              date: proj.created_at ? new Date(proj.created_at).toLocaleDateString() : undefined,
+                              logo_url: projLogo,
+                            });
+                          }
+                        });
+
+                        if (displayItems.length === 0) {
+                          return <div className={styles.dropdownEmpty}>No brand projects found</div>;
+                        }
+
+                        return displayItems.map((item) => {
+                          const isActive = activeProject?.brand_config_id === item.brand_config_id;
+                          return (
+                            <button
+                              key={item.brand_config_id}
+                              type="button"
+                              className={`${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ''}`}
+                              onClick={() => {
+                                handleSelectBrandProject(item);
+                              }}
+                            >
+                              <BrandLogoIcon url={item.logo_url} name={item.title} size={28} />
+                              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                                <div style={{ fontWeight: 600, fontSize: '13px', color: '#1A1A1A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {item.title}
+                                </div>
+                                {item.date && (
+                                  <div style={{ fontSize: '10px', color: '#6B6560', marginTop: '1px' }}>
+                                    Created on {item.date}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
         <div className={styles.spacer} />
         {latestAssistantIdx !== -1 && messages[latestAssistantIdx].id && reportsByMessageId[messages[latestAssistantIdx].id!] && (
@@ -1653,11 +1994,28 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       </header>
 
       {/* Scrollable Content */}
-      <div className={styles.contentArea}>
+      <div ref={contentAreaRef} className={styles.contentArea}>
+        {isSwitchingProject && (
+          <div className={styles.switchingOverlay} role="status" aria-live="polite">
+            <div className={styles.switchingCard}>
+              <div className={styles.switchingSpinner} />
+              <div className={styles.switchingTextWrap}>
+                <div className={styles.switchingTitle}>
+                  {switchingTargetTitle ? `Switching to ${switchingTargetTitle}` : 'Loading project...'}
+                </div>
+                <div className={styles.switchingSubtitle}>
+                  Updating workspace and brand data
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {view === 'connectors' ? (
           <ConnectorsView />
         ) : view === 'settings' ? (
           <SettingsView onBack={() => setView('builder')} />
+        ) : view === 'teams' ? (
+          <TeamsView onBack={() => setView('builder')} />
         ) : view === 'projects' ? (
           <ProjectsView />
         ) : view === 'files' ? (
@@ -1754,42 +2112,42 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                           <ExportMenu
                             buttonClassName={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
                             formats={[
-                              ...(msg.id && reportsByMessageId[msg.id] ? [{
+                              {
                                 id: 'pdf',
                                 label: 'PDF',
                                 extension: '.pdf',
                                 chip: 'PDF',
-                                onSelect: () => handleDownloadPdf(i, msg.id!),
+                                onSelect: () => handleDownloadPdf(i, msg.id || ''),
                                 loading: downloadingPdfIdx === i,
                                 error: pdfErrorIdx === i,
-                              }] : []),
-                              ...(msg.id && reportsByMessageId[msg.id] ? [{
+                              },
+                              {
                                 id: 'docx',
                                 label: 'Word',
                                 extension: '.docx',
                                 chip: 'DOC',
-                                onSelect: () => handleDownloadDocx(i, msg.id!),
+                                onSelect: () => handleDownloadDocx(i, msg.id || ''),
                                 loading: downloadingDocxIdx === i,
                                 error: docxErrorIdx === i,
-                              }] : []),
-                              ...(msg.id && reportsByMessageId[msg.id] ? [{
+                              },
+                              {
                                 id: 'pptx',
                                 label: 'PowerPoint',
                                 extension: '.pptx',
                                 chip: 'PPT',
-                                onSelect: () => handleDownloadPptx(i, msg.id!),
-                                onSelectTemplate: (templateId: string) => handleDownloadPptx(i, msg.id!, templateId),
+                                onSelect: () => handleDownloadPptx(i, msg.id || ''),
+                                onSelectTemplate: (templateId: string) => handleDownloadPptx(i, msg.id || '', templateId),
                                 templates: pptxTemplates,
                                 loading: downloadingPptxIdx === i,
                                 error: pptxErrorIdx === i,
-                              }] : []),
+                              },
                             ]}
                           />
-                          {msg.id && reportsByMessageId[msg.id] && (
+                          {((msg.id && reportsByMessageId[msg.id]) || Object.values(reportsByMessageId).length > 0) && (
                             <button
                               type="button"
                               className={`${styles.reportActionBtn} ${styles.reportDownloadBtn}`}
-                              onClick={() => handleShareReport(i, msg.id!)}
+                              onClick={() => handleShareReport(i, msg.id || '')}
                               disabled={sharingReportIdx === i}
                               title="Copy a public, read-only link to this report"
                             >
@@ -1913,6 +2271,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           ) : selectedAgent ? (
             /* ── Agent detail (pre-chat multi-tab template view) ─────────────── */
             <AgentTemplateView
+              key={`${activeProject?.brand_config_id || activeProject?.id || 'brand'}-${selectedAgent}`}
               selectedAgent={selectedAgent}
               agentDescription={catalogAgents.find(a => a.title === selectedAgent)?.description}
               brand={brandsList.find((b: any) => b.id === (activeProject?.brand_config_id || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null)))}
@@ -1929,9 +2288,9 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               onChangeAdditionalNotes={setAdditionalNotes}
               brandKit={brandKit}
               onChangeBrandKit={setBrandKit}
-              attachedFiles={attachedFiles}
-              onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
-              onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+              attachedFiles={referenceFiles}
+              onAddFiles={(files) => setReferenceFiles(prev => [...prev, ...files])}
+              onRemoveFile={(index) => setReferenceFiles(prev => prev.filter((_, i) => i !== index))}
             />
           ) : (
             /* ── Build your agent (idle home page) ─────── */
@@ -1945,7 +2304,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                     </svg>
                   </div>
                 </div>
-                <p className={styles.welcomeSubtitle}>How can I help?</p>
+                <p className={styles.welcomeSubtitle}>Your AI-powered strategy workspace</p>
               </div>
 
               <div className={styles.homeChatboxWrapper}>
@@ -1966,6 +2325,44 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                   advancedPin={providerInfo?.advanced_pin ?? null}
                   providerNote={providerNote}
                 />
+              </div>
+
+              <div className={styles.homeExploreSection}>
+                <div className={styles.homeExploreHeader}>
+                  <div className={styles.homeExploreTitleGroup}>
+                    <div className={styles.homeExploreTitleRow}>
+                      <span className={styles.homeExploreSparkle}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                        </svg>
+                      </span>
+                      <h2 className={styles.homeExploreTitle}>Explore templates</h2>
+                    </div>
+                    <p className={styles.homeExploreSubtitle}>
+                      Get started faster with ready-made AI workflows.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.homeExploreAllBtn}
+                    onClick={() => setView('agents')}
+                  >
+                    Explore all →
+                  </button>
+                </div>
+
+                <div className={styles.homeExploreGrid}>
+                  {catalogAgents.slice(0, 9).map((agent) => (
+                    <AgentCard
+                      key={agent.id}
+                      agent={agent}
+                      onSelectAgent={handleSelectAgent}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -1999,53 +2396,14 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
       <ConnectorsPanel open={connectorsOpen} onClose={() => setConnectorsOpen(false)} />
 
-      {/* Share Modal */}
-      {shareOpen && (
-        <div className={styles.shareOverlay} onClick={() => setShareOpen(false)}>
-          <div className={styles.shareModal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.shareModalClose} onClick={() => setShareOpen(false)}>&times;</button>
-            <h2 className={styles.shareModalTitle}>Share This Agent</h2>
-            <p className={styles.shareModalDesc}>Sharing this agent will allow other users to chat with it and edit its configuration, settings, and view their chat history with it.</p>
-
-            <div className={styles.shareModalLabel}>Users &bull; 1</div>
-            <div className={styles.shareSearchRow}>
-              <div className={styles.shareSearchInput}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="Add people" />
-              </div>
-              <button className={styles.shareActionBtn}>Share</button>
-            </div>
-
-            <div className={styles.shareUserRow}>
-              <div className={styles.shareUserAvatar}>U</div>
-              <span className={styles.shareUserName}>User <span style={{color:'#9ca3af'}}>(you)</span></span>
-              <span className={styles.shareUserRole}>Owner</span>
-            </div>
-
-            <div className={styles.shareAccessSection}>
-              <div className={styles.shareAccessTitle}>General Access</div>
-              <div className={styles.shareAccessRow}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <div>
-                  <div className={styles.shareAccessLabel}>Restricted</div>
-                  <div className={styles.shareAccessDesc}>Only users with direct access can view this Agent</div>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.shareLinkSection}>
-              <button className={styles.shareLinkBtn}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy agent link
-              </button>
-              <button className={styles.shareLinkBtn}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                Copy setup link
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Share Chat Modal */}
+      <ShareChatModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        projectId={activeProject?.id || ''}
+        projectTitle={activeProject?.title}
+        currentUser={currentUser}
+      />
     </main>
   );
 }

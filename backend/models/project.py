@@ -26,8 +26,10 @@ class Project(Base):
     llm_provider = Column(String(50), nullable=True, default="openai")
     last_active_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    team_id = Column(String(36), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True, index=True)
 
     user = relationship("User", back_populates="projects")
     brand = relationship("BrandConfig", back_populates="projects")
+    team = relationship("Team", back_populates="projects")
     messages = relationship("Message", back_populates="project", cascade="all, delete-orphan", lazy="selectin")
     reports = relationship("Report", back_populates="project", cascade="all, delete-orphan", lazy="selectin")

@@ -252,6 +252,7 @@ class BrandConfigBase(BaseModel):
     competitors: Optional[str] = None
     social_metrics: Optional[str] = None
     logo_url: Optional[str] = None
+    team_id: Optional[str] = None
 
 
 # ── DB create / response ─────────────────────────────────────────────────────
@@ -262,6 +263,7 @@ class BrandConfigCreate(BrandConfigBase):
 class BrandConfigResponse(BrandConfigBase):
     id: str
     user_id: str
+    team_id: Optional[str] = None
     brand_slug: Optional[str] = None
     brand_handle: Optional[str] = None
     social_handles: Optional[Dict[str, str]] = None

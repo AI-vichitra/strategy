@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List
+from typing import List, Optional
 
 from backend.database import async_session
 from backend.dependencies import get_db, get_current_user
@@ -42,14 +42,28 @@ _MAX_REFERENCE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 # ── GET /api/brands/ — list all brands for current user ─────────────────────
 @router.get("/", response_model=List[BrandConfigResponse])
 async def get_brands(
+    team_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(BrandConfig)
-        .where(BrandConfig.user_id == current_user.id)
-        .order_by(BrandConfig.created_at.desc())
-    )
+    from backend.utils.permissions import get_user_team_ids
+    from sqlalchemy import or_
+
+    user_team_ids = await get_user_team_ids(current_user, db)
+
+    if team_id:
+        if team_id not in user_team_ids and current_user.role != "superadmin":
+            raise HTTPException(status_code=403, detail="You do not have access to this team's brands")
+        query = select(BrandConfig).where(BrandConfig.team_id == team_id)
+    else:
+        conditions = [BrandConfig.user_id == current_user.id]
+        if current_user.parent_user_id:
+            conditions.append(BrandConfig.user_id == current_user.parent_user_id)
+        if user_team_ids:
+            conditions.append(BrandConfig.team_id.in_(user_team_ids))
+        query = select(BrandConfig).where(or_(*conditions))
+
+    result = await db.execute(query.order_by(BrandConfig.created_at.desc()))
     return result.scalars().all()
 
 
@@ -403,7 +417,7 @@ async def confirm_brand(
     return db_brand
 
 
-# ── DELETE /api/brands/{brand_id} ───────────────────────────────────────────
+# ── PUT /api/brands/{brand_id} ──────────────────────────────────────────────
 @router.put("/{brand_id}")
 async def update_brand(
     brand_id: str,
@@ -411,16 +425,18 @@ async def update_brand(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(BrandConfig).where(BrandConfig.id == brand_id, BrandConfig.user_id == current_user.id)
-    )
+    from backend.utils.permissions import has_brand_access
+    result = await db.execute(select(BrandConfig).where(BrandConfig.id == brand_id))
     brand = result.scalars().first()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this brand")
+
     if "brand_name" in payload and payload["brand_name"]:
         brand.brand_name = payload["brand_name"].strip()
         proj_result = await db.execute(
-            select(Project).where(Project.brand_config_id == brand.id, Project.user_id == current_user.id)
+            select(Project).where(Project.brand_config_id == brand.id)
         )
         for p in proj_result.scalars().all():
             p.title = brand.brand_name
@@ -438,19 +454,19 @@ async def delete_brand(
 ):
     """
     Permanently delete a brand that has no linked projects.
-    Returns 404 if brand doesn't exist or isn't owned by the caller.
+    Returns 404 if brand doesn't exist.
+    Returns 403 if caller lacks admin access.
     Returns 409 if the brand still has projects (delete those first).
     Does NOT touch docs/, KNOWLEDGE_BASE/, or uploaded logo files.
     """
-    result = await db.execute(
-        select(BrandConfig).where(
-            BrandConfig.id == brand_id,
-            BrandConfig.user_id == current_user.id,
-        )
-    )
+    from backend.utils.permissions import has_brand_admin_access
+    result = await db.execute(select(BrandConfig).where(BrandConfig.id == brand_id))
     brand = result.scalar_one_or_none()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+
+    if not await has_brand_admin_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this brand. Only owner or team admin can delete.")
 
     # Refuse if any project still references this brand
     proj_result = await db.execute(
@@ -474,15 +490,13 @@ async def get_brand_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(BrandConfig).where(
-            BrandConfig.id == brand_id,
-            BrandConfig.user_id == current_user.id,
-        )
-    )
+    from backend.utils.permissions import has_brand_access
+    result = await db.execute(select(BrandConfig).where(BrandConfig.id == brand_id))
     brand = result.scalar_one_or_none()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to view status of this brand")
 
     return BrandStatusResponse(
         id=brand.id,

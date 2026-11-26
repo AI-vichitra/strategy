@@ -42,6 +42,8 @@ class BrandConfig(Base):
                                                           # build_system_prompt — always read via
                                                           # schemas.brand.normalize_brand_brief.
     created_at = Column(DateTime, default=datetime.utcnow)
+    team_id = Column(String(36), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True, index=True)
 
     user = relationship("User", back_populates="brands")
+    team = relationship("Team", back_populates="brands")
     projects = relationship("Project", back_populates="brand", cascade="all, delete-orphan")

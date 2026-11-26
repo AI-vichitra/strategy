@@ -45,13 +45,14 @@
 }
 
 .competitorLogoImg {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   object-fit: contain;
   background: #ffffff;
   border: 1px solid #E8E4DC;
   flex-shrink: 0;
+  padding: 2px;
 }
 
 .cardList {

@@ -55,6 +55,16 @@ async def chat_stream(
     Uses RAG over the brand's docs/ knowledge base.
     """
     from backend.services.ai_service import stream_chat
+    from backend.utils.permissions import has_project_access
+    from backend.models.project import Project
+    from sqlalchemy.future import select
+
+    proj_res = await db.execute(select(Project).where(Project.id == req.project_id))
+    project = proj_res.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this project")
 
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
 

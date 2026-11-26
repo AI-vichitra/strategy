@@ -94,26 +94,26 @@ async def create_report_snapshot(
     return report
 
 
-async def list_reports(db: AsyncSession, project_id: str, user_id: str):
+async def list_reports(db: AsyncSession, project_id: str, user_id: Optional[str] = None):
     """Returns version metadata only — content is never selected or loaded."""
-    result = await db.execute(
-        select(
-            Report.id,
-            Report.message_id,
-            Report.version,
-            Report.title,
-            Report.agent_type,
-            Report.chart_count,
-            Report.created_at,
-        )
-        .where(Report.project_id == project_id, Report.user_id == user_id)
-        .order_by(Report.version.desc())
-    )
+    query = select(
+        Report.id,
+        Report.message_id,
+        Report.version,
+        Report.title,
+        Report.agent_type,
+        Report.chart_count,
+        Report.created_at,
+    ).where(Report.project_id == project_id)
+    if user_id:
+        query = query.where(Report.user_id == user_id)
+    result = await db.execute(query.order_by(Report.version.desc()))
     return result.all()
 
 
-async def get_report(db: AsyncSession, report_id: str, user_id: str) -> Optional[Report]:
-    result = await db.execute(
-        select(Report).where(Report.id == report_id, Report.user_id == user_id)
-    )
+async def get_report(db: AsyncSession, report_id: str, user_id: Optional[str] = None) -> Optional[Report]:
+    query = select(Report).where(Report.id == report_id)
+    if user_id:
+        query = query.where(Report.user_id == user_id)
+    result = await db.execute(query)
     return result.scalar_one_or_none()

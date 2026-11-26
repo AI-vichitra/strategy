@@ -1,5 +1,7 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { getAgentIcon } from '../../data/agentIcons';
+import FileIcon from '../FileIcon';
 import styles from './AgentTemplateView.module.css';
 import { type CompetitorDetail } from '../CompetitorForm';
 
@@ -8,6 +10,8 @@ export interface TargetAudienceData {
   segments?: string[];
   locations?: string;
   notes?: string;
+  ageDemographics?: string[];
+  incomeTier?: string;
 }
 
 interface QuestionItem {
@@ -69,12 +73,36 @@ const DEFAULT_GOALS = [
   'Competitive Positioning', 'Customer Retention', 'Thought Leadership'
 ];
 
+const DEFAULT_PLATFORMS = [
+  'Instagram', 'LinkedIn', 'X (Twitter)', 'TikTok', 'YouTube', 'Facebook'
+];
+
+const DEFAULT_CONTENT_FORMATS = [
+  'Short-Form Video / Reels', 'Carousels & Slide Decks', 'Thought Leadership & Text', 'Infographics & Visuals', 'Stories & Community Polls'
+];
+
 const DEFAULT_FORMATS = [
   'Executive Summary', 'Detailed Strategic Plan', 'Step-by-Step Playbook', 'Comprehensive Competitive Audit'
 ];
 
 const DEFAULT_TIMELINES = [
   'Immediate (30 Days)', 'Quarterly (90 Days)', '6-Month Implementation', '1-Year Strategic Horizon'
+];
+
+const DEFAULT_INDUSTRIES = [
+  'E-Commerce & D2C', 'SaaS & Enterprise Tech', 'FinTech & Finance', 'Health & Wellness', 'Agency & Services', 'Luxury & Fashion', 'Consumer Goods'
+];
+
+const DEFAULT_BRAND_VOICES = [
+  'Professional & Authoritative', 'Bold & Disruptive', 'Warm & Conversational', 'Luxury & Refined', 'Educational & Analytical'
+];
+
+const DEFAULT_AGE_DEMOGRAPHICS = [
+  'Gen Z (18-24)', 'Young Professionals (25-34)', 'Mid-Career & Execs (35-49)', 'Senior Decision-Makers (50+)'
+];
+
+const DEFAULT_INCOME_TIERS = [
+  'Budget / Value Focused', 'Mass Market', 'Upper-Middle / Affluent', 'High-Net-Worth / Luxury'
 ];
 
 export default function AgentTemplateView({
@@ -102,6 +130,28 @@ export default function AgentTemplateView({
   const [userContextOpen, setUserContextOpen] = useState(false);
   const [brandNameDraft, setBrandNameDraft] = useState(brand?.brand_name || '');
   const [websiteDraft, setWebsiteDraft] = useState(brand?.website_url || '');
+
+  useEffect(() => {
+    setBrandNameDraft(brand?.brand_name || '');
+    setWebsiteDraft(brand?.website_url || '');
+  }, [brand?.id, brand?.brand_name, brand?.website_url]);
+
+  // Dynamic add states for customization
+  const [availableSegments, setAvailableSegments] = useState<string[]>(DEFAULT_SEGMENTS);
+  const [showAddSegment, setShowAddSegment] = useState(false);
+  const [newSegmentName, setNewSegmentName] = useState('');
+
+  const [availableGoals, setAvailableGoals] = useState<string[]>(DEFAULT_GOALS);
+  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [newGoalName, setNewGoalName] = useState('');
+
+  const [availablePlatforms, setAvailablePlatforms] = useState<string[]>(DEFAULT_PLATFORMS);
+  const [showAddPlatform, setShowAddPlatform] = useState(false);
+  const [newPlatformName, setNewPlatformName] = useState('');
+
+  const [availableIndustries, setAvailableIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
+  const [showAddIndustry, setShowAddIndustry] = useState(false);
+  const [newIndustryName, setNewIndustryName] = useState('');
 
   // Inline add competitor state
   const [showAddCompetitor, setShowAddCompetitor] = useState(false);
@@ -135,6 +185,59 @@ export default function AgentTemplateView({
     setNewCompName('');
     setNewCompUrl('');
     setShowAddCompetitor(false);
+  };
+
+  const handleAddCustomSegment = () => {
+    const trimmed = newSegmentName.trim();
+    if (!trimmed) return;
+    if (!availableSegments.includes(trimmed)) {
+      setAvailableSegments(prev => [...prev, trimmed]);
+    }
+    const current = targetAudience.segments || [];
+    if (!current.includes(trimmed)) {
+      onChangeTargetAudience({ ...targetAudience, segments: [...current, trimmed] });
+    }
+    setNewSegmentName('');
+    setShowAddSegment(false);
+  };
+
+  const handleAddCustomGoal = () => {
+    const trimmed = newGoalName.trim();
+    if (!trimmed) return;
+    if (!availableGoals.includes(trimmed)) {
+      setAvailableGoals(prev => [...prev, trimmed]);
+    }
+    handleToggleQuestionOption('Primary Strategic Goal', trimmed, false);
+    setNewGoalName('');
+    setShowAddGoal(false);
+  };
+
+  const handleAddCustomPlatform = () => {
+    const trimmed = newPlatformName.trim();
+    if (!trimmed) return;
+    if (!availablePlatforms.includes(trimmed)) {
+      setAvailablePlatforms(prev => [...prev, trimmed]);
+    }
+    handleToggleQuestionOption('Target Platforms & Channels', trimmed, true);
+    setNewPlatformName('');
+    setShowAddPlatform(false);
+  };
+
+  const handleAddCustomIndustry = () => {
+    const trimmed = newIndustryName.trim();
+    if (!trimmed) return;
+    if (!availableIndustries.includes(trimmed)) {
+      setAvailableIndustries(prev => [...prev, trimmed]);
+    }
+    handleToggleQuestionOption('Brand Industry / Category', trimmed, false);
+    setNewIndustryName('');
+    setShowAddIndustry(false);
+  };
+
+  const handleToggleAgeDemographic = (age: string) => {
+    const current = targetAudience.ageDemographics || [];
+    const next = current.includes(age) ? current.filter(a => a !== age) : [...current, age];
+    onChangeTargetAudience({ ...targetAudience, ageDemographics: next });
   };
 
   // Toggle answer in qaAnswers
@@ -177,9 +280,7 @@ export default function AgentTemplateView({
       {/* ── Agent Header ── */}
       <div className={styles.headerRow}>
         <div className={styles.agentIconWrap}>
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="#7C3AED">
-            <path d="M12 2C6.48 2 2 6.48 2 12v8c0 1.1.9 2 2 2h4v-6h4v6h4v-6h4v6h2c1.1 0 2-.9 2-2v-8c0-5.52-4.48-10-10-10zm-4 10c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm8 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
-          </svg>
+          {getAgentIcon(selectedAgent, '', 28)}
         </div>
         <div>
           <h1 className={styles.agentTitle}>{selectedAgent}</h1>
@@ -286,6 +387,84 @@ export default function AgentTemplateView({
                 </div>
               </div>
             </div>
+
+            <div className={styles.sectionDivider} />
+
+            {/* Brand Category & Industry */}
+            <div className={styles.questionBlock}>
+              <h4 className={styles.questionTitle}>
+                <span>Brand Category / Industry</span>
+              </h4>
+              <div className={styles.optionsPills}>
+                {availableIndustries.map((ind, idx) => {
+                  const selected = isOptionSelected('Brand Industry / Category', ind);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
+                      onClick={() => handleToggleQuestionOption('Brand Industry / Category', ind, false)}
+                    >
+                      {selected && <span className={styles.pillCheck}>✓</span>}
+                      <span>{ind}</span>
+                    </button>
+                  );
+                })}
+
+                {showAddIndustry ? (
+                  <div className={styles.inlineCustomInputWrap}>
+                    <input
+                      type="text"
+                      className={styles.inlineCustomInput}
+                      placeholder="e.g. EdTech"
+                      value={newIndustryName}
+                      onChange={(e) => setNewIndustryName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomIndustry(); }}
+                      autoFocus
+                    />
+                    <button type="button" className={styles.inlineCustomAddBtn} onClick={handleAddCustomIndustry}>
+                      Add
+                    </button>
+                    <button type="button" className={styles.inlineCustomCancelBtn} onClick={() => { setShowAddIndustry(false); setNewIndustryName(''); }}>
+                      &times;
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.addCustomPillBtn}
+                    onClick={() => setShowAddIndustry(true)}
+                  >
+                    + Add Industry
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Brand Voice & Tone */}
+            <div className={styles.questionBlock}>
+              <h4 className={styles.questionTitle}>
+                <span>Brand Voice & Tone</span>
+              </h4>
+              <div className={styles.optionsPills}>
+                {DEFAULT_BRAND_VOICES.map((voice, idx) => {
+                  const selected = isOptionSelected('Brand Voice & Tone', voice);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
+                      onClick={() => handleToggleQuestionOption('Brand Voice & Tone', voice, false)}
+                    >
+                      {selected && <span className={styles.pillCheck}>✓</span>}
+                      <span>{voice}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={styles.sectionDivider} />
 
             {/* About Your Competitors */}
             <div className={styles.competitorsSection}>
@@ -487,7 +666,7 @@ export default function AgentTemplateView({
               <div className={styles.questionBlock}>
                 <h4 className={styles.questionTitle}>Primary Strategic Goal</h4>
                 <div className={styles.optionsPills}>
-                  {DEFAULT_GOALS.map((goal, idx) => {
+                  {availableGoals.map((goal, idx) => {
                     const selected = isOptionSelected('Primary Strategic Goal', goal);
                     return (
                       <button
@@ -498,6 +677,110 @@ export default function AgentTemplateView({
                       >
                         {selected && <span className={styles.pillCheck}>✓</span>}
                         <span>{goal}</span>
+                      </button>
+                    );
+                  })}
+
+                  {showAddGoal ? (
+                    <div className={styles.inlineCustomInputWrap}>
+                      <input
+                        type="text"
+                        className={styles.inlineCustomInput}
+                        placeholder="e.g. Virality & Reach"
+                        value={newGoalName}
+                        onChange={(e) => setNewGoalName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomGoal(); }}
+                        autoFocus
+                      />
+                      <button type="button" className={styles.inlineCustomAddBtn} onClick={handleAddCustomGoal}>
+                        Add
+                      </button>
+                      <button type="button" className={styles.inlineCustomCancelBtn} onClick={() => { setShowAddGoal(false); setNewGoalName(''); }}>
+                        &times;
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.addCustomPillBtn}
+                      onClick={() => setShowAddGoal(true)}
+                    >
+                      + Add Goal
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Target Platforms / Channels */}
+              <div className={styles.questionBlock}>
+                <h4 className={styles.questionTitle}>
+                  <span>Target Platforms & Channels</span>
+                  <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(Select all that apply)</span>
+                </h4>
+                <div className={styles.optionsPills}>
+                  {availablePlatforms.map((platform, idx) => {
+                    const selected = isOptionSelected('Target Platforms & Channels', platform);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
+                        onClick={() => handleToggleQuestionOption('Target Platforms & Channels', platform, true)}
+                      >
+                        {selected && <span className={styles.pillCheck}>✓</span>}
+                        <span>{platform}</span>
+                      </button>
+                    );
+                  })}
+
+                  {showAddPlatform ? (
+                    <div className={styles.inlineCustomInputWrap}>
+                      <input
+                        type="text"
+                        className={styles.inlineCustomInput}
+                        placeholder="e.g. Pinterest"
+                        value={newPlatformName}
+                        onChange={(e) => setNewPlatformName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomPlatform(); }}
+                        autoFocus
+                      />
+                      <button type="button" className={styles.inlineCustomAddBtn} onClick={handleAddCustomPlatform}>
+                        Add
+                      </button>
+                      <button type="button" className={styles.inlineCustomCancelBtn} onClick={() => { setShowAddPlatform(false); setNewPlatformName(''); }}>
+                        &times;
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.addCustomPillBtn}
+                      onClick={() => setShowAddPlatform(true)}
+                    >
+                      + Add Platform
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Content Formats & Pillars Focus */}
+              <div className={styles.questionBlock}>
+                <h4 className={styles.questionTitle}>
+                  <span>Content Format & Pillars Focus</span>
+                  <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(Select all that apply)</span>
+                </h4>
+                <div className={styles.optionsPills}>
+                  {DEFAULT_CONTENT_FORMATS.map((format, idx) => {
+                    const selected = isOptionSelected('Content Format & Pillars Focus', format);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
+                        onClick={() => handleToggleQuestionOption('Content Format & Pillars Focus', format, true)}
+                      >
+                        {selected && <span className={styles.pillCheck}>✓</span>}
+                        <span>{format}</span>
                       </button>
                     );
                   })}
@@ -598,7 +881,7 @@ export default function AgentTemplateView({
               <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(Select all that apply)</span>
             </h4>
             <div className={styles.optionsPills}>
-              {DEFAULT_SEGMENTS.map((seg, idx) => {
+              {availableSegments.map((seg, idx) => {
                 const selected = (targetAudience.segments || []).includes(seg);
                 return (
                   <button
@@ -609,6 +892,81 @@ export default function AgentTemplateView({
                   >
                     {selected && <span className={styles.pillCheck}>✓</span>}
                     <span>{seg}</span>
+                  </button>
+                );
+              })}
+
+              {showAddSegment ? (
+                <div className={styles.inlineCustomInputWrap}>
+                  <input
+                    type="text"
+                    className={styles.inlineCustomInput}
+                    placeholder="e.g. CMOs"
+                    value={newSegmentName}
+                    onChange={(e) => setNewSegmentName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomSegment(); }}
+                    autoFocus
+                  />
+                  <button type="button" className={styles.inlineCustomAddBtn} onClick={handleAddCustomSegment}>
+                    Add
+                  </button>
+                  <button type="button" className={styles.inlineCustomCancelBtn} onClick={() => { setShowAddSegment(false); setNewSegmentName(''); }}>
+                    &times;
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.addCustomPillBtn}
+                  onClick={() => setShowAddSegment(true)}
+                >
+                  + Add Custom Segment
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Age Demographics */}
+          <div className={styles.questionBlock}>
+            <h4 className={styles.questionTitle}>
+              <span>Target Age Demographics</span>
+              <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(Select all that apply)</span>
+            </h4>
+            <div className={styles.optionsPills}>
+              {DEFAULT_AGE_DEMOGRAPHICS.map((age, idx) => {
+                const selected = (targetAudience.ageDemographics || []).includes(age);
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
+                    onClick={() => handleToggleAgeDemographic(age)}
+                  >
+                    {selected && <span className={styles.pillCheck}>✓</span>}
+                    <span>{age}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Purchasing Power / Income Tier */}
+          <div className={styles.questionBlock}>
+            <h4 className={styles.questionTitle}>
+              <span>Target Purchasing Power / Tier</span>
+            </h4>
+            <div className={styles.optionsPills}>
+              {DEFAULT_INCOME_TIERS.map((tier, idx) => {
+                const selected = targetAudience.incomeTier === tier;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
+                    onClick={() => onChangeTargetAudience({ ...targetAudience, incomeTier: tier })}
+                  >
+                    {selected && <span className={styles.pillCheck}>✓</span>}
+                    <span>{tier}</span>
                   </button>
                 );
               })}
@@ -705,7 +1063,7 @@ export default function AgentTemplateView({
                 {attachedFiles.map((file, idx) => (
                   <div key={idx} className={styles.fileItem}>
                     <div className={styles.fileItemLeft}>
-                      <span>📄</span>
+                      <FileIcon filename={file.name} mimeType={file.type} size={16} />
                       <span>{file.name}</span>
                       <span style={{ color: '#9CA3AF', fontSize: '11px' }}>
                         ({(file.size / 1024).toFixed(1)} KB)

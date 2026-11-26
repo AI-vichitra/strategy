@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './ProjectsView.module.css';
+import ConfirmModal from '../ConfirmModal';
+import AlertModal from '../AlertModal';
 
 interface ProjectsViewProps {
   onSelectProject?: (id: string) => void;
@@ -33,6 +35,21 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
   const [renameInput, setRenameInput] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameError, setRenameError] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', confirmLabel: 'Delete', onConfirm: () => {} });
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false, title: '', message: ''
+  });
+
+  const showAlert = (title: string, message: string) =>
+    setAlertModal({ isOpen: true, title, message });
+  const closeAlert = () => setAlertModal(a => ({ ...a, isOpen: false }));
+  const closeConfirm = () => setConfirmModal(c => ({ ...c, isOpen: false }));
 
   const handleCreateNewProject = () => {
     // Navigate to brand-setup with the new project flag
@@ -177,9 +194,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     }
   };
 
-  const handleDeleteBrand = async (brandId: string, brandName: string) => {
-    if (!confirm(`Delete brand "${brandName}"? This cannot be undone.`)) return;
-
+  const doDeleteBrand = async (brandId: string) => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
@@ -196,7 +211,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
         fetchProjects();
       } else {
         const err = await res.json().catch(() => null);
-        alert(err?.detail ?? 'Could not delete this brand. Please try again.');
+        showAlert('Error', err?.detail ?? 'Could not delete this brand. Please try again.');
       }
     } catch (e) {
       console.error("Failed to delete brand", e);
@@ -205,9 +220,17 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     }
   };
 
-  const handleDeleteProject = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this project and its research entirely?")) return;
+  const handleDeleteBrand = (brandId: string, brandName: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Brand',
+      message: `Delete brand "${brandName}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      onConfirm: () => { closeConfirm(); doDeleteBrand(brandId); },
+    });
+  };
 
+  const doDeleteProject = async (id: string) => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = localStorage.getItem('access_token');
@@ -229,7 +252,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
         }
       } else {
         const err = await res.json().catch(() => null);
-        alert(err?.detail ?? 'Could not delete this project. Please try again.');
+        showAlert('Error', err?.detail ?? 'Could not delete this project. Please try again.');
       }
     } catch (e) {
       console.error("Failed to delete project", e);
@@ -238,9 +261,34 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     }
   };
 
+  const handleDeleteProject = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Project',
+      message: 'Are you sure you want to delete this project and its research entirely?',
+      confirmLabel: 'Delete',
+      onConfirm: () => { closeConfirm(); doDeleteProject(id); },
+    });
+  };
+
   // Build unique brand cards so every onboarded brand gets 1 dedicated card
-  const brandCards: any[] = brands.map((b: any) => {
-    const latestProj = projects.find((p: any) => p.brand_config_id === b.id);
+  const seenBrandKeys = new Set<string>();
+  const brandCards: any[] = [];
+
+  brands.forEach((b: any) => {
+    const norm = (b.brand_name || '').trim().toLowerCase();
+    if (seenBrandKeys.has(norm)) return;
+    seenBrandKeys.add(norm);
+
+    const brandProjects = projects.filter((p: any) => 
+      p.brand_config_id === b.id || 
+      (p.title && p.title.trim().toLowerCase() === norm) ||
+      (brandsMap[p.brand_config_id] && brandsMap[p.brand_config_id].trim().toLowerCase() === norm)
+    );
+    const latestProj = brandProjects.sort((p1: any, p2: any) => 
+      new Date(p2.created_at || 0).getTime() - new Date(p1.created_at || 0).getTime()
+    )[0];
+
     let cardLogo = b.logo_url || null;
     if (!cardLogo && latestProj?.brand_kit) {
       try {
@@ -251,7 +299,7 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
     if (!cardLogo && latestProj?.logo_data) {
       cardLogo = `/api/projects/${latestProj.id}/logo`;
     }
-    return {
+    brandCards.push({
       id: latestProj ? latestProj.id : b.id,
       _hasProject: !!latestProj,
       brand_config_id: b.id,
@@ -260,11 +308,13 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
       created_at: b.created_at || (latestProj ? latestProj.created_at : new Date().toISOString()),
       agent_type: latestProj ? latestProj.agent_type : 'StratAI',
       logo_url: cardLogo
-    };
+    });
   });
 
   projects.forEach((proj: any) => {
-    if (proj.brand_config_id && !brandCards.some(c => c.brand_config_id === proj.brand_config_id)) {
+    const bName = (brandsMap[proj.brand_config_id] || proj.title || '').trim().toLowerCase();
+    if (bName && !seenBrandKeys.has(bName) && !brandCards.some(c => c.id === proj.id)) {
+      seenBrandKeys.add(bName);
       let projLogo = null;
       if (proj.brand_kit) {
         try {
@@ -390,10 +440,30 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
 
                 <div className={styles.cardBottom}>
                   <div className={styles.connectorsRow}>
+                    {/* Shared member avatars — only shown when project has team members */}
+                    {Array.isArray(proj.shared_with) && proj.shared_with.length > 0 && (
+                      <div className={styles.memberAvatars}>
+                        {proj.shared_with.slice(0, 4).map((member: any, mi: number) => {
+                          const initials = (member.name || member.email || '?')
+                            .split(/[\s@]+/)
+                            .slice(0, 2)
+                            .map((p: string) => p[0]?.toUpperCase() || '')
+                            .join('');
+                          return member.avatar_url ? (
+                            <img key={mi} src={member.avatar_url} alt={member.name || member.email} className={styles.memberAvatar} title={member.name || member.email} />
+                          ) : (
+                            <div key={mi} className={styles.memberAvatarInitials} title={member.name || member.email}>{initials}</div>
+                          );
+                        })}
+                        {proj.shared_with.length > 4 && (
+                          <div className={styles.memberAvatarMore}>+{proj.shared_with.length - 4}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className={styles.metaInfo}>
                     <span className={styles.metaDate}>
-                      {formatShortDate(proj.created_at)}
+                      Created on {formatShortDate(proj.created_at)}
                     </span>
                   </div>
                 </div>
@@ -480,6 +550,22 @@ export default function ProjectsView({ onSelectProject, onCreateProject }: Proje
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmDanger
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirm}
+      />
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant="error"
+        onClose={closeAlert}
+      />
     </div>
   );
 }

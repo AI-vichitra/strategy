@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import ReportRenderer from './ReportRenderer';
 import { useSections, type ReportSection } from '../hooks/useSections';
 import styles from './SectionEditor.module.css';
+import ConfirmModal from './ConfirmModal';
+import AlertModal from './AlertModal';
 
 interface ReportMeta {
   title: string;
@@ -131,6 +133,8 @@ export default function SectionEditor({ reportId, onClose }: { reportId: string;
   const [newContent, setNewContent] = useState('');
   const [exportingDocx, setExportingDocx] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deleteSectionConfirm, setDeleteSectionConfirm] = useState<{ isOpen: boolean; section: ReportSection | null }>({ isOpen: false, section: null });
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: '', message: '' });
 
   const load = async () => {
     setLoading(true);
@@ -214,8 +218,12 @@ export default function SectionEditor({ reportId, onClose }: { reportId: string;
     }
   };
 
-  const handleDelete = async (section: ReportSection) => {
-    if (!confirm('Delete this section?')) return;
+  const handleDelete = (section: ReportSection) => {
+    setDeleteSectionConfirm({ isOpen: true, section });
+  };
+
+  const doDeleteSection = async (section: ReportSection) => {
+    setDeleteSectionConfirm({ isOpen: false, section: null });
     setBusy(true);
     try {
       await deleteSection(reportId, section.id);
@@ -323,7 +331,7 @@ export default function SectionEditor({ reportId, onClose }: { reportId: string;
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to export DOCX:', err);
-      alert('Failed to export DOCX. Please try again.');
+      setAlertModal({ isOpen: true, title: 'Export Failed', message: 'Failed to export DOCX. Please try again.' });
     } finally {
       setExportingDocx(false);
     }
@@ -521,6 +529,22 @@ export default function SectionEditor({ reportId, onClose }: { reportId: string;
           )}
         </div>
       )}
+      <ConfirmModal
+        isOpen={deleteSectionConfirm.isOpen}
+        title="Delete Section"
+        message="Delete this section? This cannot be undone."
+        confirmLabel="Delete"
+        confirmDanger
+        onConfirm={() => deleteSectionConfirm.section && doDeleteSection(deleteSectionConfirm.section)}
+        onCancel={() => setDeleteSectionConfirm({ isOpen: false, section: null })}
+      />
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant="error"
+        onClose={() => setAlertModal(a => ({ ...a, isOpen: false }))}
+      />
     </div>
   );
 }

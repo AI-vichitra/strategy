@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import styles from './Sidebar.module.css';
+import ConfirmModal from '../ConfirmModal';
 
 interface Project {
   id: string;
@@ -53,6 +55,8 @@ function getInitials(name?: string | null, email?: string): string {
 }
 
 export default function Sidebar() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [brands, setBrands] = useState<Record<string, string>>({});
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
@@ -64,6 +68,7 @@ export default function Sidebar() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [deleteChatConfirm, setDeleteChatConfirm] = useState<{ isOpen: boolean; projectId: string; e: React.MouseEvent | null }>({ isOpen: false, projectId: '', e: null });
   const profileRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
@@ -146,10 +151,6 @@ export default function Sidebar() {
         setBrands(brandsMap);
 
         setProjects(data || []);
-        if (!data || data.length === 0) {
-          window.location.href = '/brand-setup?new=true';
-          return;
-        }
 
         // Only projects with actual chat messages count as chats done
         const chatProjects = (data || []).filter(
@@ -218,6 +219,9 @@ export default function Sidebar() {
       } else if (v === 'settings') {
         setActiveNavTab('settings');
         setActiveProjectId(null);
+      } else if (v === 'teams') {
+        setActiveNavTab('teams');
+        setActiveProjectId(null);
       } else if (v === 'builder') {
         setActiveProjectId((curr) => {
           if (!curr) {
@@ -230,32 +234,60 @@ export default function Sidebar() {
       }
     };
 
+    const handleProjectDeleted = () => {
+      fetchProjects();
+    };
+
+    const handleProjectRenamed = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { projectId, title, brand_config_id } = customEvent.detail || {};
+      if (!projectId || !title) return;
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, title } : p));
+      if (brand_config_id) setBrands(prev => ({ ...prev, [brand_config_id]: title }));
+    };
+
     window.addEventListener('projectChanged', handleProjectChange);
     window.addEventListener('newChat', handleNewChat);
     window.addEventListener('viewChanged', handleViewChanged);
+    window.addEventListener('projectDeleted', handleProjectDeleted);
+    window.addEventListener('projectRenamed', handleProjectRenamed);
     return () => {
       window.removeEventListener('projectChanged', handleProjectChange);
       window.removeEventListener('newChat', handleNewChat);
       window.removeEventListener('viewChanged', handleViewChanged);
+      window.removeEventListener('projectDeleted', handleProjectDeleted);
+      window.removeEventListener('projectRenamed', handleProjectRenamed);
     };
   }, []);
 
   const handleOpenProject = (projectId: string) => {
     setActiveProjectId(projectId);
     setActiveNavTab('chat');
+    if (pathname?.startsWith('/projects/')) {
+      router.push(`/build?project=${encodeURIComponent(projectId)}`);
+      return;
+    }
     window.dispatchEvent(new CustomEvent('openProject', { detail: { projectId } }));
   };
 
   const handleNavClick = (tabKey: string, eventName: string) => {
     setActiveNavTab(tabKey);
     setActiveProjectId(null);
+    if (pathname?.startsWith('/projects/')) {
+      const targetView = tabKey === 'newChat' ? 'builder' : tabKey;
+      router.push(targetView === 'builder' ? '/build' : `/build?view=${encodeURIComponent(targetView)}`);
+      return;
+    }
     window.dispatchEvent(new CustomEvent(eventName));
   };
 
-  const handleDeleteProject = async (projectIdToDelete: string, e: React.MouseEvent) => {
+  const handleDeleteProject = (projectIdToDelete: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this chat?')) return;
+    setDeleteChatConfirm({ isOpen: true, projectId: projectIdToDelete, e });
+  };
 
+  const doDeleteProject = async (projectIdToDelete: string) => {
+    setDeleteChatConfirm({ isOpen: false, projectId: '', e: null });
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -334,12 +366,22 @@ export default function Sidebar() {
     (p) => Array.isArray(p.messages) && p.messages.length > 0
   );
 
-  // Sort active chat projects so the latest is always on top
-  const sortedProjects = [...chatHistoryProjects].sort((a, b) => {
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return timeB - timeA;
-  });
+  // Sort active chat projects so the latest is always on top, and deduplicate identical cards
+  const seenHistory = new Set<string>();
+  const sortedProjects: Project[] = [];
+  [...chatHistoryProjects]
+    .sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
+    })
+    .forEach((p) => {
+      const key = `${p.brand_config_id || ''}-${(p.agent_type || p.title || '').trim().toLowerCase()}`;
+      if (!seenHistory.has(key)) {
+        seenHistory.add(key);
+        sortedProjects.push(p);
+      }
+    });
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -373,27 +415,21 @@ export default function Sidebar() {
       <div className={styles.scrollArea}>
         {/* Nav Group */}
         <nav className={styles.navGroup}>
-          <a
-            href="#"
+          <button
+            type="button"
             className={`${styles.navItem} ${activeNavTab === 'newChat' && !activeProjectId ? styles.navItemActive : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick('newChat', 'newChat');
-            }}
+            onClick={() => handleNavClick('newChat', 'newChat')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
             New Chat
-          </a>
-          <a
-            href="#"
+          </button>
+          <button
+            type="button"
             className={`${styles.navItem} ${activeNavTab === 'files' ? styles.navItemActive : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick('files', 'openFiles');
-            }}
+            onClick={() => handleNavClick('files', 'openFiles')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 10V7l-5-5H6c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7"/>
@@ -401,28 +437,22 @@ export default function Sidebar() {
               <path d="M16 22h6"/><path d="M19 19v6"/>
             </svg>
             Files Generated
-          </a>
-          <a
-            href="#"
+          </button>
+          <button
+            type="button"
             className={`${styles.navItem} ${activeNavTab === 'connectors' ? styles.navItemActive : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick('connectors', 'openConnectorsView');
-            }}
+            onClick={() => handleNavClick('connectors', 'openConnectorsView')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
             Connector
-          </a>
-          <a
-            href="#"
+          </button>
+          <button
+            type="button"
             className={`${styles.navItem} ${activeNavTab === 'agents' ? styles.navItemActive : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick('agents', 'openAgents');
-            }}
+            onClick={() => handleNavClick('agents', 'openAgents')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7"/>
@@ -431,27 +461,24 @@ export default function Sidebar() {
               <rect x="3" y="14" width="7" height="7"/>
             </svg>
             Agents
-          </a>
-          <a
-            href="#"
+          </button>
+          <button
+            type="button"
             className={`${styles.navItem} ${activeNavTab === 'projects' ? styles.navItemActive : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavClick('projects', 'openProjects');
-            }}
+            onClick={() => handleNavClick('projects', 'openProjects')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
             Projects
-          </a>
+          </button>
           {/* Workflows tab - commented out for now, to be worked on later
-          <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openWorkflow')); }}>
+          <button type="button" className={styles.navItem} onClick={() => window.dispatchEvent(new CustomEvent('openWorkflow'))}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
             Workflow
-          </a>
+          </button>
           */}
         </nav>
 
@@ -613,6 +640,22 @@ export default function Sidebar() {
             <button
               type="button"
               className={styles.popoverItem}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                handleNavClick('teams', 'openTeams');
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Team Workspace
+            </button>
+            <button
+              type="button"
+              className={styles.popoverItem}
               onClick={handleOpenSettings}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -676,6 +719,16 @@ export default function Sidebar() {
           </svg>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={deleteChatConfirm.isOpen}
+        title="Delete Chat"
+        message="Are you sure you want to delete this chat?"
+        confirmLabel="Delete"
+        confirmDanger
+        onConfirm={() => doDeleteProject(deleteChatConfirm.projectId)}
+        onCancel={() => setDeleteChatConfirm({ isOpen: false, projectId: '', e: null })}
+      />
     </aside>
   );
 }

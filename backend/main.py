@@ -51,7 +51,7 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
-from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates
+from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates, chat_share, teams
 from backend.database import engine, Base
 
 # Import every model so Base.metadata is fully populated before create_all runs.
@@ -125,7 +125,16 @@ _NEW_COLUMNS = [
     ("brand_configs", "brand_brief", "TEXT", "TEXT"),
     ("brand_configs", "logo_url", "TEXT", "TEXT"),
     ("users", "avatar_url", "TEXT", "TEXT"),
+    ("users", "reset_token", "VARCHAR(255)", "TEXT"),
+    ("users", "reset_token_created_at", "TIMESTAMP", "TIMESTAMP"),
     ("reports", "truncation_info", "TEXT", "TEXT"),
+    ("users", "role", "VARCHAR(20) DEFAULT 'admin'", "TEXT DEFAULT 'admin'"),
+    ("users", "parent_user_id", "VARCHAR(36)", "TEXT"),
+    ("users", "team_name", "VARCHAR(255)", "TEXT"),
+    ("projects", "team_id", "VARCHAR(36)", "TEXT"),
+    ("brand_configs", "team_id", "VARCHAR(36)", "TEXT"),
+    ("team_members", "allowed_projects", "JSON", "TEXT"),
+    ("teams", "avatar_url", "TEXT", "TEXT"),
 ]
 
 
@@ -170,9 +179,11 @@ app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(report_sections.router, prefix="/api/reports", tags=["Report Sections"])
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+app.include_router(chat_share.router)
 app.include_router(agents.router)
 app.include_router(pptx_templates.router)
 app.include_router(connectors.router)
+app.include_router(teams.router)
 
 @app.get("/")
 async def root():

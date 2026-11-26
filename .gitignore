@@ -14,3 +14,9 @@ backend/.env
 # Runtime database
 stratai.db
 *.db
+
+venv/
+.env
+*.bak*
+backend/stratai.db.bak*
+

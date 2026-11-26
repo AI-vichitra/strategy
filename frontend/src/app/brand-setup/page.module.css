@@ -1,5 +1,9 @@
 .container {
-  min-height: calc(100vh / 0.9);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  min-height: 100vh;
   min-height: 100%;
   background-color: #FAF8F5;
   background-image: radial-gradient(ellipse at 50% 0%, rgba(212, 168, 67, 0.08) 0%, transparent 60%);
@@ -114,6 +118,8 @@
 .card {
   width: 100%;
   max-width: 800px;
+  box-sizing: border-box;
+  overflow-x: hidden;
   background: white;
   border-radius: 20px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.05);
@@ -237,6 +243,7 @@
 }
 .competitorRow .input {
   flex: 1;
+  min-width: 0;
 }
 
 .addBtn {
@@ -1041,14 +1048,15 @@
 }
 
 .candidateLogoImg {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   object-fit: contain;
   background: #ffffff;
   border: 1px solid #E8E4DC;
   margin-right: 8px;
   flex-shrink: 0;
+  padding: 2px;
 }
 
 

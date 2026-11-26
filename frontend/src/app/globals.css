@@ -83,7 +83,9 @@
 html {
   scroll-behavior: smooth;
   zoom: 0.9;
-  width: calc(100vw / 0.9);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   min-height: calc(100vh / 0.9);
   background-color: var(--bg-primary);
 }
@@ -273,4 +275,9 @@ body {
 @media (max-width: 768px) {
   .container { padding: 0 16px; }
   .hide-mobile { display: none !important; }
+}
+
+/* Hide Next.js route announcer to prevent bottom empty gap */
+next-route-announcer {
+  display: none !important;
 }
