@@ -23,6 +23,9 @@ interface ChatInputProps {
   providers?: { id: string; display_name: string; configured: boolean; model: string }[];
   advancedPin?: string | null;
   providerNote?: string;
+  hideUserContext?: boolean;
+  userContext?: string;
+  onChangeUserContext?: (val: string) => void;
 }
 
 const OpenAILogo = ({ size = 16 }: { size?: number }) => (
@@ -87,6 +90,9 @@ export default function ChatInput({
   providers,
   advancedPin,
   providerNote,
+  hideUserContext = false,
+  userContext,
+  onChangeUserContext,
 }: ChatInputProps) {
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -211,6 +217,22 @@ export default function ChatInput({
 
   return (
     <div className={styles.wrapper}>
+
+      {/* User Context Text Area (when provided and not hidden) */}
+      {!hideUserContext && userContext !== undefined && onChangeUserContext && (
+        <div className={styles.contextBox}>
+          <div className={styles.contextBoxHeader}>
+            <span className={styles.contextBoxTitle}>USER CONTEXT</span>
+          </div>
+          <textarea
+            className={styles.contextInput}
+            placeholder="Give additional context to enhance the prompt..."
+            value={userContext}
+            onChange={(e) => onChangeUserContext(e.target.value)}
+            rows={1}
+          />
+        </div>
+      )}
 
       {/* File chips row */}
       {attachedFiles.length > 0 && (

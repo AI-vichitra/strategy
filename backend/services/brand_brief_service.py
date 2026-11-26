@@ -265,7 +265,10 @@ def _brief_llm_completion(system_prompt: str, user_prompt: str) -> str:
     OpenAI-compatible branches, same unexpected-kwarg retry), but driven by
     _resolve_brief_provider_and_model's own env pair instead."""
     from backend.services.ai_service import _get_llm_provider
-    from backend.services.slide_planner import _PROVIDER_BASE_URLS, _UNEXPECTED_KWARG_RE
+    from backend.services.slide_planner import (
+        _PROVIDER_BASE_URLS, _UNEXPECTED_KWARG_RE,
+        llm_fallback_available, llm_fallback_completion,
+    )
 
     forced_provider, forced_model = _resolve_brief_provider_and_model()
     if forced_provider:
@@ -278,63 +281,74 @@ def _brief_llm_completion(system_prompt: str, user_prompt: str) -> str:
         model = os.environ.get(model_env, default_model) if model_env else default_model
     logger.info(f"[BrandBrief] resolved provider={provider} model={model}")
 
-    if provider == "anthropic":
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        kwargs = {
-            "model": model,
-            "max_tokens": _MAX_TOKENS,
-            "system": system_prompt,
-            "messages": [{"role": "user", "content": user_prompt}],
-            # temperature is gone from this API (rejected even via
-            # extra_body with a 400); output_config.effort is the
-            # replacement knob. effort="xhigh" chosen on OUTPUT QUALITY,
-            # not variance: tested live at all five accepted values
-            # (low|medium|high|xhigh|max) against the Emaar India brief.
-            # low/medium/high filled 4/6 fields; "xhigh" uniquely and
-            # reproducibly recovered a grounded `positioning` (the
-            # inference-dependent field that is this brief's known
-            # failure mode) for 5/6, with no fabrication. "max" is
-            # unusable here: it spends the whole max_tokens budget on
-            # internal reasoning and returns EMPTY content
-            # (stop_reason=max_tokens), degrading every brief to
-            # all-"Not available". tone_of_voice stays "Not available"
-            # at every level — correct, as third-party research text
-            # carries no brand copy to infer voice from.
-            "output_config": {"effort": "xhigh"},
-        }
-        stripped: List[str] = []
-        while True:
-            try:
-                resp = client.messages.create(**kwargs)
-                break
-            except TypeError as exc:
-                m = _UNEXPECTED_KWARG_RE.search(str(exc))
-                if not m or m.group(1) not in kwargs:
-                    raise
-                del kwargs[m.group(1)]
-                stripped.append(m.group(1))
-        if stripped:
-            logger.warning(f"[BrandBrief] retried anthropic call without unsupported kwarg(s): {', '.join(stripped)}")
-        text = "".join(getattr(b, "text", "") for b in resp.content)
+    try:
+        if provider == "anthropic":
+            import anthropic
+            client = anthropic.Anthropic(api_key=api_key)
+            kwargs = {
+                "model": model,
+                "max_tokens": _MAX_TOKENS,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": user_prompt}],
+                # temperature is gone from this API (rejected even via
+                # extra_body with a 400); output_config.effort is the
+                # replacement knob. effort="xhigh" chosen on OUTPUT QUALITY,
+                # not variance: tested live at all five accepted values
+                # (low|medium|high|xhigh|max) against the Emaar India brief.
+                # low/medium/high filled 4/6 fields; "xhigh" uniquely and
+                # reproducibly recovered a grounded `positioning` (the
+                # inference-dependent field that is this brief's known
+                # failure mode) for 5/6, with no fabrication. "max" is
+                # unusable here: it spends the whole max_tokens budget on
+                # internal reasoning and returns EMPTY content
+                # (stop_reason=max_tokens), degrading every brief to
+                # all-"Not available". tone_of_voice stays "Not available"
+                # at every level — correct, as third-party research text
+                # carries no brand copy to infer voice from.
+                "output_config": {"effort": "xhigh"},
+            }
+            stripped: List[str] = []
+            while True:
+                try:
+                    resp = client.messages.create(**kwargs)
+                    break
+                except TypeError as exc:
+                    m = _UNEXPECTED_KWARG_RE.search(str(exc))
+                    if not m or m.group(1) not in kwargs:
+                        raise
+                    del kwargs[m.group(1)]
+                    stripped.append(m.group(1))
+            if stripped:
+                logger.warning(f"[BrandBrief] retried anthropic call without unsupported kwarg(s): {', '.join(stripped)}")
+            text = "".join(getattr(b, "text", "") for b in resp.content)
+            logger.info(f"[BrandBrief] provider={provider} completion received, length={len(text)} chars")
+            return text
+
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key, base_url=_PROVIDER_BASE_URLS.get(provider))
+        resp = client.chat.completions.create(
+            model=model,
+            temperature=_TEMPERATURE,
+            stream=False,
+            max_tokens=_MAX_TOKENS,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        text = resp.choices[0].message.content or ""
         logger.info(f"[BrandBrief] provider={provider} completion received, length={len(text)} chars")
         return text
-
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key, base_url=_PROVIDER_BASE_URLS.get(provider))
-    resp = client.chat.completions.create(
-        model=model,
-        temperature=_TEMPERATURE,
-        stream=False,
-        max_tokens=_MAX_TOKENS,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    )
-    text = resp.choices[0].message.content or ""
-    logger.info(f"[BrandBrief] provider={provider} completion received, length={len(text)} chars")
-    return text
+    except Exception as primary_exc:
+        if not llm_fallback_available(provider):
+            raise
+        try:
+            text, fb_provider, fb_model = llm_fallback_completion(system_prompt, user_prompt, _MAX_TOKENS, _TEMPERATURE)
+        except Exception as fallback_exc:
+            logger.warning(f"[BrandBrief] primary provider={provider} failed ({primary_exc}); fallback also failed: {fallback_exc}")
+            raise primary_exc
+        logger.warning(f"[BrandBrief] primary provider={provider} failed ({primary_exc}); fell back to provider={fb_provider} model={fb_model}")
+        return text
 
 
 def generate_brand_brief(

@@ -274,8 +274,11 @@ export default function Sidebar() {
     setActiveNavTab(tabKey);
     setActiveProjectId(null);
     if (pathname?.startsWith('/projects/')) {
-      const targetView = tabKey === 'newChat' ? 'builder' : tabKey;
-      router.push(targetView === 'builder' ? '/build' : `/build?view=${encodeURIComponent(targetView)}`);
+      if (tabKey === 'newChat') {
+        router.push('/build?new=1');
+        return;
+      }
+      router.push(`/build?view=${encodeURIComponent(tabKey)}`);
       return;
     }
     window.dispatchEvent(new CustomEvent(eventName));

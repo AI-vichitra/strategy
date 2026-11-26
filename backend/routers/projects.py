@@ -881,5 +881,3 @@ async def delete_project(project_id: str, db: AsyncSession = Depends(get_db), cu
     await db.commit()
 
     return {"detail": "Chat project and messages deleted from database"}
-
-    return {"detail": "Chat project and messages deleted from database"}

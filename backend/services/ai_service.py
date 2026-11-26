@@ -1799,6 +1799,7 @@ def build_system_prompt(
     competitor_details: Optional[str] = None,
     additional_notes: Optional[str] = None,
     brand_brief: Optional[dict] = None,
+    task_brief: Optional[str] = None,
 ) -> str:
     if agent_type == "Competition Analysis":
         base = """You are a Senior Competitive Intelligence Strategist operating inside an automated strategy tool. You convert raw website and Instagram scrape data into a concise, professional, board-ready competitive analysis document. 
@@ -3645,6 +3646,39 @@ Role/Mode: **{agent_type}**
     elif brand_context:
         base += f"\nBrand Context: {brand_context}\n"
 
+    # Task Brief: the confirmed, per-task intake (classify -> checkpoints ->
+    # user confirmation; see Project.questionnaire_answers) — additive to
+    # BRAND BRIEF above, never a replacement for it. Same authoritative,
+    # no-citation framing, scoped to THIS task rather than the whole brand.
+    if task_brief and task_brief.strip():
+        try:
+            parsed_task_brief = json.loads(task_brief)
+        except Exception:
+            parsed_task_brief = None
+
+        if isinstance(parsed_task_brief, dict):
+            task_brief_lines = ["This task:"]
+            for item in parsed_task_brief.get("items") or []:
+                name = item.get("name", "")
+                value = item.get("value", "")
+                task_brief_lines.append(f"{name}: {value}")
+            assumptions = parsed_task_brief.get("assumptions") or []
+            task_brief_lines.append(f"Assumptions: {', '.join(assumptions) if assumptions else 'none'}")
+            task_brief_body = "\n".join(task_brief_lines)
+        else:
+            # Unparseable/legacy shape — never block generation over this;
+            # emit the raw text under the same header instead.
+            task_brief_body = task_brief.strip()
+
+        base += (
+            "\n### TASK BRIEF (confirmed by the user for THIS task, this session) ###\n"
+            "This is AUTHORITATIVE for what THIS specific task should cover — treat every line below "
+            "as established fact, not a claim to verify. It is NOT a research source: do NOT attach a "
+            "citation, URL, or source label to anything stated here. The source-citation rules elsewhere "
+            "in this prompt apply only to claims drawn from the retrieved research context below.\n"
+            + task_brief_body + "\n"
+        )
+
     if additional_notes and additional_notes.strip():
         base += f"\nUser-Provided Constraints / Guardrails: {additional_notes.strip()}\nYou MUST respect these constraints in all analysis and recommendations. Do not contradict or ignore them.\n"
 
@@ -3781,6 +3815,7 @@ async def stream_chat(
     brand_additional_notes = None
     brand_brief = None
     brand_slug = None
+    task_brief = None
     project = None
 
     try:
@@ -3799,6 +3834,7 @@ async def stream_chat(
                 from backend.schemas.brand import normalize_brand_brief
                 brand_brief = normalize_brand_brief(brand.brand_brief)
                 brand_slug = brand.brand_slug
+            task_brief = project.questionnaire_answers
     except Exception as e:
         logger.warning(f"[RAG] Could not load project/brand: {e}")
 
@@ -3908,6 +3944,7 @@ async def stream_chat(
         if brand and brand.target_market:
             from backend.schemas.brand import normalize_target_market
             brand_target_market = normalize_target_market(brand.target_market)
+        yield f"data: {json.dumps({'type': 'stage', 'stage': 'retrieving'})}\n\n"
         index = await asyncio.to_thread(
             _get_or_build_index, brand_slug, brand_kb_json, brand_category, effective_max_chars_per_source, brand_target_market
         )
@@ -4007,7 +4044,8 @@ async def stream_chat(
             pass
     _n_comps = len(json.loads(competitor_details)) if competitor_details else 0
     print(f"[REPORT] competitors from {_comp_source}: {_n_comps} items")
-    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details, additional_notes=brand_additional_notes, brand_brief=brand_brief)
+    yield f"data: {json.dumps({'type': 'stage', 'stage': 'composing'})}\n\n"
+    system_prompt = build_system_prompt(brand_name, agent_type, brand_context, formatted_context, competitor_details, additional_notes=brand_additional_notes, brand_brief=brand_brief, task_brief=task_brief)
 
     # ── Prepare messages ──────────────────────────────────────────────────────
     chat_history = []
@@ -4254,6 +4292,7 @@ async def stream_chat(
 
         # Try initial provider, fallback to the next available provider (by
         # priority order) if it fails
+        yield f"data: {json.dumps({'type': 'stage', 'stage': 'generating'})}\n\n"
         try:
             async for token in _run_stream(resolved_provider, api_key):
                 yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"

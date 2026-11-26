@@ -327,6 +327,22 @@ export default function ProjectDetailsPage() {
     router.push(`/build?project=${chatId}`);
   };
 
+  // Starts a brand-new task (new Project) instead of reopening this page's
+  // own workspace project — unlike handleOpenChat, which Recents rows use to
+  // reopen their own existing task.
+  const handleStartFreshTask = (brandConfigId: string, draftMessage?: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('brand_config_id', brandConfigId);
+      const trimmed = draftMessage?.trim();
+      if (trimmed) {
+        sessionStorage.setItem('pending_chat_message', trimmed);
+      } else {
+        sessionStorage.removeItem('pending_chat_message');
+      }
+    }
+    router.push(`/build?brand=${brandConfigId}&new=1`);
+  };
+
   const handleChatDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setChatDraft(e.target.value);
     const el = e.target;
@@ -752,7 +768,7 @@ export default function ProjectDetailsPage() {
                   onKeyDown={e => {
                     if (e.key === 'Enter' && !e.shiftKey && !isVoiceRecording) {
                       e.preventDefault();
-                      handleOpenChat(projectId, brand_config_id, chatDraft);
+                      handleStartFreshTask(brand_config_id, chatDraft);
                     }
                   }}
                   rows={1}
@@ -783,7 +799,7 @@ export default function ProjectDetailsPage() {
                   <button
                     type="button"
                     className={styles.newChatSubmitBtn}
-                    onClick={() => handleOpenChat(projectId, brand_config_id, chatDraft)}
+                    onClick={() => handleStartFreshTask(brand_config_id, chatDraft)}
                     aria-label="Start new chat"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

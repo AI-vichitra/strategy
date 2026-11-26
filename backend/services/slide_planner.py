@@ -749,6 +749,57 @@ def _provider_key_present(provider: str) -> bool:
 _UNEXPECTED_KWARG_RE = re.compile(r"unexpected keyword argument '([^']+)'")
 
 
+# ── Shared automatic fallback for non-streaming JSON-completion call sites ──
+# Used by task_classifier_service/checkpoint_service/brand_brief_service's
+# own completion functions when their primary provider call raises (e.g. the
+# Anthropic 400 "credit balance too low" error) — a single retry against a
+# second provider instead of degrading straight to each service's empty/
+# Other fail-safe. Configurable via LLM_FALLBACK_PROVIDER/LLM_FALLBACK_MODEL;
+# defaults (openai/gpt-4o-mini) mean no .env change is required.
+_DEFAULT_FALLBACK_PROVIDER = "openai"
+_DEFAULT_FALLBACK_MODEL = "gpt-4o-mini"
+
+
+def resolve_llm_fallback() -> Tuple[str, str]:
+    provider = os.environ.get("LLM_FALLBACK_PROVIDER", _DEFAULT_FALLBACK_PROVIDER).strip().lower()
+    model = os.environ.get("LLM_FALLBACK_MODEL", _DEFAULT_FALLBACK_MODEL).strip()
+    return provider, model
+
+
+def llm_fallback_available(primary_provider: str) -> bool:
+    """Whether the automatic fallback can run for this primary failure: the
+    fallback provider differs from the one that just failed, and its API key
+    is present. With the defaults, this is exactly OPENAI_API_KEY present
+    and primary_provider != "openai"."""
+    fallback_provider, _ = resolve_llm_fallback()
+    return primary_provider != fallback_provider and _provider_key_present(fallback_provider)
+
+
+def llm_fallback_completion(system_prompt: str, user_prompt: str, max_tokens: int, temperature: float = 0.2) -> Tuple[str, str, str]:
+    """Runs ONE fallback completion via the OpenAI-compatible dispatch path
+    (same shape as every service's own non-Anthropic branch). Returns
+    (text, fallback_provider, fallback_model). Raises on failure — callers
+    fall through to their existing fail-safe."""
+    from backend.services.ai_service import _get_llm_provider
+    from openai import OpenAI
+
+    provider, model = resolve_llm_fallback()
+    _, api_key = _get_llm_provider(provider)
+    client = OpenAI(api_key=api_key, base_url=_PROVIDER_BASE_URLS.get(provider))
+    resp = client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        stream=False,
+        max_tokens=max_tokens,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    )
+    text = resp.choices[0].message.content or ""
+    return text, provider, model
+
+
 def _resolve_planner_provider_and_model() -> Tuple[Optional[str], Optional[str]]:
     """Dedicated-model resolution for the slide planner, independent of the
     global generation resolver's priority order:
