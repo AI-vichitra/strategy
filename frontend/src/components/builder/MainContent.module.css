@@ -1917,6 +1917,39 @@
   transition: color 0.2s ease, opacity 0.2s ease;
 }
 
+/* Collapse/expand toggle row (GenerationProgress) — a plain button reset to
+   the same visual row as .genProgressRow, with the icon+label grouped on the
+   left (.genProgressRowMain) and the chevron pushed to the far right. */
+.genProgressRowToggle {
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.genProgressRowMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.genProgressChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.genProgressChevronOpen {
+  transform: rotate(180deg);
+}
+
 .genProgressIcon {
   flex-shrink: 0;
   width: 16px;

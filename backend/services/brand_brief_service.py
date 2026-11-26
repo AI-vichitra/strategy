@@ -243,10 +243,8 @@ def _research_market_context_evidence(category: str, target_market: Optional[dic
 # with no override, this always falls through to whatever the app-wide
 # resolver picks, using a cheap default model for that provider.
 _PROVIDER_CHEAP_MODEL_ENV = {
-    "qwen": ("BRAND_BRIEF_QWEN_MODEL", "qwen-turbo"),
     "openai": ("BRAND_BRIEF_OPENAI_MODEL", "gpt-4o-mini"),
     "groq": ("BRAND_BRIEF_GROQ_MODEL", "openai/gpt-oss-120b"),
-    "mistral": ("BRAND_BRIEF_MISTRAL_MODEL", "open-mistral-7b"),
     "anthropic": ("BRAND_BRIEF_ANTHROPIC_MODEL", "claude-haiku-5-5"),
 }
 

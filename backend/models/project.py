@@ -19,11 +19,12 @@ class Project(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     questionnaire_answers = Column(Text, nullable=True)
+    research_json = Column(Text, nullable=True)  # JSON: {input_hash, generated_at, docs:[...]} — see step3_research_service
     competitor_details = Column(Text, nullable=True)  # JSON string: list of competitor objects
     brand_kit = Column(Text, nullable=True)  # JSON: {logo_url, colors:{primary,secondary,accent}, extracted_palette}
     logo_data = Column(LargeBinary, nullable=True)  # Raw logo bytes, mirrored from brand_kit.logo_url's file; DB is source of truth, file is local cache
     logo_mime = Column(String(100), nullable=True)  # MIME type of logo_data
-    llm_provider = Column(String(50), nullable=True, default="mistral")
+    llm_provider = Column(String(50), nullable=True, default="openai")
     last_active_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

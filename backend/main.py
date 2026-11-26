@@ -85,6 +85,7 @@ _NEW_COLUMNS = [
     ("brand_configs", "social_handles", "TEXT", "TEXT"),
     ("brand_configs", "brand_brief", "TEXT", "TEXT"),
     ("reports", "truncation_info", "TEXT", "TEXT"),
+    ("projects", "research_json", "TEXT", "TEXT"),
 ]
 
 

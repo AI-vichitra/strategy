@@ -17,7 +17,7 @@ print("✓ '## REPORT STRUCTURE' found in prompt")
 
 # Check all 9 Brand Positioning sections are present
 expected_sections = [
-    "Executive Summary",
+    "Task Brief & Key Insights",
     "Market Context",
     "Consumer Landscape",
     "Competitive Landscape",

@@ -724,22 +724,16 @@ def _extract_json(text: str) -> Any:
 
 
 _PROVIDER_BASE_URLS = {
-    "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "groq": "https://api.groq.com/openai/v1",
-    "mistral": "https://api.mistral.ai/v1",
 }
 _PROVIDER_CHEAP_MODEL_ENV = {
-    "qwen": ("QWEN_PLANNER_MODEL", "qwen-turbo"),
     "openai": ("OPENAI_PLANNER_MODEL", "gpt-4o-mini"),
     "groq": ("GROQ_PLANNER_MODEL", "openai/gpt-oss-120b"),
-    "mistral": ("MISTRAL_PLANNER_MODEL", "open-mistral-7b"),
     "anthropic": ("ANTHROPIC_PLANNER_MODEL", "claude-haiku-5-5"),
 }
 
 
 _PROVIDER_KEY_ENV = {
-    "mistral": "MISTRAL_API_KEY",
-    "qwen": "QWEN_API_KEY",
     "openai": "OPENAI_API_KEY",
     "groq": "GROQ_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
@@ -753,6 +747,64 @@ def _provider_key_present(provider: str) -> bool:
 
 
 _UNEXPECTED_KWARG_RE = re.compile(r"unexpected keyword argument '([^']+)'")
+
+
+# ── GPT-5/6 reasoning-model compatibility for OpenAI-compatible calls ────────
+# These models (gpt-5*, gpt-6*, e.g. "gpt-6-luna") reject a non-default
+# temperature and require max_completion_tokens instead of max_tokens on
+# chat.completions.create. Every other model/provider on the OpenAI-compatible
+# branches (gpt-4o, groq's openai-compatible endpoint, etc.) is unaffected —
+# this only changes behavior for a model id starting with one of these
+# prefixes.
+_REASONING_MODEL_PREFIXES = ("gpt-5", "gpt-6")
+
+
+def _is_reasoning_model(model: Optional[str]) -> bool:
+    return (model or "").strip().lower().startswith(_REASONING_MODEL_PREFIXES)
+
+
+_reasoning_effort_supported: Optional[bool] = None  # lazily cached feature-detection result
+
+
+def _sdk_supports_reasoning_effort() -> bool:
+    """Static, installed-SDK-version feature detection (not a per-call
+    unsupported-kwarg retry) — reasoning_effort is only ever added for a
+    model that already wants it (_is_reasoning_model), so a 400 from the
+    MODEL rejecting it should still surface as a real error, not be
+    swallowed; this only skips the param when the installed openai package
+    itself doesn't know about it at all."""
+    global _reasoning_effort_supported
+    if _reasoning_effort_supported is None:
+        try:
+            import inspect
+            from openai.resources.chat.completions import Completions
+            _reasoning_effort_supported = "reasoning_effort" in inspect.signature(Completions.create).parameters
+        except Exception:
+            _reasoning_effort_supported = False
+    return _reasoning_effort_supported
+
+
+def openai_completion_kwargs(
+    model: str, messages: List[Dict[str, str]], max_tokens: int, temperature: float,
+    reasoning_effort: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Builds the kwargs for an OpenAI-compatible chat.completions.create call,
+    branching ONLY on the model id:
+    - gpt-5/gpt-6 reasoning model: max_completion_tokens (not max_tokens), no
+      temperature (the API only accepts its default), and reasoning_effort
+      when the caller asked for one AND the installed SDK supports it.
+    - every other model (gpt-4o, groq's models, ...): today's exact shape —
+      max_tokens + temperature, unchanged.
+    """
+    kwargs: Dict[str, Any] = {"model": model, "stream": False, "messages": messages}
+    if _is_reasoning_model(model):
+        kwargs["max_completion_tokens"] = max_tokens
+        if reasoning_effort and _sdk_supports_reasoning_effort():
+            kwargs["reasoning_effort"] = reasoning_effort
+    else:
+        kwargs["max_tokens"] = max_tokens
+        kwargs["temperature"] = temperature
+    return kwargs
 
 
 # ── Shared automatic fallback for non-streaming JSON-completion call sites ──
@@ -792,16 +844,12 @@ def llm_fallback_completion(system_prompt: str, user_prompt: str, max_tokens: in
     provider, model = resolve_llm_fallback()
     _, api_key = _get_llm_provider(provider)
     client = OpenAI(api_key=api_key, base_url=_PROVIDER_BASE_URLS.get(provider))
-    resp = client.chat.completions.create(
-        model=model,
-        temperature=temperature,
-        stream=False,
-        max_tokens=max_tokens,
-        messages=[
+    resp = client.chat.completions.create(**openai_completion_kwargs(
+        model, [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
-        ],
-    )
+        ], max_tokens, temperature,
+    ))
     text = resp.choices[0].message.content or ""
     return text, provider, model
 

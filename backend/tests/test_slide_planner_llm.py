@@ -467,7 +467,7 @@ def test_grounding_fails_whole_block_when_any_single_stat_is_ungrounded():
 
 def _clear_planner_env(monkeypatch):
     for name in ("SLIDE_PLANNER_PROVIDER", "SLIDE_PLANNER_MODEL", "ANTHROPIC_API_KEY",
-                 "MISTRAL_API_KEY", "QWEN_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY"):
+                 "OPENAI_API_KEY", "GROQ_API_KEY"):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -514,10 +514,10 @@ def test_invalid_model_string_falls_back_to_deterministic_without_crashing(monke
     own try/except is what catches it and degrades to the deterministic
     planner — export must never crash."""
     _clear_planner_env(monkeypatch)
-    monkeypatch.setenv("MISTRAL_API_KEY", "fake-mistral-key")  # global resolver path (c)
+    monkeypatch.setenv("GROQ_API_KEY", "fake-groq-key")  # global resolver path (c)
 
     import backend.services.ai_service as ai_service
-    monkeypatch.setattr(ai_service, "_get_llm_provider", lambda requested=None: ("mistral", "fake-mistral-key"))
+    monkeypatch.setattr(ai_service, "_get_llm_provider", lambda requested=None: ("groq", "fake-groq-key"))
 
     class _FakeCompletions:
         def create(self, **kwargs):
