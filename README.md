@@ -173,7 +173,7 @@ Brand theming is resolved in this priority order (`brand_theme.py`): an explicit
 backend/
   main.py                    FastAPI app, CORS, static mount, router registration
   database.py                Async SQLAlchemy engine/session (SQLite)
-  routers/                   auth, brand, projects, reports, report_sections, public, chat, agents, connectors
+  routers/                   auth, brand, projects, reports, report_sections, public, chat, agents, connectors, tasks
   services/
     ai_service.py              Agent prompts, RAG context, LLM provider selection/fallback, streaming
     blueprint_service.py       Loads report_blueprints.json, builds section-structure prompts
@@ -186,10 +186,14 @@ backend/
     output_validator.py          Validates recharts JSON blocks (mirrors frontend's RechartsBlock logic)
     connector_service.py / encryption_service.py   Per-user connector credentials, encrypted at rest
     registry_service.py          Loads the agent catalog
+    task_service.py              Loads task_groups.json (task taxonomy, checkpoints, task→agent map)
+    task_classifier_service.py   LLM classification of a free-typed prompt into the closed task list
+    checkpoint_service.py        Fills a task's checkpoints from the prompt/brief/brand context, builds follow-up questions
     tavily_service.py / exa_service.py / firecrawl_service.py   Research providers
   utils/chart_renderer.py    Shared matplotlib chart rendering (bar/line/area/radar/pie/scatter)
   config/report_blueprints.json   Report section blueprints
   data/agents_registry.json        Agent catalog (31 agents, 6 categories)
+  data/task_groups.json             Closed task taxonomy (7 groups + checkpoints) the intake flow classifies into
   models/                     SQLAlchemy models (brand, connector, message, project, report, report_section, report_share, user)
   scripts/                    One-off SQLite column-migration scripts (Alembic isn't wired up)
   tests/                      pytest suite
@@ -213,6 +217,16 @@ Each agent's system prompt is built in `ai_service.py` (`build_system_prompt`), 
 - `default_blueprint` — a fallback section set used by the other 25 agents
 
 **To add a new blueprint**: add an entry to `agent_blueprints` in `report_blueprints.json` keyed by the agent's hyphenated id, with `type_specific_sections` (each an `order`, `key`, `title`, optional `subsections`, and `content_guidance`). No code change is required — `build_section_prompt()` picks it up automatically.
+
+## Task Intake & Classification
+
+Before a task starts, `POST /api/tasks/intake` (`routers/tasks.py`) runs it through `classify_task` → `fill_checkpoints` → `build_questions` to figure out what's being asked, what's already known, and what to ask the user next. The closed task taxonomy — 7 groups (`G1`–`G7`), each with its own task list, group-specific checkpoints, and Step-3 research modules, plus 6 shared core checkpoints (`C1`–`C6`) every task goes through — lives in `backend/data/task_groups.json` and is read via `task_service.py`.
+
+Two ways a task's `task`/`group_id`/`agent_type` get resolved:
+- **Free-typed prompt, no template selected** — `task_classifier_service.classify_task()` makes one LLM call constrained to return a task name verbatim from the closed list (or `null`), then `task_service.resolve_agent_for_task()` maps that task to an agent via `task_groups.json`'s `task_to_agent` table.
+- **An explicit home-grid template was clicked** — the frontend sends the template's title as `selected_agent`. If that title resolves (`registry_service.get_agent()`) to an `agents_registry.json` entry carrying its own `group_id`, the template is **authoritative**: `intake()` skips `classify_task` entirely and sets `task`/`agent_type` to the template's own title and `group_id` to its mapped group, at confidence 1.0. This keeps an explicitly-chosen template (e.g. "Competition Analysis") from being silently reclassified into a different, LLM-guessed task (e.g. "Brand positioning") — a template with no `group_id` mapping, or no `selected_agent` sent at all, falls through to the unchanged LLM path.
+
+Either way, `fill_checkpoints()` extracts the task's checkpoints from the prompt/brief/brand context (a value already supplied via `prefilled_checkpoints` — e.g. the template form's Strategy Preferences tab — always wins over extraction), and `build_questions()` turns whatever's still missing into a capped, ordered set of follow-up questions.
 
 ## Notes / Known Requirements
 
