@@ -47,12 +47,21 @@ function isTruncatedContent(content: string): boolean {
 // drops the enclosing `selectedAgent` narrowing there, which this avoids.
 const SHOW_LEGACY_AGENT_QUESTIONNAIRE: boolean = false;
 
+// Superseded by AgentTemplateView's own tabbed setup (Brand Details /
+// Competitor / Strategy Preferences / ...), which renders as the main
+// content for the same `selectedAgent && messages.length === 0` state this
+// floating form used to cover — the two were stacking on screen. State and
+// handlers (brandKit/competitors/prefilledOnboarding) stay wired exactly as
+// before; only this legacy card's render is suppressed.
+const SHOW_LEGACY_ONBOARDING_FORMS: boolean = false;
+
 // ── Per-agent questionnaire configs ───────────────────────────────
 const agentQuestions: Record<string, Question[]> = {
   'SEO Audit': [
     {
       question: "What's your primary traffic goal right now?",
       multiSelect: true,
+      checkpoint: 'C2',
       options: [
         'More organic leads',
         'More organic sales',
@@ -84,6 +93,7 @@ const agentQuestions: Record<string, Question[]> = {
     {
       id: 'gtm_q1',
       question: 'What is your primary GTM objective?',
+      checkpoint: 'C2',
       options: [
         'Launch a new product/service',
         'Enter a new geographic market',
@@ -181,24 +191,28 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is the primary objective of this launch?",
       options: ["Generate Sales", "Generate Leads", "Build Awareness", "Acquire Users", "Drive Product Adoption", "Enter a New Market", "Validate Demand", "Increase Word of Mouth", "Other"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
     {
       question: "What is your planned launch timeline?",
       options: ["Within 30 Days", "1\u20133 Months", "3\u20136 Months", "6\u201312 Months", "Flexible"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C5'
     },
   ],
   'Social Media Strategy': [
     {
       question: "Which social platforms are your priority?",
       options: ["LinkedIn", "Instagram", "Facebook", "X (Twitter)", "YouTube", "Reddit", "Pinterest", "Multiple Platform"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'G3.1'
     },
     {
       question: "What is your primary social media goal?",
       options: ["Brand Awareness", "Lead Generation", "Sales", "Community Building", "Customer Engagement", "Thought Leadership", "Product Adoption", "Customer Support", "OTHERS"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C2'
     },
     {
       question: "What is your biggest social media challenge?",
@@ -210,12 +224,14 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "Which channels need content?",
       options: ["Blog", "LinkedIn", "Instagram", "Facebook", "X", "YouTube", "Email Newsletter", "Multiple Channels", "Other"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'G3.1'
     },
     {
       question: "What is your primary content objective?",
       options: ["Brand Awareness", "Lead Generation", "Sales", "SEO Growth", "GEO / AI Visibility", "Customer Education", "Community Building", "Thought Leadership", "others"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C2'
     },
     {
       question: "What content frequency can your team realistically maintain?",
@@ -232,7 +248,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is the primary objective of this campaign?",
       options: ["Sales", "Lead Generation", "Brand Awareness", "Customer Engagement", "Product Launch", "Customer Retention", "others"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C2'
     },
     {
       question: "What type of offer are you willing to run?",
@@ -249,7 +266,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is the primary objective?",
       options: ["SEO Rankings", "GEO / AI Visibility", "Lead Generation", "Thought Leadership", "Brand Awareness"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
     {
       question: "What is your current content maturity?",
@@ -266,7 +284,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What do you want to achieve from trends?",
       options: ["Content Ideas", "Lead Generation", "Thought Leadership", "Product Innovation", "Brand Awareness"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
     {
       question: "How quickly can your team act on opportunities?",
@@ -288,7 +307,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is the primary goal of your seasonal campaigns?",
       options: ["Increase Sales", "Generate Leads", "Increase Footfall", "Brand Awareness", "Customer Retention"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C2'
     },
   ],
   'GEO/AEO': [
@@ -300,7 +320,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your primary GEO/AEO objective?",
       options: ["Increase Brand Visibility", "Generate Leads", "Increase Website Traffic", "Become an Industry Authority", "Improve AI Citations", "Improve Local Visibility"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
     {
       question: "What best describes your current AI visibility?",
@@ -312,7 +333,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your primary SEO objective?",
       options: ["More Organic Traffic", "More Leads", "More Sales", "Local SEO Growth", "Brand Visibility", "Thought Leadership"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C2'
     },
     {
       question: "What is your biggest SEO challenge?",
@@ -383,7 +405,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your primary partnership objective?",
       options: ["Generate Revenue", "Acquire Customers", "Expand Distribution", "Increase Brand Awareness", "Enter New Markets", "Access New Technology", "Strategic Alliances"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C2'
     },
     {
       question: "What type of business are you?",
@@ -405,7 +428,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your primary monetization goal?",
       options: ["Increase Revenue", "Improve Profitability", "Introduce New Revenue Streams", "Improve Pricing", "Increase Customer Lifetime Value", "Reduce Customer Churn"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
     {
       question: "What is your biggest revenue challenge?",
@@ -422,7 +446,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your primary campaign objective?",
       options: ["Lead Generation", "Sales", "App Installs", "Brand Awareness", "Website Traffic", "Product Launch", "others"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
     {
       question: "What best describes your advertising maturity?",
@@ -439,7 +464,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your objective?",
       options: ["Launch a New Business", "Launch a New Product", "Enter a New Geography", "Enter a New Customer Segment", "Expansion Planning", "Investment Evaluation"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
   ],
   'ICP & Personas': [
@@ -456,7 +482,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your primary growth objective?",
       options: ["More Leads", "Higher Conversions", "Larger Deals", "Better Retention", "Market Expansion", "Product Adoption"],
-      multiSelect: false
+      multiSelect: false,
+      checkpoint: 'C2'
     },
   ],
   'Attribution & Measurement Agent': [
@@ -485,7 +512,8 @@ const agentQuestions: Record<string, Question[]> = {
     {
       question: "What is your primary advertising objective?",
       options: ["Lead Generation", "Sales", "ROAS Improvement", "Scale Spend", "Lower CPA", "Brand Awareness"],
-      multiSelect: true
+      multiSelect: true,
+      checkpoint: 'C2'
     },
     {
       question: "What is your biggest performance challenge?",
@@ -560,6 +588,21 @@ const agentQuestions: Record<string, Question[]> = {
     },
   ],
 };
+
+// Mirrors AgentTemplateView.tsx's own hardcoded Strategy Preferences
+// DEFAULT blocks (rendered when selectedAgent has no entry in
+// agentQuestions above) — same 5 labels, in the same order. AgentTemplateView
+// keeps rendering those as plain JSX; this array exists only so the R2a
+// prefilled_checkpoints builder below has something question-shaped to walk
+// for the default case, exactly like it walks agentQuestions[selectedAgent]
+// for the custom case.
+const DEFAULT_STRATEGY_QUESTION_CHECKPOINTS: Array<{ question: string; checkpoint?: string }> = [
+  { question: 'Primary Strategic Goal', checkpoint: 'C2' },
+  { question: 'Target Platforms & Channels', checkpoint: 'G3.1' },
+  { question: 'Content Format & Pillars Focus' },
+  { question: 'Desired Deliverable Format' },
+  { question: 'Execution Horizon', checkpoint: 'C5' },
+];
 
 const agentPrompts: Record<string, string> = {
   'Meeting Prep Agent': `I want you to help me set up the following agent. Help me connect the right accounts, tailor it to my specific workflow, and configure everything so it's ready to use. A meeting prep agent. Before any external call, it researches the attendees and their companies and puts together a one-page briefing with background and suggested talking points. Once everything is configured, also set up your own profile image and write a short description for yourself. Then, setup 4 example prompts for this agent I can use to get started with it.`,
@@ -655,6 +698,74 @@ function buildSelectionSummaryLine(brief: TaskBrief): string {
   return picked.map(item => `${item.name}: ${item.value}`).join(' · ');
 }
 
+// Non-checkpoint template-form inputs (AgentTemplateView's Target Audience
+// tab, the two Strategy Preferences questions with no checkpoint —
+// Goal/Platforms/Timeline are R2a's job, not this one —, the per-task
+// guardrails textarea, and the Category/Voice brand descriptors) folded
+// into sibling keys alongside `brief`/`research_direction` in
+// questionnaire_answers, exactly the way research_direction itself was
+// added. Each key is present only when the user actually filled something;
+// an untouched tab omits its key entirely so build_system_prompt injects
+// nothing for it.
+function buildQuestionnaireExtras(
+  targetAudience: TargetAudienceData,
+  qaAnswers: Array<{ question: string; answer: string }>,
+  additionalNotes: string,
+): Record<string, unknown> {
+  const qaAnswerFor = (question: string) => qaAnswers.find(a => a.question === question)?.answer?.trim() || '';
+
+  // `targetAudience` starts as { region: 'Global', segments: [] } even on a
+  // tab the user never opened, so "Global" alone (region's silent default)
+  // must not count as "filled" — only an explicit change away from it, or
+  // any of the other fields, does.
+  const hasTargetAudience =
+    !!targetAudience.locations?.trim() ||
+    !!targetAudience.notes?.trim() ||
+    !!targetAudience.incomeTier ||
+    (targetAudience.segments?.length ?? 0) > 0 ||
+    (targetAudience.ageDemographics?.length ?? 0) > 0 ||
+    (!!targetAudience.region && targetAudience.region !== 'Global');
+
+  const contentFormat = qaAnswerFor('Content Format & Pillars Focus');
+  const deliverableFormat = qaAnswerFor('Desired Deliverable Format');
+  const category = qaAnswerFor('Brand Industry / Category');
+  const voice = qaAnswerFor('Brand Voice & Tone');
+  const guardrails = additionalNotes.trim();
+
+  const extras: Record<string, unknown> = {};
+
+  if (hasTargetAudience) {
+    extras.target_audience = {
+      ...(targetAudience.region ? { region: targetAudience.region } : {}),
+      ...(targetAudience.segments?.length ? { segments: targetAudience.segments } : {}),
+      ...(targetAudience.ageDemographics?.length ? { age_demographics: targetAudience.ageDemographics } : {}),
+      ...(targetAudience.incomeTier ? { income_tier: targetAudience.incomeTier } : {}),
+      ...(targetAudience.locations?.trim() ? { locations: targetAudience.locations.trim() } : {}),
+      ...(targetAudience.notes?.trim() ? { motivations: targetAudience.notes.trim() } : {}),
+    };
+  }
+
+  if (contentFormat || deliverableFormat) {
+    extras.strategy_extras = {
+      ...(contentFormat ? { content_format: contentFormat } : {}),
+      ...(deliverableFormat ? { deliverable_format: deliverableFormat } : {}),
+    };
+  }
+
+  if (guardrails) {
+    extras.task_guardrails = guardrails;
+  }
+
+  if (category || voice) {
+    extras.brand_descriptors = {
+      ...(category ? { category } : {}),
+      ...(voice ? { voice } : {}),
+    };
+  }
+
+  return extras;
+}
+
 // Ordered stage ids for the staged generation-progress stepper. 'kb_wait' is
 // conditional — most generations skip the research-pipeline wait entirely,
 // so it's only shown once the backend's 'status' event actually fires.
@@ -673,56 +784,39 @@ const GEN_STAGE_LABELS: Record<GenStageId, string> = {
 type StepStatus = 'done' | 'active' | 'pending';
 type StepRowData = { key: string; status: StepStatus; label: string };
 
-// Shared checklist row + list markup for every staged progress indicator in
-// this file (GenerationProgress and SetupStepper below) — one place for the
-// done(check)/active(bold)/pending(dimmed) look so the two can never drift
-// apart visually.
-// `onToggle` is only ever passed by GenerationProgress's own collapsed/expanded
-// toggle row (see below) — every other caller (SetupStepper, and
-// GenerationProgress's own non-toggle rows) renders a plain, non-interactive
-// row exactly as before.
-function StepRow({
-  status, label, chevronOpen, onToggle,
-}: {
-  status: StepStatus; label: string; chevronOpen?: boolean; onToggle?: () => void;
-}) {
-  const statusClass = status === 'done' ? styles.genProgressRow_done : status === 'active' ? styles.genProgressRow_active : styles.genProgressRow_pending;
-  const icon = (
+// Status icon for one step — done(check) / active(4-dot blinking loader) /
+// pending(hollow dot). Shared by StepRow (the plain list row) and
+// GenerationProgress's own header row, so the two can never drift apart
+// visually.
+function StepIcon({ status }: { status: StepStatus }) {
+  return (
     <span className={styles.genProgressIcon}>
       {status === 'done' ? (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
         </svg>
       ) : status === 'active' ? (
-        <span className={styles.genProgressActiveDot} />
+        <span className={styles.genProgressActiveDots}>
+          <span /><span /><span /><span />
+        </span>
       ) : (
         <span className={styles.genProgressDot} />
       )}
     </span>
   );
+}
 
-  if (onToggle) {
-    return (
-      <button
-        type="button"
-        className={`${styles.genProgressRow} ${styles.genProgressRowToggle} ${statusClass}`}
-        onClick={onToggle}
-        aria-expanded={!!chevronOpen}
-      >
-        <span className={styles.genProgressRowMain}>
-          {icon}
-          <span>{label}</span>
-        </span>
-        <span className={`${styles.genProgressChevron} ${chevronOpen ? styles.genProgressChevronOpen : ''}`}>
-          ▼
-        </span>
-      </button>
-    );
-  }
-
+// Shared checklist row markup for every staged progress indicator in this
+// file (GenerationProgress's expanded list and SetupStepper/IntakeStepper
+// below) — one place for the done/active/pending look so they can never
+// drift apart visually. Always a plain, non-interactive row — the
+// collapse/expand toggle lives in GenerationProgress's own header row, not
+// here (see the "CHEVRON ALWAYS AT TOP" pass).
+function StepRow({ status, label }: { status: StepStatus; label: string }) {
+  const statusClass = status === 'done' ? styles.genProgressRow_done : status === 'active' ? styles.genProgressRow_active : styles.genProgressRow_pending;
   return (
     <div className={`${styles.genProgressRow} ${statusClass}`}>
-      {icon}
+      <StepIcon status={status} />
       <span>{label}</span>
     </div>
   );
@@ -741,13 +835,14 @@ function StepList({ rows }: { rows: StepRowData[] }) {
 // handleSubmit's SSE loop) — never a fake timed animation.
 //
 // Collapsed by default (presentation only — `expanded` is local state, never
-// touches `stage`/SSE handling): shows ONLY the current running step (or the
-// last step, "done", once nothing is active) with a chevron on the right of
-// that same row; clicking it reveals the full list below, that row now
-// carrying the rotated chevron as its "collapse" control. As SSE advances
-// `stage` while collapsed, the single shown row re-derives from `stage` on
-// every render exactly as the full list already did, so it updates live with
-// no extra state to keep in sync.
+// touches `stage`/SSE handling): a fixed header row (current running step,
+// or the last step re-labelled "Done" once nothing is active) with the
+// collapse/expand chevron pinned top-right of that header — same position
+// whether collapsed or expanded, never inline in whichever row happens to be
+// current. Clicking the header reveals the full list below it. As SSE
+// advances `stage`, the header re-derives from `stage` on every render
+// exactly as the full list already did, so it updates live with no extra
+// state to keep in sync.
 function GenerationProgress({
   stage,
   kbWaitText,
@@ -782,18 +877,32 @@ function GenerationProgress({
   const toggleRow = activeRow ?? (allDone ? { ...rows[rows.length - 1], label: 'Done' } : rows[rows.length - 1]);
 
   const toggle = () => setExpanded(e => !e);
+  const toggleRowStatusClass = toggleRow.status === 'done' ? styles.genProgressRow_done : toggleRow.status === 'active' ? styles.genProgressRow_active : styles.genProgressRow_pending;
 
-  if (!expanded) {
-    return (
-      <StepRow key={toggleRow.key} status={toggleRow.status} label={toggleRow.label} chevronOpen={false} onToggle={toggle} />
-    );
-  }
-
+  // Chevron lives in this one header row, fixed top-right, in BOTH states —
+  // collapsed shows just this header; expanded shows it plus the full list
+  // below. Never inline in whichever row happens to be current (that's the
+  // bug this pass fixes).
   return (
-    <div className={styles.genProgress}>
-      {rows.map(r => r.key === toggleRow.key
-        ? <StepRow key={r.key} status={r.status} label={r.label} chevronOpen={true} onToggle={toggle} />
-        : <StepRow key={r.key} status={r.status} label={r.label} />
+    <div className={styles.genProgressCard}>
+      <button
+        type="button"
+        className={`${styles.genProgressRow} ${styles.genProgressHeader} ${toggleRowStatusClass}`}
+        onClick={toggle}
+        aria-expanded={expanded}
+      >
+        <span className={styles.genProgressRowMain}>
+          <StepIcon status={toggleRow.status} />
+          <span>{toggleRow.label}</span>
+        </span>
+        <span className={`${styles.genProgressChevron} ${expanded ? styles.genProgressChevronOpen : ''}`}>
+          ▼
+        </span>
+      </button>
+      {expanded && (
+        <div className={styles.genProgress}>
+          {rows.map(r => <StepRow key={r.key} status={r.status} label={r.label} />)}
+        </div>
       )}
     </div>
   );
@@ -1631,10 +1740,15 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       // questionnaire_answers, so persist the confirmed brief explicitly —
       // the brief object stays exactly as it was; research_direction is a
       // sibling key added alongside it, never folded into/replacing it.
+      // buildQuestionnaireExtras adds further sibling keys (target_audience/
+      // strategy_extras/task_guardrails/brand_descriptors) the same way,
+      // present only when the user actually filled the corresponding
+      // template-form field.
+      const questionnaireExtras = buildQuestionnaireExtras(targetAudience, qaAnswers, additionalNotes);
       await fetch(`${apiBase}/api/projects/${newP.id}`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ questionnaire_answers: JSON.stringify({ ...brief, research_direction: researchSelection }) }),
+        body: JSON.stringify({ questionnaire_answers: JSON.stringify({ ...brief, research_direction: researchSelection, ...questionnaireExtras }) }),
       });
 
       setActiveProject({ id: newP.id, title: newP.title, brand_config_id: newP.brand_config_id ?? activeBrandId });
@@ -1869,9 +1983,35 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
+        // Strategy Preferences values the user already picked in the template
+        // form, mapped to the checkpoint ids they overlap — driven by each
+        // active question's own `checkpoint` tag (agentQuestions[selectedAgent]
+        // for an agent with a custom set, else the same default labels
+        // AgentTemplateView falls back to) rather than a hardcoded label
+        // lookup, so this works for ANY agent's own question wording, not
+        // just the default one. Only included when actually filled, so a
+        // blank field still gets asked normally.
+        const activeStrategyQuestions = (selectedAgent && agentQuestions[selectedAgent]?.length)
+          ? agentQuestions[selectedAgent]
+          : DEFAULT_STRATEGY_QUESTION_CHECKPOINTS;
+        const prefilledCheckpoints: Record<string, string> = {};
+        for (const q of activeStrategyQuestions) {
+          if (!q.checkpoint) continue;
+          const answer = qaAnswers.find(a => a.question === q.question)?.answer?.trim();
+          if (answer) prefilledCheckpoints[q.checkpoint] = answer;
+        }
+        const prefilledCheckpointsField = Object.keys(prefilledCheckpoints).length > 0
+          ? { prefilled_checkpoints: prefilledCheckpoints }
+          : {};
+
+        // selectedAgent is the explicitly-clicked template's title (e.g. "Competition
+        // Analysis") — the backend treats it as authoritative (skips classify_task)
+        // when that title resolves to a registry agent with its own group_id, and
+        // otherwise falls through to the normal LLM classification unchanged.
+        const selectedAgentField = selectedAgent ? { selected_agent: selectedAgent } : {};
         const body = activeProject?.id
-          ? { project_id: activeProject.id, prompt: effectivePrompt }
-          : { brand_config_id: activeBrandId, prompt: effectivePrompt };
+          ? { project_id: activeProject.id, prompt: effectivePrompt, ...prefilledCheckpointsField, ...selectedAgentField }
+          : { brand_config_id: activeBrandId, prompt: effectivePrompt, ...prefilledCheckpointsField, ...selectedAgentField };
 
         const res = await fetch(`${apiBase}/api/tasks/intake`, {
           method: 'POST',
@@ -2641,6 +2781,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
             onChangeAdditionalNotes={setAdditionalNotes}
             brandKit={brandKit}
             onChangeBrandKit={setBrandKit}
+            apiBase={apiBase}
+            authToken={authToken}
             attachedFiles={referenceFiles}
             onAddFiles={(files) => setReferenceFiles(prev => [...prev, ...files])}
             onRemoveFile={(index) => setReferenceFiles(prev => prev.filter((_, i) => i !== index))}
@@ -2731,7 +2873,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
           same as the ChatInput-visibility gate just inside it below. */}
       {view !== 'files' && view !== 'projects' && view !== 'agents' && (selectedAgent !== null || isChatting) && !isSettingUp && !isIntakeLoading && !isCardOpen && (
         <div className={styles.chatContainer}>
-          {selectedAgent && messages.length === 0 && !isCardOpen && (
+          {SHOW_LEGACY_ONBOARDING_FORMS && selectedAgent && messages.length === 0 && !isCardOpen && (
             <div className={styles.onboardingForms}>
               <BrandKitForm
                 brandKit={brandKit}

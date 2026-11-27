@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NATURE'S NECTAR - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NATURE'S NECTAR</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">D2C (Direct-to-Consumer)</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://natures-nectar.com" target="_blank" class="meta-url">https://natures-nectar.com</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Nature's Nectar, founded in 1997 and part of Kejriwal Group, is a leading honey producer and retailer in India, exporting to the EU, the United States, and the Middle East. The company emphasizes 100% pure, traceable, and NMR-tested honey, free from chemicals, pesticides, and adulteration. Nature's Nectar collaborates with over 20,000 beekeepers, ensuring ethical sourcing and fair trade practices. The company's mission is to protect wild landscapes while supporting local communities, and it is certified by EU Organic, USDA Organic, FSSC 22000, ISO 9001, HALAL, and KOSHER, among others. Nature's Nectar offers a variety of honey types and is committed to sustainability and social equity, working with over 3,000 farmers, including women, to promote fair and sustainable beekeeping practices.. # Zambia’s Most Sustainable & Impactful Honey  Pure, Ethical, and Regenerative   Supporting Rural Beekeepers & Protecting Forests  ## Why Choose Nature’s Nectar?  🌍 Sustainably Harvested   Protecting Zambia’s forests & biodiversity.  👨‍👩‍👧‍👦 Empowering Rural Communities   Fair trade partnerships with beekeepers  ✅100% Pure & Natural  No additives, just raw honey  🏆   Trusted by Businesses Worldwide Supplying cafes, stores & brands.  ## We are Ecocert and FSSC22000 Certified  EU Organic Agriculture  USDA Organic Agriculture  Nature’s Nectar Certification of Registration.  ## Our Vision  Nature’s Nectar collaborates with communities and partners in Zambia’s conservation areas to produce the most sustainable honey possible.  ## Our Mission [...] ## Our Mission  To protect wild landscapes while supporting lasting livelihoods for local communities. By preserving these critical areas, we help ensure a sustainable future for both conservation efforts and the communities who depend on them.  ## Our Impact  ## Enhancing Livelihoods and Preserving Forests  A Centuries-Old Tradition Under Threat  For generations, Zambian beekeepers have used bark from indigenous trees to create cylindrical hives, but each hive requires cutting down one tree and lasts only 2-3 years. With the honey market growing over 700% in the past five years, this practice is now unsustainable, accelerating forest degradation. Critically, the trees used for these hives are major nectar producers, and their loss impacts both forests and honey production long-term.. 0 items  #### Our Story  ## About Nature’s Nectar  Since 1996, Nature's Nectar has been a part of Kejriwal Group, India's largest exporter and manufacturer of honey, handling around 16,000MT each year. Equipped with a state-of-the-art lab facility in Rajpura, Punjab, with a capacity to produce 100 MT daily, we ensure complete traceability of all honey from farm to fork to match its quality with our customers' trust. Before packing, German Labs and our futuristic Lab test and analyse a sample from each batch for C3/C4 sugars, antibiotics, pesticides, and chemicals.<br/><br/><strong>Product & Service Portfolio:</strong> Nature's Nectar offers a variety of honey products, including Raw Organic Honey, Natural Multiflora Honey, Forest Honey, Acacia Honey, Tulsi Honey, Kashmir Acacia Honey, Honey with Herbs and Spices, Honey Sachets and Sticks, and Honey Gift Packs. The company is committed to providing honey that is 100% free from chemicals, pesticides, adulteration, and toxins, traceable to beehives, and tested in Germany. Nature's Nectar is part of Kejriwal Bee Care India Pvt Ltd, which is India's largest honey exporter and packer since 1996. The company is also associated directly with over 30,000 beekeepers, ensuring fair payment and no middlemen involvement.. # Nature's Nectar (Kejriwal Bee Care India Pvt Ltd) ID: BpuqJoWAK1yD Website: www.natures-nectar.com Legal name: Nature's Nectar Headquarters: New Delhi, Delhi, India LinkedIn: www.linkedin.com/company/naturesnectar · 426 followers Industry: Wellness and Fitness Services Company type: Privately Held Founded: 1997 Business model: B2C SaaS: no Social profiles: www.crunchbase.com/organization/nature-s-nectar Email: naturesnectar22@gmail.com Phone: 8527520555 Description: On a mission to help people transition to a more sustainable lifestyle by providing honey that is traceable to beehives and 100% free from all kinds of chemicals, pesticides, adulteration, toxins, etc. [...] ## Products and services Business areas: Honey Production and Retail, Organic Food Products, Natural Health Foods Products: Raw Organic Honey, Natural Multiflora Honey, Forest Honey, Acacia Honey, Tulsi Honey, Kashmir Acacia Honey, Honey with Herbs and Spices, Honey Sachets and Sticks, Honey Gift Packs  ## Headcount - Now: 7 · +1 yearly (16.7%) · +1 quarterly · +1 monthly   - Southern Asia: 5   - Eastern Europe: 0   - Latin America: 0   - Southern Europe: 0   - Sub Saharan Africa: 0   - Central Asia: 0   - Northern America: 0   - Australia New Zealand: 0   - Northern Europe: 0   - South Eastern Asia: 0   - Polynesia: 0   - Northern Africa: 0   - Melanesia: 0   - Western Europe: 0   - Western Asia: 0  ## Technology - Detected: 1 - amazon advertising · last seen 2025-06-12. ### Company Details  Nature's Nectar by Ster offers a range of natural hair care products, including shampoos, conditioners, and treatments, that utilize ingredients like fermented rice water, hibiscus, and shea butter to promote hair growth, moisturize, and nourish hair. Their products cater to specific hair types and needs, such as dry, damaged, or low porosity hair, and are designed to provide long-lasting benefits. The company's products are available in various sizes and are marketed as a way to promote healthier, stronger, and more vibrant hair.  Key Metrics  Sign up to download Nature's Nectar by Ster.'s company profile  ## Nature's Nectar by Ster.'s funding and investors  Nature's Nectar by Ster. has not raised any funding rounds yet.  Access Tracxn on any website [...] ## Nature's Nectar by Ster. - About the company  Nature's Nectar by Ster. is an unfunded company, founded in 2019.<br/><br/><strong>Recent Developments & News:</strong> Nature's Nectar, a direct-to-consumer company, has garnered recognition for its 100% Berry Burst Juice winning the 2012 SELF Magazine Healthy Food Award. The company, led by CEO Katherine Milling, has also been highlighted for its traceable value chain from bee to bottle, building trust among local communities. Altree Capital has invested in Nature's Nectar, which is part of the Kejriwal Group, the world's first True Source certified company and India's largest honey exporter and packer. The company operates as a manufacturer of natural hair care products, offering botanical-based shampoos, conditioners, and serums. Despite its achievements, the company has not raised any funding and has no investments or acquisitions to date.. Share toX  Share this article  Share toX  BATAVIA, Ill., June 12, 2012 /PRNewswire/ -- ALDI is excited to announce that their exclusive brand, Nature's Nectar 100% Berry Burst Juice, won this year's SELF magazine Healthy Food Award under the drink category. Made from a blend of four fruit juices, the 100% Berry Burst Juice is one of 35 varieties including All Natural Lemonade and 100% Apple Juice in the Nature's Nectar brand. Families looking for a refreshing and healthy beverage on that hot summer day can switch to high-quality ALDI exclusive brands and save up to 50 percent\ compared to traditional grocers. [...] Accessibility Statement Skip Navigation  # ALDI Receives National Recognition for Nature's Nectar 100% Berry Burst Juice -- The 2012 SELF Magazine Healthy Food Award  ALDI Offers Award-Winning, Healthy Options at Unbeatable Prices  ## News provided by   ALDI   Jun 12, 2012, 08:00 ET  ## Share this article  Share toX  Share this article  Share toX [...] "We are very excited to have one of our juices recognized nationally by SELF magazine," said Chuck Youngstrom, president, ALDI. "We work hard to ensure that our exclusive label products meet or exceed the national name brands on taste and quality, and this further proves that healthy, delicious, award-winning grocery products do not have to come with a high price tag."  The Healthy Food Award selection process begins with SELF magazine's registered dietitians who evaluate each product against strict nutrition criteria. Readers then participate in a blind taste-test and vote for their favorite products. The two products in each category with the highest number of votes take home the Healthy Food Award title..<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Nature's Nectar (Kejriwal Bee Care India Pvt Ltd) faces competition from several key players in the Indian honey market, including Apis India Ltd, Baidyanath, Beez International, Dabur India Limited, Hitkary, Organic India Pvt. Ltd., Patanjali Ayurved Limited, Saffola, and Zandu Care. These companies compete across organized and unorganized segments, offering a range of honey products. Nature's Nectar, founded in 1997, focuses on providing honey that is traceable to beehives and free from chemicals, pesticides, adulteration, and toxins. Other competitors like Prose, Crown Affair, and Vegamour also vie for market share in the natural hair care products segment. The Indian honey market is projected to grow at a compound annual growth rate of 6.7% from 2025 to 2034, reaching an estimated market value of INR 51.9 billion by 2034.. Access Tracxn on any website  Install Tracxn Extension  Our Google Chrome extension lets you view company details while browsing their websites  ## Nature's Nectar by Ster.'s Competitors and alternates  Top competitorsof Nature's Nectar by Ster.includemCaffeine, Honasa Consumer and Nat Habit. Here is the list of Top 10 competitors of Nature's Nectar by Ster., ranked by Tracxn score:  Rank  Company Details  Short Description  Total Funding  Investors  Tracxn Score  1st  Retailer of caffeinated skin and hair care products  $48.4M  74/100  2nd  Honasa Consumer  2016, Gurugram (India), Public  Retailer of beauty and personal care products with digital presence  $126M  73/100  3rd  Online platform offering beauty and skincare products  $18.6M  70/100  4th  The Ayurveda [...] $18.6M  70/100  4th  The Ayurveda  2021, Gurugram (India), Series A  Provider of Ayurvedic‑based beauty and wellness products sold directly to consumers  $18.4M  64/100  5th  Retailer of ayurvedic skincare and hair care products  $8M  63/100  6th  The Moms Co  2016, Gurugram (India), Acquired  Internet First Brand provides natural skincare products for mothers, babies, and general hair and body care  $15.3M  63/100  7th  Online brand offering toxin-free beauty products  \-  62/100  8th  Sol de Janeiro  2015, New York City (United States), Acquired  Brand of body care products  $14.6M  \-  61/100  9th  Juicy Chemistry  2014, Coimbatore (India), Series A  Online private label brand selling skin and hair care products  $7.56M  58/100  10th  The Ayurveda Experience [...] ## Nature's Nectar by Ster. - About the company  Nature's Nectar by Ster. is an unfunded company, founded in 2019. It operates as a Manufacturer of natural hair care products, offering a range of botanical-based shampoos, conditioners, and serums that cater to various hair types and needs. has not raised any funding yet.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.naturesnectarzambia.com" target="_blank">Nature&#x27;s Nectar</a></h3>
+                    <div class="result-url">https://www.naturesnectarzambia.com</div>
+                    <div class="result-content">Zambia’s Most Sustainable &amp; Impactful Honey
+
+Pure, Ethical, and Regenerative  
+Supporting Rural Beekeepers &amp; Protecting Forests
+
+ Why Choose Nature’s Nectar?
+
+🌍 Sustainably Harvested  
+Protecting Zambia’s forests &amp; biodiversity.
+
+👨‍👩‍👧‍👦 Empowering Rural Communities  
+Fair trade partnerships with beekeepers
+
+✅100% Pure &amp; Natural
+
+No additives, just raw honey
+
+🏆  
+Trusted by Businesses Worldwide Supplying cafes, stores &amp; brands.
+
+ We are Ecocert and FSSC22000 Certified
+
+EU Organic Agriculture
+
+USDA Organic Agriculture
+
+Nature’s Nectar Certification of Registration.
+
+ Our Vision
+
+Nature’s Nectar collaborates with communities and partners in Zambia’s conservation areas to produce the most sustainable honey possible.
+
+ Our Mission [...]  Our Mission
+
+To protect wild landscapes while supporting lasting livelihoods for local communities. By preserving these critical areas, we help ensure a sustainable future for both conservation efforts and the communities who depend on them.
+
+ Our Impact
+
+ Enhancing Livelihoods and Preserving Forests
+
+A Centuries-Old Tradition Under Threat
+
+For generations, Zambian beekeepers have used bark from indigenous trees to create cylindrical hives, but each hive requires cutting down one tree and lasts only 2-3 years. With the honey market growing over 700% in the past five years, this practice is now unsustainable, accelerating forest degradation. Critically, the trees used for these hives are major nectar producers, and their loss impacts both forests and honey production long-term.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.natures-nectar.com/pages/our-story" target="_blank">Our Story – Nature&#x27;s Nectar</a></h3>
+                    <div class="result-url">https://www.natures-nectar.com/pages/our-story</div>
+                    <div class="result-content">0 items
+
+ Our Story
+
+ About Nature’s Nectar
+
+Since 1996, Nature&#x27;s Nectar has been a part of Kejriwal Group, India&#x27;s largest exporter and manufacturer of honey, handling around 16,000MT each year. Equipped with a state-of-the-art lab facility in Rajpura, Punjab, with a capacity to produce 100 MT daily, we ensure complete traceability of all honey from farm to fork to match its quality with our customers&#x27; trust. Before packing, German Labs and our futuristic Lab test and analyse a sample from each batch for C3/C4 sugars, antibiotics, pesticides, and chemicals. Our international export quality with NMR compliance makes us India&#x27;s one of the most trusted brands in terms of purity.
+
+ // Features //
+
+ Why Choose Us
+
+ 100% Pure &amp; Traceable to Beehives [...]  Why Nature’s Nectar Honey
+
+While many processors assert that their honey is free of impurities, Nature&#x27;s Nectar stands out by offering evidence of its purity, completely clear from antibiotics, adulterations with C3-C4 sugars and pesticide residues. We are one of the few national brands to pass the NMR test. Packaging is done under stringent hygienic conditions, preserving natural flavours and enzymes. All activities are automated, with a closed-circuit honey processing line and no manual interaction to ensure international standard quality. Each bottle includes an NMR report, the proof of purity that can be verified through a QR code.
+
+NMR Tested
+
+Traceable to Beehives
+
+No Additives
+
+ Our Compliances &amp; Certifications
+
+ Testimonial
+
+ Our Customers Speak For Us [...]  Why Choose Us
+
+ 100% Pure &amp; Traceable to Beehives
+
+Nature&#x27;s Nectar honey is ethically sourced from over twenty thousand trained beekeepers from projects across the country.
+
+ Certifications &amp; Compliances
+
+Our honey is FSSAI &amp; NMR compliant with certifications including NPOP, BRC, FSSC 22000, ISO 9001, HALAL, and KOSHER, as well as USDA and EU organic certificates.
+
+ Large Honey Assortment
+
+We are offering more than fifteen varieties of honey based on its flora, benefits, and applications, making it an excellent choice to health and taste.
+
+20K+ Dedicated Beekeepers
+
+Ethically Sourced
+
+100+ Global Lab Tests
+
+ Goodness of Natural Honey
+
+What kind of honey is the best?&gt;</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/BpuqJoWAK1yD" target="_blank">Nature&#x27;s Nectar (Kejriwal Bee Care India Pvt Ltd)</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/BpuqJoWAK1yD</div>
+                    <div class="result-content">Nature&#x27;s Nectar (Kejriwal Bee Care India Pvt Ltd)
+ID: BpuqJoWAK1yD
+Website: www.natures-nectar.com
+Legal name: Nature&#x27;s Nectar
+Headquarters: New Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/naturesnectar · 426 followers
+Industry: Wellness and Fitness Services
+Company type: Privately Held
+Founded: 1997
+Business model: B2C
+SaaS: no
+Social profiles: www.crunchbase.com/organization/nature-s-nectar
+Email: naturesnectar22@gmail.com
+Phone: 8527520555
+Description: On a mission to help people transition to a more sustainable lifestyle by providing honey that is traceable to beehives and 100% free from all kinds of chemicals, pesticides, adulteration, toxins, etc. [...]  Products and services
+Business areas: Honey Production and Retail, Organic Food Products, Natural Health Foods
+Products: Raw Organic Honey, Natural Multiflora Honey, Forest Honey, Acacia Honey, Tulsi Honey, Kashmir Acacia Honey, Honey with Herbs and Spices, Honey Sachets and Sticks, Honey Gift Packs
+
+ Headcount
+- Now: 7 · +1 yearly (16.7%) · +1 quarterly · +1 monthly
+  - Southern Asia: 5
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Technology
+- Detected: 1
+- amazon advertising · last seen 2025-06-12 [...]  Web traffic
+- Monthly visits: 8,400 (-30.9% change)
+- Pages per visit: 1.96
+- Average visit duration: 49 seconds
+- Bounce rate: 61%
+- Global rank: 2,401,017
+- Country rank: 225,113
+- Category rank: 2,672
+
+ Reputation
+- Open roles: 0</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.natures-nectar.com" target="_blank">100% Organic Natural Honey in India - Buy World Best Honey – Nature&#x27;s Nectar</a></h3>
+                    <div class="result-url">https://www.natures-nectar.com</div>
+                    <div class="result-content">Shop Now
+
+           Why Nature&#x27;s Nectar
+
+          Nature&#x27;s Nectar is an initiative of the Kejriwal Group that has held a legacy since 1967 in the food industry. As India&#x27;s first and largest honey exporters and the world&#x27;s first &#x27;True Source&#x27; certified company, we offer top-notch honey to quality-conscious consumers worldwide. Since 1996 we have been a pioneer in honey exports to the EU, the United States and the Middle East.
+
+          
+
+          100% Pure &amp; Natural
+
+          
+
+          NMR Tested
+
+          
+
+          Quality-Tested Honey
+
+          
+
+          Tested for Selected Quality Parameters
+
+          
+
+          No C3-C4 Sugars
+
+          
+
+          Traceable to Beehives
+
+          Read Full Story
+
+           Beekeepers Interview [...] The beginning of  
+           ‘Sweet Revolution’
+
+            
+            
+
+          The beginning of  
+           ‘Sweet Revolution’
+
+            
+            
+
+          Find Out Why It&#x27;s Time To Change Your Honey Now!
+
+          
+
+          
+
+           Testimonials
+
+           Our Customers Speak for Us
+
+          At Nature&#x27;s Nectar, our customers play a pivotal role, and their satisfaction is imperative to us. Read what our customers have to say about us.
+
+          
+
+          Prof. Dr. Afrozul Haq   
+          Former Dean, Jamia Hamdard, New Delhi
+
+          
+
+          As a food and nutrition scientist and professor, I like Nature&#x27;s Nectar product and quality. NMR Spectroscopy certifies it for purity, adulteration, and authenticity</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cliffsnotes.com/study-notes/28958189" target="_blank">Honey Market Entry Strategy Analysis (pdf) - CliffsNotes</a></h3>
+                    <div class="result-url">https://www.cliffsnotes.com/study-notes/28958189</div>
+                    <div class="result-content">primary producers and capturing the highest value at the distribution stage . Moving into branded retail allows Nature&#x27;s 7 Nectar to capture higher revenue, which is necessary not only to offset the inherently high logistical costs associated with sourcing from remote, landlocked Zambia but also to fund the 8 rigorous social enterprise model (e.g., hive distribution, training, and fair farmer payments). The attainment of EU Organic and FSSC 22000 certifications acts as crucial &quot;margin insurance&quot; for this upgrading strategy. Standard bulk African honey is often relegated to the price-sensitive commodity market. By operating in the high-end certified segment, Nature&#x27;s Nectar structurally shifts its competitive base, negotiating terms based on niche value and certified quality rather than [...] is to identify the most promising international market for expansion, where Nature&#x27;s Nectar&#x27;s Triple Premium , certified quality, verifiable environmental impact, and social equity, will generate competitive advantage. The analysis evaluates regulatory compatibility, trade conditions, consumer demand for ethical products, and logistical feasibility to recommend a high-value, low-barrier entry market for Nature&#x27;s Nectar&#x27;s premium honey exports. 1.0. Nature&#x27;s Nectar Strategic Context and Value Proposition Nature&#x27;s Nectar Ltd. is a Zambian social enterprise that has strategically positioned itself for global export by integrating rigorous sustainability and quality assurance into its core business model. The company&#x27;s success in accessing premium international markets hinges on its unique [...] works with over 3,000 farmers, with approximately 40% of them being women . The company intentionally provides training through local Zone Lead Farmers and 5 supplies protective gear, successfully reshaping beekeeping from a traditionally male-dominated trade into a more inclusive and equitable livelihood model. This quantifiable social governance component strengthens the overall ESG profile of the product, appealing strongly to consumer segments that prioritize Fair Trade and social governance values in the target markets. 6 1.2. Strategic Objective: Global Value Chain Upgrading Nature&#x27;s Nectar&#x27;s strategic objective is to execute Product and Functional Upgrading within the Global Value Chain. The overarching goal is to transition the company&#x27;s role from a low-margin bulk B2B exporter to</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/BpuqJoWAK1yD" target="_blank">Nature&#x27;s Nectar (Kejriwal Bee Care India Pvt Ltd)</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/BpuqJoWAK1yD</div>
+                    <div class="result-content">Nature&#x27;s Nectar (Kejriwal Bee Care India Pvt Ltd)
+ID: BpuqJoWAK1yD
+Website: www.natures-nectar.com
+Legal name: Nature&#x27;s Nectar
+Headquarters: New Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/naturesnectar · 426 followers
+Industry: Wellness and Fitness Services
+Company type: Privately Held
+Founded: 1997
+Business model: B2C
+SaaS: no
+Social profiles: www.crunchbase.com/organization/nature-s-nectar
+Email: naturesnectar22@gmail.com
+Phone: 8527520555
+Description: On a mission to help people transition to a more sustainable lifestyle by providing honey that is traceable to beehives and 100% free from all kinds of chemicals, pesticides, adulteration, toxins, etc. [...]  Products and services
+Business areas: Honey Production and Retail, Organic Food Products, Natural Health Foods
+Products: Raw Organic Honey, Natural Multiflora Honey, Forest Honey, Acacia Honey, Tulsi Honey, Kashmir Acacia Honey, Honey with Herbs and Spices, Honey Sachets and Sticks, Honey Gift Packs
+
+ Headcount
+- Now: 7 · +1 yearly (16.7%) · +1 quarterly · +1 monthly
+  - Southern Asia: 5
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Technology
+- Detected: 1
+- amazon advertising · last seen 2025-06-12</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/natures-nectar-by-ster./__OlPEjpmGu6_vkGNTTjUuSzNef91EbZFeXbyncGEkqIM" target="_blank">Nature&#x27;s Nectar by Ster. - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/natures-nectar-by-ster./__OlPEjpmGu6_vkGNTTjUuSzNef91EbZFeXbyncGEkqIM</div>
+                    <div class="result-content">Company Details
+
+Nature&#x27;s Nectar by Ster offers a range of natural hair care products, including shampoos, conditioners, and treatments, that utilize ingredients like fermented rice water, hibiscus, and shea butter to promote hair growth, moisturize, and nourish hair. Their products cater to specific hair types and needs, such as dry, damaged, or low porosity hair, and are designed to provide long-lasting benefits. The company&#x27;s products are available in various sizes and are marketed as a way to promote healthier, stronger, and more vibrant hair.
+
+Key Metrics
+
+Sign up to download Nature&#x27;s Nectar by Ster.&#x27;s company profile
+
+ Nature&#x27;s Nectar by Ster.&#x27;s funding and investors
+
+Nature&#x27;s Nectar by Ster. has not raised any funding rounds yet.
+
+Access Tracxn on any website [...]  Nature&#x27;s Nectar by Ster. - About the company
+
+Nature&#x27;s Nectar by Ster. is an unfunded company, founded in 2019. It operates as a Manufacturer of natural hair care products, offering a range of botanical-based shampoos, conditioners, and serums that cater to various hair types and needs. Nature&#x27;s Nectar by Ster. has not raised any funding yet. The company has 2042 active competitors, including 84 funded and 50 that have exited. Its top competitorsinclude companies like mCaffeine, Honasa Consumer and Nat Habit.
+
+ Company Details [...] $7.56M
+
+58/100
+
+10th
+
+The Ayurveda Experience
+
+2010, Singapore (Singapore), Series C
+
+Online platform offering ayurvedic multi-category beauty products
+
+$27M
+
+57/100
+
+1938th
+
+Nature&#x27;s Nectar by Ster.
+
+2019, Unfunded
+
+Manufacturer of natural hair care products, offering a range of botanical-based shampoos, conditioners, and serums that cater to various hair types and needs
+
+\-
+
+\-
+
+16/100
+
+Get insights and benchmarks for competitors of 2M+ companies! Sign up today!
+
+Looking for more details on Nature&#x27;s Nectar by Ster.&#x27;s competitors? Clickhere to see the top ones
+
+ Nature&#x27;s Nectar by Ster.&#x27;s Investments and acquisitions
+
+Nature&#x27;s Nectar by Ster.has made no investments or acquisitions yet.
+
+ Reports related to Nature&#x27;s Nectar by Ster.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.naturesnectarllc.com" target="_blank">Package Bees &amp; Beekeeping Equipment | Nature&#x27;s Nectar, LLC | MN</a></h3>
+                    <div class="result-url">https://www.naturesnectarllc.com</div>
+                    <div class="result-content">Hive Tools and More
+
+Nature’s Nectar is a full-service beefitter. We carry a broad selection of products such as woodenware, hardware, protective clothing, and of course, bees, including package bees and queens. Founded by master beekeepers, Jim and Wendy Kloek, more than two decades ago, we are one of the few suppliers located in the Stillwater/East Metro area. Tom and Jessica Minser recently purchased Nature’s Nectar and plan to carry on the Kloeks’ commitment to making beekeeping an affordable and rewarding experience.
+
+ Sign Up for Our Newsletter
+
+Stay up to date with all of the latest beekeeping news and products!
+
+ Quality Beekeeping Supplies
+
+Shop our large selection of bees, equipment, and clothing
+
+ Our Store
+
+6922 55th St N, Suite C
+
+Oakdale, MN 55128 [...]  Nature&#x27;s Nectar, LLC
+
+Your Full Service Bee Supply Dealer
+
+visit us in-store to pick up your favorite products!
+
+ Package Bees
+
+Shop Now
+
+ Queens
+
+Available End of April or Early May. Keep an eye on our Blog or sign up for the newsletter to be notified when available and pricing details.
+
+ Treatment
+
+Coming Soon
+
+ Welcome to Nature’s Nectar, LLC [...] Coming Soon
+
+ Welcome to Nature’s Nectar, LLC
+
+Nature’s Nectar, LLC is a full-service beekeeping supplier located in Oakdale, MN. We are proud to keep the beekeeping tradition alive, providing information and products for beekeepers of all skill levels, from novices to professional apiarists. With over 20 years of apiculturist experience behind our name, we go the distance to offer our customers superior service before and after the sale, and we would be happy to share our knowledge with you.
+
+ We Need Bees</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.natures-nectar.com/collections/all" target="_blank">Products
+– Nature&#x27;s Nectar</a></h3>
+                    <div class="result-url">https://www.natures-nectar.com/collections/all</div>
+                    <div class="result-content">Title: Products
+– Nature&#x27;s Nectar
+ Just added to your cart. Extra 10% off | Use Code &quot;NN10&quot; | Free delivery above Rs.500. Honey Online Shopping - Natures Nectar. Honey Online Shopping - Natures Nectar. Certified by NPOP/ NOP/ FSSC/ BRC. 100% Traceable to Bee Hives.  Products. Honeychew 20g - Nature&#x27;s Nectar. Honeychew 20g - Nature&#x27;s Nectar. Kashmir Honey - Nature&#x27;s-Nectar. Kashmir Honey - Nature&#x27;s-Nectar. World Best Honey - Natures Nectar. World Best Honey - Natures Nectar. World Best Honey - Natures Nectar. World Best Honey - Natures Nectar. Nature’s Nectar is a part of Kejriwal Group, the world’s first True Source certified company and India’s largest honey exporter and packer since 1996. Our NMR-compliant honey, tested in Germany, is entirely traceable to beehives. **Address :** W-42, Greater Kailash-2,. **Phone/Whastapp :** +91 85275 20555 (Mon-Fri, 10 AM - 6 PM). **Email :** care@natures-nectar.com. Kejriwal Bee Care India (Pvt.) Ltd. Village Jalapur, P.O. Banur Rajpura, Distt.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.natures-nectar.com/blogs/latest-media-coverage/raceable-straight-to-the-beehives-natures-nectars-tested-and-certified-honey-proves-its-purity-to-its-customers" target="_blank">Traceable Straight to the Beehives
+– Nature&#x27;s Nectar</a></h3>
+                    <div class="result-url">https://www.natures-nectar.com/blogs/latest-media-coverage/raceable-straight-to-the-beehives-natures-nectars-tested-and-certified-honey-proves-its-purity-to-its-customers</div>
+                    <div class="result-content">Title: Traceable Straight to the Beehives
+– Nature&#x27;s Nectar
+Honey Online Shopping - Natures Nectar. Honey Online Shopping - Natures Nectar. While many brands claim that their honey is free from any kind of impurity, Nature’s Nectar stands out from the crowd by providing proof of its product&#x27;s purity and the entire chain of its traceability. Nature’s Nectar is one of the few brands in the countrywhich clears the NMR test. Nature’s Nectar sources honey from all over the country - from Kashmir to Kanyakumari and from Gujarat to AssamWith an experience in exporting honey for the last 26 years, it is associated directly with over 30,000 beekeepers,who are trained by the company as well aspaid fairly since there are no middlemen involved in the process. The honey travels through a straight path – from the beekeepers to Nature&#x27;s Nectar&#x27;s facility.The brand&#x27;s sourcing mantra can be found on every bottle of honey. For example, Nature&#x27;s Nectar&#x27;s Tulsi Honey comes with a description that states that it is sourced from the Holy Tulsi plant fromthe Central State of Madhya Pradesh. In addition, Nature’s Nectar also provides an NMR report with every bottle of honey to its customers. Kejriwal bee care owner of Natures-Nectar brand isthe first True Source certified company in the world. True Source Honey, USA is a not-for-profit organization launched in 2011 by a group of honey companies and importers to call attention to the problem of illegally sourced honey. The owner of Nature’s Nectar, Mr Prakash Kejriwalis the Vice-President of True Source Honey Board, which adds to the authenticity of the product. Since the same product is sold in the domestic market as well as abroad, Nature&#x27;s Nectar not only abides by the FSSAI regulations but also international food standards. Such stringent purity tests, state-of-the-art infrastructure and association with over 30,000 beekeepers in the country are the reasons that have made them not only the biggest exporters of honey fromIndia but also one of the most trustedhoney processor in the world. Nature’s Nectar is a part of Kejriwal Group, the world’s first True Source certified company and India’s largest honey exporter and packer since 1996. Our NMR-compliant honey, tested in Germany, is entirely traceable to beehives. **Email :** care@natures-nectar.com.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.prnewswire.com/news-releases/aldi-receives-national-recognition-for-natures-nectar-100-berry-burst-juice----the-2012-self-magazine-healthy-food-award-158548405.html" target="_blank">ALDI Receives National Recognition for Nature&#x27;s Nectar 100% Berry Burst Juice -- The 2012 SELF Magazine Healthy Food Award</a></h3>
+                    <div class="result-url">https://www.prnewswire.com/news-releases/aldi-receives-national-recognition-for-natures-nectar-100-berry-burst-juice----the-2012-self-magazine-healthy-food-award-158548405.html</div>
+                    <div class="result-content">Share toX
+
+Share this article
+
+Share toX
+
+BATAVIA, Ill., June 12, 2012 /PRNewswire/ -- ALDI is excited to announce that their exclusive brand, Nature&#x27;s Nectar 100% Berry Burst Juice, won this year&#x27;s SELF magazine Healthy Food Award under the drink category. Made from a blend of four fruit juices, the 100% Berry Burst Juice is one of 35 varieties including All Natural Lemonade and 100% Apple Juice in the Nature&#x27;s Nectar brand. Families looking for a refreshing and healthy beverage on that hot summer day can switch to high-quality ALDI exclusive brands and save up to 50 percent\ compared to traditional grocers. [...] Accessibility Statement Skip Navigation
+
+ ALDI Receives National Recognition for Nature&#x27;s Nectar 100% Berry Burst Juice -- The 2012 SELF Magazine Healthy Food Award
+
+ALDI Offers Award-Winning, Healthy Options at Unbeatable Prices
+
+ News provided by
+
+ ALDI 
+
+Jun 12, 2012, 08:00 ET
+
+ Share this article
+
+Share toX
+
+Share this article
+
+Share toX [...] &quot;We are very excited to have one of our juices recognized nationally by SELF magazine,&quot; said Chuck Youngstrom, president, ALDI.  &quot;We work hard to ensure that our exclusive label products meet or exceed the national name brands on taste and quality, and this further proves that healthy, delicious, award-winning grocery products do not have to come with a high price tag.&quot;
+
+The Healthy Food Award selection process begins with SELF magazine&#x27;s registered dietitians who evaluate each product against strict nutrition criteria. Readers then participate in a blind taste-test and vote for their favorite products. The two products in each category with the highest number of votes take home the Healthy Food Award title.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://zm.linkedin.com/company/naturesnectarzambia" target="_blank">Nature&#x27;s Nectar - LinkedIn Zambia</a></h3>
+                    <div class="result-url">https://zm.linkedin.com/company/naturesnectarzambia</div>
+                    <div class="result-content">- 2022-08-08: 🍯 Nature&#x27;s Nectar traceable value chain – from bee to bottle – is building trust among local communities! Learn about the importance of transparency from the company’s CEO and founder Katherine Milling in the latest edition of CLUED-iN – the inclusivebiz magazine ➡️ 
+- 2022-08-08: 🍯 Nature&#x27;s Nectar traceable value chain – from bee to bottle – is building trust among local communities! Learn about the importance of transparency from the company’s CEO and founder Katherine Milling in the latest edition of CLUED-iN – the inclusivebiz magazine ➡️ [...]  Recent posts
+- 2022-08-08: 🍯 Nature&#x27;s Nectar traceable value chain – from bee to bottle – is building trust among local communities! Learn about the importance of transparency from the company’s CEO and founder Katherine Milling in the latest edition of CLUED-iN – the inclusivebiz magazine ➡️ 
+- 2022-08-08: 🍯 Nature&#x27;s Nectar traceable value chain – from bee to bottle – is building trust among local communities! Learn about the importance of transparency from the company’s CEO and founder Katherine Milling in the latest edition of CLUED-iN – the inclusivebiz magazine ➡️ [...] - 2022-08-08: 🍯 Nature&#x27;s Nectar traceable value chain – from bee to bottle – is building trust among local communities! Learn about the importance of transparency from the company’s CEO and founder Katherine Milling in the latest edition of CLUED-iN – the inclusivebiz magazine ➡️</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.altreecapital.com/Altree_invests_in_NaturesNectar.html" target="_blank">Altree Capital invests in Nature&#x27;s Nectar</a></h3>
+                    <div class="result-url">https://www.altreecapital.com/Altree_invests_in_NaturesNectar.html</div>
+                    <div class="result-content">Altree Capital has invested in Nature&#x27;s Nectar, a Zambian company revolutionising beekeeping. Led by CEO Katherine Milling, Nature&#x27;s Nectar</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.natures-nectar.com/blogs/latest-media-coverage" target="_blank">Latest Media Coverage</a></h3>
+                    <div class="result-url">https://www.natures-nectar.com/blogs/latest-media-coverage</div>
+                    <div class="result-content">Nature&#x27;s Nectar is a part of Kejriwal Group, the world&#x27;s first True Source certified company and India&#x27;s largest honey exporter and packer since</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/natures-nectar-by-ster./__OlPEjpmGu6_vkGNTTjUuSzNef91EbZFeXbyncGEkqIM" target="_blank">Nature&#x27;s Nectar by Ster. - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/natures-nectar-by-ster./__OlPEjpmGu6_vkGNTTjUuSzNef91EbZFeXbyncGEkqIM</div>
+                    <div class="result-content">$18.6M
+
+70/100
+
+4th
+
+The Ayurveda
+
+2021, Gurugram (India), Series A
+
+Provider of Ayurvedic‑based beauty and wellness products sold directly to consumers
+
+$18.4M
+
+64/100
+
+5th
+
+Retailer of ayurvedic skincare and hair care products
+
+$8M
+
+63/100
+
+6th
+
+The Moms Co
+
+2016, Gurugram (India), Acquired
+
+Internet First Brand provides natural skincare products for mothers, babies, and general hair and body care
+
+$15.3M
+
+63/100
+
+7th
+
+Online brand offering toxin-free beauty products
+
+\-
+
+62/100
+
+8th
+
+Sol de Janeiro
+
+2015, New York City (United States), Acquired
+
+Brand of body care products
+
+$14.6M
+
+\-
+
+61/100
+
+9th
+
+Juicy Chemistry
+
+2014, Coimbatore (India), Series A
+
+Online private label brand selling skin and hair care products
+
+$7.56M
+
+58/100
+
+10th
+
+The Ayurveda Experience [...]  Nature&#x27;s Nectar by Ster. - About the company
+
+Nature&#x27;s Nectar by Ster. is an unfunded company, founded in 2019. It operates as a Manufacturer of natural hair care products, offering a range of botanical-based shampoos, conditioners, and serums that cater to various hair types and needs. Nature&#x27;s Nectar by Ster. has not raised any funding yet. The company has 2042 active competitors, including 84 funded and 50 that have exited. Its top competitorsinclude companies like mCaffeine, Honasa Consumer and Nat Habit.
+
+ Company Details [...] $7.56M
+
+58/100
+
+10th
+
+The Ayurveda Experience
+
+2010, Singapore (Singapore), Series C
+
+Online platform offering ayurvedic multi-category beauty products
+
+$27M
+
+57/100
+
+1938th
+
+Nature&#x27;s Nectar by Ster.
+
+2019, Unfunded
+
+Manufacturer of natural hair care products, offering a range of botanical-based shampoos, conditioners, and serums that cater to various hair types and needs
+
+\-
+
+\-
+
+16/100
+
+Get insights and benchmarks for competitors of 2M+ companies! Sign up today!
+
+Looking for more details on Nature&#x27;s Nectar by Ster.&#x27;s competitors? Clickhere to see the top ones
+
+ Nature&#x27;s Nectar by Ster.&#x27;s Investments and acquisitions
+
+Nature&#x27;s Nectar by Ster.has made no investments or acquisitions yet.
+
+ Reports related to Nature&#x27;s Nectar by Ster.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/natures-nectar-by-ster./__OlPEjpmGu6_vkGNTTjUuSzNef91EbZFeXbyncGEkqIM" target="_blank">Nature&#x27;s Nectar by Ster. - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/natures-nectar-by-ster./__OlPEjpmGu6_vkGNTTjUuSzNef91EbZFeXbyncGEkqIM</div>
+                    <div class="result-content">Access Tracxn on any website
+
+Install Tracxn Extension
+
+Our Google Chrome extension lets you view company details while browsing their websites
+
+ Nature&#x27;s Nectar by Ster.&#x27;s Competitors and alternates
+
+Top competitorsof Nature&#x27;s Nectar by Ster.includemCaffeine, Honasa Consumer and Nat Habit. Here is the list of Top 10 competitors of Nature&#x27;s Nectar by Ster., ranked by Tracxn score:
+
+Rank
+
+Company Details
+
+Short Description
+
+Total Funding
+
+Investors
+
+Tracxn Score
+
+1st
+
+Retailer of caffeinated skin and hair care products
+
+$48.4M
+
+74/100
+
+2nd
+
+Honasa Consumer
+
+2016, Gurugram (India), Public
+
+Retailer of beauty and personal care products with digital presence
+
+$126M
+
+73/100
+
+3rd
+
+Online platform offering beauty and skincare products
+
+$18.6M
+
+70/100
+
+4th
+
+The Ayurveda [...] $18.6M
+
+70/100
+
+4th
+
+The Ayurveda
+
+2021, Gurugram (India), Series A
+
+Provider of Ayurvedic‑based beauty and wellness products sold directly to consumers
+
+$18.4M
+
+64/100
+
+5th
+
+Retailer of ayurvedic skincare and hair care products
+
+$8M
+
+63/100
+
+6th
+
+The Moms Co
+
+2016, Gurugram (India), Acquired
+
+Internet First Brand provides natural skincare products for mothers, babies, and general hair and body care
+
+$15.3M
+
+63/100
+
+7th
+
+Online brand offering toxin-free beauty products
+
+\-
+
+62/100
+
+8th
+
+Sol de Janeiro
+
+2015, New York City (United States), Acquired
+
+Brand of body care products
+
+$14.6M
+
+\-
+
+61/100
+
+9th
+
+Juicy Chemistry
+
+2014, Coimbatore (India), Series A
+
+Online private label brand selling skin and hair care products
+
+$7.56M
+
+58/100
+
+10th
+
+The Ayurveda Experience [...]  Nature&#x27;s Nectar by Ster. - About the company
+
+Nature&#x27;s Nectar by Ster. is an unfunded company, founded in 2019. It operates as a Manufacturer of natural hair care products, offering a range of botanical-based shampoos, conditioners, and serums that cater to various hair types and needs. Nature&#x27;s Nectar by Ster. has not raised any funding yet. The company has 2042 active competitors, including 84 funded and 50 that have exited. Its top competitorsinclude companies like mCaffeine, Honasa Consumer and Nat Habit.
+
+ Company Details</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/natures-nectars/__UQ3a2byFjcdF7VzUfBEbl-iE0LDy17EJImZNOfmW1X4" target="_blank">Natures Nectars - 2026 Company Profile &amp; Competitors - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/natures-nectars/__UQ3a2byFjcdF7VzUfBEbl-iE0LDy17EJImZNOfmW1X4</div>
+                    <div class="result-content">1st
+
+Prose
+
+2017, Brooklyn (United States), Series B
+
+Internet-first brand offering customized organic hair care and styling products
+
+$25.4M
+
+69/100
+
+2nd
+
+Crown Affair
+
+2007, New York City (United States), Series C
+
+Internet first brand offering organic hair care products
+
+$20.7M
+
+59/100
+
+3rd
+
+Vegamour
+
+2017, Los Angeles (United States), Acquired
+
+Internet first brand offering natural hair care products
+
+$80M
+
+57/100
+
+4th
+
+ROZ
+
+2021, Los Angeles (United States), Series A
+
+Provider of vegan, organic, and sustainably-sourced hair care brand
+
+$10M
+
+53/100
+
+5th
+
+Pantene
+
+1945, Grand Rapids (United States), Late Stage
+
+Hair products for all hair types, promoting healthy and beautiful hair
+
+\-
+
+45/100
+
+6th
+
+Dae
+
+2019, Phoenix (United States), Series A [...] 45/100
+
+6th
+
+Dae
+
+2019, Phoenix (United States), Series A
+
+Internet first brand offering hair care products
+
+$10.6M
+
+44/100
+
+7th
+
+Briogeo Hair Care
+
+2013, New York City (United States), Acquired
+
+Clean, natural, and effective haircare solutions for all hair types
+
+\-
+
+42/100
+
+8th
+
+Viori
+
+2019, Orem (United States), Series A
+
+Internet first brand for shampoo and conditioners
+
+$9.5M
+
+\-
+
+41/100
+
+9th
+
+Head &amp; Shoulders
+
+1961, Ohio (United States), Unfunded
+
+America&#x27;s 1 dandruff shampoo brand offering hair and scalp care
+
+\-
+
+\-
+
+40/100
+
+10th
+
+CurlMix
+
+2015, Chicago (United States), Funding Raised
+
+Online subscription box for women with curly hair
+
+\-
+
+40/100
+
+293rd
+
+Natures Nectars
+
+2000, California (United States), Deadpooled
+
+Proprietary hair conditioners using natural ingredients
+
+\-
+
+\- [...]  Natures Nectars - About the company
+
+Natures Nectars is a deadpooled company based in California (United States), founded in 2000. It operates as a Proprietary hair conditioners using natural ingredients. The company has 250 active competitors, including 20 funded and 11 that have exited. Its top competitorsinclude companies like Prose, Crown Affair and Vegamour.
+
+ Company Details
+
+Nature&#x27;s nectar is engaged in manufacturing and marketing its own research based hair conditioners. The company uses natural ingredients which include avocado oil, algae, aloe vera, chamomile, mango, coconut, jojoba, marshmallow root, olive, nettle, rosehips, and shea
+
+Website
+
+naturesnectars.net
+
+Key Metrics
+
+Founded Year
+
+2000
+
+Location
+
+California, United States
+
+Stage
+
+Deadpooled
+
+Ranked
+
+293</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://rocketreach.co/natures-nectar-kejriwal-bee-care-india-pvt-ltd-competitors_b710e477c4a3d7a7" target="_blank">Nature&#x27;s Nectar (Kejriwal Bee Care India Pvt Ltd) Competitors</a></h3>
+                    <div class="result-url">https://rocketreach.co/natures-nectar-kejriwal-bee-care-india-pvt-ltd-competitors_b710e477c4a3d7a7</div>
+                    <div class="result-content">Founded in 1999 by beekeeper Ted Dennard, Savannah Bee Company is rooted in a lifelong passion for bees and the extraordinary honey they create.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.researchandmarkets.com/report/india-honey-market" target="_blank">Indian Honey Market Size, Competitors &amp; Forecast to 2034</a></h3>
+                    <div class="result-url">https://www.researchandmarkets.com/report/india-honey-market</div>
+                    <div class="result-content">- Key Players: The Indian honey market exhibits intense competition with multinational FMCG corporations and regional honey brands competing across organized and unorganized segments. Leading companies include Apis India Ltd, Baidyanath, Beez International, Dabur India Limited, Hitkary, Nature’s Nectar (Kejriwal Bee Care India Pvt Ltd), Organic India Pvt. Ltd., Patanjali Ayurved Limited, Saffola, and Zandu Care. [...] - Apis India Ltd
+- Baidyanath
+- Beez International
+- Dabur India Limited
+- Hitkary
+- Nature’s Nectar (Kejriwal Bee Care India Pvt Ltd)
+- Organic India Pvt. Ltd.
+- Patanjali Ayurved Limited
+- Saffola
+- Zandu Care
+
+ Key Questions Answered in This Report
+
+ 1.How big is the Indian honey market?
+
+ 2.What is the projected growth rate of the Indian honey market?
+
+ 3.Which distribution channel held the largest Indian honey market share?
+
+ 4.What are the key factors driving market growth?
+
+5.What are the major challenges facing the Indian honey market?
+
+ Table of Contents
+
+1 Preface
+
+2 Scope and Methodology
+
+3 Executive Summary
+
+4 Introduction
+
+5 Indian Honey Market
+
+6 Market Breakup by Distribution Channel
+
+7 Market Breakup by Flavor
+
+8 Seasonality in Indian Honey Market [...] 8 Seasonality in Indian Honey Market
+
+9 Market Breakup by State
+
+10 Competitive Landscape
+
+11 Case Study: Patanjali Honey
+
+12 Profile of Key Players
+
+List Figures
+
+List of Tables
+
+ Companies Mentioned
+
+- Apis India Ltd
+- Baidyanath
+- Beez International
+- Dabur India Limited
+- Hitkary
+- Nature’s Nectar (Kejriwal Bee Care India Pvt Ltd)
+- Organic India Pvt. Ltd.
+- Patanjali Ayurved Limited
+- Saffola
+- Zandu Care
+
+ Table Information
+
+| Report Attribute | Details |
+---|
+| No. of Pages | 140 |
+| Published | February 2026 |
+| Forecast Period | 2025 - 2034 |
+| Estimated Market Value ( INR | INR 28.89 Billion |
+| Forecasted Market Value ( INR | INR 51.9 Billion |
+| Compound Annual Growth Rate | 6.7% |
+| Regions Covered | India |
+| No. of Companies Mentioned | 10 |</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tavily.com/knowledge/company/BpuqJoWAK1yD" target="_blank">Nature&#x27;s Nectar (Kejriwal Bee Care India Pvt Ltd)</a></h3>
+                    <div class="result-url">https://tavily.com/knowledge/company/BpuqJoWAK1yD</div>
+                    <div class="result-content">Nature&#x27;s Nectar (Kejriwal Bee Care India Pvt Ltd)
+ID: BpuqJoWAK1yD
+Website: www.natures-nectar.com
+Legal name: Nature&#x27;s Nectar
+Headquarters: New Delhi, Delhi, India
+LinkedIn: www.linkedin.com/company/naturesnectar · 426 followers
+Industry: Wellness and Fitness Services
+Company type: Privately Held
+Founded: 1997
+Business model: B2C
+SaaS: no
+Social profiles: www.crunchbase.com/organization/nature-s-nectar
+Email: naturesnectar22@gmail.com
+Phone: 8527520555
+Description: On a mission to help people transition to a more sustainable lifestyle by providing honey that is traceable to beehives and 100% free from all kinds of chemicals, pesticides, adulteration, toxins, etc. [...]  Products and services
+Business areas: Honey Production and Retail, Organic Food Products, Natural Health Foods
+Products: Raw Organic Honey, Natural Multiflora Honey, Forest Honey, Acacia Honey, Tulsi Honey, Kashmir Acacia Honey, Honey with Herbs and Spices, Honey Sachets and Sticks, Honey Gift Packs
+
+ Headcount
+- Now: 7 · +1 yearly (16.7%) · +1 quarterly · +1 monthly
+  - Southern Asia: 5
+  - Eastern Europe: 0
+  - Latin America: 0
+  - Southern Europe: 0
+  - Sub Saharan Africa: 0
+  - Central Asia: 0
+  - Northern America: 0
+  - Australia New Zealand: 0
+  - Northern Europe: 0
+  - South Eastern Asia: 0
+  - Polynesia: 0
+  - Northern Africa: 0
+  - Melanesia: 0
+  - Western Europe: 0
+  - Western Asia: 0
+
+ Technology
+- Detected: 1
+- amazon advertising · last seen 2025-06-12 [...]  Web traffic
+- Monthly visits: 8,400 (-30.9% change)
+- Pages per visit: 1.96
+- Average visit duration: 49 seconds
+- Bounce rate: 61%
+- Global rank: 2,401,017
+- Country rank: 225,113
+- Category rank: 2,672
+
+ Reputation
+- Open roles: 0</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

@@ -8,6 +8,10 @@ export interface Question {
   options: string[];
   multiSelect?: boolean;
   condition?: ((answers: Record<string, string>) => boolean) | string;
+  // Intake checkpoint id (e.g. "C2", "C5", "G3.1") this question's answer
+  // pre-answers — read by MainContent's R2a prefilled_checkpoints builder,
+  // ignored everywhere this object is just rendered as a pill question.
+  checkpoint?: string;
 }
 
 interface AgentQuestionnaireProps {

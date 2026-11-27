@@ -65,6 +65,18 @@ class TaskIntakeRequest(BaseModel):
     brand_config_id: Optional[str] = None
     prompt: str
     brief_text: Optional[str] = None
+    # checkpoint_id -> value (string or list of strings) for checkpoints the
+    # user already answered elsewhere (e.g. the template form's Strategy
+    # Preferences tab) — fill_checkpoints marks these state=found/source="form"
+    # so build_questions never re-asks them. Omitted/blank entries are left
+    # to the normal classify/extract/ask flow.
+    prefilled_checkpoints: Optional[Dict[str, Any]] = None
+    # The home-grid/template title the user explicitly clicked (agents_registry.json's
+    # "title", e.g. "Competition Analysis") — when it resolves to a registry agent that
+    # carries its own "group_id", the template is authoritative and classify_task is
+    # skipped entirely (see below). Omitted, unrecognised, or mapping-less agents fall
+    # through to the existing LLM classification unchanged (free-typed prompts).
+    selected_agent: Optional[str] = None
 
 
 # ── POST /api/tasks/intake — classify+fill+questions against a real brand context ─
@@ -76,7 +88,9 @@ async def intake(
 ):
     """
     Runs the full task-brief intake (classify_task -> fill_checkpoints ->
-    build_questions), read-only.
+    build_questions), read-only — or, when req.selected_agent names a
+    registry template with its own group_id, skips classify_task and uses
+    that template's task/group/agent directly instead (see below).
 
     Callable two ways — at least one of project_id/brand_config_id is
     required:
@@ -96,7 +110,8 @@ async def intake(
     from backend.schemas.brand import normalize_target_market, normalize_brand_brief
     from backend.services.task_classifier_service import classify_task
     from backend.services.checkpoint_service import fill_checkpoints, build_questions
-    from backend.services.task_service import get_research_headings, get_step3_preselected
+    from backend.services.task_service import get_group, get_research_headings, get_step3_preselected
+    from backend.services.registry_service import get_agent as get_registry_agent
 
     if not req.project_id and not req.brand_config_id:
         raise HTTPException(status_code=422, detail="project_id or brand_config_id is required")
@@ -127,8 +142,29 @@ async def intake(
         "additional_notes": (brand.additional_notes or "") if brand else "",
     }
 
-    c = classify_task(req.prompt, req.brief_text)
-    f = fill_checkpoints(c["task"], c["group_id"], req.prompt, req.brief_text, brand_context=brand_context)
+    # Template-authoritative short-circuit: an explicitly-selected template whose
+    # registry entry carries a group_id mapping sets task/group/agent directly and
+    # SKIPS the LLM classify_task call — classification is only for free-typed
+    # prompts with no (or an unmapped) template selected.
+    template = get_registry_agent(req.selected_agent) if req.selected_agent else None
+    template_group_id = template.get("group_id") if template else None
+    if template and template_group_id:
+        group = get_group(template_group_id) or {}
+        c = {
+            "task": template["title"],
+            "matched": True,
+            "group_id": template_group_id,
+            "group_name": group.get("name", "Other"),
+            "agent_type": template["title"],
+            "confidence": 1.0,
+            "reasoning": "Template selected explicitly — classification skipped.",
+        }
+    else:
+        c = classify_task(req.prompt, req.brief_text)
+    f = fill_checkpoints(
+        c["task"], c["group_id"], req.prompt, req.brief_text,
+        brand_context=brand_context, prefilled_checkpoints=req.prefilled_checkpoints,
+    )
     q = build_questions(f)
 
     return {

@@ -3,7 +3,9 @@ import { useState, useRef, useEffect } from 'react';
 import { getAgentIcon } from '../../data/agentIcons';
 import FileIcon from '../FileIcon';
 import styles from './AgentTemplateView.module.css';
-import { type CompetitorDetail } from '../CompetitorForm';
+import { type CompetitorDetail, type CompetitorSocialMedia } from '../CompetitorForm';
+import BrandKitForm, { type BrandKit } from '../BrandKitForm';
+import { BRAND_CATEGORIES, TARGET_MARKET_REGIONS } from '../../data/brandOptions';
 
 export interface TargetAudienceData {
   region?: string;
@@ -29,8 +31,9 @@ interface AgentTemplateViewProps {
     website_url?: string;
     category?: string;
     logo_url?: string;
-    target_market?: any;
+    target_market?: { region?: string | null; cities?: string[]; custom_region?: string | null } | null;
     additional_notes?: string;
+    brand_brief?: { tone_of_voice?: string; target_audience?: string; [key: string]: string | undefined };
   } | null;
   competitors: CompetitorDetail[];
   onUpdateCompetitors: (comps: CompetitorDetail[]) => void;
@@ -43,8 +46,10 @@ interface AgentTemplateViewProps {
   onChangeTargetAudience: (ta: TargetAudienceData) => void;
   additionalNotes: string;
   onChangeAdditionalNotes: (notes: string) => void;
-  brandKit?: any;
-  onChangeBrandKit?: (bk: any) => void;
+  brandKit?: BrandKit;
+  onChangeBrandKit?: (bk: BrandKit) => void;
+  apiBase?: string;
+  authToken?: string;
   attachedFiles: File[];
   onAddFiles: (files: File[]) => void;
   onRemoveFile: (index: number) => void;
@@ -52,6 +57,8 @@ interface AgentTemplateViewProps {
 
 const TABS = [
   { id: 'brand_details', label: 'Brand Details' },
+  { id: 'competitor', label: 'Competitor' },
+  { id: 'brand_kit', label: 'Brand Kit' },
   { id: 'strategy_preferences', label: 'Strategy Preferences' },
   { id: 'target_audience', label: 'Target Audience' },
   { id: 'additional_info', label: 'Additional Info' },
@@ -59,8 +66,15 @@ const TABS = [
 
 type TabId = typeof TABS[number]['id'];
 
-const DEFAULT_REGIONS = [
-  'Global', 'North America', 'Europe', 'Asia-Pacific', 'India', 'United Kingdom', 'Middle East', 'Latin America'
+// Mirrors CompetitorForm.tsx's SOCIAL_FIELDS exactly — same field set/order,
+// reused here so the Competitor tab's per-competitor social inputs match
+// the gated-off form's layout.
+const SOCIAL_FIELDS: { key: keyof CompetitorSocialMedia; label: string; placeholder: string }[] = [
+  { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/company/...' },
+  { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/...' },
+  { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/...' },
+  { key: 'twitter', label: 'Twitter/X', placeholder: 'https://x.com/...' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@...' },
 ];
 
 const DEFAULT_SEGMENTS = [
@@ -89,14 +103,6 @@ const DEFAULT_TIMELINES = [
   'Immediate (30 Days)', 'Quarterly (90 Days)', '6-Month Implementation', '1-Year Strategic Horizon'
 ];
 
-const DEFAULT_INDUSTRIES = [
-  'E-Commerce & D2C', 'SaaS & Enterprise Tech', 'FinTech & Finance', 'Health & Wellness', 'Agency & Services', 'Luxury & Fashion', 'Consumer Goods'
-];
-
-const DEFAULT_BRAND_VOICES = [
-  'Professional & Authoritative', 'Bold & Disruptive', 'Warm & Conversational', 'Luxury & Refined', 'Educational & Analytical'
-];
-
 const DEFAULT_AGE_DEMOGRAPHICS = [
   'Gen Z (18-24)', 'Young Professionals (25-34)', 'Mid-Career & Execs (35-49)', 'Senior Decision-Makers (50+)'
 ];
@@ -122,6 +128,8 @@ export default function AgentTemplateView({
   onChangeAdditionalNotes,
   brandKit,
   onChangeBrandKit,
+  apiBase,
+  authToken,
   attachedFiles,
   onAddFiles,
   onRemoveFile,
@@ -149,7 +157,7 @@ export default function AgentTemplateView({
   const [showAddPlatform, setShowAddPlatform] = useState(false);
   const [newPlatformName, setNewPlatformName] = useState('');
 
-  const [availableIndustries, setAvailableIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
+  const [availableIndustries, setAvailableIndustries] = useState<string[]>([...BRAND_CATEGORIES]);
   const [showAddIndustry, setShowAddIndustry] = useState(false);
   const [newIndustryName, setNewIndustryName] = useState('');
 
@@ -158,6 +166,10 @@ export default function AgentTemplateView({
   const [newCompName, setNewCompName] = useState('');
   const [newCompUrl, setNewCompUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Which existing competitor's Social Media Links section is expanded —
+  // one at a time, mirroring the gated CompetitorForm's per-card toggle.
+  const [openSocialIdx, setOpenSocialIdx] = useState<number | null>(null);
 
   const displayBrandName = brandNameDraft || brand?.brand_name || 'Your Brand';
   const displayWebsite = websiteDraft || brand?.website_url || 'https://www.example.com';
@@ -185,6 +197,18 @@ export default function AgentTemplateView({
     setNewCompName('');
     setNewCompUrl('');
     setShowAddCompetitor(false);
+  };
+
+  // Edit an existing competitor's brand_name/website_url in place.
+  const handleUpdateCompetitorField = (index: number, field: 'brand_name' | 'website_url', value: string) => {
+    onUpdateCompetitors(competitors.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
+  };
+
+  // Edit an existing competitor's social_media handles in place.
+  const handleUpdateCompetitorSocial = (index: number, key: keyof CompetitorSocialMedia, value: string) => {
+    onUpdateCompetitors(
+      competitors.map((c, i) => (i === index ? { ...c, social_media: { ...c.social_media, [key]: value } } : c))
+    );
   };
 
   const handleAddCustomSegment = () => {
@@ -269,11 +293,75 @@ export default function AgentTemplateView({
     return items.includes(option);
   };
 
+  // Raw (non-pill) qaAnswers read/write — used by Brand Voice & Tone, now a
+  // free-text field rather than a pill row, while still riding the same
+  // qaAnswers entry (and therefore the same R2b brand_descriptors.voice
+  // plumbing in MainContent) that the pills used.
+  const getQaAnswer = (questionText: string): string => {
+    return qaAnswers.find(a => a.question === questionText)?.answer || '';
+  };
+  const setQaAnswer = (questionText: string, value: string) => {
+    const updated = qaAnswers.filter(a => a.question !== questionText);
+    if (value) updated.push({ question: questionText, answer: value });
+    onUpdateQaAnswers(updated);
+  };
+
   const handleToggleAudienceSegment = (seg: string) => {
     const current = targetAudience.segments || [];
     const next = current.includes(seg) ? current.filter(s => s !== seg) : [...current, seg];
     onChangeTargetAudience({ ...targetAudience, segments: next });
   };
+
+  // One-time prefill from the brand's onboarding data, run when `brand.id`
+  // becomes available/changes. Every individual write below is guarded by
+  // "the field is still empty" — never an unconditional overwrite — so a
+  // user's own edit (or a prior seed already sitting in qaAnswers/
+  // targetAudience, which are lifted state owned by MainContent and so
+  // survive switching tabs or even switching to a different template for
+  // the same brand) is never clobbered on re-render. brand.additional_notes
+  // is deliberately never read here — it's brand-level and already injected
+  // into every prompt on its own; seeding it into the per-task guardrails
+  // field would double it.
+  useEffect(() => {
+    if (!brand?.id) return;
+
+    // Both qaAnswers seeds are collected into ONE onUpdateQaAnswers call —
+    // onUpdateQaAnswers is MainContent's plain setQaAnswers, not a
+    // functional updater, so two separate calls in the same tick would each
+    // read the same pre-update qaAnswers closure and the second call would
+    // silently clobber the first's addition.
+    const qaSeeds: Array<{ question: string; answer: string }> = [];
+    if (brand.category && !getQaAnswer('Brand Industry / Category')) {
+      qaSeeds.push({ question: 'Brand Industry / Category', answer: brand.category });
+    }
+    if (brand.brand_brief?.tone_of_voice && !getQaAnswer('Brand Voice & Tone')) {
+      qaSeeds.push({ question: 'Brand Voice & Tone', answer: brand.brand_brief.tone_of_voice });
+    }
+    if (qaSeeds.length > 0) {
+      const seededQuestions = new Set(qaSeeds.map(s => s.question));
+      onUpdateQaAnswers([...qaAnswers.filter(a => !seededQuestions.has(a.question)), ...qaSeeds]);
+    }
+
+    const tm = brand.target_market;
+    const taUpdates: Partial<TargetAudienceData> = {};
+    // targetAudience.region defaults to 'Global' (MainContent's useState
+    // initializer) even on a tab the user never opened, so that silent
+    // default — not just an empty string — counts as "still unset" here.
+    if (tm?.region && (!targetAudience.region || targetAudience.region === 'Global')) {
+      const matchedRegion = TARGET_MARKET_REGIONS.find(r => r.value === tm.region);
+      if (matchedRegion) taUpdates.region = matchedRegion.label;
+    }
+    if (tm?.cities?.length && !targetAudience.locations) {
+      taUpdates.locations = tm.cities.join(', ');
+    }
+    if (brand.brand_brief?.target_audience && !targetAudience.notes) {
+      taUpdates.notes = brand.brand_brief.target_audience;
+    }
+    if (Object.keys(taUpdates).length > 0) {
+      onChangeTargetAudience({ ...targetAudience, ...taUpdates });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brand?.id]);
 
   return (
     <div className={styles.container}>
@@ -310,10 +398,159 @@ export default function AgentTemplateView({
         </div>
       </div>
 
+      {/* ── TAB: Competitor ── */}
+      {activeTab === 'competitor' && (
+        <div className={styles.card}>
+          <div className={styles.cardHeaderRow}>
+            <div className={styles.cardHeaderLeft}>
+              <div className={styles.cardIconBox}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+              </div>
+              <div>
+                <h3 className={styles.cardTitle}>Competitor Details (Optional)</h3>
+                <p className={styles.cardSubtitle}>
+                  Add competitors you want analyzed, or skip to let AI identify them automatically
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.counterBadge}>
+              {competitors.length}/5 competitors added ✓
+            </div>
+          </div>
+
+          {/* About Your Competitors */}
+          <div className={styles.competitorsSection}>
+            {competitors.map((c, i) => (
+              <div key={i} className={styles.inlineAddCard} style={{ marginTop: i === 0 ? 0 : 12 }}>
+                <div className={styles.twoColGrid} style={{ margin: 0 }}>
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.fieldLabel}>Competitor Brand Name</label>
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder="e.g. Porsche"
+                      value={c.brand_name}
+                      onChange={(e) => handleUpdateCompetitorField(i, 'brand_name', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.fieldLabel}>Competitor Website URL</label>
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder="https://www.porsche.com"
+                      value={c.website_url || ''}
+                      onChange={(e) => handleUpdateCompetitorField(i, 'website_url', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.addCustomPillBtn}
+                  onClick={() => setOpenSocialIdx(openSocialIdx === i ? null : i)}
+                >
+                  <span>{openSocialIdx === i ? '▾' : '▸'}</span>
+                  Social Media Links
+                </button>
+
+                {openSocialIdx === i && (
+                  <div className={styles.twoColGrid} style={{ margin: 0 }}>
+                    {SOCIAL_FIELDS.map(({ key, label, placeholder }) => (
+                      <div className={styles.fieldGroup} key={key}>
+                        <label className={styles.fieldLabel}>{label}</label>
+                        <input
+                          type="text"
+                          className={styles.textInput}
+                          placeholder={placeholder}
+                          value={c.social_media?.[key] || ''}
+                          onChange={(e) => handleUpdateCompetitorSocial(i, key, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className={styles.inlineAddActions}>
+                  <button
+                    type="button"
+                    className={styles.inlineCancelBtn}
+                    onClick={() => handleRemoveCompetitor(i)}
+                  >
+                    Remove Competitor
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {showAddCompetitor ? (
+              <div className={styles.inlineAddCard} style={{ marginTop: competitors.length === 0 ? 0 : 12 }}>
+                <div className={styles.twoColGrid} style={{ margin: 0 }}>
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.fieldLabel}>Competitor Brand Name</label>
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder="e.g. Porsche"
+                      value={newCompName}
+                      onChange={(e) => setNewCompName(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.fieldLabel}>Competitor Website URL</label>
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder="https://www.porsche.com"
+                      value={newCompUrl}
+                      onChange={(e) => setNewCompUrl(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className={styles.inlineAddActions}>
+                  <button
+                    type="button"
+                    className={styles.inlineCancelBtn}
+                    onClick={() => { setShowAddCompetitor(false); setNewCompName(''); setNewCompUrl(''); }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.inlineSaveBtn}
+                    onClick={handleSaveNewCompetitor}
+                    disabled={!newCompName.trim()}
+                  >
+                    Add Competitor
+                  </button>
+                </div>
+              </div>
+            ) : (
+              competitors.length < 5 && (
+                <button
+                  type="button"
+                  className={styles.addCustomPillBtn}
+                  style={{ marginTop: competitors.length === 0 ? 0 : 12 }}
+                  onClick={() => setShowAddCompetitor(true)}
+                >
+                  + Add Competitor
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── TAB 1: Brand Details ── */}
       {activeTab === 'brand_details' && (
         <>
-          {/* Competitor Details Card */}
+          {/* Brand Details Card */}
           <div className={styles.card}>
             <div className={styles.cardHeaderRow}>
               <div className={styles.cardHeaderLeft}>
@@ -324,15 +561,11 @@ export default function AgentTemplateView({
                   </svg>
                 </div>
                 <div>
-                  <h3 className={styles.cardTitle}>Competitor Details (Optional)</h3>
+                  <h3 className={styles.cardTitle}>Brand Details</h3>
                   <p className={styles.cardSubtitle}>
-                    Add competitors you want analyzed, or skip to let AI identify them automatically
+                    Your brand's identity, category, and voice
                   </p>
                 </div>
-              </div>
-
-              <div className={styles.counterBadge}>
-                {competitors.length}/5 competitors added ✓
               </div>
             </div>
 
@@ -446,121 +679,12 @@ export default function AgentTemplateView({
               <h4 className={styles.questionTitle}>
                 <span>Brand Voice & Tone</span>
               </h4>
-              <div className={styles.optionsPills}>
-                {DEFAULT_BRAND_VOICES.map((voice, idx) => {
-                  const selected = isOptionSelected('Brand Voice & Tone', voice);
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
-                      onClick={() => handleToggleQuestionOption('Brand Voice & Tone', voice, false)}
-                    >
-                      {selected && <span className={styles.pillCheck}>✓</span>}
-                      <span>{voice}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className={styles.sectionDivider} />
-
-            {/* About Your Competitors */}
-            <div className={styles.competitorsSection}>
-              <div className={styles.competitorsHeader}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="20" x2="18" y2="10" />
-                  <line x1="12" y1="20" x2="12" y2="4" />
-                  <line x1="6" y1="20" x2="6" y2="14" />
-                </svg>
-                <span>About Your Competitors</span>
-              </div>
-
-              <div className={styles.competitorsChipsRow}>
-                {competitors.map((c, i) => (
-                  <div key={i} className={styles.competitorChip}>
-                    <div className={styles.competitorChipLogo}>
-                      {c.logo_url ? (
-                        <img
-                          src={c.logo_url.startsWith('/') ? `${process.env.NEXT_PUBLIC_API_URL || ''}${c.logo_url}` : c.logo_url}
-                          alt={c.brand_name}
-                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                          onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                        />
-                      ) : (
-                        c.brand_name.slice(0, 1).toUpperCase()
-                      )}
-                    </div>
-                    <span>{c.brand_name}</span>
-                    <button
-                      type="button"
-                      className={styles.competitorChipRemove}
-                      title={`Remove ${c.brand_name}`}
-                      onClick={() => handleRemoveCompetitor(i)}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
-
-                {competitors.length < 5 && (
-                  <button
-                    type="button"
-                    className={styles.addCompetitorBtn}
-                    title="Add competitor"
-                    onClick={() => setShowAddCompetitor(true)}
-                  >
-                    +
-                  </button>
-                )}
-              </div>
-
-              {/* Inline Add Competitor Form */}
-              {showAddCompetitor && (
-                <div className={styles.inlineAddCard}>
-                  <div className={styles.twoColGrid} style={{ margin: 0 }}>
-                    <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel}>Competitor Brand Name</label>
-                      <input
-                        type="text"
-                        className={styles.textInput}
-                        placeholder="e.g. Porsche"
-                        value={newCompName}
-                        onChange={(e) => setNewCompName(e.target.value)}
-                        autoFocus
-                      />
-                    </div>
-                    <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel}>Competitor Website URL</label>
-                      <input
-                        type="text"
-                        className={styles.textInput}
-                        placeholder="https://www.porsche.com"
-                        value={newCompUrl}
-                        onChange={(e) => setNewCompUrl(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.inlineAddActions}>
-                    <button
-                      type="button"
-                      className={styles.inlineCancelBtn}
-                      onClick={() => { setShowAddCompetitor(false); setNewCompName(''); setNewCompUrl(''); }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.inlineSaveBtn}
-                      onClick={handleSaveNewCompetitor}
-                      disabled={!newCompName.trim()}
-                    >
-                      Add Competitor
-                    </button>
-                  </div>
-                </div>
-              )}
+              <textarea
+                className={styles.textarea}
+                placeholder="e.g. Warm, reassuring and family-first; benefit-led rather than playful..."
+                value={getQaAnswer('Brand Voice & Tone')}
+                onChange={(e) => setQaAnswer('Brand Voice & Tone', e.target.value)}
+              />
             </div>
           </div>
 
@@ -605,6 +729,16 @@ export default function AgentTemplateView({
             )}
           </div>
         </>
+      )}
+
+      {/* ── TAB: Brand Kit ── */}
+      {activeTab === 'brand_kit' && (
+        <BrandKitForm
+          brandKit={brandKit ?? {}}
+          onChange={(bk) => onChangeBrandKit?.(bk)}
+          apiBase={apiBase}
+          authToken={authToken}
+        />
       )}
 
       {/* ── TAB 2: Strategy Preferences ── */}
@@ -857,17 +991,17 @@ export default function AgentTemplateView({
           <div className={styles.questionBlock}>
             <h4 className={styles.questionTitle}>Target Market Region</h4>
             <div className={styles.optionsPills}>
-              {DEFAULT_REGIONS.map((reg, idx) => {
-                const selected = targetAudience.region === reg;
+              {TARGET_MARKET_REGIONS.map(({ value, label }) => {
+                const selected = targetAudience.region === label;
                 return (
                   <button
-                    key={idx}
+                    key={value}
                     type="button"
                     className={`${styles.optionPill} ${selected ? styles.optionPillActive : ''}`}
-                    onClick={() => onChangeTargetAudience({ ...targetAudience, region: reg })}
+                    onClick={() => onChangeTargetAudience({ ...targetAudience, region: label })}
                   >
                     {selected && <span className={styles.pillCheck}>✓</span>}
-                    <span>{reg}</span>
+                    <span>{label}</span>
                   </button>
                 );
               })}

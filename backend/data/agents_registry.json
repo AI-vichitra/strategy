@@ -36,6 +36,7 @@
       "id": "competition-analysis",
       "title": "Competition Analysis",
       "category": "competitive-intelligence",
+      "group_id": "G1",
       "description": "Identify your true market position and uncover competitor blind spots. Get a feature-by-feature breakdown of where you win, lose, and how to differentiate.",
       "connectors": [
         "Firecrawl",
@@ -63,6 +64,7 @@
       "id": "gtm-strategy",
       "title": "GTM Strategy",
       "category": "strategy-planning",
+      "group_id": "G2",
       "description": "Launch with confidence using a complete Go-To-Market roadmap. Define your target audience, pricing, and distribution channels to maximize market impact.",
       "connectors": [
         "HubSpot",
@@ -90,6 +92,7 @@
       "id": "product-launch-strategy",
       "title": "Product Launch Strategy",
       "category": "strategy-planning",
+      "group_id": "G2",
       "description": "Turn your new product idea into a structured, high-impact rollout plan. Map out your pre-launch buzz, launch day execution, and post-launch retention tactics.",
       "connectors": [
         "Google Analytics",
@@ -118,6 +121,7 @@
       "id": "social-media-strategy",
       "title": "Social Media Strategy",
       "category": "digital-strategy",
+      "group_id": "G3",
       "description": "Build an engaging social presence that converts followers into customers. Get tailored content pillars, posting cadences, and platform-specific growth tactics.",
       "connectors": [
         "LinkedIn",
@@ -145,6 +149,7 @@
       "id": "content-calendar",
       "title": "Content Calendar",
       "category": "digital-strategy",
+      "group_id": "G3",
       "description": "A content planner. It researches what's trending, proposes a monthly calendar of topics, and drafts a brief for each piece...",
       "connectors": [
         "Semrush API Key",
@@ -173,6 +178,7 @@
       "id": "festival-topical-campaign-strategy",
       "title": "Festival/Topical Campaign Strategy",
       "category": "performance-marketing",
+      "group_id": "G3",
       "description": "Plans festival-season and topical marketing campaigns with timing, messaging, and channel recommendations. Maps out topical authority clusters, pillar topics, and internal linking structures...",
       "connectors": [
         "Google Calendar",
@@ -201,6 +207,7 @@
       "id": "geo-aeo",
       "title": "GEO/AEO",
       "category": "digital-strategy",
+      "group_id": "G2",
       "description": "Optimize your brand to rank higher in AI search engines like ChatGPT and Perplexity. Ensure AI tools accurately understand and recommend your brand to users.",
       "connectors": [
         "Google Search Console",
@@ -230,6 +237,7 @@
       "id": "seo-strategy",
       "title": "SEO Strategy",
       "category": "digital-strategy",
+      "group_id": "G2",
       "description": "A comprehensive SEO agent. Give it a website URL and it crawls pages, identifies issues, researches keywords, audits on-page factors, analyzes backlinks, and builds an actionable optimization roadmap...",
       "connectors": [
         "Google Search Console",
@@ -258,6 +266,7 @@
       "id": "seasonal-campaign",
       "title": "Seasonal Campaign",
       "category": "performance-marketing",
+      "group_id": "G3",
       "description": "Builds seasonal marketing plans covering Q1–Q4 peaks, promotional windows, and content cadences for maximum impact...",
       "connectors": [
         "Google Analytics",
