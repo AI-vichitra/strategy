@@ -1,7 +1,14 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter as useNextRouter } from 'next/navigation';
-import TemplateGrid from './TemplateGrid';
+import TemplateGrid, { AgentCard } from './TemplateGrid';
+import { connectors as allConnectorsData, getLogoUrl } from '../../data/connectors';
+import { getAgentIcon } from '../../data/agentIcons';
+import { useAgents } from '../../hooks/useAgents';
+import AgentTemplateView, { type TargetAudienceData } from './AgentTemplateView';
+import SettingsView from './SettingsView';
+import TeamsView from './TeamsView';
+import ShareChatModal from './ShareChatModal';
 import { useTemplates } from '../../hooks/useTemplates';
 import ChatInput from './ChatInput';
 import AgentQuestionnaire, { type Question } from './AgentQuestionnaire';
@@ -853,9 +860,86 @@ function IntakeStepper() {
   return <TimedStepList labels={INTAKE_STAGE_LABELS} intervalMs={INTAKE_STAGE_INTERVAL_MS} />;
 }
 
+
+const getDomain = (connectorName: string) => {
+  const c = allConnectorsData.find((item) => item.name.toLowerCase() === connectorName.toLowerCase());
+  return c ? c.domain : 'google.com';
+};
+
+function BrandLogoIcon({
+  url,
+  name,
+  size = 28,
+}: {
+  url?: string | null;
+  name: string;
+  size?: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [url]);
+
+  const src = url
+    ? url.startsWith('/')
+      ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '')}${url}`
+      : url
+    : null;
+
+  const initial = name?.trim() ? name.trim().charAt(0).toUpperCase() : 'B';
+
+  return (
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        minWidth: `${size}px`,
+        minHeight: `${size}px`,
+        borderRadius: size > 24 ? '6px' : '4px',
+        border: '1px solid #EAE6DF',
+        background: '#FAF8F5',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      {src && !imgError ? (
+        <img
+          src={src}
+          alt={name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            padding: size > 24 ? '2px' : '1px',
+            boxSizing: 'border-box',
+          }}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span
+          style={{
+            fontSize: size > 24 ? '12px' : '10px',
+            fontWeight: 700,
+            color: '#78716C',
+            lineHeight: 1,
+            userSelect: 'none',
+          }}
+        >
+          {initial}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const searchParams = useSearchParams();
   const nextRouter = useNextRouter();
+  const { agents: catalogAgents, categories: catalogCategories, loading: agentsLoading, error: agentsError, refetch: refetchAgents } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
   type ProviderInfo = {
@@ -879,6 +963,14 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [genStage, setGenStage] = useState<string | null>(null);
   const [kbWaitText, setKbWaitText] = useState<string | null>(null);
   const [kbWaitSeen, setKbWaitSeen] = useState(false);
+  
+  const [targetAudience, setTargetAudience] = useState<TargetAudienceData>({ region: 'Global', segments: [] });
+  const [additionalNotes, setAdditionalNotes] = useState<string>('');
+  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ full_name?: string | null; email?: string | null; avatar_url?: string | null } | null>(null);
+  const [isSwitchingProject, setIsSwitchingProject] = useState(false);
+  const [switchingTargetTitle, setSwitchingTargetTitle] = useState('');
+
   const [promptText, setPromptText] = useState('');
   const [showBanner, setShowBanner] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
@@ -943,7 +1035,8 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [shareCopiedIdx, setShareCopiedIdx] = useState<number | null>(null);
   const [shareErrorIdx, setShareErrorIdx] = useState<number | null>(null);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
-  const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors'>('builder');
+  const initialView = searchParams.get('tab') === 'teams' ? 'teams' : 'builder';
+  const [view, setView] = useState<'builder' | 'files' | 'projects' | 'agents' | 'workflow' | 'connectors' | 'settings' | 'teams'>(initialView);
   const { templates: pptxTemplates } = useTemplates();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -1310,6 +1403,23 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       // with the '' lazy-create sentinel, so that auto-reattach never wins
       // for this entry path.
       await loadProjectsAndBrands();
+
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        if (token) {
+          const apiBase = process.env.NEXT_PUBLIC_API_URL;
+          const meRes = await fetch(`${apiBase}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meRes.ok) {
+            const userData = await meRes.json();
+            setCurrentUser(userData);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load user info:', err);
+      }
+
       if (isFreshTask) {
         const freshBrandId = brandParam || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null);
         if (freshBrandId) {
@@ -1373,6 +1483,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setPromptText('');
     setUserContext('');
     setAttachedFiles([]);
+    setReferenceFiles([]);
     setQaAnswers([]);
     setCompetitors([]);
     setBrandKit({});
@@ -1664,6 +1775,12 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     window.addEventListener('openFiles', onOpenFiles);
     window.addEventListener('openProjects', onOpenProjects);
     window.addEventListener('openAgents', onOpenAgents);
+
+    const onOpenSettings = () => setView('settings');
+    const onOpenTeams = () => setView('teams');
+    window.addEventListener('openSettings', onOpenSettings);
+    window.addEventListener('openTeams', onOpenTeams);
+
     window.addEventListener('openWorkflow', onOpenWorkflow);
     return () => {
       window.removeEventListener('newChat', onNewChat);
@@ -1673,6 +1790,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       window.removeEventListener('openFiles', onOpenFiles);
       window.removeEventListener('openProjects', onOpenProjects);
       window.removeEventListener('openAgents', onOpenAgents);
+
+      window.removeEventListener('openSettings', onOpenSettings);
+      window.removeEventListener('openTeams', onOpenTeams);
+
       window.removeEventListener('openWorkflow', onOpenWorkflow);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2174,6 +2295,10 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
             <WorkflowView />
           ) : view === 'agents' ? (
             <TemplateGrid onSelectAgent={handleSelectAgent} />
+        ) : view === 'settings' ? (
+          <SettingsView />
+        ) : view === 'teams' ? (
+          <TeamsView />
           ) : isChatting ? (
             /* ── Chat messages view ───────────────────── */
             <div className={styles.chatMessages}>
@@ -2496,57 +2621,104 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
               <div style={{ height: '140px', width: '100%', flexShrink: 0 }} />
               <div ref={messagesEndRef} />
             </div>
-          ) : selectedAgent && !isCardOpen ? (
-            /* ── Agent detail (pre-chat) ─────────────── */
-            <div className={styles.agentDetailContainer}>
-              <div className={styles.pageHeader}>
-                <div className={styles.ghostIcon}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="#7c3aed">
-                    <path d="M12 2C6.48 2 2 6.48 2 12v8c0 1.1.9 2 2 2h4v-6h4v6h4v-6h4v6h2c1.1 0 2-.9 2-2v-8c0-5.52-4.48-10-10-10zm-4 10c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm8 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+          ) : selectedAgent ? (
+          /* ── Agent detail (pre-chat multi-tab template view) ─────────────── */
+          <AgentTemplateView
+            key={`${activeProject?.brand_config_id || activeProject?.id || 'brand'}-${selectedAgent}`}
+            selectedAgent={selectedAgent}
+            agentDescription={catalogAgents.find(a => a.title === selectedAgent)?.description}
+            brand={brandsList.find((b: any) => b.id === (activeProject?.brand_config_id || (typeof window !== 'undefined' ? localStorage.getItem('brand_config_id') : null)))}
+            competitors={competitors}
+            onUpdateCompetitors={setCompetitors}
+            userContext={userContext}
+            onChangeUserContext={setUserContext}
+            qaAnswers={qaAnswers}
+            onUpdateQaAnswers={setQaAnswers}
+            questions={agentQuestions[selectedAgent]}
+            targetAudience={targetAudience}
+            onChangeTargetAudience={setTargetAudience}
+            additionalNotes={additionalNotes}
+            onChangeAdditionalNotes={setAdditionalNotes}
+            brandKit={brandKit}
+            onChangeBrandKit={setBrandKit}
+            attachedFiles={referenceFiles}
+            onAddFiles={(files) => setReferenceFiles(prev => [...prev, ...files])}
+            onRemoveFile={(index) => setReferenceFiles(prev => prev.filter((_, i) => i !== index))}
+          />
+        ) : (
+          /* ── Build your agent (idle home page) ─────── */
+          <div className={styles.homeContainer}>
+            <div className={styles.homeWelcome}>
+              <div className={styles.welcomeHeadingRow}>
+                <h1 className={styles.welcomeTitle}>Welcome to StratAI</h1>
+                <div className={styles.welcomePurpleIcon}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <h1 className={styles.title}>{selectedAgent}</h1>
               </div>
+              <p className={styles.welcomeSubtitle}>Your AI-powered strategy workspace</p>
             </div>
-          ) : isHome ? (
-            /* ── Build your agent (idle home page) ─────── */
-            <div className={styles.homeContainer}>
-              <div className={styles.homeWelcome}>
-                <div className={styles.welcomeHeadingRow}>
-                  <h1 className={styles.welcomeTitle}>Welcome to StratAI</h1>
-                  <div className={styles.welcomePurpleIcon}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+
+            <div className={styles.homeChatboxWrapper}>
+              <ChatInput
+                value={promptText}
+                onChange={setPromptText}
+                showBanner={showBanner}
+                onRevert={handleRevert}
+                onSubmit={handleSubmit}
+                attachedFiles={attachedFiles}
+                onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
+                onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
+                onOpenConnectors={() => setConnectorsOpen(true)}
+                onOpenTemplates={() => setView('agents')}
+                selectedModel={selectedModel}
+                onSelectModel={setSelectedModel}
+                providers={providerInfo?.providers}
+                advancedPin={providerInfo?.advanced_pin ?? null}
+                providerNote={providerNote}
+              />
+            </div>
+
+            <div className={styles.homeExploreSection}>
+              <div className={styles.homeExploreHeader}>
+                <div className={styles.homeExploreTitleGroup}>
+                  <div className={styles.homeExploreTitleRow}>
+                    <span className={styles.homeExploreSparkle}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                      </svg>
+                    </span>
+                    <h2 className={styles.homeExploreTitle}>Explore templates</h2>
                   </div>
+                  <p className={styles.homeExploreSubtitle}>
+                    Get started faster with ready-made AI workflows.
+                  </p>
                 </div>
-                <p className={styles.welcomeSubtitle}>How can I help?</p>
+                <button
+                  type="button"
+                  className={styles.homeExploreAllBtn}
+                  onClick={() => setView('agents')}
+                >
+                  Explore all →
+                </button>
               </div>
 
-              <div className={styles.homeChatboxWrapper}>
-                <ChatInput
-                  value={promptText}
-                  onChange={setPromptText}
-                  showBanner={showBanner}
-                  onRevert={handleRevert}
-                  onSubmit={handleSubmit}
-                  userContext={userContext}
-                  onChangeUserContext={setUserContext}
-                  attachedFiles={attachedFiles}
-                  onAddFiles={(files) => setAttachedFiles(prev => [...prev, ...files])}
-                  onRemoveFile={(index) => setAttachedFiles(prev => prev.filter((_, i) => i !== index))}
-                  onOpenConnectors={() => setConnectorsOpen(true)}
-                  selectedModel={selectedModel}
-                  onSelectModel={setSelectedModel}
-                  providers={providerInfo?.providers}
-                  advancedPin={providerInfo?.advanced_pin ?? null}
-                  providerNote={providerNote}
-                  hideUserContext={true}
-                />
+              <div className={styles.homeExploreGrid}>
+                {catalogAgents.slice(0, 9).map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onSelectAgent={handleSelectAgent}
+                  />
+                ))}
               </div>
             </div>
-          ) : null}
-
+          </div>
+          )}
         </div>
         )}
       </div>
@@ -2621,53 +2793,15 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
       <ConnectorsPanel open={connectorsOpen} onClose={() => setConnectorsOpen(false)} />
 
-      {/* Share Modal */}
-      {shareOpen && (
-        <div className={styles.shareOverlay} onClick={() => setShareOpen(false)}>
-          <div className={styles.shareModal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.shareModalClose} onClick={() => setShareOpen(false)}>&times;</button>
-            <h2 className={styles.shareModalTitle}>Share This Agent</h2>
-            <p className={styles.shareModalDesc}>Sharing this agent will allow other users to chat with it and edit its configuration, settings, and view their chat history with it.</p>
-
-            <div className={styles.shareModalLabel}>Users &bull; 1</div>
-            <div className={styles.shareSearchRow}>
-              <div className={styles.shareSearchInput}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="Add people" />
-              </div>
-              <button className={styles.shareActionBtn}>Share</button>
-            </div>
-
-            <div className={styles.shareUserRow}>
-              <div className={styles.shareUserAvatar}>U</div>
-              <span className={styles.shareUserName}>User <span style={{color:'#9ca3af'}}>(you)</span></span>
-              <span className={styles.shareUserRole}>Owner</span>
-            </div>
-
-            <div className={styles.shareAccessSection}>
-              <div className={styles.shareAccessTitle}>General Access</div>
-              <div className={styles.shareAccessRow}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <div>
-                  <div className={styles.shareAccessLabel}>Restricted</div>
-                  <div className={styles.shareAccessDesc}>Only users with direct access can view this Agent</div>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.shareLinkSection}>
-              <button className={styles.shareLinkBtn}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy agent link
-              </button>
-              <button className={styles.shareLinkBtn}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                Copy setup link
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+      
+      {/* Share Chat Modal */}
+      <ShareChatModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        projectId={activeProject?.id || ''}
+        projectTitle={activeProject?.title}
+        currentUser={currentUser}
+      />
+</main>
   );
 }

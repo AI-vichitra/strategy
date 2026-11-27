@@ -1,0 +1,648 @@
+/* AgentTemplateView.module.css */
+
+.container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px 24px 260px 24px;
+}
+
+/* Header */
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.agentIconWrap {
+  width: 48px;
+  height: 48px;
+  background: rgba(212, 168, 67, 0.1);
+  border: 1px solid rgba(212, 168, 67, 0.25);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #B8912E;
+  box-shadow: 0 2px 6px rgba(212, 168, 67, 0.08);
+}
+
+.agentTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.agentSubtitle {
+  font-size: 13.5px;
+  color: #666666;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Tabs Bar */
+.tabsBarWrap {
+  display: flex;
+  margin-bottom: 24px;
+}
+
+.tabsBar {
+  display: inline-flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #ECE8E1;
+  border-radius: 9999px;
+  padding: 4px 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  gap: 2px;
+}
+
+.tabItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tabItem:hover {
+  color: #1F2937;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.tabItemActive {
+  background: #ECE6FF !important;
+  color: #6D28D9 !important;
+  font-weight: 600;
+}
+
+.tabDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9CA3AF;
+  flex-shrink: 0;
+}
+
+.tabDotActive {
+  background: #7C3AED;
+}
+
+.tabDivider {
+  width: 1px;
+  height: 14px;
+  background: #E5E7EB;
+  margin: 0 2px;
+}
+
+/* Card Common */
+.card {
+  background: #FFFFFF;
+  border: 1px solid #F0ECE4;
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.2s ease;
+}
+
+.card:hover {
+  border-color: #E2DDD5;
+}
+
+.cardHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cardHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.cardIconBox {
+  width: 40px;
+  height: 40px;
+  background: #F3EEFF;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #7C3AED;
+}
+
+.cardTitle {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin: 0 0 3px 0;
+}
+
+.cardSubtitle {
+  font-size: 12.5px;
+  color: #71717A;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.counterBadge {
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #FDE68A;
+}
+
+/* 2-Column Fields */
+.twoColGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+  .twoColGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.requiredAsterisk {
+  color: #DC2626;
+  margin-left: 2px;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.textInput {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: #1F2937;
+  background: #FFFFFF;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.textInputWithIcon {
+  padding-right: 38px;
+}
+
+.textInput:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.charCount {
+  position: absolute;
+  right: 12px;
+  font-size: 11.5px;
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+.externalLinkBtn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #6B7280;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.2s ease;
+}
+
+.externalLinkBtn:hover {
+  color: #1F2937;
+}
+
+/* Competitor Section */
+.competitorsSection {
+  margin-top: 16px;
+}
+
+.competitorsHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.competitorsChipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.competitorChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 9999px;
+  padding: 4px 12px 4px 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1F2937;
+  transition: all 0.2s ease;
+}
+
+.competitorChip:hover {
+  border-color: #D1D5DB;
+  background: #F3F4F6;
+}
+
+.competitorChipLogo {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6B7280;
+  flex-shrink: 0;
+  padding: 3px;
+  box-sizing: border-box;
+}
+
+.competitorChipRemove {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.competitorChipRemove:hover {
+  color: #EF4444;
+}
+
+.addCompetitorBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px dashed #D1D5DB;
+  background: #F3EEFF;
+  color: #7C3AED;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.addCompetitorBtn:hover {
+  background: #ECE6FF;
+  border-color: #7C3AED;
+  transform: scale(1.05);
+}
+
+/* Inline Add Competitor Card */
+.inlineAddCard {
+  background: #FAF8F5;
+  border: 1px solid #E8E3DA;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inlineAddActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.inlineSaveBtn {
+  background: #7C3AED;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.inlineSaveBtn:hover {
+  opacity: 0.9;
+}
+
+.inlineCancelBtn {
+  background: transparent;
+  color: #6B7280;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Accordion User Context */
+.accordionHeader {
+  cursor: pointer;
+  user-select: none;
+}
+
+.accordionChevron {
+  color: #9CA3AF;
+  transition: transform 0.2s ease;
+}
+
+.accordionChevronOpen {
+  transform: rotate(180deg);
+}
+
+.accordionBody {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #F3F1ED;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 84px;
+  padding: 12px 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: #1F2937;
+  background: #FFFFFF;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.textarea:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* Question / Preference Items */
+.questionBlock {
+  margin-bottom: 22px;
+}
+
+.questionBlock:last-child {
+  margin-bottom: 0;
+}
+
+.questionTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.optionsPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.optionPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  color: #374151;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.optionPill:hover {
+  border-color: #CBD5E1;
+  background: #F8FAFC;
+}
+
+.optionPillActive {
+  background: #ECE6FF !important;
+  border-color: #7C3AED !important;
+  color: #6D28D9 !important;
+  font-weight: 600;
+}
+
+.pillCheck {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7C3AED;
+}
+
+/* File Attachment List */
+.filesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.fileItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.fileItemRemove {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.fileItemRemove:hover {
+  color: #EF4444;
+}
+
+.fileUploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px dashed #7C3AED;
+  background: #F9F7FF;
+  color: #7C3AED;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fileUploadBtn:hover {
+  background: #F3EEFF;
+}
+
+/* Custom Add Pill and Inline Add Controls */
+.addCustomPillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 1px dashed #7C3AED;
+  background: rgba(124, 58, 237, 0.04);
+  color: #7C3AED;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addCustomPillBtn:hover {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.inlineCustomInputWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid #7C3AED;
+  border-radius: 9999px;
+  padding: 2px 4px 2px 10px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.inlineCustomInput {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: #1A1A1A;
+  min-width: 110px;
+  max-width: 180px;
+  font-family: inherit;
+}
+
+.inlineCustomAddBtn {
+  background: #7C3AED;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.inlineCustomAddBtn:hover {
+  background: #6D28D9;
+}
+
+.inlineCustomCancelBtn {
+  background: transparent;
+  color: #9CA3AF;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.inlineCustomCancelBtn:hover {
+  color: #EF4444;
+}
+
+.sectionDivider {
+  height: 1px;
+  background: #F3EFEA;
+  margin: 18px 0;
+  width: 100%;
+}

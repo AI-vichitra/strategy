@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List
+from typing import List, Optional
 
 from backend.database import async_session
 from backend.dependencies import get_db, get_current_user
@@ -42,14 +42,28 @@ _MAX_REFERENCE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 # ── GET /api/brands/ — list all brands for current user ─────────────────────
 @router.get("/", response_model=List[BrandConfigResponse])
 async def get_brands(
+    team_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(BrandConfig)
-        .where(BrandConfig.user_id == current_user.id)
-        .order_by(BrandConfig.created_at.desc())
-    )
+    from backend.utils.permissions import get_user_team_ids
+    from sqlalchemy import or_
+
+    user_team_ids = await get_user_team_ids(current_user, db)
+
+    if team_id:
+        if team_id not in user_team_ids and current_user.role != "superadmin":
+            raise HTTPException(status_code=403, detail="You do not have access to this team's brands")
+        query = select(BrandConfig).where(BrandConfig.team_id == team_id)
+    else:
+        conditions = [BrandConfig.user_id == current_user.id]
+        if current_user.parent_user_id:
+            conditions.append(BrandConfig.user_id == current_user.parent_user_id)
+        if user_team_ids:
+            conditions.append(BrandConfig.team_id.in_(user_team_ids))
+        query = select(BrandConfig).where(or_(*conditions))
+
+    result = await db.execute(query.order_by(BrandConfig.created_at.desc()))
     return result.scalars().all()
 
 
@@ -80,7 +94,7 @@ async def search_competitors(
     Returns candidate list for the frontend to display.
     Does NOT save anything to the DB yet.
     """
-    from backend.services import tavily_service, connector_service
+    from backend.services import tavily_service, connector_service, logo_scraper_service
 
     # Resolved async (DB connector lookup -> FIRECRAWL_API_KEY env fallback),
     # mirroring pipeline_service's existing pattern, then handed to the
@@ -107,6 +121,32 @@ async def search_competitors(
             firecrawl_key=firecrawl_key,
         ),
     )
+
+    # Scrape logos concurrently for candidates AND brand's own website
+    items_to_scrape = []
+    if req.website_url:
+        items_to_scrape.append({"url": req.website_url, "name": req.brand_name})
+    for c in result.get("candidates", []):
+        c_url = c.get("website_url") or c.get("url")
+        if c_url:
+            items_to_scrape.append({"url": c_url, "name": c.get("name", "")})
+
+    logos_map = await __import__("asyncio").get_event_loop().run_in_executor(
+        None,
+        lambda: logo_scraper_service.scrape_logos_concurrently(items_to_scrape)
+    )
+
+    brand_logo = logos_map.get(req.website_url) or logo_scraper_service.get_google_fallback_logo_url(req.website_url)
+    result["brand_logo_url"] = brand_logo
+
+    for c in result.get("candidates", []):
+        c_url = c.get("website_url") or c.get("url")
+        c_logo = logos_map.get(c_url) or (logo_scraper_service.get_google_fallback_logo_url(c_url) if c_url else "")
+        # Safeguard: competitor logo must never borrow or collide with the primary brand's logo
+        if c_logo and brand_logo and c_logo == brand_logo:
+            c_logo = ""
+        c["logo_url"] = c_logo
+
     return result
 
 
@@ -270,12 +310,25 @@ async def confirm_brand(
     Returns immediately so the user is not blocked.
     """
     import json
-    from backend.services import pipeline_service, reference_service
-    from backend.routers.projects import _serialize_brand_kit, _resolve_logo_bytes
+    from backend.services import pipeline_service, reference_service, logo_scraper_service
+    from backend.routers.projects import _serialize_brand_kit, _serialize_competitor_details, _resolve_logo_bytes
+    from backend.schemas.project import CompetitorDetail, BrandKit
+
+    # Resolve brand logo: user-supplied in brand_kit or scraped from website
+    brand_logo = None
+    if req.brand_kit and req.brand_kit.logo_url:
+        brand_logo = req.brand_kit.logo_url
+    elif req.website_url:
+        brand_logo = logo_scraper_service.scrape_and_save_logo(req.website_url, req.brand_name)
+        if brand_logo:
+            if not req.brand_kit:
+                req.brand_kit = BrandKit(logo_url=brand_logo)
+            else:
+                req.brand_kit.logo_url = brand_logo
 
     # Create BrandConfig
     competitors_json = json.dumps([
-        {"name": c.name, "url": c.website_url or ""}
+        {"name": c.name, "url": c.website_url or "", "logo_url": c.logo_url or ""}
         for c in req.selected_competitors
     ])
     # Embed each reference doc's extracted text into the JSON now (not just
@@ -310,6 +363,7 @@ async def confirm_brand(
         brand_name=req.brand_name,
         website_url=req.website_url,
         category=req.category,
+        logo_url=brand_logo,
         brand_context=req.brand_context,
         additional_notes=req.additional_notes,
         competitors=competitors_json,
@@ -326,12 +380,17 @@ async def confirm_brand(
 
     # Create default Project
     logo_data, logo_mime = _resolve_logo_bytes(req.brand_kit)
+    comp_details_list = [
+        CompetitorDetail(brand_name=c.name, website_url=c.website_url, logo_url=c.logo_url)
+        for c in req.selected_competitors
+    ]
     db_project = Project(
         user_id=current_user.id,
         brand_config_id=db_brand.id,
         agent_type="StratAI",
         title=req.brand_name,
         description="Auto-created project",
+        competitor_details=_serialize_competitor_details(comp_details_list),
         brand_kit=_serialize_brand_kit(req.brand_kit),
         logo_data=logo_data,
         logo_mime=logo_mime,
@@ -341,7 +400,7 @@ async def confirm_brand(
 
     # Launch pipeline in background — user is redirected immediately
     selected_comps = [
-        {"name": c.name, "website_url": c.website_url or "", "handle": c.handle or ""}
+        {"name": c.name, "website_url": c.website_url or "", "handle": c.handle or "", "logo_url": c.logo_url or ""}
         for c in req.selected_competitors
     ]
     background_tasks.add_task(
@@ -358,6 +417,34 @@ async def confirm_brand(
     return db_brand
 
 
+# ── PUT /api/brands/{brand_id} ──────────────────────────────────────────────
+@router.put("/{brand_id}")
+async def update_brand(
+    brand_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from backend.utils.permissions import has_brand_access
+    result = await db.execute(select(BrandConfig).where(BrandConfig.id == brand_id))
+    brand = result.scalars().first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this brand")
+
+    if "brand_name" in payload and payload["brand_name"]:
+        brand.brand_name = payload["brand_name"].strip()
+        proj_result = await db.execute(
+            select(Project).where(Project.brand_config_id == brand.id)
+        )
+        for p in proj_result.scalars().all():
+            p.title = brand.brand_name
+    await db.commit()
+    await db.refresh(brand)
+    return {"id": brand.id, "brand_name": brand.brand_name}
+
+
 # ── DELETE /api/brands/{brand_id} ───────────────────────────────────────────
 @router.delete("/{brand_id}")
 async def delete_brand(
@@ -367,19 +454,19 @@ async def delete_brand(
 ):
     """
     Permanently delete a brand that has no linked projects.
-    Returns 404 if brand doesn't exist or isn't owned by the caller.
+    Returns 404 if brand doesn't exist.
+    Returns 403 if caller lacks admin access.
     Returns 409 if the brand still has projects (delete those first).
     Does NOT touch docs/, KNOWLEDGE_BASE/, or uploaded logo files.
     """
-    result = await db.execute(
-        select(BrandConfig).where(
-            BrandConfig.id == brand_id,
-            BrandConfig.user_id == current_user.id,
-        )
-    )
+    from backend.utils.permissions import has_brand_admin_access
+    result = await db.execute(select(BrandConfig).where(BrandConfig.id == brand_id))
     brand = result.scalar_one_or_none()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+
+    if not await has_brand_admin_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this brand. Only owner or team admin can delete.")
 
     # Refuse if any project still references this brand
     proj_result = await db.execute(
@@ -403,15 +490,13 @@ async def get_brand_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(BrandConfig).where(
-            BrandConfig.id == brand_id,
-            BrandConfig.user_id == current_user.id,
-        )
-    )
+    from backend.utils.permissions import has_brand_access
+    result = await db.execute(select(BrandConfig).where(BrandConfig.id == brand_id))
     brand = result.scalar_one_or_none()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to view status of this brand")
 
     return BrandStatusResponse(
         id=brand.id,

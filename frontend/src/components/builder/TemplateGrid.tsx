@@ -5,9 +5,15 @@ import { getAgentIcon } from '../../data/agentIcons';
 import { useAgents, type Agent, type AgentCategory } from '../../hooks/useAgents';
 import styles from './TemplateGrid.module.css';
 
-const getDomain = (connectorName: string) => {
-  const c = allConnectorsData.find(c => c.name === connectorName);
-  return c ? c.domain : 'google.com';
+const getConnectorLogo = (connectorName: string) => {
+  const c = allConnectorsData.find(
+    item => item.name.toLowerCase() === connectorName.toLowerCase() ||
+            item.id.toLowerCase() === connectorName.toLowerCase()
+  );
+  if (c) {
+    return getLogoUrl(c.domain, c.id);
+  }
+  return getLogoUrl(connectorName);
 };
 
 // A category with no "group" field still gets its own top-level tab,
@@ -22,7 +28,7 @@ interface TemplateGridProps {
   onSelectAgent: (title: string) => void;
 }
 
-function AgentCard({ agent, onSelectAgent }: { agent: Agent; onSelectAgent: (title: string) => void }) {
+export function AgentCard({ agent, onSelectAgent }: { agent: Agent; onSelectAgent: (title: string) => void }) {
   return (
     <div className={styles.card} onClick={() => onSelectAgent(agent.title)}>
       <div className={styles.cardTop}>
@@ -39,7 +45,7 @@ function AgentCard({ agent, onSelectAgent }: { agent: Agent; onSelectAgent: (tit
           {agent.connectors.slice(0, 4).map((cName, j) => (
             <span key={j} className={styles.miniIcon} title={cName}>
               <img
-                src={getLogoUrl(getDomain(cName))}
+                src={getConnectorLogo(cName)}
                 alt={cName}
                 className={styles.miniIconImg}
                 onError={(e) => {
@@ -170,7 +176,12 @@ export default function TemplateGrid({ onSelectAgent }: TemplateGridProps) {
                   }}
                 >
                   <div className={styles.dropdownItemContent}>
-                    <span className={styles.dropdownItemTitle}>{agent.title}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#B8912E', display: 'flex', alignItems: 'center' }}>
+                        {getAgentIcon(agent.title, agent.category, 14)}
+                      </span>
+                      <span className={styles.dropdownItemTitle}>{agent.title}</span>
+                    </div>
                     <span className={styles.dropdownItemCategory}>
                       {categoryNameById[agent.category] || agent.category}
                     </span>

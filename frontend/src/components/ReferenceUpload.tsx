@@ -34,6 +34,22 @@ function getExtension(filename: string): string {
   return idx >= 0 ? filename.slice(idx).toLowerCase() : '';
 }
 
+function FileTypeIcon({ filename }: { filename: string }) {
+  const extension = getExtension(filename);
+  const isPdf = extension === '.pdf';
+  const isWord = extension === '.docx';
+  const color = isPdf ? '#EA4335' : isWord ? '#4285F4' : '#7B8088';
+  const label = isPdf ? 'PDF' : isWord ? 'W' : 'TXT';
+
+  return (
+    <svg className={styles.itemIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 2.75h8l4.5 4.5v14H6a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2Z" fill={color} />
+      <path d="M14 2.75v4.5h4.5" fill="none" stroke="#fff" strokeWidth="1.3" strokeLinejoin="round" />
+      <text x="12" y="16" textAnchor="middle" fill="#fff" fontSize={isWord ? '8' : '5.5'} fontWeight="700" fontFamily="Arial, sans-serif">{label}</text>
+    </svg>
+  );
+}
+
 export default function ReferenceUpload({ value, onChange, apiBase, authToken, maxFiles = 5 }: ReferenceUploadProps) {
   const [pending, setPending] = useState<PendingItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,7 +137,7 @@ export default function ReferenceUpload({ value, onChange, apiBase, authToken, m
         <div className={styles.itemList}>
           {value.map((doc) => (
             <div key={doc.ref_id} className={styles.item}>
-              <span className={styles.itemIcon}>&#x1F4C4;</span>
+              <FileTypeIcon filename={doc.filename} />
               <span className={styles.itemName}>{doc.filename}</span>
               <span className={styles.itemStatusDone}>Added</span>
               <button
@@ -138,7 +154,7 @@ export default function ReferenceUpload({ value, onChange, apiBase, authToken, m
             .filter((p) => p.status !== 'done')
             .map((p) => (
               <div key={p.key} className={styles.item}>
-                <span className={styles.itemIcon}>&#x1F4C4;</span>
+                <FileTypeIcon filename={p.filename} />
                 <span className={styles.itemName}>{p.filename}</span>
                 {p.status === 'uploading' && <span className={styles.spinner} aria-label="Uploading" />}
                 {p.status === 'failed' && <span className={styles.itemStatusFailed}>{p.error || 'Failed'}</span>}

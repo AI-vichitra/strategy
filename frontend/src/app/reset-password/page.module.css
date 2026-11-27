@@ -1,0 +1,233 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #FAF8F5;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(212, 168, 67, 0.08) 0%, transparent 60%);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  border-radius: 20px;
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2D2A26 0%, #D4A843 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(45, 42, 38, 0.12);
+}
+
+.logoText {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1A1A;
+  letter-spacing: -0.02em;
+}
+
+.title {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1A1A1A;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  color: #6B6560;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.inputGroup label {
+  color: #4A4540;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.passwordInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInputWrapper input {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  border-radius: 10px;
+  padding: 9px 40px 9px 12px;
+  color: #1A1A1A;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.passwordInputWrapper input:focus {
+  outline: none;
+  border-color: #D4A843;
+  box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.1);
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9C948A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.eyeBtn:hover {
+  color: #1A1A1A;
+}
+
+.submitBtn {
+  background: linear-gradient(135deg, #2D2A26 0%, #D4A843 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(45, 42, 38, 0.12);
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(45, 42, 38, 0.18);
+  background: linear-gradient(135deg, #4A4540 0%, #E8C96A 100%);
+}
+
+.submitBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.errorMsg {
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+  color: #B91C1C;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.successBox {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.successIcon {
+  width: 56px;
+  height: 56px;
+  background: #DCFCE7;
+  color: #15803D;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.1);
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #E8E4DC;
+  border-radius: 10px;
+  padding: 10px 18px;
+  color: #4A4540;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  margin-top: 20px;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: #F5F1EB;
+  color: #1A1A1A;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #E8E4DC;
+  border-top-color: #D4A843;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 24px auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -7,5 +7,21 @@ from backend.models.report import Report
 from backend.models.report_share import ReportShare
 from backend.models.report_section import ReportSection
 from backend.models.connector import ConnectorCredential
+from backend.models.chat_share import ChatShare
+from backend.models.team import Team, TeamMember, PendingInvitation
 
-__all__ = ["Base", "User", "BrandConfig", "Project", "Message", "Report", "ReportShare", "ReportSection", "ConnectorCredential"]
+__all__ = [
+    "Base",
+    "User",
+    "BrandConfig",
+    "Project",
+    "Message",
+    "Report",
+    "ReportShare",
+    "ReportSection",
+    "ConnectorCredential",
+    "ChatShare",
+    "Team",
+    "TeamMember",
+    "PendingInvitation",
+]

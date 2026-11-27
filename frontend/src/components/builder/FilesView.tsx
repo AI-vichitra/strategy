@@ -31,14 +31,32 @@ const GRADIENTS = [
   'linear-gradient(135deg, #7C2D12 0%, #F59E0B 100%)',
 ];
 
+const SORT_OPTIONS: { id: 'recent' | 'name' | 'size'; label: string }[] = [
+  { id: 'recent', label: 'Recent First' },
+  { id: 'name', label: 'Alphabetical' },
+  { id: 'size', label: 'Size (Large to Small)' },
+];
+
 export default function FilesView() {
   const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'shared'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'size'>('recent');
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
   const [files, setFiles] = useState<GeneratedFile[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [activeExportFile, setActiveExportFile] = useState<GeneratedFile | null>(null);
   const hiddenRenderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setSortOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchGeneratedReports = async () => {
@@ -244,16 +262,54 @@ export default function FilesView() {
             )}
           </div>
 
-          <div className={styles.sortWrapper}>
-            <select
-              className={styles.sortSelect}
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+          <div className={styles.sortWrapper} ref={sortRef}>
+            <button
+              type="button"
+              className={`${styles.sortToggle} ${sortOpen ? styles.sortToggleActive : ''}`}
+              onClick={() => setSortOpen(prev => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={sortOpen}
             >
-              <option value="recent">Recent First</option>
-              <option value="name">Alphabetical</option>
-              <option value="size">Size (Large to Small)</option>
-            </select>
+              <span>{SORT_OPTIONS.find(o => o.id === sortBy)?.label || 'Recent First'}</span>
+              <svg
+                className={`${styles.sortChevron} ${sortOpen ? styles.sortChevronOpen : ''}`}
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {sortOpen && (
+              <div className={styles.sortMenu} role="listbox">
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="option"
+                    aria-selected={sortBy === opt.id}
+                    className={`${styles.sortItem} ${sortBy === opt.id ? styles.sortItemActive : ''}`}
+                    onClick={() => {
+                      setSortBy(opt.id);
+                      setSortOpen(false);
+                    }}
+                  >
+                    <span>{opt.label}</span>
+                    {sortBy === opt.id && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4A843" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

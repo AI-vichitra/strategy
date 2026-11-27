@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
+import AlertModal from '../../components/AlertModal';
 
 export default function TierSelection() {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [enterpriseModal, setEnterpriseModal] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -17,13 +19,21 @@ export default function TierSelection() {
     }
   }, [router]);
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/build');
+    }
+  };
+
   const handleSelectIndividual = () => {
     localStorage.setItem('pathChosen', 'true');
     router.push('/brand-setup');
   };
 
   const handleSelectEnterprise = () => {
-    alert('Enterprise Tier: Please contact our sales team at sales@stratai.com to set up your enterprise workspace.');
+    setEnterpriseModal(true);
   };
 
   if (checkingAuth) {
@@ -36,8 +46,17 @@ export default function TierSelection() {
 
   return (
     <main className={styles.container}>
+      <div className={styles.topNav}>
+        <button type="button" className={styles.backBtn} onClick={handleBack}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back
+        </button>
+      </div>
+
       <div className={styles.header}>
-        <h1 className={styles.title}>Choose Your Path</h1>
+        <h1 className={styles.title}>Choose Your Plan</h1>
         <p className={styles.subtitle}>Select the tier that fits your strategic needs</p>
       </div>
 
@@ -114,6 +133,13 @@ export default function TierSelection() {
           </div>
         </div>
       </div>
+      <AlertModal
+        isOpen={enterpriseModal}
+        title="Enterprise Tier"
+        message={"Please contact our sales team to set up your enterprise workspace.\n\n📧 sales@stratai.com"}
+        variant="info"
+        onClose={() => setEnterpriseModal(false)}
+      />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Response, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional, Tuple
@@ -7,8 +7,9 @@ import json
 import logging
 import os
 import uuid
+from jose import jwt
 
-from backend.dependencies import get_db, get_current_user
+from backend.dependencies import get_db, get_current_user, get_current_user_optional, SECRET_KEY, ALGORITHM
 from backend.models.user import User
 from backend.models.project import Project
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, CompetitorDetail, BrandKit
@@ -26,6 +27,8 @@ from backend.services import report_service
 from backend.services.brand_theme import extract_palette_from_logo, _decode_logo_image, _looks_like_svg, _LOGO_FORMAT_EXTENSIONS
 
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func
+from backend.models.message import Message
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -124,20 +127,48 @@ async def upload_logo(file: UploadFile = File(...), current_user: User = Depends
 
 @router.post("/", response_model=ProjectResponse)
 async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from backend.models.brand import BrandConfig
+
+    # Auto-resolve brand name and verify multi-tenant brand ownership/access
+    if project.brand_config_id:
+        from backend.utils.permissions import has_brand_access
+        brand_res = await db.execute(
+            select(BrandConfig).where(BrandConfig.id == project.brand_config_id)
+        )
+        b = brand_res.scalars().first()
+        if not b:
+            raise HTTPException(status_code=404, detail="Brand not found")
+        if not await has_brand_access(b, current_user, db):
+            raise HTTPException(status_code=403, detail="Not authorized to create a project for this brand")
+        if not project.title or project.title in ("New Strategy Chat", "New Project", "StratAI"):
+            project.title = b.brand_name
+
+    if project.team_id:
+        from backend.utils.permissions import get_user_team_ids
+        user_team_ids = await get_user_team_ids(current_user, db)
+        if project.team_id not in user_team_ids and current_user.role != "superadmin":
+            raise HTTPException(status_code=403, detail="Not authorized to assign project to this team")
+
     competitor_details_json = _serialize_competitor_details(project.competitor_details)
     brand_kit_json = _serialize_brand_kit(project.brand_kit)
     logo_data, logo_mime = _resolve_logo_bytes(project.brand_kit)
 
-    # Reuse an existing unused project (0 messages) for this brand if available
+    # 1. Reuse an existing unused project (0 messages) for this brand in the same scope if available
     existing_result = await db.execute(
         select(Project)
         .options(selectinload(Project.messages))
-        .where(Project.user_id == current_user.id, Project.brand_config_id == project.brand_config_id)
+        .where(
+            Project.user_id == current_user.id,
+            Project.brand_config_id == project.brand_config_id,
+            Project.team_id == project.team_id,
+        )
         .order_by(Project.created_at.desc())
     )
     existing_projects = existing_result.scalars().all()
     for p in existing_projects:
-        if not p.messages:
+        msg_cnt_res = await db.execute(select(func.count(Message.id)).where(Message.project_id == p.id))
+        msg_cnt = msg_cnt_res.scalar() or 0
+        if msg_cnt == 0:
             p.title = project.title
             p.agent_type = project.agent_type
             if project.llm_provider:
@@ -146,10 +177,28 @@ async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_
             p.brand_kit = brand_kit_json
             p.logo_data = logo_data
             p.logo_mime = logo_mime
+            p.team_id = project.team_id
             p.created_at = datetime.utcnow()
             await db.commit()
             res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == p.id))
             return res.scalars().first()
+
+    # 2. If a project with the same agent_type and title already exists for this brand and scope, reuse it to prevent duplicates
+    if project.agent_type:
+        for p in existing_projects:
+            same_agent = (p.agent_type or "").strip().lower() == project.agent_type.strip().lower()
+            same_title = (p.title or "").strip().lower() == (project.title or "").strip().lower()
+            if same_agent and same_title:
+                if competitor_details_json:
+                    p.competitor_details = competitor_details_json
+                if brand_kit_json:
+                    p.brand_kit = brand_kit_json
+                if logo_data:
+                    p.logo_data = logo_data
+                    p.logo_mime = logo_mime
+                await db.commit()
+                res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == p.id))
+                return res.scalars().first()
 
     # Otherwise create a new chat project for this brand
     project_data = project.model_dump(exclude={"competitor_details", "brand_kit"})
@@ -160,34 +209,160 @@ async def create_project(project: ProjectCreate, db: AsyncSession = Depends(get_
     return res.scalars().first()
 
 @router.get("/", response_model=List[ProjectResponse])
-async def get_projects(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(
-        select(Project)
-        .options(selectinload(Project.messages))
-        .where(Project.user_id == current_user.id)
-        .order_by(Project.created_at.desc())
-    )
-    all_projects = result.scalars().all()
-    return all_projects
+async def get_projects(
+    team_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from backend.utils.permissions import get_user_team_ids, has_team_admin_access
+    from backend.models.team import TeamMember
+    from sqlalchemy import or_
+
+    user_team_ids = await get_user_team_ids(current_user, db)
+
+    if team_id:
+        if team_id not in user_team_ids and current_user.role != "superadmin":
+            raise HTTPException(status_code=403, detail="You do not have access to this team's projects")
+        query = select(Project).options(selectinload(Project.messages)).where(Project.team_id == team_id)
+        result = await db.execute(query.order_by(Project.created_at.desc()))
+        all_projects = result.scalars().all()
+
+        # If regular member, filter by allowed_projects if restricted
+        if not await has_team_admin_access(team_id, current_user, db):
+            mem_res = await db.execute(
+                select(TeamMember).where(TeamMember.team_id == team_id, TeamMember.user_id == current_user.id)
+            )
+            member = mem_res.scalars().first()
+            if member and member.allowed_projects is not None:
+                allowed_ids = set(str(pid) for pid in member.allowed_projects)
+                all_projects = [p for p in all_projects if str(p.id) in allowed_ids]
+        return all_projects
+    else:
+        conditions = [Project.user_id == current_user.id]
+        if current_user.parent_user_id:
+            conditions.append(Project.user_id == current_user.parent_user_id)
+        if user_team_ids:
+            conditions.append(Project.team_id.in_(user_team_ids))
+        query = select(Project).options(selectinload(Project.messages)).where(or_(*conditions))
+
+        result = await db.execute(query.order_by(Project.created_at.desc()))
+        all_projects = result.scalars().all()
+
+        # For any team project in the list, verify member-level access
+        filtered_projects = []
+        member_cache = {}
+        for p in all_projects:
+            if p.team_id and p.user_id != current_user.id:
+                if p.team_id not in member_cache:
+                    is_adm = await has_team_admin_access(p.team_id, current_user, db)
+                    if is_adm:
+                        member_cache[p.team_id] = None  # None means admin / no restriction
+                    else:
+                        m_res = await db.execute(
+                            select(TeamMember).where(TeamMember.team_id == p.team_id, TeamMember.user_id == current_user.id)
+                        )
+                        m = m_res.scalars().first()
+                        member_cache[p.team_id] = m.allowed_projects if (m and m.allowed_projects is not None) else None
+                allowed = member_cache[p.team_id]
+                if allowed is not None and str(p.id) not in [str(x) for x in allowed]:
+                    continue
+            filtered_projects.append(p)
+        return filtered_projects
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from backend.utils.permissions import has_project_access
     result = await db.execute(
         select(Project)
         .options(selectinload(Project.messages))
-        .where(Project.id == project_id, Project.user_id == current_user.id)
+        .where(Project.id == project_id)
     )
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this project")
     return project
 
-@router.put("/{project_id}", response_model=ProjectResponse)
-async def update_project(project_id: str, project_update: ProjectUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == project_id, Project.user_id == current_user.id))
+@router.get("/{project_id}/logo")
+async def get_project_logo(
+    project_id: str,
+    token: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    # If query token is provided and current_user is not resolved, authenticate via token
+    if not current_user and token:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            email: str = payload.get("sub")
+            if email:
+                u_res = await db.execute(select(User).where(User.email == email))
+                current_user = u_res.scalars().first()
+        except Exception:
+            pass
+
+    from backend.utils.permissions import has_project_access
+    if current_user:
+        if not await has_project_access(project, current_user, db):
+            raise HTTPException(status_code=403, detail="Not authorized to access this project's logo")
+    else:
+        # Check if project has an active public share
+        from backend.models.chat_share import ChatShare
+        share_res = await db.execute(
+            select(ChatShare).where(ChatShare.project_id == project_id, ChatShare.is_active == True)
+        )
+        if not share_res.scalars().first():
+            raise HTTPException(status_code=401, detail="Authentication required to view project logo")
+    
+    # 1. If project has raw logo_data BLOB
+    if project.logo_data:
+        return Response(content=project.logo_data, media_type=project.logo_mime or "image/png")
+    
+    # 2. If project has brand_kit logo_url
+    if project.brand_kit:
+        try:
+            bk = json.loads(project.brand_kit) if isinstance(project.brand_kit, str) else project.brand_kit
+            logo_url = bk.get("logo_url")
+            if logo_url and logo_url.startswith("/static/"):
+                file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), logo_url.lstrip("/").replace("/", os.sep))
+                if os.path.exists(file_path):
+                    with open(file_path, "rb") as f:
+                        data = f.read()
+                    mime = "image/svg+xml" if file_path.endswith(".svg") else "image/png"
+                    return Response(content=data, media_type=mime)
+        except Exception:
+            pass
+
+    # 3. If linked to brand_config
+    if project.brand_config_id:
+        from backend.models.brand import BrandConfig
+        b_res = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
+        brand = b_res.scalars().first()
+        if brand and brand.logo_url and brand.logo_url.startswith("/static/"):
+            file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), brand.logo_url.lstrip("/").replace("/", os.sep))
+            if os.path.exists(file_path):
+                with open(file_path, "rb") as f:
+                    data = f.read()
+                mime = "image/svg+xml" if file_path.endswith(".svg") else "image/png"
+                return Response(content=data, media_type=mime)
+
+    raise HTTPException(status_code=404, detail="Logo not found")
+
+@router.put("/{project_id}", response_model=ProjectResponse)
+async def update_project(project_id: str, project_update: ProjectUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from backend.utils.permissions import has_project_access
+    result = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == project_id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this project")
     
     update_data = project_update.model_dump(exclude_unset=True)
     if "competitor_details" in update_data:
@@ -198,18 +373,43 @@ async def update_project(project_id: str, project_update: ProjectUpdate, db: Asy
     for key, value in update_data.items():
         setattr(project, key, value)
 
+    # If title is updated and project is linked to a BrandConfig, sync brand_name
+    if "title" in update_data and project.brand_config_id:
+        from backend.models.brand import BrandConfig
+        brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
+        brand = brand_result.scalars().first()
+        if brand and (brand.user_id == current_user.id or project.team_id):
+            brand.brand_name = project.title
+
     await db.commit()
     res = await db.execute(select(Project).options(selectinload(Project.messages)).where(Project.id == project_id))
     return res.scalars().first()
 
 @router.get("/{project_id}/reports", response_model=List[ReportMetadata])
 async def get_project_reports(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    from backend.utils.permissions import has_project_access, has_brand_access
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        # Check if project_id is actually a brand_config_id
+        from backend.models.brand import BrandConfig
+        brand_res = await db.execute(select(BrandConfig).where(BrandConfig.id == project_id))
+        brand = brand_res.scalars().first()
+        if brand:
+            if not await has_brand_access(brand, current_user, db):
+                return []
+            proj_res = await db.execute(select(Project).where(Project.brand_config_id == brand.id))
+            proj = proj_res.scalars().first()
+            if proj and await has_project_access(proj, current_user, db):
+                return await report_service.list_reports(db, proj.id)
+            return []
+        # Return empty list rather than 404 for deleted/merged projects or non-existent
+        return []
 
-    return await report_service.list_reports(db, project_id, current_user.id)
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to view reports for this project")
+
+    return await report_service.list_reports(db, project_id)
 
 @router.get("/{project_id}/details")
 async def get_project_details(
@@ -218,32 +418,52 @@ async def get_project_details(
     current_user: User = Depends(get_current_user),
 ):
     from backend.models.brand import BrandConfig
+    from backend.utils.permissions import has_project_access, has_brand_access
 
-    result = await db.execute(
-        select(Project).where(Project.id == project_id, Project.user_id == current_user.id)
-    )
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    
+    brand = None
+    if project:
+        if not await has_project_access(project, current_user, db):
+            raise HTTPException(status_code=403, detail="Not authorized to access this project's details")
+        brand_result = await db.execute(
+            select(BrandConfig).where(BrandConfig.id == project.brand_config_id)
+        )
+        brand = brand_result.scalars().first()
+    else:
+        # Check if project_id is actually a brand_config_id
+        brand_result = await db.execute(
+            select(BrandConfig).where(BrandConfig.id == project_id)
+        )
+        brand = brand_result.scalars().first()
+        if brand:
+            if not await has_brand_access(brand, current_user, db):
+                raise HTTPException(status_code=403, detail="Not authorized to access this brand's details")
+            proj_result = await db.execute(
+                select(Project).where(Project.brand_config_id == brand.id).order_by(Project.created_at.desc())
+            )
+            for p in proj_result.scalars().all():
+                if await has_project_access(p, current_user, db):
+                    project = p
+                    break
+        else:
+            raise HTTPException(status_code=404, detail="Project or Brand not found")
 
-    brand_result = await db.execute(
-        select(BrandConfig).where(BrandConfig.id == project.brand_config_id)
-    )
-    brand = brand_result.scalars().first()
     if not brand:
-        raise HTTPException(status_code=404, detail="Brand not found")
+        raise HTTPException(status_code=404, detail="Project or Brand not found")
 
-    logo_url = None
+    logo_url = brand.logo_url or None
     colors = None
-    if project.brand_kit:
+    if project and project.brand_kit:
         try:
             bk = json.loads(project.brand_kit)
-            logo_url = bk.get("logo_url")
+            logo_url = bk.get("logo_url") or logo_url
             colors = bk.get("colors")
         except Exception:
             pass
     # Fallback: look for brand_kit from any sibling project when this one has none
-    if not logo_url and not colors and project.brand_config_id:
+    if not logo_url and not colors and project and project.brand_config_id:
         fb_result = await db.execute(
             select(Project.brand_kit)
             .where(
@@ -259,7 +479,7 @@ async def get_project_details(
         if fb_raw:
             try:
                 fb_bk = json.loads(fb_raw)
-                logo_url = fb_bk.get("logo_url")
+                logo_url = fb_bk.get("logo_url") or logo_url
                 colors = fb_bk.get("colors")
             except Exception:
                 pass
@@ -268,9 +488,16 @@ async def get_project_details(
     if brand.competitors:
         try:
             for c in json.loads(brand.competitors):
+                c_logo = c.get("logo_url") or ""
+                # Safeguard: prevent showing the brand's own logo for a competitor
+                if c_logo and brand.logo_url and c_logo == brand.logo_url:
+                    c_logo = ""
+                if c_logo and logo_url and c_logo == logo_url:
+                    c_logo = ""
                 competitors_selected.append({
                     "name": c.get("name", ""),
                     "website_url": c.get("url") or c.get("website_url") or "",
+                    "logo_url": c_logo,
                 })
         except Exception:
             pass
@@ -317,21 +544,33 @@ async def get_project_details(
             pass
 
     last_updated = None
-    if project.last_active_at:
+    if project and project.last_active_at:
         last_updated = project.last_active_at.isoformat()
-    elif project.created_at:
+    elif project and project.created_at:
         last_updated = project.created_at.isoformat()
+    elif brand.created_at:
+        last_updated = brand.created_at.isoformat()
 
-    # Collect all chat projects for this brand, ordered newest first
+    # Collect all chat projects for this brand that current_user has access to, ordered newest first
     chats_result = await db.execute(
         select(Project)
         .options(selectinload(Project.messages))
-        .where(Project.brand_config_id == project.brand_config_id, Project.user_id == current_user.id)
+        .where(Project.brand_config_id == brand.id)
         .order_by(Project.created_at.desc())
     )
     all_chats = chats_result.scalars().all()
-    chats = []
+    accessible_chats = []
     for c in all_chats:
+        if await has_project_access(c, current_user, db):
+            accessible_chats.append(c)
+
+    chats = []
+    seen_chat_keys = set()
+    for c in accessible_chats:
+        chat_key = (c.agent_type or "").strip().lower() or (c.title or "").strip().lower()
+        if chat_key in seen_chat_keys:
+            continue
+        seen_chat_keys.add(chat_key)
         msgs = c.messages or []
         last_msg_at = max((m.created_at for m in msgs), default=None)
         chats.append({
@@ -343,7 +582,7 @@ async def get_project_details(
         })
 
     return {
-        "brand_config_id": project.brand_config_id,
+        "brand_config_id": brand.id,
         "brand": {
             "name": brand.brand_name,
             "website_url": brand.website_url,
@@ -374,16 +613,21 @@ async def update_brand_brief(
     current_user: User = Depends(get_current_user),
 ):
     from backend.models.brand import BrandConfig
+    from backend.utils.permissions import has_project_access, has_brand_access
 
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this project")
 
     brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
     brand = brand_result.scalars().first()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this brand")
 
     data = payload.model_dump()
     if not any(v.strip() for v in data.values()):
@@ -402,16 +646,21 @@ async def update_social_handles(
     current_user: User = Depends(get_current_user),
 ):
     from backend.models.brand import BrandConfig
+    from backend.utils.permissions import has_project_access, has_brand_access
 
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this project")
 
     brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
     brand = brand_result.scalars().first()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this brand")
 
     data = payload.model_dump()
     if not any(v.strip() for v in data.values()):
@@ -430,16 +679,21 @@ async def update_brand_context(
     current_user: User = Depends(get_current_user),
 ):
     from backend.models.brand import BrandConfig
+    from backend.utils.permissions import has_project_access, has_brand_access
 
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this project")
 
     brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
     brand = brand_result.scalars().first()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this brand")
 
     if not payload.website_url.strip() or not payload.category.strip() or not payload.target_market.strip():
         raise HTTPException(status_code=422, detail="website_url, category, and target_market are all required")
@@ -460,16 +714,21 @@ async def add_reference_doc(
 ):
     from backend.models.brand import BrandConfig
     from backend.services import reference_service
+    from backend.utils.permissions import has_project_access, has_brand_access
 
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this project")
 
     brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
     brand = brand_result.scalars().first()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this brand")
 
     try:
         docs = json.loads(brand.reference_docs) if brand.reference_docs else []
@@ -523,16 +782,21 @@ async def delete_reference_doc(
     current_user: User = Depends(get_current_user),
 ):
     from backend.models.brand import BrandConfig
+    from backend.utils.permissions import has_project_access, has_brand_access
 
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not await has_project_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this project")
 
     brand_result = await db.execute(select(BrandConfig).where(BrandConfig.id == project.brand_config_id))
     brand = brand_result.scalars().first()
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
+    if not await has_brand_access(brand, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this brand")
 
     try:
         docs = json.loads(brand.reference_docs) if brand.reference_docs else []
@@ -590,11 +854,15 @@ async def delete_project(project_id: str, db: AsyncSession = Depends(get_db), cu
     from backend.models.report import Report
     from backend.models.report_section import ReportSection
     from backend.models.report_share import ReportShare
+    from backend.utils.permissions import has_project_admin_access
 
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.user_id == current_user.id))
+    result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    if not await has_project_admin_access(project, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this project. Only project creator, team admin, or system admin can delete.")
 
     # 1. Clean up report child rows that have no ORM cascade (ReportSection, ReportShare)
     report_rows = await db.execute(select(Report.id).where(Report.project_id == project_id))

@@ -135,9 +135,12 @@ async def _build_pptx_response(db: AsyncSession, report, template_id: Optional[s
 
 @router.get("/{report_id}", response_model=ReportDetail)
 async def get_report(report_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    report = await report_service.get_report(db, report_id, current_user.id)
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this report")
     return report
 
 @router.get("/{report_id}/export/docx")
@@ -145,9 +148,12 @@ async def export_report_docx(report_id: str, db: AsyncSession = Depends(get_db),
     """Always renders the report's raw, original content — unaffected by any section
     edits/hides/reorders — so existing frontend code and bookmarked links keep behaving
     exactly as before section-aware export (POST, below) was introduced."""
-    report = await report_service.get_report(db, report_id, current_user.id)
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to export this report")
     return await _build_docx_response(db, report, content_override=report.content)
 
 @router.post("/{report_id}/export/docx")
@@ -161,9 +167,12 @@ async def export_report_docx_with_content(
     finalized/reassembled markdown), it's rendered as-is. Otherwise, falls through to
     the report's parsed sections (visible, in order) when they exist, or its raw
     content when they don't — see export_service._resolve_export_content."""
-    report = await report_service.get_report(db, report_id, current_user.id)
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to export this report")
     return await _build_docx_response(db, report, content_override=req.content)
 
 @router.get("/{report_id}/export/pptx")
@@ -173,26 +182,22 @@ async def export_report_pptx(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Mirrors export_report_docx: renders the report's raw content as a branded
-    PowerPoint deck via pptx_service.generate_pptx. `template_id` selects a visual
-    TemplateSpec (see template_service.get_template / GET /api/pptx-templates for
-    the catalog); an absent or unknown id safely falls back to the default
-    template — generate_pptx/get_template handle that, so no validation is
-    needed here. Resolution is query-param-only for now; a persisted
-    report.template_id column is a later step."""
-    report = await report_service.get_report(db, report_id, current_user.id)
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to export this report")
     return await _build_pptx_response(db, report, template_id=template_id)
 
 @router.get("/{report_id}/export/pdf")
 async def export_report_pdf(report_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Renders the report's raw content as a branded docx (same theming as the
-    DOCX export) and converts it to PDF via LibreOffice headless, so the PDF
-    matches the DOCX exactly."""
-    report = await report_service.get_report(db, report_id, current_user.id)
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to export this report")
 
     docx_bytes, title = await _generate_report_docx_bytes(db, report, content_override=report.content)
 
@@ -214,14 +219,26 @@ async def export_report_pdf(report_id: str, db: AsyncSession = Depends(get_db), 
 
 @router.post("/{report_id}/share", response_model=ShareTokenResponse)
 async def create_report_share(report_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    token = await share_service.create_share(db, report_id, current_user.id)
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to share this report")
+    token = await share_service.create_share(db, report_id, report.user_id)
     if not token:
         raise HTTPException(status_code=404, detail="Report not found")
     return {"token": token}
 
 @router.delete("/{report_id}/share")
 async def revoke_report_share(report_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    ok = await share_service.revoke_share(db, report_id, current_user.id)
+    from backend.utils.permissions import has_report_access
+    report = await report_service.get_report(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if not await has_report_access(report, current_user, db):
+        raise HTTPException(status_code=403, detail="Not authorized to revoke share for this report")
+    ok = await share_service.revoke_share(db, report_id, report.user_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Report not found")
     return {"detail": "Share revoked"}

@@ -1,0 +1,1767 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 48px 60px;
+  box-sizing: border-box;
+  font-family: inherit;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 20px 16px 40px;
+    gap: 16px;
+  }
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6B6560;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 16px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.backBtn:hover {
+  color: #1A1A1A;
+  background: #F0ECE4;
+}
+
+/* ── Top Header ────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #E8E4DC;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.iconBox {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2D2A26, #D4A843);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(212, 168, 67, 0.28);
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1A1A1A;
+  letter-spacing: -0.02em;
+  margin: 0 0 3px;
+}
+
+.subtitle {
+  font-size: 13.5px;
+  color: #6B6560;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Privilege Info Banner ────────────────────────────── */
+.memberNoticeBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #FDFBF7;
+  border: 1px solid #EAE4D6;
+  border-left: 4px solid #D4A843;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #5C554D;
+  line-height: 1.5;
+}
+
+.memberNoticeIcon {
+  color: #B88E28;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Main Container / Card ────────────────────────────── */
+.card {
+  background: #ffffff;
+  border: 1px solid #E8E4DC;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cardsContainer {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── State Box ────────────────────────────────────────── */
+.stateBox {
+  padding: 60px 20px;
+  text-align: center;
+  color: #6B6560;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.stateIcon {
+  font-size: 42px;
+  margin-bottom: 4px;
+}
+
+.stateTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin: 0;
+}
+
+.stateDesc {
+  font-size: 13px;
+  color: #6B6560;
+  max-width: 420px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #1A1A1A;
+  color: #ffffff;
+  border: 1px solid #1A1A1A;
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #2D2A26;
+  border-color: #2D2A26;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #FAF8F5;
+  color: #1A1A1A;
+  border: 1px solid #E2DCD0;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: #F0ECE4;
+  border-color: #000000;
+}
+
+.btnGold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btnGold:hover:not(:disabled) {
+  background: #262626;
+  border-color: #262626;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.btnGold:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: #6B6560;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.btnGhost:hover {
+  color: #1A1A1A;
+  background: #F4EFE6;
+}
+
+.btnDangerText {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid transparent;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.btnDangerText:hover {
+  background: #fef2f2;
+  border-color: #fee2e2;
+}
+
+/* ── Team Selector & Switcher ─────────────────────────── */
+.teamSelectorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #F0ECE4;
+  flex-wrap: wrap;
+}
+
+.teamSelectWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.teamSelectLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B6560;
+  white-space: nowrap;
+}
+
+.teamSelect {
+  flex: 1;
+  max-width: 320px;
+  padding: 8px 12px;
+  border: 1px solid #E2DCD0;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1A1A1A;
+  background: #FAF8F5;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.teamSelect:focus {
+  border-color: #000000;
+}
+
+.newTeamBtnDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+/* ── Team Overview Banner Card ────────────────────────── */
+.teamCard {
+  background: linear-gradient(135deg, #FAF8F5 0%, #F5F0E6 100%);
+  border: 1px solid #EAE5DA;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ── Team Profile & Logo Upload (User Request) ────────── */
+.teamProfileContainer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.teamAvatarCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.teamLogoWrapper {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #FFFFFF;
+  border: 1.5px solid #E2DCD0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.teamLogoWrapperAdmin {
+  cursor: pointer;
+}
+
+.teamLogoWrapperAdmin:hover {
+  border-color: #000000;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.teamLogoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.teamLogoFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1A1A1A;
+  background: linear-gradient(135deg, #FAF8F5 0%, #EFEAE0 100%);
+}
+
+.teamLogoOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  backdrop-filter: blur(1px);
+}
+
+.teamLogoWrapperAdmin:hover .teamLogoOverlay {
+  opacity: 1;
+}
+
+.avatarActionsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uploadLogoBtnText {
+  background: none;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1A1A1A;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+.uploadLogoBtnText:hover {
+  color: #000000;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.uploadLogoBtnText:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.removeLogoBtnText {
+  background: none;
+  border: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.removeLogoBtnText:hover {
+  background: #fef2f2;
+}
+
+.removeLogoBtnText:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.teamCardInfo h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1A1A1A;
+  letter-spacing: -0.01em;
+}
+
+.teamCardInfo p {
+  margin: 0;
+  font-size: 13px;
+  color: #6B6560;
+  line-height: 1.45;
+}
+
+.badgeGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roleBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+
+.roleBadge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.badgeAdmin {
+  background: #F4EEDF;
+  color: #7A570C;
+  border: 1px solid #E2D5BC;
+}
+
+.badgeMember {
+  background: #E8E5DD;
+  color: #55504A;
+  border: 1px solid #DCD8CF;
+}
+
+.badgeOwner {
+  background: #1A1A1A;
+  color: #ffffff;
+  border: 1px solid #1A1A1A;
+}
+
+.countBadge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 7px;
+  background: #FFFFFF;
+  color: #4A4641;
+  border: 1px solid #E0DBD1;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+
+.countBadge:hover {
+  background: #FAF8F5;
+  border-color: #000000;
+  color: #1A1A1A;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.filterBadgeActive {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #000000 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+}
+
+.filterResetBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FAF8F5;
+  border: 1px solid #EAE5DA;
+  border-radius: 8px;
+  padding: 6px 14px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: #4A4641;
+}
+
+.filterResetBtn {
+  background: none;
+  border: none;
+  color: #000000;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 12px;
+  padding: 0;
+}
+
+/* ── Section Titles & Headers ─────────────────────────── */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A1A;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle svg {
+  color: #1A1A1A;
+}
+
+.sectionCounter {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7A746E;
+  background: #F0ECE4;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+/* ── Projects Grid & Cards ────────────────────────────── */
+.projectsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .projectsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .projectsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.projectCard {
+  background: #FAF8F5;
+  border: 1px solid #EAE5DA;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.18s ease;
+}
+
+.projectCard:hover {
+  background: #FFFFFF;
+  border-color: #000000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.projectCardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.projectIconBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2DCD0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #B88E28;
+  flex-shrink: 0;
+}
+
+.projectMeta {
+  min-width: 0;
+  flex: 1;
+}
+
+.projectTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin: 0 0 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectAgent {
+  font-size: 12px;
+  color: #7A746E;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectBrand {
+  font-size: 11px;
+  color: #B88E28;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.projectCardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #EFEAE0;
+  gap: 8px;
+}
+
+.projectDate {
+  font-size: 11.5px;
+  color: #8C857D;
+}
+
+.emptyBox {
+  background: #FAF8F5;
+  border: 1px dashed #DCD5C8;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.emptyBoxTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin: 0;
+}
+
+.emptyBoxDesc {
+  font-size: 12.5px;
+  color: #7A746E;
+  max-width: 360px;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* ── Invite Section ───────────────────────────────────── */
+.inviteBox {
+  background: #FAF8F5;
+  border: 1px solid #EAE5DA;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inviteForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inviteInputsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inputEmail {
+  flex: 1;
+  min-width: 220px;
+  padding: 9px 13px;
+  border: 1px solid #E2DCD0;
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.inputEmail:focus {
+  border-color: #000000;
+}
+
+.roleSelect {
+  padding: 9px 32px 9px 12px;
+  border: 1px solid #E2DCD0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A1A;
+  background-color: #FFFFFF;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234A4641' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.roleSelect:hover {
+  border-color: #000000;
+  background-color: #FAF8F5;
+}
+
+.roleSelect:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Custom Styled Role Dropdown Component ────────────── */
+.customRoleSelectWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.customRoleSelectBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  background: #FFFFFF;
+  border: 1px solid #E2DCD0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A1A;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 105px;
+  font-family: inherit;
+}
+
+.customRoleSelectBtn:hover {
+  border-color: #000000;
+  background: #FAF8F5;
+}
+
+.customRoleSelectBtnOpen {
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  background: #FFFFFF;
+}
+
+.customRoleChevron {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #6B6560;
+  flex-shrink: 0;
+}
+
+.customRoleChevronRotated {
+  transform: rotate(180deg);
+  color: #000000;
+}
+
+.customRoleDropdownMenu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  min-width: 220px;
+  background: #FFFFFF;
+  border: 1px solid #E8E4DC;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 6px;
+  z-index: 200;
+  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.customRoleOptionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  gap: 8px;
+}
+
+.customRoleOptionItem:hover {
+  background: #F5F1EB;
+}
+
+.customRoleOptionActive {
+  background: #F7F5F0;
+  font-weight: 700;
+}
+
+.customRoleOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customRoleOptionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.customRoleOptionDesc {
+  font-size: 11px;
+  color: #8C857B;
+  line-height: 1.3;
+}
+
+.customRoleCheckmark {
+  color: #000000;
+  flex-shrink: 0;
+}
+
+/* ── In-Place Editable Fields (Hover Pencil Icon) ─────── */
+.editableWrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  transition: all 0.18s ease;
+  max-width: 100%;
+}
+
+.editableWrapper:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.editPencilBtn {
+  opacity: 0;
+  color: #8C857B;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.18s ease, color 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.editableWrapper:hover .editPencilBtn {
+  opacity: 1;
+  color: #1A1A1A;
+}
+
+.editPencilBtn:hover {
+  transform: scale(1.15);
+  color: #000000;
+}
+
+.inlineEditRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  animation: fadeIn 0.15s ease;
+}
+
+.inlineEditInput {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1A1A1A;
+  border: 1.5px solid #000000;
+  border-radius: 8px;
+  padding: 4px 10px;
+  background: #FFFFFF;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+.inlineEditTextarea {
+  font-size: 13px;
+  color: #1A1A1A;
+  border: 1.5px solid #000000;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #FFFFFF;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  max-width: 480px;
+  min-height: 52px;
+  resize: vertical;
+  line-height: 1.45;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+.inlineSaveBtn {
+  background: #000000;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.inlineSaveBtn:hover {
+  background: #262626;
+  transform: scale(1.05);
+}
+
+.inlineCancelBtn {
+  background: #F0ECE4;
+  color: #4A4641;
+  border: none;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.inlineCancelBtn:hover {
+  background: #E2DCD0;
+  color: #1A1A1A;
+}
+
+.inviteProjectsPicker {
+  background: #FFFFFF;
+  border: 1px solid #E5E0D6;
+  border-radius: 9px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inviteRadioGroup {
+  display: flex;
+  gap: 18px;
+  font-size: 12.5px;
+  color: #4A4641;
+}
+
+.inviteRadioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.projectCheckboxesList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-top: 6px;
+  border-top: 1px solid #F0ECE4;
+}
+
+.projectCheckboxItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #333;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.projectCheckboxItem:hover {
+  background-color: #F8F5EE;
+}
+
+.inTeamBadge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6B6560;
+  background: #EFECE6;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.pushToTeamBadge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #92400E;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.projectGroupHeader {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8C857B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-top: 6px;
+  padding-bottom: 2px;
+}
+
+.feedbackBanner {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.feedbackSuccess {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.feedbackError {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+/* ── Non-Admin Lock Card ──────────────────────────────── */
+.nonAdminLockCard {
+  background: #FAF8F5;
+  border: 1px dashed #DCD5C8;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #6B6560;
+}
+
+.nonAdminLockCard svg {
+  color: #B88E28;
+  flex-shrink: 0;
+}
+
+/* ── Members Container & Items ────────────────────────── */
+.membersContainer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #EAE5DA;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #F0ECE4;
+  gap: 12px;
+  flex-wrap: wrap;
+  transition: background 0.12s ease;
+}
+
+.memberItem:last-child {
+  border-bottom: none;
+}
+
+.memberItem:hover {
+  background: #FCFAF7;
+}
+
+.memberLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.memberInfo {
+  min-width: 0;
+}
+
+.memberName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1A1A1A;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.memberEmail {
+  font-size: 12px;
+  color: #7A746E;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accessBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #F4EFE6;
+  color: #6E675E;
+  border: 1px solid #E5DFD4;
+}
+
+.accessBadgeActive {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.accessBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid #E2DCD0;
+  background: #FAF8F5;
+  color: #1A1A1A;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.accessBtn:hover {
+  background: #F0ECE4;
+  border-color: #D4A843;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #a8a29e;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.removeBtn:hover {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+/* ── Create Team Form Box ─────────────────────────────── */
+.createBox {
+  background: #FFFFFF;
+  border: 1px solid #EAE5DA;
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 880px;
+  box-sizing: border-box;
+}
+
+.createHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.createHeader h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.cancelLink {
+  background: none;
+  border: none;
+  color: #7A746E;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.cancelLink:hover {
+  color: #1A1A1A;
+}
+
+.createDesc {
+  font-size: 13px;
+  color: #6B6560;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.createForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inputField {
+  padding: 10px 14px;
+  border: 1px solid #E2DCD0;
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  outline: none;
+  font-family: inherit;
+}
+
+.inputField:focus {
+  border-color: #D4A843;
+}
+
+/* ── Inline Modals (for Project Selection & Permissions) ─ */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalBox {
+  width: 100%;
+  max-width: 520px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F0ECE4;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.modalCloseBtn {
+  background: none;
+  border: none;
+  color: #948B80;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.modalCloseBtn:hover {
+  color: #1A1A1A;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #F0ECE4;
+}
+
+/* ── Team Cards Grid View ─────────────────────────────── */
+.teamsCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .teamsCardsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .teamsCardsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.teamCardItem {
+  background: #FFFFFF;
+  border: 1px solid #E8E4DC;
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 180px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.teamCardItem:hover {
+  border-color: #D4A843;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(212, 168, 67, 0.08);
+}
+
+.teamCardItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.teamCardHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.teamCardAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #FAF8F5, #EFEAE0);
+  border: 1px solid #E2DCD0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A1A;
+  flex-shrink: 0;
+}
+
+.teamCardName {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teamCardDesc {
+  font-size: 13px;
+  color: #6B6560;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.45;
+}
+
+.teamCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid #F0ECE4;
+  gap: 10px;
+}
+
+.teamCardMembers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #7A746E;
+  font-weight: 500;
+}
+
+.teamCardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teamCardCreate {
+  background: #FAF8F5;
+  border: 1.5px dashed #D4A843;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.teamCardCreate:hover {
+  background: #FFFDF9;
+  border-color: #B88E28;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(212, 168, 67, 0.12);
+}
+
+.teamCardCreateIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(212, 168, 67, 0.15);
+  color: #B88E28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.teamCardCreateTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0;
+}
+
+.teamCardCreateDesc {
+  font-size: 12px;
+  color: #7A746E;
+  margin: 0;
+}
+
+/* ── Creation Time Invite Field ───────────────────────── */
+.creationInvitesBox {
+  background: #FFFFFF;
+  border: 1px solid #EAE5DA;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.creationInvitesHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.creationInvitesTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin: 0;
+}
+
+.creationInvitesDesc {
+  font-size: 12px;
+  color: #7A746E;
+  margin: 0;
+}
+
+.creationInvitesRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inviteChipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.inviteChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FAF8F5;
+  border: 1px solid #E2DCD0;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #1A1A1A;
+}
+
+.inviteChipRole {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #1A1A1A;
+  background: #EAE5DA;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.chipRemoveBtn {
+  background: none;
+  border: none;
+  color: #8C857D;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chipRemoveBtn:hover {
+  color: #dc2626;
+}
+
+/* ── Toast Notification ───────────────────────────────── */
+.toastContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  background: #1A1A1A;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

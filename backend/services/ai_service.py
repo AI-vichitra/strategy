@@ -971,7 +971,7 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
         return (req_clean, keys[req_clean])
 
     for prov in LLM_PROVIDER_PRIORITY:
-        if keys[prov]:
+        if keys.get(prov):
             return (prov, keys[prov])
 
     raise RuntimeError("No valid LLM API key set in environment (OPENAI_API_KEY, GROQ_API_KEY, or ANTHROPIC_API_KEY)")
@@ -4078,31 +4078,49 @@ async def stream_chat(
     # configured — see REPORT_PIPELINE_WAIT_SECONDS in backend/.env.example for
     # the measurement this default is based on.
     if brand and brand.pipeline_status in ("pending", "running"):
-        max_wait_seconds = int(os.environ.get("REPORT_PIPELINE_WAIT_SECONDS", "900"))
-        logger.info(f"[REPORT_GATE] Entering wait: brand='{brand_name}' status='{brand.pipeline_status}' cap={max_wait_seconds}s")
-        waited = 0
-        while waited < max_wait_seconds:
-            await asyncio.sleep(3)
-            waited += 3
-
-            # Re-check status in DB
-            status_res = await db.execute(select(BrandConfig.pipeline_status).where(BrandConfig.id == brand.id))
-            current_status = status_res.scalar_one_or_none()
-
-            if current_status in ("complete", "completed"):
-                logger.info(f"[REPORT_GATE] Wait outcome=completed after {waited}s for '{brand_name}'.")
-                break
-            elif current_status == "failed":
-                logger.warning(f"[REPORT_GATE] Wait outcome=failed after {waited}s for '{brand_name}' — will proceed with whatever knowledge base exists.")
-                break
-            else:
-                # Throttled server-side progress log (every ~30s) — the SSE status
-                # event below still fires every 3s to keep the connection/UI alive.
-                if waited % 30 == 0:
-                    logger.info(f"[REPORT_GATE] Still waiting: status='{current_status}' elapsed={waited}s/{max_wait_seconds}s for '{brand_name}'")
-                yield f"data: {json.dumps({'type': 'status', 'content': f'Building brand knowledge base... ({waited}s)'})}\n\n"
+        from backend.services import pipeline_service
+        if not pipeline_service.is_pipeline_active(brand.id):
+            logger.warning(
+                f"[REPORT_GATE] Brand '{brand_name}' status in DB is '{brand.pipeline_status}' "
+                f"but no pipeline task is active in this process (orphaned from restart). Proceeding immediately without waiting."
+            )
+            try:
+                from sqlalchemy import update
+                await db.execute(
+                    update(BrandConfig).where(BrandConfig.id == brand.id).values(
+                        pipeline_status="complete" if brand.kb_json else "complete"
+                    )
+                )
+                await db.commit()
+                await db.refresh(brand)
+            except Exception as e:
+                logger.warning(f"[REPORT_GATE] Failed to auto-correct orphaned status: {e}")
         else:
-            logger.warning(f"[REPORT_GATE] Wait outcome=timed_out after {max_wait_seconds}s for '{brand_name}' — giving up on waiting.")
+            max_wait_seconds = int(os.environ.get("REPORT_PIPELINE_WAIT_SECONDS", "300"))
+            logger.info(f"[REPORT_GATE] Entering wait: brand='{brand_name}' status='{brand.pipeline_status}' cap={max_wait_seconds}s")
+            waited = 0
+            while waited < max_wait_seconds:
+                await asyncio.sleep(3)
+                waited += 3
+
+                # Re-check status in DB
+                status_res = await db.execute(select(BrandConfig.pipeline_status).where(BrandConfig.id == brand.id))
+                current_status = status_res.scalar_one_or_none()
+
+                if current_status in ("complete", "completed"):
+                    logger.info(f"[REPORT_GATE] Wait outcome=completed after {waited}s for '{brand_name}'.")
+                    break
+                elif current_status == "failed":
+                    logger.warning(f"[REPORT_GATE] Wait outcome=failed after {waited}s for '{brand_name}' — will proceed with whatever knowledge base exists.")
+                    break
+                else:
+                    # Throttled server-side progress log (every ~30s) — the SSE status
+                    # event below still fires every 3s to keep the connection/UI alive.
+                    if waited % 30 == 0:
+                        logger.info(f"[REPORT_GATE] Still waiting: status='{current_status}' elapsed={waited}s/{max_wait_seconds}s for '{brand_name}'")
+                    yield f"data: {json.dumps({'type': 'status', 'content': f'Building brand knowledge base... ({waited}s)'})}\n\n"
+            else:
+                logger.warning(f"[REPORT_GATE] Wait outcome=timed_out after {max_wait_seconds}s for '{brand_name}' — giving up on waiting.")
 
         # `brand` was loaded once, before this wait, and is still tracked by
         # this same `db` session's identity map. A plain `select()` through

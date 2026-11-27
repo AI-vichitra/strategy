@@ -25,6 +25,7 @@ class CompetitorSocialMedia(BaseModel):
 class CompetitorDetail(BaseModel):
     brand_name: str
     website_url: Optional[str] = None
+    logo_url: Optional[str] = None
     social_media: Optional[CompetitorSocialMedia] = None
 
 class CompetitorDetailsInput(BaseModel):
@@ -59,6 +60,7 @@ class ProjectBase(BaseModel):
     llm_provider: Optional[str] = "openai"
     competitor_details: Optional[List[CompetitorDetail]] = None
     brand_kit: Optional[BrandKit] = None
+    team_id: Optional[str] = None
 
 class ProjectCreate(ProjectBase):
     brand_config_id: str
@@ -70,11 +72,13 @@ class ProjectUpdate(BaseModel):
     llm_provider: Optional[str] = None
     competitor_details: Optional[List[CompetitorDetail]] = None
     brand_kit: Optional[BrandKit] = None
+    team_id: Optional[str] = None
 
 class ProjectResponse(BaseModel):
     id: str
     user_id: str
     brand_config_id: Optional[str] = None
+    team_id: Optional[str] = None
     agent_type: str
     title: str
     description: Optional[str] = None

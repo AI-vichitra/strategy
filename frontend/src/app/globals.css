@@ -80,7 +80,15 @@
   --t-spring: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  zoom: 0.9;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  min-height: calc(100vh / 0.9);
+  background-color: var(--bg-primary);
+}
 
 body {
   font-family: var(--font-sans);
@@ -90,6 +98,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  width: 100%;
+  min-height: 100%;
 }
 
 /* ── LAYOUT ───────────────────────────────────── */
@@ -265,4 +275,9 @@ body {
 @media (max-width: 768px) {
   .container { padding: 0 16px; }
   .hide-mobile { display: none !important; }
+}
+
+/* Hide Next.js route announcer to prevent bottom empty gap */
+next-route-announcer {
+  display: none !important;
 }

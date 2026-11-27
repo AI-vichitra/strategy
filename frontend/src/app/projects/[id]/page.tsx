@@ -1,8 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import FileIcon from '@/components/FileIcon';
 import styles from './page.module.css';
+import ConfirmModal from '../../../components/ConfirmModal';
+import Sidebar from '../../../components/builder/Sidebar';
+import VoiceInput from '../../../components/builder/VoiceInput';
 
 // Matches backend.schemas.brand.normalize_target_market's canonical shape.
 interface TargetMarket {
@@ -59,6 +63,7 @@ interface BrandDetail {
 interface CompetitorItem {
   name: string;
   website_url: string;
+  logo_url?: string;
 }
 
 interface ChatItem {
@@ -100,6 +105,58 @@ const SOCIAL_PLATFORM_LABELS: Record<keyof SocialHandles, string> = {
   youtube: 'YouTube',
   facebook: 'Facebook',
   tiktok: 'TikTok',
+};
+
+const SOCIAL_PLATFORM_ICONS: Record<keyof SocialHandles, React.ReactNode> = {
+  instagram: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ borderRadius: '5px', flexShrink: 0 }}>
+      <defs>
+        <radialGradient id="igIconProjGrad" cx="20%" cy="105%" r="130%">
+          <stop offset="0%" stopColor="#fdf497" />
+          <stop offset="10%" stopColor="#fdf497" />
+          <stop offset="50%" stopColor="#fd5949" />
+          <stop offset="70%" stopColor="#d6249f" />
+          <stop offset="100%" stopColor="#285AEB" />
+        </radialGradient>
+      </defs>
+      <rect width="24" height="24" rx="6" fill="url(#igIconProjGrad)" />
+      <rect x="5.5" y="5.5" width="13" height="13" rx="3.5" stroke="#ffffff" strokeWidth="1.6" fill="none" />
+      <circle cx="12" cy="12" r="3.2" stroke="#ffffff" strokeWidth="1.6" fill="none" />
+      <circle cx="15.8" cy="8.2" r="0.9" fill="#ffffff" />
+    </svg>
+  ),
+  linkedin: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ borderRadius: '5px', flexShrink: 0 }}>
+      <rect width="24" height="24" rx="5" fill="#0A66C2" />
+      <circle cx="7.5" cy="7.5" r="1.5" fill="#ffffff" />
+      <rect x="6" y="10" width="3" height="8" rx="0.5" fill="#ffffff" />
+      <path d="M11 10h2.8v1.2c.4-.7 1.4-1.4 2.7-1.4 2.6 0 3.5 1.5 3.5 4v4.2h-3V14.3c0-1-.4-1.8-1.5-1.8s-1.5.8-1.5 1.8V18H11V10z" fill="#ffffff" />
+    </svg>
+  ),
+  x: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ borderRadius: '5px', flexShrink: 0 }}>
+      <rect width="24" height="24" rx="5" fill="#000000" />
+      <path d="M15.5 5.5h2l-4.4 5 5.2 6.9h-4l-3.2-4.2-3.6 4.2h-2l4.7-5.4L5.2 5.5h4.1l2.9 3.8 3.3-3.8zm-.7 10.7h1.1L8.5 6.6H7.3l7.5 9.6z" fill="#ffffff" />
+    </svg>
+  ),
+  youtube: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ borderRadius: '5px', flexShrink: 0 }}>
+      <rect width="24" height="24" rx="5" fill="#FF0000" />
+      <path d="M10 8.5l5.5 3.5-5.5 3.5V8.5z" fill="#ffffff" />
+    </svg>
+  ),
+  facebook: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ borderRadius: '5px', flexShrink: 0 }}>
+      <rect width="24" height="24" rx="5" fill="#1877F2" />
+      <path d="M15.5 12.5h-2.3V20h-3.1v-7.5H8.5V9.9h1.6V8.1c0-2.2 1.3-3.6 3.5-3.6 1 0 2 .1 2.2.1v2.5h-1.3c-1.1 0-1.4.5-1.4 1.3v1.5h2.7l-.3 2.6z" fill="#ffffff" />
+    </svg>
+  ),
+  tiktok: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ borderRadius: '5px', flexShrink: 0 }}>
+      <rect width="24" height="24" rx="5" fill="#000000" />
+      <path d="M15.2 6.2c.7.9 1.7 1.5 2.8 1.6v2.2c-1.1 0-2.1-.4-2.8-1.1v4.8c0 2.4-1.9 4.3-4.3 4.3S6.6 16.1 6.6 13.7s1.9-4.3 4.3-4.3c.3 0 .7 0 1 .1v2.3c-.3-.1-.6-.2-1-.2-1.2 0-2.1.9-2.1 2.1s.9 2.1 2.1 2.1 2.2-.9 2.2-2.1V5h2.1z" fill="#ffffff" />
+    </svg>
+  ),
 };
 
 function statusClass(status: string) {
@@ -195,6 +252,33 @@ export default function ProjectDetailsPage() {
   const [docUploadError, setDocUploadError] = useState<string | null>(null);
   const [deletingRefId, setDeletingRefId] = useState<string | null>(null);
   const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
+  const [removeDocConfirm, setRemoveDocConfirm] = useState<{ isOpen: boolean; doc: ReferenceDocItem | null }>({ isOpen: false, doc: null });
+  // Chat 3-dots menu
+  const [chatMenuId, setChatMenuId] = useState<string | null>(null);
+  const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
+  const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
+  const [chatRenameInput, setChatRenameInput] = useState('');
+  const [chatRenameError, setChatRenameError] = useState('');
+  const [isChatRenaming, setIsChatRenaming] = useState(false);
+  // Attach files for new chat input
+  const [chatAttachFiles, setChatAttachFiles] = useState<File[]>([]);
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const voiceInitialTextRef = useRef('');
+  const chatTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close 3-dots popover on outside click
+  useEffect(() => {
+    if (!chatMenuId) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setChatMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [chatMenuId]);
 
   const resetEditState = () => {
     setDrawerEditing(false);
@@ -266,6 +350,109 @@ export default function ProjectDetailsPage() {
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   };
 
+  // Chat paste handler
+  const handleChatInputPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const { clipboardData } = e;
+    if (!clipboardData) return;
+    const pastedFiles: File[] = [];
+    if (clipboardData.files && clipboardData.files.length > 0) {
+      Array.from(clipboardData.files).forEach(f => pastedFiles.push(f));
+    } else if (clipboardData.items) {
+      Array.from(clipboardData.items).forEach(item => {
+        if (item.kind === 'file') { const f = item.getAsFile(); if (f) pastedFiles.push(f); }
+      });
+    }
+    if (pastedFiles.length > 0) {
+      e.preventDefault();
+      const renamed = pastedFiles.map(f => {
+        if (f.type.startsWith('image/')) {
+          const ext = f.type.split('/')[1] || 'png';
+          return new File([f], `pasted-image-${Date.now()}.${ext}`, { type: f.type });
+        }
+        return f;
+      });
+      setChatAttachFiles(prev => [...prev, ...renamed]);
+      return;
+    }
+    const text = clipboardData.getData('text/plain');
+    if (text && (text.length >= 3500 || text.split('\n').length >= 45)) {
+      e.preventDefault();
+      const blob = new Blob([text], { type: 'text/plain' });
+      const pf = new File([blob], 'Pasted content.txt', { type: 'text/plain' });
+      setChatAttachFiles(prev => [...prev, pf]);
+    }
+  };
+
+  // Chat 3-dots: delete
+  const handleDeleteChat = async (chatId: string) => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    try {
+      const res = await fetch(`${apiBase}/api/projects/${chatId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (res.ok) {
+        setData(prev => prev ? { ...prev, chats: prev.chats.filter(c => c.id !== chatId) } : prev);
+        window.dispatchEvent(new CustomEvent('projectDeleted', { detail: { projectId: chatId } }));
+      }
+    } catch (err) {
+      console.error('Failed to delete chat:', err);
+    }
+    setChatMenuId(null);
+    setDeleteChatId(null);
+  };
+
+  // Chat 3-dots: open rename
+  const openChatRename = (chatId: string, currentTitle: string) => {
+    setRenamingChatId(chatId);
+    setChatRenameInput(currentTitle);
+    setChatRenameError('');
+    setChatMenuId(null);
+  };
+
+  const closeChatRename = () => {
+    setRenamingChatId(null);
+    setChatRenameInput('');
+    setChatRenameError('');
+  };
+
+  // Chat in-place rename
+  const handleSaveInplaceRename = async (chatId: string) => {
+    const trimmed = chatRenameInput.trim();
+    if (!trimmed) {
+      closeChatRename();
+      return;
+    }
+    const currentChat = data?.chats.find(c => c.id === chatId);
+    if (currentChat && currentChat.title === trimmed) {
+      closeChatRename();
+      return;
+    }
+    setIsChatRenaming(true);
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    try {
+      const res = await fetch(`${apiBase}/api/projects/${chatId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      if (res.ok) {
+        setData(prev => prev ? {
+          ...prev,
+          chats: prev.chats.map(c => c.id === chatId ? { ...c, title: trimmed } : c)
+        } : prev);
+        window.dispatchEvent(new CustomEvent('projectRenamed', {
+          detail: { projectId: chatId, title: trimmed, brand_config_id },
+        }));
+        closeChatRename();
+      }
+    } catch (err) {
+      console.error('Failed to rename chat:', err);
+    } finally {
+      setIsChatRenaming(false);
+    }
+  };
+
   if (loading) {
     return <div className={styles.loadingWrap}>Loading project details…</div>;
   }
@@ -277,7 +464,7 @@ export default function ProjectDetailsPage() {
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="#D4A843"/>
         </svg>
         <p>{error ?? 'Project not found.'}</p>
-        <Link href="/build" className={styles.backLink}>← Back to projects</Link>
+        <Link href="/build" prefetch={false} className={styles.backLink}>← Back to projects</Link>
       </div>
     );
   }
@@ -444,9 +631,12 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const handleRemoveReferenceDoc = async (doc: ReferenceDocItem) => {
-    if (!window.confirm(`Remove "${doc.filename}"?`)) return;
+  const handleRemoveReferenceDoc = (doc: ReferenceDocItem) => {
+    setRemoveDocConfirm({ isOpen: true, doc });
+  };
 
+  const doRemoveReferenceDoc = async (doc: ReferenceDocItem) => {
+    setRemoveDocConfirm({ isOpen: false, doc: null });
     setDeletingRefId(doc.ref_id);
     setDocUploadError(null);
     const apiBase = process.env.NEXT_PUBLIC_API_URL;
@@ -474,7 +664,16 @@ export default function ProjectDetailsPage() {
   };
 
   const hasColors = !!brand.colors && !!(brand.colors.primary || brand.colors.secondary || brand.colors.accent);
-  const logoSrc = brand.logo_url ? `${process.env.NEXT_PUBLIC_API_URL ?? ''}${brand.logo_url}` : null;
+  const resolveLogo = (url?: string | null) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const base = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+    const path = url.startsWith('/') ? url : `/${url}`;
+    return `${base}${path}`;
+  };
+  const logoSrc = resolveLogo(brand.logo_url);
   const logoVisible = !!logoSrc && failedLogoUrl !== brand.logo_url;
   const contextItemCount = [
     !!brand.website_url,
@@ -485,10 +684,11 @@ export default function ProjectDetailsPage() {
   ].filter(Boolean).length;
 
   return (
-    <main className={styles.container}>
-      <div className={styles.inner}>
-        {/* Back */}
-        <Link href="/build" className={styles.backLink}>
+    <div className={styles.pageShell}>
+      <Sidebar />
+      <main className={styles.container}>
+      <div className={styles.inner}>        {/* Back */}
+        <Link href="/build" prefetch={false} className={styles.backLink}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
@@ -513,32 +713,101 @@ export default function ProjectDetailsPage() {
           {/* Main panel: chat input + recents */}
           <div className={styles.mainPanel}>
             <div className={styles.newChatCard}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.newChatIcon}>
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <textarea
-                className={styles.newChatInput}
-                placeholder={`New chat in ${brand.name}`}
-                value={chatDraft}
-                onChange={handleChatDraftChange}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleStartFreshTask(brand_config_id, chatDraft);
-                  }
-                }}
-                rows={1}
-              />
-              <button
-                type="button"
-                className={styles.newChatSubmitBtn}
-                onClick={() => handleStartFreshTask(brand_config_id, chatDraft)}
-                aria-label="Start new chat"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-                </svg>
-              </button>
+              {/* Attach files preview */}
+              {chatAttachFiles.length > 0 && (
+                <div className={styles.chatAttachRow}>
+                  {chatAttachFiles.map((f, idx) => {
+                    const isImg = f.type.startsWith('image/');
+                    return isImg ? (
+                      <div key={idx} className={styles.chatAttachImg}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={URL.createObjectURL(f)} alt={f.name} className={styles.chatAttachThumb} />
+                        <button type="button" className={styles.chatAttachRemove} onClick={() => setChatAttachFiles(p => p.filter((_, i) => i !== idx))}>&times;</button>
+                      </div>
+                    ) : (
+                      <div key={idx} className={styles.chatAttachChip}>
+                        <FileIcon filename={f.name} mimeType={f.type} size={14} />
+                        <span>{f.name}</span>
+                        <button type="button" onClick={() => setChatAttachFiles(p => p.filter((_, i) => i !== idx))}>&times;</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div className={styles.newChatRow}>
+                {/* Attach icon ON THE LEFT */}
+                <button
+                  type="button"
+                  className={styles.newChatAttachBtn}
+                  onClick={() => chatFileInputRef.current?.click()}
+                  aria-label="Attach file"
+                  title="Attach file (Ctrl+U)"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  multiple
+                  ref={chatFileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={e => { if (e.target.files) { setChatAttachFiles(p => [...p, ...Array.from(e.target.files!)]); e.target.value = ''; } }}
+                />
+
+                {/* Textarea in the middle */}
+                <textarea
+                  ref={chatTextareaRef}
+                  className={styles.newChatInput}
+                  placeholder={isVoiceRecording ? 'Listening… (speak now)' : `New chat in ${brand.name}`}
+                  value={chatDraft}
+                  onChange={handleChatDraftChange}
+                  onPaste={handleChatInputPaste}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey && !isVoiceRecording) {
+                      e.preventDefault();
+                      handleStartFreshTask(brand_config_id, chatDraft);
+                    }
+                  }}
+                  rows={1}
+                />
+
+                {/* Right actions: Voice + Submit */}
+                <div className={styles.newChatRightActions}>
+                  <VoiceInput
+                    disabled={false}
+                    onRecordingChange={(recording) => {
+                      setIsVoiceRecording(recording);
+                      if (recording) voiceInitialTextRef.current = chatDraft;
+                    }}
+                    onLiveTranscript={(liveText) => {
+                      const prefix = voiceInitialTextRef.current ? voiceInitialTextRef.current.trim() + ' ' : '';
+                      setChatDraft(prefix + liveText);
+                    }}
+                    onTranscript={(finalText) => {
+                      const prefix = voiceInitialTextRef.current ? voiceInitialTextRef.current.trim() + ' ' : '';
+                      if (finalText) setChatDraft(prefix + finalText);
+                      setTimeout(() => chatTextareaRef.current?.focus(), 80);
+                    }}
+                    onCancel={() => {
+                      setChatDraft(voiceInitialTextRef.current);
+                      setTimeout(() => chatTextareaRef.current?.focus(), 80);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className={styles.newChatSubmitBtn}
+                    onClick={() => handleStartFreshTask(brand_config_id, chatDraft)}
+                    aria-label="Start new chat"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -548,15 +817,89 @@ export default function ProjectDetailsPage() {
               ) : (
                 <div className={styles.recentsList}>
                   {chats.map(chat => (
-                    <button
-                      key={chat.id}
-                      type="button"
-                      className={styles.recentRow}
-                      onClick={() => handleOpenChat(chat.id, brand_config_id)}
-                    >
-                      <span className={styles.recentTitle}>{chat.title}</span>
-                      <span className={styles.recentTime}>{formatRelative(chat.last_message_at || chat.created_at)}</span>
-                    </button>
+                    <div key={chat.id} className={styles.recentRowWrap}>
+                      {renamingChatId === chat.id ? (
+                        <div className={styles.inplaceRenameWrap} onClick={e => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            className={styles.inplaceRenameInput}
+                            value={chatRenameInput}
+                            onChange={e => setChatRenameInput(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSaveInplaceRename(chat.id);
+                              } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                closeChatRename();
+                              }
+                            }}
+                            autoFocus
+                            disabled={isChatRenaming}
+                          />
+                          <div className={styles.inplaceBtnGroup}>
+                            <button
+                              type="button"
+                              className={styles.inplaceSaveBtn}
+                              onClick={() => handleSaveInplaceRename(chat.id)}
+                              disabled={isChatRenaming}
+                              title="Save (Enter)"
+                              aria-label="Save"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.inplaceCancelBtn}
+                              onClick={closeChatRename}
+                              disabled={isChatRenaming}
+                              title="Cancel (Esc)"
+                              aria-label="Cancel"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.recentRow}
+                          onClick={() => handleOpenChat(chat.id, brand_config_id)}
+                        >
+                          <span className={styles.recentTitle}>{chat.title}</span>
+                          <span className={styles.recentTime}>{formatRelative(chat.last_message_at || chat.created_at)}</span>
+                        </button>
+                      )}
+
+                      <div className={styles.chatMenuWrap} ref={chatMenuId === chat.id ? menuRef : null}>
+                        <button
+                          type="button"
+                          className={styles.chatMenuBtn}
+                          onClick={e => { e.stopPropagation(); setChatMenuId(prev => prev === chat.id ? null : chat.id); }}
+                          aria-label="Chat options"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                          </svg>
+                        </button>
+                        {chatMenuId === chat.id && (
+                          <div className={styles.chatMenuPopover} onClick={e => e.stopPropagation()}>
+                            <button type="button" className={styles.chatMenuOption} onClick={() => openChatRename(chat.id, chat.title)}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                              Rename
+                            </button>
+                            <button type="button" className={`${styles.chatMenuOption} ${styles.chatMenuOptionDelete}`} onClick={() => handleDeleteChat(chat.id)}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -743,12 +1086,26 @@ export default function ProjectDetailsPage() {
                         <span className={styles.fieldEmpty}>—</span>
                       ) : (
                         <div className={styles.compactList}>
-                          {competitors_selected.map((c, i) => (
-                            <div key={i} className={styles.compactItem}>
-                              <span className={styles.compactName}>{c.name}</span>
-                              {c.website_url && <span className={styles.compactUrl}>{c.website_url}</span>}
-                            </div>
-                          ))}
+                          {competitors_selected.map((c, i) => {
+                            const isBrandLogo = !!(c.logo_url && brand.logo_url && c.logo_url === brand.logo_url);
+                            const showLogo = Boolean(c.logo_url && !isBrandLogo);
+                            return (
+                              <div key={i} className={styles.compactItem}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  {showLogo && (
+                                    <img
+                                      src={resolveLogo(c.logo_url) || ''}
+                                      alt={c.name}
+                                      className={styles.compLogo}
+                                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                                    />
+                                  )}
+                                  <span className={styles.compactName}>{c.name}</span>
+                                </div>
+                                {c.website_url && <span className={styles.compactUrl}>{c.website_url}</span>}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -796,7 +1153,10 @@ export default function ProjectDetailsPage() {
                   <div className={styles.drawerContextList}>
                     {socialRows.map(platform => (
                       <div key={platform} className={styles.drawerContextItem}>
-                        <span className={styles.fieldLabel}>{SOCIAL_PLATFORM_LABELS[platform]}</span>
+                        <div className={styles.socialHeaderRow}>
+                          {SOCIAL_PLATFORM_ICONS[platform]}
+                          <span className={styles.fieldLabel}>{SOCIAL_PLATFORM_LABELS[platform]}</span>
+                        </div>
                         <div className={styles.handleRow}>
                           <input
                             type="text"
@@ -840,7 +1200,10 @@ export default function ProjectDetailsPage() {
                   <div className={styles.drawerContextList}>
                     {socialEntries.map(({ platform, url }) => (
                       <div key={platform} className={styles.drawerContextItem}>
-                        <span className={styles.fieldLabel}>{SOCIAL_PLATFORM_LABELS[platform]}</span>
+                        <div className={styles.socialHeaderRow}>
+                          {SOCIAL_PLATFORM_ICONS[platform]}
+                          <span className={styles.fieldLabel}>{SOCIAL_PLATFORM_LABELS[platform]}</span>
+                        </div>
                         <a href={url} target="_blank" rel="noopener noreferrer" className={styles.fieldLink}>{url}</a>
                       </div>
                     ))}
@@ -851,6 +1214,26 @@ export default function ProjectDetailsPage() {
           </div>
         </div>
       )}
-    </main>
+      <ConfirmModal
+        isOpen={removeDocConfirm.isOpen}
+        title="Remove Document"
+        message={removeDocConfirm.doc ? `Remove "${removeDocConfirm.doc.filename}"?` : ''}
+        confirmLabel="Remove"
+        confirmDanger
+        onConfirm={() => removeDocConfirm.doc && doRemoveReferenceDoc(removeDocConfirm.doc)}
+        onCancel={() => setRemoveDocConfirm({ isOpen: false, doc: null })}
+      />
+      <ConfirmModal
+        isOpen={deleteChatId !== null}
+        title="Delete Chat"
+        message="Delete this chat everywhere, including Chat History in the sidebar? This cannot be undone."
+        confirmLabel="Delete"
+        confirmDanger
+        onConfirm={() => deleteChatId && handleDeleteChat(deleteChatId)}
+        onCancel={() => setDeleteChatId(null)}
+      />
+
+      </main>
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import BrandKitForm, { type BrandKit } from '../../components/BrandKitForm';
 import ReferenceUpload, { type ReferenceDoc } from '../../components/ReferenceUpload';
+import AlertModal from '../../components/AlertModal';
 
 // ── Target Market: structured region + city selection ───────────────────────
 // Mirrors backend.schemas.brand.TargetMarket exactly. Region options and city
@@ -46,6 +47,58 @@ const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
   youtube: 'YouTube',
   facebook: 'Facebook',
   tiktok: 'TikTok',
+};
+
+const SOCIAL_PLATFORM_ICONS: Record<SocialPlatform, React.ReactNode> = {
+  instagram: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <defs>
+        <radialGradient id="igIconGrad" cx="20%" cy="105%" r="130%">
+          <stop offset="0%" stopColor="#fdf497" />
+          <stop offset="10%" stopColor="#fdf497" />
+          <stop offset="50%" stopColor="#fd5949" />
+          <stop offset="70%" stopColor="#d6249f" />
+          <stop offset="100%" stopColor="#285AEB" />
+        </radialGradient>
+      </defs>
+      <rect width="24" height="24" rx="6" fill="url(#igIconGrad)" />
+      <rect x="5.5" y="5.5" width="13" height="13" rx="3.5" stroke="#ffffff" strokeWidth="1.6" fill="none" />
+      <circle cx="12" cy="12" r="3.2" stroke="#ffffff" strokeWidth="1.6" fill="none" />
+      <circle cx="15.8" cy="8.2" r="0.9" fill="#ffffff" />
+    </svg>
+  ),
+  linkedin: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="5" fill="#0A66C2" />
+      <circle cx="7.5" cy="7.5" r="1.5" fill="#ffffff" />
+      <rect x="6" y="10" width="3" height="8" rx="0.5" fill="#ffffff" />
+      <path d="M11 10h2.8v1.2c.4-.7 1.4-1.4 2.7-1.4 2.6 0 3.5 1.5 3.5 4v4.2h-3V14.3c0-1-.4-1.8-1.5-1.8s-1.5.8-1.5 1.8V18H11V10z" fill="#ffffff" />
+    </svg>
+  ),
+  x: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="5" fill="#000000" />
+      <path d="M15.5 5.5h2l-4.4 5 5.2 6.9h-4l-3.2-4.2-3.6 4.2h-2l4.7-5.4L5.2 5.5h4.1l2.9 3.8 3.3-3.8zm-.7 10.7h1.1L8.5 6.6H7.3l7.5 9.6z" fill="#ffffff" />
+    </svg>
+  ),
+  youtube: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="5" fill="#FF0000" />
+      <path d="M10 8.5l5.5 3.5-5.5 3.5V8.5z" fill="#ffffff" />
+    </svg>
+  ),
+  facebook: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="5" fill="#1877F2" />
+      <path d="M15.5 12.5h-2.3V20h-3.1v-7.5H8.5V9.9h1.6V8.1c0-2.2 1.3-3.6 3.5-3.6 1 0 2 .1 2.2.1v2.5h-1.3c-1.1 0-1.4.5-1.4 1.3v1.5h2.7l-.3 2.6z" fill="#ffffff" />
+    </svg>
+  ),
+  tiktok: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="5" fill="#000000" />
+      <path d="M15.2 6.2c.7.9 1.7 1.5 2.8 1.6v2.2c-1.1 0-2.1-.4-2.8-1.1v4.8c0 2.4-1.9 4.3-4.3 4.3S6.6 16.1 6.6 13.7s1.9-4.3 4.3-4.3c.3 0 .7 0 1 .1v2.3c-.3-.1-.6-.2-1-.2-1.2 0-2.1.9-2.1 2.1s.9 2.1 2.1 2.1 2.2-.9 2.2-2.1V5h2.1z" fill="#ffffff" />
+    </svg>
+  ),
 };
 
 // Domains that identify a profile URL for each platform (first = canonical
@@ -260,6 +313,9 @@ function StrategySetupInner() {
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefError, setBriefError] = useState('');
   const [briefEmptyNote, setBriefEmptyNote] = useState(false);
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string; variant?: 'error' | 'info' | 'success' }>({
+    isOpen: false, title: '', message: '', variant: 'error'
+  });
   const briefRef = useRef<HTMLDivElement>(null);
   const briefPromiseRef = useRef<Promise<Record<string, string>> | null>(null);
 
@@ -307,7 +363,7 @@ function StrategySetupInner() {
   };
 
   // ── Candidates state ──────────────────────────────────────────────────────
-  const [candidates, setCandidates] = useState<{ name: string; website_url: string; handle: string; source: string; selected: boolean; verified?: boolean; source_url?: string }[]>([]);
+  const [candidates, setCandidates] = useState<{ name: string; website_url: string; handle: string; source: string; selected: boolean; verified?: boolean; source_url?: string; logo_url?: string }[]>([]);
   const [newCompName, setNewCompName] = useState('');
   const [newCompWebsite, setNewCompWebsite] = useState('');
   const [tavilyError, setTavilyError] = useState('');
@@ -611,13 +667,17 @@ function StrategySetupInner() {
         source: 'discovery',
         selected: idx < MAX_COMPETITORS,
         verified: typeof c.verified === 'boolean' ? c.verified : undefined,
-        source_url: c.source_url || undefined
+        source_url: c.source_url || undefined,
+        logo_url: c.logo_url || undefined
       }));
+      if (data.brand_logo_url && !brandKit.logo_url) {
+        setBrandKit(prev => ({ ...prev, logo_url: data.brand_logo_url }));
+      }
       setCandidates(mapped);
       setStep('confirm_competitors');
     } catch (e: any) {
       console.error('Search competitors error:', e);
-      alert(`Error searching competitors: ${e.message}`);
+      setAlertModal({ isOpen: true, title: 'Search Error', message: `Error searching competitors: ${e.message}`, variant: 'error' });
       setStep('form');
     }
   };
@@ -629,7 +689,7 @@ function StrategySetupInner() {
   const handleContinueToBrief = async () => {
     const selectedComps = candidates.filter(c => c.selected);
     if (selectedComps.length === 0) {
-      alert("Please select or add at least one competitor to analyze.");
+      setAlertModal({ isOpen: true, title: 'Selection Required', message: 'Please select or add at least one competitor to analyze.', variant: 'info' });
       return;
     }
 
@@ -716,7 +776,8 @@ function StrategySetupInner() {
           selected_competitors: selectedComps.map(c => ({
             name: c.name,
             website_url: c.website_url || '',
-            handle: c.handle || ''
+            handle: c.handle || '',
+            logo_url: c.logo_url || ''
           })),
           brand_kit: (() => {
             const hasBrandKit = brandKit.logo_url || (brandKit.colors && Object.values(brandKit.colors).some(Boolean));
@@ -738,7 +799,7 @@ function StrategySetupInner() {
       router.push('/build');
     } catch (e: any) {
       console.error('Final confirmation error:', e);
-      alert(`Error confirming configuration: ${e.message}`);
+      setAlertModal({ isOpen: true, title: 'Confirmation Error', message: `Error confirming configuration: ${e.message}`, variant: 'error' });
     }
   };
 
@@ -1110,6 +1171,14 @@ function StrategySetupInner() {
                     />
                     <div className={styles.candidateCompactBody}>
                       <div className={styles.candidateCompactTop}>
+                        {cand.logo_url && (
+                          <img
+                            src={cand.logo_url.startsWith('/') ? `${apiBaseUrl || ''}${cand.logo_url}` : cand.logo_url}
+                            alt={cand.name}
+                            className={styles.candidateLogoImg}
+                            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                          />
+                        )}
                         <span className={styles.candidateName}>{cand.name}</span>
                         {typeof cand.verified === 'boolean' && (
                           <span className={`${styles.candidateSourceBadge} ${cand.verified ? styles.badgeVerified : styles.badgeUnverified}`}>
@@ -1210,12 +1279,26 @@ function StrategySetupInner() {
             {/* Social Handles — required: at least one platform, auto-filled
                 from the website scan (and, for Instagram, from Tavily's
                 discovery as a fallback), always user-verified before confirm. */}
-            <div className={styles.formGroup} ref={socialHandlesRef}>
-              <label className={styles.label}>Social Handles <span className={styles.required}>*</span></label>
-              <p className={styles.helpText} style={{ marginTop: 0 }}>
-                We scanned your website for official profile links. Verify or correct what we found, and
-                add any platform we missed — at least one is required.
-              </p>
+            <div className={`${styles.formGroup} ${styles.socialHandlesSection}`} ref={socialHandlesRef}>
+              <div className={styles.socialHandlesTitleRow}>
+                <label className={styles.label} style={{ marginBottom: 0 }}>Social Handles</label>
+                <div className={styles.infoTooltipWrapper}>
+                  <button
+                    type="button"
+                    className={styles.infoTooltipBtn}
+                    aria-label="Social handles information"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                  </button>
+                  <div className={styles.infoTooltipContent} role="tooltip">
+                    We scanned your website for official profile links. Verify or correct what we found, and add any platform we missed — at least one is required.
+                  </div>
+                </div>
+              </div>
 
               {socialHandlesExtractedEmpty && (
                 <p className={styles.helpText}>
@@ -1227,6 +1310,7 @@ function StrategySetupInner() {
                 {SOCIAL_PLATFORMS.map(platform => (
                   <div key={platform} className={styles.socialHandleRow}>
                     <div className={styles.socialHandleLabelRow}>
+                      <span className={styles.socialHandleIcon}>{SOCIAL_PLATFORM_ICONS[platform]}</span>
                       <span className={styles.socialHandlePlatform}>{SOCIAL_PLATFORM_LABELS[platform]}</span>
                       {socialHandlesFoundSource[platform] && (
                         <span className={styles.foundBadge}>
@@ -1352,6 +1436,13 @@ function StrategySetupInner() {
           </div>
         )}
       </div>
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant || 'error'}
+        onClose={() => setAlertModal(a => ({ ...a, isOpen: false }))}
+      />
     </main>
   );
 }

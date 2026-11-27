@@ -51,7 +51,7 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
-from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates, tasks
+from backend.routers import auth, brand, projects, chat, agents, connectors, reports, public, report_sections, pptx_templates, chat_share, teams, tasks
 from backend.database import engine, Base
 
 # Import every model so Base.metadata is fully populated before create_all runs.
@@ -68,6 +68,45 @@ async def _create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _add_missing_columns()
+    await _restore_cached_logos()
+    await _cleanup_orphaned_pipelines()
+
+
+async def _cleanup_orphaned_pipelines():
+    """Reset any pipelines left in 'running' state on server restart."""
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("UPDATE brand_configs SET pipeline_status = 'complete' WHERE pipeline_status = 'running'"))
+            logger.info("[startup] Cleaned up orphaned running pipelines.")
+    except Exception as e:
+        logger.warning(f"[startup] Failed cleaning up orphaned pipelines: {e}")
+
+
+async def _restore_cached_logos():
+    """Restores any missing logo files from DB logo_data to static disk cache."""
+    try:
+        import json
+        async with engine.begin() as conn:
+            result = await conn.execute(text("SELECT brand_kit, logo_data FROM projects WHERE logo_data IS NOT NULL"))
+            rows = result.fetchall()
+            for brand_kit_raw, logo_data in rows:
+                if not brand_kit_raw or not logo_data:
+                    continue
+                try:
+                    bk = json.loads(brand_kit_raw) if isinstance(brand_kit_raw, str) else brand_kit_raw
+                    logo_url = bk.get("logo_url") if isinstance(bk, dict) else None
+                    if logo_url and logo_url.startswith("/static/uploads/logos/"):
+                        rel_path = logo_url.replace("/static/", "").replace("/", os.sep)
+                        full_path = os.path.join(_static_dir, rel_path)
+                        if not os.path.exists(full_path):
+                            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                            with open(full_path, "wb") as f:
+                                f.write(logo_data)
+                            logger.info(f"[startup] Restored cached logo from DB to {full_path}")
+                except Exception as inner_e:
+                    logger.debug(f"[startup] Failed restoring logo: {inner_e}")
+    except Exception as e:
+        logger.info(f"[startup] Skipping logo restoration: {e}")
 
 # Alembic isn't wired up in this project (see models/ — create_all() is the
 # only migration mechanism), so create_all() only creates missing TABLES. A
@@ -84,8 +123,19 @@ _NEW_COLUMNS = [
     ("brand_configs", "additional_notes", "TEXT", "TEXT"),
     ("brand_configs", "social_handles", "TEXT", "TEXT"),
     ("brand_configs", "brand_brief", "TEXT", "TEXT"),
+    ("brand_configs", "logo_url", "TEXT", "TEXT"),
+    ("users", "avatar_url", "TEXT", "TEXT"),
+    ("users", "reset_token", "VARCHAR(255)", "TEXT"),
+    ("users", "reset_token_created_at", "TIMESTAMP", "TIMESTAMP"),
     ("reports", "truncation_info", "TEXT", "TEXT"),
     ("projects", "research_json", "TEXT", "TEXT"),
+    ("users", "role", "VARCHAR(20) DEFAULT 'admin'", "TEXT DEFAULT 'admin'"),
+    ("users", "parent_user_id", "VARCHAR(36)", "TEXT"),
+    ("users", "team_name", "VARCHAR(255)", "TEXT"),
+    ("projects", "team_id", "VARCHAR(36)", "TEXT"),
+    ("brand_configs", "team_id", "VARCHAR(36)", "TEXT"),
+    ("team_members", "allowed_projects", "JSON", "TEXT"),
+    ("teams", "avatar_url", "TEXT", "TEXT"),
 ]
 
 
@@ -130,9 +180,11 @@ app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(report_sections.router, prefix="/api/reports", tags=["Report Sections"])
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+app.include_router(chat_share.router)
 app.include_router(agents.router)
 app.include_router(pptx_templates.router)
 app.include_router(connectors.router)
+app.include_router(teams.router)
 app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
 
 @app.get("/")

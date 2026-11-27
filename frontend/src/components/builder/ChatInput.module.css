@@ -3,10 +3,10 @@
 .wrapper {
   position: relative;
   width: 100%;
-  max-width: 920px;
+  max-width: 1024px;
   margin: 0 auto;
   background: #ffffff;
-  border: 1px solid #E8E4DC;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 12px 14px;
   display: flex;
@@ -23,78 +23,20 @@
 /* The actual text area for message */
 .input {
   width: 100%;
-  min-height: 44px;
+  min-height: 80px;
   max-height: 240px;
   resize: none;
   border: none;
   background: transparent;
   outline: none;
   font-family: 'Inter', sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   color: #1A1A1A;
-  line-height: 1.6;
-  padding: 4px 8px;
+  line-height: 1.5;
+  padding: 4px 6px;
 }
 
 .input::placeholder {
-  color: #C8C3BC;
-}
-
-/* User Context Box styling */
-.contextBox {
-  background: #FAF8F5;
-  border: 1px solid #E8E4DC;
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
-  animation: contextSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes contextSlideIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.contextBoxHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.contextBoxTitle {
-  font-size: 11px;
-  font-weight: 700;
-  color: #B8912E;
-  letter-spacing: 0.08em;
-  cursor: default;
-  user-select: none;
-}
-
-.contextBoxClose {
-  background: none;
-  border: none;
-  font-size: 16px;
-  color: #A39E97;
-  cursor: pointer;
-  line-height: 1;
-}
-.contextBoxClose:hover {
-  color: #1A1A1A;
-}
-
-.contextInput {
-  width: 100%;
-  border: none;
-  background: transparent;
-  outline: none;
-  resize: none;
-  font-family: inherit;
-  font-size: 13px;
-  color: #1A1A1A;
-  line-height: 1.5;
-}
-.contextInput::placeholder {
   color: #C8C3BC;
 }
 
@@ -136,6 +78,58 @@
   line-height: 1;
   display: flex;
   align-items: center;
+
+/* Image thumbnail chip */
+.fileChipImg {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(212, 168, 67, 0.2);
+}
+
+.fileChipThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fileChipRemoveImg {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+
+/* Pasted text document chip */
+.fileChipPasted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(212, 168, 67, 0.06);
+  border: 1px solid rgba(212, 168, 67, 0.2);
+  border-radius: 8px;
+  color: #B8912E;
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 220px;
+}
   justify-content: center;
   padding: 0;
   margin-left: 2px;
@@ -150,8 +144,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 0;
-  padding-top: 10px;
+  margin-top: 6px;
+  padding-top: 8px;
   border-top: 1px solid #F0ECE4;
 }
 
@@ -169,21 +163,21 @@
 
 /* Action Buttons */
 .iconBtn {
-  min-width: 32px;
-  height: 32px;
-  padding: 0 10px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #FAF8F5;
   border: 1px solid #E8E4DC;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #6B6560;
   cursor: pointer;
   user-select: none;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 .iconBtn:hover {
@@ -231,14 +225,14 @@
 }
 
 .modelSelectBtn {
-  height: 32px;
-  padding: 0 10px;
+  height: 28px;
+  padding: 0 8px;
   display: flex;
   align-items: center;
   gap: 6px;
   background: #FAF8F5;
   border: 1px solid #E8E4DC;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #1A1A1A;
   cursor: pointer;
   user-select: none;
@@ -252,6 +246,13 @@
   border-color: #D4A843;
 }
 
+.modelTriggerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .modelMenu {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -262,7 +263,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   padding: 6px;
   z-index: 1000;
-  min-width: 200px;
+  min-width: 220px;
   max-height: 60vh;
   overflow-y: auto;
   animation: uploadMenuIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -281,6 +282,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 8px 10px;
   background: transparent;
   border: none;
@@ -296,6 +298,29 @@
 
 .selectedModelItem {
   background: rgba(212, 168, 67, 0.08) !important;
+}
+
+.modelMenuItemContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.providerLogoWrap {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+}
+
+.selectedModelItem .providerLogoWrap {
+  background: transparent;
+  border: none;
 }
 
 .modelMenuLeft {
@@ -374,15 +399,15 @@
 
 /* Submit and Stop buttons */
 .submitBtn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #D4A843, #B8912E);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
   user-select: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -395,15 +420,15 @@
 }
 
 .stopBtn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #1A1A1A;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
   user-select: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);

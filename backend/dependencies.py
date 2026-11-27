@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
 async def get_db():
     async with SessionLocal() as session:
@@ -39,3 +41,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     if user is None:
         raise credentials_exception
     return user
+
+async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optional), db: AsyncSession = Depends(get_db)) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if not email:
+            return None
+        res = await db.execute(select(User).where(User.email == email))
+        return res.scalars().first()
+    except Exception:
+        return None

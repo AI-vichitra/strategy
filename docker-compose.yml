@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: stratai-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - ./backend/stratai.db:/app/backend/stratai.db
+      - ./KNOWLEDGE_BASE:/app/KNOWLEDGE_BASE
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-802361061203-rfcn5075o982i0la09jo6vck3dul5a79.apps.googleusercontent.com}
+    container_name: stratai-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

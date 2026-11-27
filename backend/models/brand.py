@@ -13,6 +13,7 @@ class BrandConfig(Base):
     brand_name = Column(String, nullable=False)
     website_url = Column(String, nullable=True)
     category = Column(String, nullable=False)
+    logo_url = Column(String, nullable=True)
     brand_context = Column(Text, nullable=True)
     competitors = Column(Text, nullable=True)          # JSON list of {name, url}
     social_metrics = Column(Text, nullable=True)       # Kept for backwards compat / status signals
@@ -41,6 +42,8 @@ class BrandConfig(Base):
                                                           # build_system_prompt — always read via
                                                           # schemas.brand.normalize_brand_brief.
     created_at = Column(DateTime, default=datetime.utcnow)
+    team_id = Column(String(36), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True, index=True)
 
     user = relationship("User", back_populates="brands")
+    team = relationship("Team", back_populates="brands")
     projects = relationship("Project", back_populates="brand", cascade="all, delete-orphan")

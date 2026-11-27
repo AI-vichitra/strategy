@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 
-from backend.dependencies import get_db, get_current_user
+from backend.dependencies import get_db, get_current_user, get_current_user_optional
 from backend.models.user import User
 from backend.schemas.connector import ConnectorCredentialCreate, ConnectorCredentialResponse
 from backend.services import connector_service
@@ -31,8 +31,10 @@ async def save_credential(
 @router.get("", response_model=List[ConnectorCredentialResponse])
 async def get_connectors(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
+    if not current_user:
+        return []
     return await connector_service.list_credentials(db, user_id=current_user.id)
 
 

@@ -28,7 +28,7 @@ function ConnectorCard({
         <div className={styles.iconWrapper}>
           {!imgError ? (
             <img 
-              src={getLogoUrl(connector.domain)} 
+              src={getLogoUrl(connector.domain, connector.id)} 
               alt={`${connector.name} logo`} 
               className={styles.iconImage}
               onError={() => setImgError(true)}
@@ -83,6 +83,13 @@ export default function ConnectorsPanel({ open, onClose, agentConnectors, agentN
     if (!open) return;
     let cancelled = false;
     const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
+    if (!token) {
+      setLoading(false);
+      setStatuses({});
+      return;
+    }
 
     setLoading(true);
     setError(null);
