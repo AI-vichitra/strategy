@@ -190,6 +190,20 @@ def _is_populated(value: Optional[str]) -> bool:
     return bool(v) and v not in ("not available", "n/a", "na", "not applicable")
 
 
+def _stringify_prefilled(value: Any) -> Optional[str]:
+    """A prefilled_checkpoints entry may be a string or a list of strings
+    (the form's multi-select questions join to one string already, but the
+    request schema allows either) — normalizes to the same comma-joined
+    string shape fill_checkpoints' other checkpoint values use, or None if
+    there's nothing real in it."""
+    if isinstance(value, list):
+        parts = [str(v).strip() for v in value if str(v).strip()]
+        return ", ".join(parts) if parts else None
+    if isinstance(value, str):
+        return value.strip() or None
+    return None
+
+
 def fill_checkpoints(
     task: Optional[str],
     group_id: str,
@@ -197,6 +211,7 @@ def fill_checkpoints(
     brief_text: Optional[str] = None,
     brand_context: Optional[Dict[str, Any]] = None,
     brand_memory: Optional[Dict[str, Any]] = None,
+    prefilled_checkpoints: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Computes the full checkpoint-fill state for a classified task.
@@ -209,9 +224,17 @@ def fill_checkpoints(
     Brand Memory source, which will slot into the lookup order ahead of
     brand_brief once it exists (e.g. for C4 and the C6 fallback below).
 
+    prefilled_checkpoints: optional {checkpoint_id: value} map (value a
+    string or list of strings) for checkpoints already answered outside the
+    intake flow. Only applies to checkpoints this task's own LLM-extracted
+    set actually includes (C2/C3/C5/C6 + the classified group's own
+    checkpoints) — an id for a different group (e.g. G3.1 on a non-G3 task)
+    is silently ignored, never an error.
+
     Returns {task, group_id, group_name, agent_type, checkpoints: [...],
     missing_required: [...]}. Never raises.
     """
+    prefilled_checkpoints = prefilled_checkpoints or {}
     brand_context = brand_context or {}
     brief = brand_context.get("brand_brief") or {}
     target_market = brand_context.get("target_market") or {}
@@ -261,6 +284,18 @@ def fill_checkpoints(
         cp_id = cp_def["id"]
         scope = "core" if cp_id in _LLM_CORE_IDS else "group"
         must = False if cp_id == "C6" else bool(cp_def.get("must", False))
+
+        # A value the user already supplied elsewhere (e.g. the template
+        # form's Strategy Preferences tab) wins outright over extraction —
+        # skip the LLM result entirely for this checkpoint so build_questions
+        # never re-asks it. Blank/absent entries fall through unchanged.
+        prefilled_value = _stringify_prefilled(prefilled_checkpoints.get(cp_id))
+        if prefilled_value is not None:
+            checkpoints.append({
+                "id": cp_id, "name": cp_def.get("name", cp_id), "scope": scope, "must": must,
+                "state": "found", "value": prefilled_value, "source": "form",
+            })
+            continue
 
         entry = extracted.get(cp_id) if isinstance(extracted, dict) else None
         value = entry.get("value") if isinstance(entry, dict) else None

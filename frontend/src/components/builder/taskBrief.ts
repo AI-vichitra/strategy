@@ -13,7 +13,7 @@
 
 import type { TaskIntakeData, TaskIntakeAnswer, TaskIntakeCheckpoint } from './TaskIntakeQuestions';
 
-export type BriefSource = 'prompt' | 'brief' | 'brand' | 'you' | 'assumed';
+export type BriefSource = 'prompt' | 'brief' | 'brand' | 'you' | 'assumed' | 'form';
 
 export interface TaskBriefItem {
   id: string;
@@ -70,7 +70,7 @@ export function buildTaskBrief(
         id: cp.id,
         name: cp.name,
         value: formatValue(cp.value),
-        source: cp.source === 'brief' ? 'brief' : 'prompt',
+        source: cp.source === 'brief' ? 'brief' : cp.source === 'form' ? 'form' : 'prompt',
       });
       continue;
     }

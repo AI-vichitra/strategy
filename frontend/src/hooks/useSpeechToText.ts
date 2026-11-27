@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 
 /**
  * useSpeechToText
@@ -15,9 +15,15 @@ export function useSpeechToText() {
   const [finalTranscript, setFinalTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const isSupported =
-    typeof window !== 'undefined' &&
-    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  // Start false on both server and first client render so the initial markup
+  // matches; flip to the real value only after mount to avoid a hydration mismatch.
+  const [isSupported, setIsSupported] = useState(false);
+
+  useEffect(() => {
+    setIsSupported(
+      !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    );
+  }, []);
 
   const startListening = useCallback(() => {
     if (!isSupported) {

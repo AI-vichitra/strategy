@@ -1916,6 +1916,81 @@ def _build_research_direction_block(research_direction: dict) -> str:
     return "\n".join(lines)
 
 
+def _build_target_audience_block(target_audience: Any) -> str:
+    """Formats the per-task Target Audience sibling key (AgentTemplateView's
+    Target Audience tab — region/segments/age demographics/income tier/
+    locations/motivations), written alongside research_direction in
+    questionnaire_answers. Distinct from brand.brand_brief['target_audience']
+    (the brand's own onboarding description, labelled "Target Audience" in
+    the ### BRAND BRIEF ### block above) and from C4 "Audience and market"
+    in the Task Brief (sourced from brand_context, not this form). Returns
+    "" when there is nothing in it so callers can unconditionally append the
+    result."""
+    if not isinstance(target_audience, dict):
+        return ""
+
+    lines = []
+    region = target_audience.get("region")
+    if region:
+        lines.append(f"Region: {region}")
+    segments = [s for s in (target_audience.get("segments") or []) if s]
+    if segments:
+        lines.append(f"Core audience segments: {', '.join(segments)}")
+    age = [a for a in (target_audience.get("age_demographics") or []) if a]
+    if age:
+        lines.append(f"Age demographics: {', '.join(age)}")
+    income_tier = target_audience.get("income_tier")
+    if income_tier:
+        lines.append(f"Purchasing power / tier: {income_tier}")
+    locations = target_audience.get("locations")
+    if locations:
+        lines.append(f"Key focus cities/geographies: {locations}")
+    motivations = target_audience.get("motivations")
+    if motivations:
+        lines.append(f"Customer motivations & pain points: {motivations}")
+
+    return "\n".join(lines)
+
+
+def _build_strategy_extras_block(strategy_extras: Any) -> str:
+    """Formats the Strategy Preferences sibling key's two checkpoint-less
+    questions — Content Format & Pillars Focus and Desired Deliverable
+    Format. Goal/Platforms/Timeline are R2a's checkpoint-prefill job (they
+    ride the Task Brief's own items, not this block) — never duplicated
+    here. Returns "" when empty."""
+    if not isinstance(strategy_extras, dict):
+        return ""
+
+    lines = []
+    content_format = strategy_extras.get("content_format")
+    if content_format:
+        lines.append(f"Content format & pillars focus: {content_format}")
+    deliverable_format = strategy_extras.get("deliverable_format")
+    if deliverable_format:
+        lines.append(f"Desired deliverable format: {deliverable_format}")
+
+    return "\n".join(lines)
+
+
+def _build_brand_descriptors_line(brand_descriptors: Any) -> str:
+    """Formats the Brand Details tab's Category/Industry + Voice & Tone
+    sibling key into one short context line. Returns "" when empty."""
+    if not isinstance(brand_descriptors, dict):
+        return ""
+
+    parts = []
+    category = brand_descriptors.get("category")
+    if category:
+        parts.append(f"category {category}")
+    voice = brand_descriptors.get("voice")
+    if voice:
+        parts.append(f"voice & tone {voice}")
+    if not parts:
+        return ""
+
+    return "Brand descriptors (this task): " + ", ".join(parts) + "."
+
+
 _BRAND_BRIEF_LABELS = {
     "what_we_do": "What We Do",
     "positioning": "Positioning",
@@ -3847,6 +3922,43 @@ Role/Mode: **{agent_type}**
                     + research_block + "\n"
                 )
 
+        # Further sibling keys alongside items/research_direction above, same
+        # additive, backward-compatible pattern — each written only when the
+        # user filled the corresponding AgentTemplateView tab (R2b; the tab's
+        # Goal/Platforms/Timeline questions are R2a's checkpoint-prefill job
+        # and already ride the TASK BRIEF block above, never duplicated
+        # here). Absent on every project from before this pass, and on any
+        # project where the user left that tab untouched.
+        target_audience_block = _build_target_audience_block(parsed_task_brief.get("target_audience"))
+        if target_audience_block:
+            base += (
+                "\n### TARGET AUDIENCE (task-specific, user-provided) ###\n"
+                + target_audience_block + "\n"
+            )
+
+        strategy_extras_block = _build_strategy_extras_block(parsed_task_brief.get("strategy_extras"))
+        if strategy_extras_block:
+            base += (
+                "\n### STRATEGY PREFERENCES ###\n"
+                + strategy_extras_block + "\n"
+            )
+
+        task_guardrails = parsed_task_brief.get("task_guardrails")
+        if isinstance(task_guardrails, str) and task_guardrails.strip():
+            base += (
+                "\n### GUARDRAILS (THIS TASK) ###\n"
+                f"{task_guardrails.strip()}\n"
+                "You MUST respect these constraints in all analysis and recommendations. Do not contradict or ignore them.\n"
+            )
+
+        brand_descriptors_line = _build_brand_descriptors_line(parsed_task_brief.get("brand_descriptors"))
+        if brand_descriptors_line:
+            base += f"\n{brand_descriptors_line}\n"
+
+    # Brand-level guardrails (brand.additional_notes, set at brand onboarding
+    # — applies to EVERY task for this brand) — distinct from the per-task
+    # ### GUARDRAILS (THIS TASK) ### block just above, which only this one
+    # task's own Additional Info tab controls.
     if additional_notes and additional_notes.strip():
         base += f"\nUser-Provided Constraints / Guardrails: {additional_notes.strip()}\nYou MUST respect these constraints in all analysis and recommendations. Do not contradict or ignore them.\n"
 

@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DABUR - Comprehensive Intelligence Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(22, 24, 30, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #00f2fe;
+            --accent-secondary: #4facfe;
+            --text-main: #f5f6f8;
+            --text-muted: #94a3b8;
+            --glow: rgba(0, 242, 254, 0.15);
+        }
+        
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1e1e2f 0%, var(--bg-color) 70%);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow);
+        }
+        
+        .header p {
+            color: var(--text-muted);
+            font-size: 18px;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+        
+        .header .meta-url {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .header .meta-url:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 15px var(--glow);
+        }
+        
+        .category-section {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+        }
+        
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .ai-summary {
+            background: linear-gradient(135deg, rgba(22, 24, 30, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 20px var(--glow);
+            backdrop-filter: blur(8px);
+        }
+        
+        .ai-summary h3 {
+            color: var(--accent-primary);
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            font-size: 16px;
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow);
+        }
+        
+        .result-title {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .result-title a {
+            color: var(--text-main);
+            text-decoration: none;
+            background: linear-gradient(to right, #fff, #fff);
+            background-size: 0% 2px;
+            background-repeat: no-repeat;
+            background-position: left bottom;
+            transition: background-size 0.3s ease, color 0.3s ease;
+        }
+        
+        .result-title a:hover {
+            color: var(--accent-primary);
+            background-size: 100% 2px;
+        }
+        
+        .result-url {
+            font-size: 13px;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .result-content {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-size: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DABUR</h1>
+            <p style="text-transform: uppercase; font-size: 14px; letter-spacing: 2px; color: var(--accent-primary); margin-top: 4px; font-weight: 600;">D2C (Direct-to-Consumer)</p>
+            <p>Extensive Market Intelligence & Corporate Profile Report</p>
+            <a href="https://www.daburshop.com/" target="_blank" class="meta-url">https://www.daburshop.com/</a>
+        </div>
+        
+        <!-- Single Master AI Synthesized Insight at the Top -->
+        <div class="ai-summary" style="margin-bottom: 50px;">
+            <h3 style="font-size: 24px; border-bottom: 1px solid rgba(0, 242, 254, 0.2); padding-bottom: 12px;">✨ Integrated AI Corporate Intelligence & Synthesized Insight</h3>
+            <div class="ai-summary-content" style="font-size: 16.5px; line-height: 1.8;">
+                <strong>Corporate Overview & Strategy:</strong> Dabur India Limited, founded in 1884, is one of India's leading consumer goods companies with a mission to provide high-quality natural products focused on health and wellness. The company's vision is "Dedicated to the health and well-being of every household," and its mission is "maximizing shareholders’ value, by offering superior quality nature based products, improving consumers’ life in personal care, health care and foods." Dabur operates under three major strategic business units: Healthcare, Personal Care, and Food Care. The company has a robust product mix strategy and business model, leveraging both umbrella branding and diversification through acquisitions. Dabur's pricing strategy involves judicious price hikes and reduction in pack sizes to maintain operating margins. The company has a strong global presence, selling in over 60 countries, and has adopted a digital marketing strategy to reach younger audiences. Dabur's growth strategy includes expanding its product portfolio with premium offerings and adapting formulations and messaging to suit regional preferences.. Title: Dabur: A Comprehensive Overview of India's Leading FMCG Company | Course Hero Pages 21 Total views 70 Coventry University BS BS EDEXCEL madhug86 12/7/2021 DABUR.pptx View full document Contents 1. Product mix strategy and Business model 3. FMCG market in India- SWOT AND TOWS Model 11. • In 1996, Dabur became a public limited company, and within four years, it had risen to the top of the industry, with a revenue of Rs 1,000 crore. DABUR Estalished:1884 Foundered : Dr SK Burman • With revenues of over Rs 9,500 crore and a market capitalization of over Rs 80,000 crore, India's fourth largest FMCG corporations have a market worth of over Rs 100,000 crore. • Dabur India is also a world head in Ayurveda, with a product line that includes more than 250 herbal and Ayurvedic goods.<br/><br/><strong>Product & Service Portfolio:</strong> Dabur offers a wide range of products across various categories including home and personal care, foods and beverages, and healthcare. On its D2C platform, Dabur Shop, consumers can purchase products from its portfolio such as home care kits, ayurvedic medicines like Restora and Trifgol, and personal care items like Botanica Anti Ageing Cream and Vatika Bio Infusions shampoos. Dabur's product line also includes premium offerings like cold-pressed virgin coconut oil and Real health peanut butter. The company provides a variety of health and wellness products, including immunity support supplements like Chyawanprash and Giloy Ghanvati, multivitamins, and herbal teas. Dabur also offers skincare, haircare, and oral care products, including Siens by Dabur gummies and Vatika Naturals shampoos. The sources do not provide a definitive answer to the full extent of all products and services offered by Dabur.. Over the last couple of months, Dabur has been doing many soft launches via ecommerce channels to gauge the initial success of its products with consumers. For instance, Dabur has around two dozen digital-first products. Dabur Vedic Tea, Real superfoods like chia seeds and pumpkin seeds, and nine baby care products (including baby shampoo, baby oil, baby lotion, baby powder, etc) are all online first.  Dabur's D2C brands  The new product contribution to ecommerce is already 11% for Dabur and this is expected to inch up further in the months to come.  Apart from new product launches, Dabur has also launched premium products like cold pressed virgin coconut oil and Real health peanut butter, exclusively on digital platforms to begin with. [...] One of India’s oldest packaged consumer goods company, Dabur is getting ready to dip its toes in India’s buzzing D2C market. Dabur India is all set to launch its D2C platform, Dabur Shop, which is expected to go live across India by the end of this fiscal year.  > “Dabur Shop is currently in its beta testing phase. We are adding pincodes to it as we speak and testing is still underway,” says Ankush Jain, CFO, Dabur India.  On Dabur Shop, consumers will be able to shop for products across Dabur’s portfolio including—home and personal care, foods and beverages, and even healthcare.<br/><br/><strong>Recent Developments & News:</strong> Dabur India is actively pursuing acquisitions to bolster its direct-to-consumer (D2C) portfolio, with Managing Director and CEO Mohit Malhotra stating the company is in talks with two to three D2C companies for potential deals over the next three years. The company has already made notable acquisitions, including a 51% stake in Badshah Masala and Sesa Care, and a minority stake in RAS Beauty. Dabur is also preparing to launch its D2C platform, Dabur Shop, expected to go live by the end of the fiscal year, offering a wide range of its products. However, Dabur faced regulatory issues as the USFDA issued a warning letter over CGMP lapses at its Silvassa plant, prompting a voluntary recall of certain products. Additionally, Dabur is challenging a FSSAI order that banned the "100%" claim on its products, alleging bias and claiming a potential risk to its ₹150 crore inventory.. Dabur has accelerated its inorganic expansion in recent years. In October 2022, the company acquired a 51% stake in Badshah Masala for Rs 587.5 crore. It followed this with the acquisition of a 51% stake in Ayurvedic hair care brand Sesa Care in October 2024, before fully merging the business into Dabur in 2025. Earlier this year, Dabur also acquired a minority stake in premium beauty brand RAS Beauty through its newly launched Dabur Ventures platform, marking its entry into the premium D2C beauty segment.  Meanwhile, Dabur's Badshah Masala business continued to deliver strong growth, supported by expansion beyond its traditional markets and rising contribution from quick commerce and e-commerce channels. [...] ADVERTISEMENT  Dabur India is actively evaluating acquisition opportunities and is currently in discussions with two to three companies as it looks to strengthen its portfolio with direct-to-consumer (D2C) brands, Managing Director and Chief Executive Officer Mohit Malhotra said during the company's Q1 FY27 earnings call.  The FMCG maker is targeting one or two sizeable acquisitions over the next three years, although Malhotra said the timeline would depend on deal negotiations and valuations.  "Our acquisition strategy is two-pronged. We take a minority stake in emerging D2C brands, work with the promoters to help them turn profitable, and then increase our stake to a majority once the business reaches the right stage," he said. [...] Malhotra said the Badshah business grew 13.3% during the quarter, driven by around 11% volume growth in the domestic market, despite no price hikes.  "The international business is also growing by more than 40%.<br/><br/><strong>Competitive Landscape & Market Positioning:</strong> Dabur's key competitors include Marico Limited, Emami Ltd, and Godrej Consumer Products Limited, all of which are prominent in the fast-moving consumer goods (FMCG) sector. Marico focuses on beauty and wellness products, Emami is known for personal care and healthcare products, and Godrej Consumer Products is a leader in household insecticides and hair care. Other competitors include Auric, Organic India, and Shri Chyawan Ayurved, which operate in the health and wellness industry. Additionally, companies like Hindustan Unilever, Tata Consumer Products, and Lotus Herbals also compete with Dabur in various segments of the FMCG market. These competitors are engaged in diverse product offerings ranging from personal care and nutrition to organic and Ayurvedic products.. \-  \-  70/100  7th  Logo for Khetika  Internet first brand of dry fruits and ready to cook products  $25M  68/100  8th  Logo for Cavinkare  Internet first brand of multicatrgory convenience food products  $59.2M  68/100  9th  Yu Foodlabs  2020, Gurugram (India), Series B  Online retailer of instant meal bowls, noodles, pasta, and juices  $14.9M  67/100  10th  Logo for The AyurvedaThe Ayurveda  2021, Gurugram (India), Series A  Provider of Ayurvedic‑based beauty and wellness products sold directly to consumers  $18.4M  66/100  25th  Manufacturer of ayurvedic medicine and natural consumer products  $42.2M  58/100  Sign up today!  Looking for more details on Dabur's competitors? Click  hereto see the top ones  ## Financials of DaburFY 26 Available [...] $26.5M  78/100  2nd  Logo for Wingreens WorldWingreens World  2011, Gurugram (India), Series D  Online retailer of better-for-you food and beverage products  $79M  75/100  3rd  Two Brothers Organic Farms  2016, Pune (India), Series B  Manufacturer of organic food products including cultured ghee, stone ground flour, cold pressed oils, and natural sweeteners  $25.3M  74/100  4th  Logo for Nat Habit  Online platform offering beauty and skincare products  $18.5M  71/100  5th  Country Delight  2015, Gurugram (India), Series E  Retailer of fresh dairy, grocery, and food products delivered directly to homes  $225M  70/100  6th  Provider of diversified products across FMCG, paperboards, packaging, agri-business, and IT  \-  \-  70/100  7th  Logo for Khetika [...] ## Dabur - About the company  Dabur is a public company based in Ghaziabad (India), founded in 1884by  S K Burman. It operates as a Manufacturer of ayurvedic medicine and natural consumer products. Dabur has raised $42.2M in funding. The company has 3347 active competitors, including 132 funded and 189 that have exited. Its top competitors include companies likeAnveshan,Wingreens WorldandTwo Brothers Organic Farms.  ### Company Details  Manufacturer of ayurvedic medicine and natural consumer products. It offers a wide range of products across various categories, including skincare, haircare, healthcare, and oral care. Its products include hair oil, toothpaste, churna, chyawanprash, honey, rose water, tea, cough syrup, health juices, skin care, baby care, and more.  Website  www.dabur.com/.
+            </div>
+        </div>
+
+        <div class="category-section">
+            <h2 class="category-title">Company Overview Mission And Strategy</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.coursehero.com/file/121471212/DABURpptx" target="_blank">Dabur: A Comprehensive Overview of India&#x27;s Leading FMCG Company | Course Hero</a></h3>
+                    <div class="result-url">https://www.coursehero.com/file/121471212/DABURpptx</div>
+                    <div class="result-content">Title: Dabur: A Comprehensive Overview of India&#x27;s Leading FMCG Company | Course Hero
+Pages 21 Total views 70 Coventry University BS BS EDEXCEL madhug86 12/7/2021 DABUR.pptx View full document Contents 1. Product mix strategy and Business model 3. FMCG market in India- SWOT AND TOWS Model 11. • In 1996, Dabur became a public limited company, and within four years, it had risen to the top of the industry, with a revenue of Rs 1,000 crore. DABUR Estalished:1884 Foundered : Dr SK Burman • With revenues of over Rs 9,500 crore and a market capitalization of over Rs 80,000 crore, India&#x27;s fourth largest FMCG corporations have a market worth of over Rs 100,000 crore. • Dabur India is also a world head in Ayurveda, with a product line that includes more than 250 herbal and Ayurvedic goods. Source: Dabur Corporate Profile Image source : Dabur Annual report 2020-21 PRODUCT MIX STRATEGY • Product mix is a graphical representation of a company&#x27;s product portfolio used to comprehend all of the industries and demands it serves. Source: Bhasin,2019, marketing mix of Dabur, Marketing 91 BUSINESS MODEL • Dabur used to operate under the umbrella branding strategy, till 2013which is a very distinctive company concept. HISTORY AND MILESTONES 1884-DABUR BIRTH 1896-SETTING MANUFACTURIN G UNIT EARLY 1900S- AYURVEDIC MEDICINES 1919- REASEARCH LABS 1936-FULL FLEDGED COMPANY 1979-FACTORY AND R&amp;D CENTER 1986- PUBLIC LIMITED COMPANY 1992- 1 ST INTERNATIONAL BUSINESS , CONFECTIONERY ITEMS IN INDIA 1993-Enters health care area of cancer treatment 1996- 3 sub divisions 2000- company turnover&amp;gt;1000 crore mark 2006- crosses $2bn market cap, adopts US GAAP, namaste labs 2008-Entry to skin care&amp; hair growth 2010- Makes 1 st overseas acquisition 2011- Acquires 30- plus brand Pharma 2013- Market capitalization crosses $5bl mark VISION-MISSION • Vision : “ Dedicated to the health and well being of every household” • Mission : Dabur believes “ Health is wealth” and continues it as their mission to provide 100% organic products to consumers and thereby objective is to maximize the value offered to the shareholder. Want to read all 21 pages? View full document Want to read all 21 pages? View full document End of preview Want to read all 21 pages?</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.slideshare.net/slideshow/dabur-ppt-on-organisation-marketing-mix-strategy/69310876" target="_blank">Dabur ppt on Organisation, marketing mix, strategy | PPTX</a></h3>
+                    <div class="result-url">https://www.slideshare.net/slideshow/dabur-ppt-on-organisation-marketing-mix-strategy/69310876</div>
+                    <div class="result-content">Presented By- PARAS VOHRA SWATI MANUJA PRAGYA SHARMA GAURAV KUMAR  About Dabur •India’s 4th leading FMCG company. • Strategic business units in Healthcare, personal care and food care. • Legacy over 100 years. • widespread over 50 countries. •Leader in Herbal Digestives with 90% market share.  VISION &amp; MISSION • VISION- “Dedicated to the health &amp; well-being of every household” • MISSION-”maximizing shareholders’ value, by offering superior quality nature based products, improving consumers’ life in personal care, health care and foods.”  PRINCIPLES • Ownership • Passion for Winning • People Development • Consumer Focus • Team Work • Innovation • Integrity  ORGANIZATION STRUCTURE • 3 major strategic business units (SBU) – Family Products Division (FPD) – Healthcare Products Division (HPD) [...] - 1\. Presented By- PARAS VOHRA SWATIMANUJA PRAGYA SHARMA GAURAV KUMAR
+- 2\. About Dabur •India’s 4thleading FMCG company. • Strategic business units in Healthcare, personal care and food care. • Legacy over 100 years. • widespread over 50 countries. •Leader in Herbal Digestives with 90% market share.
+- 3\. VISION &amp; MISSION •VISION- “Dedicated to the health &amp; well-being of every household” • MISSION-”maximizing shareholders’ value, by offering superior quality nature based products, improving consumers’ life in personal care, health care and foods.”
+- 4\. PRINCIPLES • Ownership • Passionfor Winning • People Development • Consumer Focus • Team Work • Innovation • Integrity [...] - 16\. DIVERSIFICATION 2007-Foray into organized retail 2011-enters professional skin care market 1884-Only Ayurvedic medicines 1919-Research Labs 1979- Specialized in cancer treatement 1996- Separate divisions: Health care Family Product Ayurvedic
+- 17\. HORIZONTAL INTEGRATION 1992 Joint venture with Agrolimen, Spain 1995 Jointventure with Osem,Israel and Bongrain, France 2005 Acquires Balsara’s Hygiene and home products 2008 Acquires Fem Care Pharma 2011 Acquires30- plus from Ajanta Pharma 2010 Buys Hobi Kozmetik Also, Namaste LabsUS
+- 18\. Corporate Strategy • SENSORYIDENTITY Changing old Dabur tree. • STRATEGIC INTENT Expansion, Acquisition &amp; Innovation across various segments.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://fr.slideshare.net/slideshow/marketing-strategy-for-dabur/39905987" target="_blank">Marketing strategy &amp; Product Strategy for DABUR | PPTX</a></h3>
+                    <div class="result-url">https://fr.slideshare.net/slideshow/marketing-strategy-for-dabur/39905987</div>
+                    <div class="result-content">kept in mind -:   Cost   Competition   Consumer demand  Pricing Strategies of Dabur  Dabur has stepped up the pace of new product launches and is investing ad spend  and marketing. The entire product portfolio is also tweaked to include premium  offerings such as more variants under almost every category, like Dabur Vatika  Hair Oil is available in 3 different versions.  Dabur is today seen as far more proactive in the market. Dabur is now an external  oriented company. Across the whole organization the company have one  definition of winning, and that means not just growing, but growing completely.  Over the last two years, Dabur has maintained its operating margins through  judicious price hikes across products and reduction in pack sizes.   I.COST  One of the most important factor [...] covering over 2.8 million  retail outlets with a high penetration in both urban and rural markets.  Dabur&#x27;s products also have a huge presence in the overseas markets and  are today available in over 60 countries across the globe. Its brands are  highly popular in the Middle East, SAARC countries, Africa, US,  Europe and Russia. Dabur&#x27;s overseas revenues stand at over Rs 500  Crore in the 2008-09 fiscal, accounting for about 20% of the total  turnover.   COMPANY PROFILE OF DABUR Ind Ltd  Type -  Public (NSE, BSE)  Founded -  1884  Headquarters -  Ghaziabad  Key people -  V. C. Burman  Business -  Dabur’s product range encompasses health care, personal care, ayurvedic specialties and food segments.  Brands -  Well-known brands include Amla, Chyawanprash, Hajmola, Lal Dantmanjan, Nature [...] - 8\. Pricing Strategy ofDabur PRICE Price is normally expressed in monetary terms. It is worth of a product or service in monetary terms. Price is the value which a buyer passes on to the seller in lieu of the product or service provided. Price is a crucial determinant of the fact whether the exchange between the buyer and seller should materialize or not. While pricing the products three main factors should be kept in mind -:  Cost  Competition  Consumer demand Pricing Strategies of Dabur Dabur has stepped up the pace of new product launches and is investing ad spend and marketing. The entire product portfolio is also tweaked to include premium offerings such as more variants under almost every category, like Dabur Vatika Hair Oil is available in 3 different versions. Dabur is today</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.slideteam.net/dabur-company-profile-powerpoint-presentation-slides.html" target="_blank">Dabur Company Profile Powerpoint Presentation Slides PPT Example</a></h3>
+                    <div class="result-url">https://www.slideteam.net/dabur-company-profile-powerpoint-presentation-slides.html</div>
+                    <div class="result-content">FAQs for Dabur Company Profile
+
+Dabur&#x27;s growth story is pretty wild actually - they&#x27;ve been around since 1884 doing Ayurvedic stuff. The big moves? Going public in &#x27;94, then buying up international brands in the 2000s. But honestly, their smartest play was figuring out how to sell traditional remedies to modern people. That Horlicks India acquisition in 2018 was massive for their nutrition side. What&#x27;s crazy is how they&#x27;ve kept that whole &quot;natural and trusted&quot; vibe while going global - most companies totally lose that when they scale up. Oh, and launching their consumer goods division was clutch too. [...] Dabur&#x27;s gotten pretty clever with their global strategy - they tweak formulations and messaging for each market&#x27;s preferences and regulations. They partner with local distributors who actually know the regional consumers (smart move honestly). Instead of pushing just Ayurveda everywhere, they&#x27;ve broadened it to &quot;natural wellness&quot; which works better internationally. They&#x27;re heavy into digital marketing for younger crowds overseas too. The cool part? They keep their heritage story but make it relevant wherever they go. Oh, and definitely look at how they&#x27;ve adjusted their product lines for Middle Eastern and African markets - that&#x27;s where you&#x27;ll see their localization skills really shine. [...] Dabur&#x27;s really smart about mixing old-school Ayurvedic knowledge with modern tech. Their R&amp;D teams are constantly tweaking traditional recipes to work for today&#x27;s consumers - like, their toothpaste stuff is actually pretty cool. They don&#x27;t just throw products out there though. Consumer feedback drives what they develop next, which makes sense if you want things that actually sell. The whole strategy is balancing that ancient herbal wisdom with what people want now. Oh, and they&#x27;ve got multiple research centers working on both brand new products and improving existing ones.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://dcfmodeling.com/blogs/vision/daburns-mission-vision" target="_blank">Mission Statement, Vision, &amp; Core Values (2025) of Dabur India Limited.</a></h3>
+                    <div class="result-url">https://dcfmodeling.com/blogs/vision/daburns-mission-vision</div>
+                    <div class="result-content">Mission Statement, Vision, &amp; Core Values (2025) of Dabur India (DABURNS) – DCFmodeling.com * STOCK EXCHANGESAMEX NASDAQ NYSE SHZ HKSE LSE JPX NSE SHH EURONEXT * PRODUCTSBusiness Model Canvas BCG Matrix Company Profile DCF Valuation SWOT Analysis Porter&#x27;s Five Forces Analysis PESTLE Analysis Marketing Mix Analysis ANSOFF Matrix VRIO Analysis * BLOGSHistory Financial Health Investor Profile Vision Other Download discounted cash flow template Buy stock market analysis tool  Dabur India Limited (DABUR.NS) Bundle - [x]DCF Model~~$25~~$15 - [x]Porter&#x27;s Five Forces~~$12~~$7 - [x]ANSOFF Matrix~~$12~~$7 - [x]BCG Matrix~~$12~~$7 - [x]Marketing Mix~~$12~~$7 - [x]PESTLE Analysis~~$12~~$7 - [x]VRIO Analysis~~$12~~$7 - [x]SWOT Analysis~~$12~~$7 An Overview of Dabur India Limited  General Summary of Dabur India Limited Dabur India Limited, founded in 1884, is one of India&#x27;s leading consumer goods companies.  Company&#x27;s Financial Performance in the Latest Financial Reports In the latest financial report for Q2 FY 2024, Dabur India Limited reported record-breaking revenues amounting to **₹3,100 crore**, a growth of **12%** compared to the same period last fiscal year. Mission Statement of Dabur India Limited  Mission Statement of Dabur India Limited Dabur India Limited&#x27;s mission statement reflects the company&#x27;s commitment to high-quality products and a focus on health and wellness. In FY 2023, Dabur reported an increase of **15%** in its total revenue, amounting to approximately **₹10,339 crore**, with a significant portion of this growth attributed to product innovation and enhanced quality assurance measures. Examples of popular products include Dabur Chyawanprash and Dabur Honey, both of which have maintained a loyal consumer base due to their perceived quality and efficacy. Focus on Health and Wellness Dabur&#x27;s mission emphasizes a strong focus on health and wellness, driving the company&#x27;s initiatives in improving consumer health through natural products.  Focus on Natural Products Dabur has a robust strategy centered around offering natural and herbal products that cater to health-conscious consumers.  Long-term Goals The company aims to double its revenue to **INR 18,000 crore** by 2025, reflecting an ambitious growth trajectory that aligns with its vision of being a trusted leader in the natural products market.  Quality Quality is a core value at Dabur, with the company striving to maintain superior standards across all its products.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Products And Services Deep Dive</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://yourstory.com/2022/11/coming-soon-dabur-indias-d2c-portal-ecommerce-online" target="_blank">Coming soon: Dabur India’s D2C portal | YourStory</a></h3>
+                    <div class="result-url">https://yourstory.com/2022/11/coming-soon-dabur-indias-d2c-portal-ecommerce-online</div>
+                    <div class="result-content">Over the last couple of months, Dabur has been doing many soft launches via ecommerce channels to gauge the initial success of its products with consumers. For instance, Dabur has around two dozen digital-first products. Dabur Vedic Tea, Real superfoods like chia seeds and pumpkin seeds, and nine baby care products (including baby shampoo, baby oil, baby lotion, baby powder, etc) are all online first.
+
+Dabur&#x27;s D2C brands
+
+The new product contribution to ecommerce is already 11% for Dabur and this is expected to inch up further in the months to come.
+
+Apart from new product launches, Dabur has also launched premium products like cold pressed virgin coconut oil and Real health peanut butter, exclusively on digital platforms to begin with. [...] One of India’s oldest packaged consumer goods company, Dabur is getting ready to dip its toes in India’s buzzing D2C market. Dabur India is all set to launch its D2C platform, Dabur Shop, which is expected to go live across India by the end of this fiscal year.
+
+&gt; “Dabur Shop is currently in its beta testing phase. We are adding pincodes to it as we speak and testing is still underway,” says Ankush Jain, CFO, Dabur India.
+
+On Dabur Shop, consumers will be able to shop for products across Dabur’s portfolio including—home and personal care, foods and beverages, and even healthcare. Products from Dabur’s ayurvedic portfolio like Restora, which helps fight fatigue and constipation, acne remedy Trifgol, and others will also be available on the D2C platform.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.daburshop.com" target="_blank">Dabur Ayurvedic &amp; Wellness Products in India | Official e-Store – Daburshop</a></h3>
+                    <div class="result-url">https://www.daburshop.com</div>
+                    <div class="result-content">Siens by Dabur
+
+ Siens By Dabur Hair, Skin &amp; Nails (3 in 1 Gummies) | Brightens Skin, Control Hairfall, Strengthens Hair &amp; Nails
+
+Botanica Anti Ageing Cream  + Botanica 3D Serum - 50g + 30ml
+
+Botanica
+
+ Botanica Anti Ageing Cream + Botanica 3D Serum - 50g + 30ml
+
+Dabur Vatika Bio Infusions Damage Therapy shampoo 400ml
+
+Vatika
+
+ Dabur Vatika Bio Infusions Damage Therapy shampoo 400ml
+
+Dabur Vatika Bio Infusions Moisture Bomb shampoo 400ml
+
+Vatika
+
+ Dabur Vatika Bio Infusions Moisture Bomb shampoo 400ml
+
+Réal Cheers Green Apple Mojito 250ml Réal Cheers Green Apple Mojito 250ml Home Care Kit Aloederm Max Moisturising Cream 150g and Aloederm Moisturising Lotion 200ml
+
+Combo Bundles
+
+ Aloederm Max Moisturising Cream 150g and Aloederm Moisturising Lotion 200ml [...]  Your Wellness Journey
+
+- Immunity Support Immunity Support
+- Energy &amp; Stamina Energy &amp; Stamina
+- Digestion &amp; Detox Digestion &amp; Detox
+- Wellness For Women Wellness For Women
+- Cold &amp; Cough Cold &amp; Cough
+- Everyday Wellness Everyday Wellness
+
+ Dabur Favourites
+
+Siens By Dabur Multivitamin for Men | 34 nutrients to Support Energy, Muscle Function &amp; Stamina Siens By Dabur Multivitamin for Men | 34 nutrients to Support Energy, Muscle Function &amp; Stamina
+
+Siens by Dabur
+
+ Siens By Dabur Multivitamin for Men | 34 nutrients to Support Energy, Muscle Function &amp; Stamina [...] Dabur A2 Cow Ghee | Rich in Vitamin A &amp; Antioxidant | Bilona method | Made from desi cows Milk Dabur A2 Cow Ghee | Rich in Vitamin A &amp; Antioxidant | Bilona method | Made from desi cows Milk
+
+A2 COW Ghee
+
+ Dabur A2 Cow Ghee | Rich in Vitamin A &amp; Antioxidant | Bilona method | Made from desi cows Milk
+
+Dabur Honey | World&#x27;s No.1 Honey Brand with No Sugar Adulteration Dabur Honey | World&#x27;s No.1 Honey Brand with No Sugar Adulteration
+
+Honey
+
+ Dabur Honey | World&#x27;s No.1 Honey Brand with No Sugar Adulteration
+
+Siens By Dabur Multivitamin for Men | 34 nutrients to Support Energy, Muscle Function &amp; Stamina Siens By Dabur Multivitamin for Men | 34 nutrients to Support Energy, Muscle Function &amp; Stamina
+
+Siens by Dabur</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.distacart.com/collections/dabur-products" target="_blank">Buy Dabur Products Online – Ayurvedic, Wellness &amp; Personal Care</a></h3>
+                    <div class="result-url">https://www.distacart.com/collections/dabur-products</div>
+                    <div class="result-content">Dabur Ayurvedic Medicine for Immunity
+
+Boost your immunity the natural way with Dabur Ayurvedic medicine for immunity. Products like Chyawanprash and Giloy Ghanvati are specifically formulated to aid your immune system&#x27;s health. They have powerful herbs that help the body resist infections.
+
+ Dabur Organic Skincare &amp; Haircare Range
+
+Indulge your hair and skin with Dabur organic skincare and haircare products. These products contain herbal extracts, which are naturally soothing and nourishing.
+
+ Popular Dabur Skincare, Haircare &amp; Oralcare Products:
+
+ Buy Authentic Ayurvedic Products Online By Dabur on Dista [...]  Dabur Vatika Naturals Rosemary &amp; Seaweed Anti-Hair Fall Shampoo
+
+Dabur Smritisagar Ras Tablets
+
+ Dabur Smritisagar Ras Tablets
+
+Dabur Stresscom Ashwagandha 12 Strips X 10 Capsules
+
+ Dabur Stresscom Ashwagandha 12 Strips X 10 Capsules
+
+Dabur Honey - 800g (400g x 2)&quot;)
+
+ Dabur Honey - 800g (400g x 2)
+
+Dabur Chyawanprakash Sugar Free
+
+ Dabur Chyawanprakash Sugar Free
+
+Dabur Sitopaladi Churna
+
+ Dabur Sitopaladi Churna
+
+Dabur Avipattikar Tablets 60 (Pack of 2)&quot;)
+
+ Dabur Avipattikar Tablets 60 (Pack of 2)
+
+Dabur Pudin Hara Pearls Capsules
+
+ Dabur Pudin Hara Pearls Capsules
+
+Dabur Honitus Hot Sip Ayurvedic Kadha
+
+ Dabur Honitus Hot Sip Ayurvedic Kadha
+
+Dabur Amla Juice Immunity Booster
+
+ Dabur Amla Juice Immunity Booster
+
+Dabur Sj Double Gold Capsules [...] Dista
+Dista
+Trust Logo Image
+
+ Country/region
+
+Points
+
+ Dabur Products
+
+Dabur Ashokarishta
+
+ Dabur Ashokarishta
+
+Dabur Odomos Non-Sticky Mosquito Repellent Cream With Vitamin E &amp; Almond
+
+ Dabur Odomos Non-Sticky Mosquito Repellent Cream With Vitamin E &amp; Almond
+
+Dabur Honey - 450g (225g x 2)&quot;)
+
+ Dabur Honey - 450g (225g x 2)
+
+Dabur Honey - 250g
+
+ Dabur Honey - 250g
+
+Dabur Red Paste
+
+ Dabur Red Paste
+
+Dabur Honey - 1kg
+
+ Dabur Honey - 1kg
+
+Dabur Chyawanprash
+
+ Dabur Chyawanprash
+
+Dabur SJ Gold
+
+ Dabur SJ Gold
+
+Dabur Honey Pure 50 Gm
+
+ Dabur Honey Pure 50 Gm
+
+Dabur Honey
+
+ Dabur Honey
+
+Dabur Keratex Ayurvedic Medicinal Oil
+
+ Dabur Keratex Ayurvedic Medicinal Oil
+
+Dabur Vatika Naturals Rosemary &amp; Seaweed Anti-Hair Fall Shampoo</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.scribd.com/document/586711649/Dabur-Products-List-IndianPDF-com" target="_blank">Dabur Products Comprehensive List | PDF</a></h3>
+                    <div class="result-url">https://www.scribd.com/document/586711649/Dabur-Products-List-IndianPDF-com</div>
+                    <div class="result-content">Scribd
+
+ Dabur Products Comprehensive List
+
+The document lists over 100 products offered by Dabur, an Indian consumer goods company. The products include hair oils, juices, healthcare products like cough syrup, dental products like toothpaste, skincare items, hair care products like shampoos and oils, ayurvedic medicines, baby products, and more. Dabur offers a wide range of herbal and ayurvedic products for personal care, healthcare, and wellness under several brands like Dabur, Vatika, Fem, Hajmola, and others.
+
+ Dabur Products Comprehensive List
+
+Dabur Products Comprehensive List
+
+AI-enhanced title and description
+
+ Uploaded by
+
+No thumbnails available
+
+ Share this document
+
+ Footer menu
+
+ About
+
+ Support
+
+ Legal
+
+ Social
+
+ Get our free apps</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.dabur-usa.com" target="_blank">Dabur North America, Dabur Chyawanprash, Chyawan Granules, Dabur USA</a></h3>
+                    <div class="result-url">https://www.dabur-usa.com</div>
+                    <div class="result-content">View More
+
+ Our Range
+
+Dabur Amla with the trust of over 127 years has always given you the secret of beautiful hair as Dabur  
+ Amla. Now Dabur Amla presents the first ever Dabur Amla Hair care, Skin Care, Oral Care, Personal Wash,  
+ Massage Oil, and Foods &amp; Supplements .
+
+ 
+
+   Hair Care
+
+  Dry hair requires intensive hydration. almonds rich in vitamin E, helps make hair soft and shiny
+
+   View More
+ 
+
+   Skin Care
+
+  Dry hair requires intensive hydration. almonds rich in vitamin E, helps make hair soft and shiny
+
+   View More
+ 
+
+   Oral Care
+
+  Dry hair requires intensive hydration. almonds rich in vitamin E, helps make hair soft and shiny
+
+   View More
+ 
+
+   Hair Care
+
+  Dry hair requires intensive hydration. almonds rich in vitamin E, helps make hair soft and shiny</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Latest News And Developments</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.storyboard18.com/brand-marketing/dabur-eyes-d2c-acquisitions-in-talks-with-2-3-companies-dabur-d2c-acquisitions-ws-l-105996.htm" target="_blank">Dabur in talks with 2-3 D2C companies, targets 1-2 acquisitions over next 3 years - Storyboard18</a></h3>
+                    <div class="result-url">https://www.storyboard18.com/brand-marketing/dabur-eyes-d2c-acquisitions-in-talks-with-2-3-companies-dabur-d2c-acquisitions-ws-l-105996.htm</div>
+                    <div class="result-content">Dabur has accelerated its inorganic expansion in recent years. In October 2022, the company acquired a 51% stake in Badshah Masala for Rs 587.5 crore. It followed this with the acquisition of a 51% stake in Ayurvedic hair care brand Sesa Care in October 2024, before fully merging the business into Dabur in 2025. Earlier this year, Dabur also acquired a minority stake in premium beauty brand RAS Beauty through its newly launched Dabur Ventures platform, marking its entry into the premium D2C beauty segment.
+
+Meanwhile, Dabur&#x27;s Badshah Masala business continued to deliver strong growth, supported by expansion beyond its traditional markets and rising contribution from quick commerce and e-commerce channels. [...] ADVERTISEMENT
+
+Dabur India is actively evaluating acquisition opportunities and is currently in discussions with two to three companies as it looks to strengthen its portfolio with direct-to-consumer (D2C) brands, Managing Director and Chief Executive Officer Mohit Malhotra said during the company&#x27;s Q1 FY27 earnings call.
+
+The FMCG maker is targeting one or two sizeable acquisitions over the next three years, although Malhotra said the timeline would depend on deal negotiations and valuations.
+
+&quot;Our acquisition strategy is two-pronged. We take a minority stake in emerging D2C brands, work with the promoters to help them turn profitable, and then increase our stake to a majority once the business reaches the right stage,&quot; he said. [...] Malhotra said the Badshah business grew 13.3% during the quarter, driven by around 11% volume growth in the domestic market, despite no price hikes.
+
+&quot;The international business is also growing by more than 40%. We are happy with the performance because this growth is entirely volume-led,&quot; he said.
+
+The company has expanded Badshah&#x27;s offline distribution beyond its strongholds of Gujarat and Maharashtra into Madhya Pradesh, Rajasthan and the Delhi-NCR region. At the same time, online channels have significantly widened the brand&#x27;s reach.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://yourstory.com/2022/11/coming-soon-dabur-indias-d2c-portal-ecommerce-online" target="_blank">Coming soon: Dabur India’s D2C portal | YourStory</a></h3>
+                    <div class="result-url">https://yourstory.com/2022/11/coming-soon-dabur-indias-d2c-portal-ecommerce-online</div>
+                    <div class="result-content">One of India’s oldest packaged consumer goods company, Dabur is getting ready to dip its toes in India’s buzzing D2C market. Dabur India is all set to launch its D2C platform, Dabur Shop, which is expected to go live across India by the end of this fiscal year.
+
+&gt; “Dabur Shop is currently in its beta testing phase. We are adding pincodes to it as we speak and testing is still underway,” says Ankush Jain, CFO, Dabur India.
+
+On Dabur Shop, consumers will be able to shop for products across Dabur’s portfolio including—home and personal care, foods and beverages, and even healthcare. Products from Dabur’s ayurvedic portfolio like Restora, which helps fight fatigue and constipation, acne remedy Trifgol, and others will also be available on the D2C platform. [...] &gt; “We expect to report Rs 100 crore from digital brands on an annualised basis at the end of FY23,” says Ankush, who clarified that this would include sales from all online channels. The online sales pie will further be fuelled by revenue generated from Dabur Shop.
+
+“It is too early to gauge sales revenue from Dabur Shop, but the effort is to be a one-stop shop for all Dabur products,” he adds.
+
+ Dabur’s digital-first strategy
+
+The digital push is much in-line with Dabur’s core growth strategy and its pursuit to be relevant to millennial and Gen Z consumers. [...]  Coming soon: Dabur India’s D2C portal
+
+ Dabur India is venturing into the D2C space by launching its own website, Dabur Shop. The FMCG major is eyeing Rs 100 crore revenue from the sale of digital-first brands by the end of FY23.
+
+Photo of Priya Sheth
+
+Priya Sheth
+
+27 Stories
+
+Coming soon: Dabur India’s D2C portal 
+
+Monday November 28, 2022, 5 min Read
+
+Google Preferred
+
+Soon, you will be able to shop for Dabur India’s flagship products like Dabur Chywanprash, Dabur honey, and other products on its own Direct to Consumer (D2C) platform.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.livemint.com/industry/retail/dabur-hints-at-d2c-acquisitions-11691128791947.html" target="_blank">Dabur hints at D2C acquisitions with eye on new-age brands | Mint</a></h3>
+                    <div class="result-url">https://www.livemint.com/industry/retail/dabur-hints-at-d2c-acquisitions-11691128791947.html</div>
+                    <div class="result-content">On Thursday, the company reported a 3.52% jump in consolidated net profit for the quarter at ₹456.61 crore. Consolidated revenue grew 11% year-</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.business-standard.com/companies/news/usfda-issues-warning-letter-to-dabur-over-cgmp-lapses-at-silvassa-plant-126080501758_1.html" target="_blank">USFDA issues warning letter to Dabur over CGMP lapses at Silvassa plant | Company News - Business Standard</a></h3>
+                    <div class="result-url">https://www.business-standard.com/companies/news/usfda-issues-warning-letter-to-dabur-over-cgmp-lapses-at-silvassa-plant-126080501758_1.html</div>
+                    <div class="result-content">The USFDA said it held a teleconference with the company on May 13, 2026, recommending removal of certain batches from the US market. Dabur subsequently issued a voluntary recall of some products on June 2, 2026, though the regulator noted the company had not recalled all affected drug products.
+
+The USFDA placed all drugs and drug products from the Silvassa facility under Import Alert 66-40 with effect from June 5, 2026, and recommended the company engage an independent CGMP consultant to conduct a comprehensive audit of its operations. [...] USDFA, in its letter dated July 24, 2027, to Dabur India CEO Mohit Malhotra, has pointed out data integrity lapses, inadequate quality oversight and deficient manufacturing controls.
+
+According to the USFDA, the facility&#x27;s methods, controls and manufacturing practices did not conform to CGMP requirements, resulting in the products being considered &quot;adulterated&quot; under the US Federal Food, Drug and Cosmetic Act.
+
+Among the most serious findings, the USFDA said its investigator discovered that an equipment usage logbook provided by the company for a manufacturing line was falsified, with the version handed over deliberately omitting several US-marketed over-the-counter products that were listed in the original logbook found later in the document room.
+
+ Also Read [...]  USFDA issues warning letter to Dabur over CGMP lapses at Silvassa plant
+
+ The warning letter follows an inspection conducted by the US health regulator at the company&#x27;s facility in Silvassa, Dadra and Nagar Haveli and Daman and Diu
+
+Dabur
+
+Dabur
+
+Press Trust of IndiaNew Delhi
+
+ Listen to This Article
+
+The US Food and Drug Administration (USFDA) has issued a warning letter to home-grown FMCG major Dabur India citing significant violations of current good manufacturing practices (CGMP) at its pharmaceutical manufacturing facility in Silvassa.
+
+The warning letter follows an inspection conducted by the US health regulator at the company&#x27;s facility in Silvassa, Dadra and Nagar Haveli and Daman and Diu, from January to December 16, 2026.</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.livemint.com/companies/news/dabur-challenges-fssai-100-ban-alleges-bias-in-delhi-hc-says-150-crore-inventory-at-risk-report-11786360209712.html" target="_blank">Dabur challenges FSSAI &#x27;100%&#x27; ban, alleges bias in Delhi HC; says ₹150 crore inventory at risk: Report | Company Business News</a></h3>
+                    <div class="result-url">https://www.livemint.com/companies/news/dabur-challenges-fssai-100-ban-alleges-bias-in-delhi-hc-says-150-crore-inventory-at-risk-report-11786360209712.html</div>
+                    <div class="result-content">The company said FSSAI had also publicised the order on social media platforms, where it was viewed by the public. According to Dabur, channel partners were subsequently advised not to sell products carrying the &quot;100%&quot; claim.
+
+The company cited an August 4 email from a quick-commerce platform, which told Dabur that it was immediately disabling listings of the affected products.
+
+Dabur said it had already begun transitioning the labels and advertisements of the products identified by FSSAI to versions without the &quot;100%&quot; claim.
+
+&quot;Most product labels/advertisements/website as mentioned in aforesaid order, have either already transitioned or are in the process of transition,&quot; the company said in a statement on August 4. [...] The company maintained that the declarations on its product labels complied with the prevailing legal and regulatory framework and were consistent with long-standing industry practices.
+
+&quot;Dabur stands by the purity and quality of its products and has never made any misleading claims,&quot; the company said.
+
+It added that it was responding to FSSAI and would continue to engage with the regulator to resolve the matter. Dabur is also seeking legal advice on its future course of action.
+
+The dispute comes as FSSAI has intensified scrutiny of claims made by consumer brands, particularly those relating to purity, natural ingredients and other product attributes. [...] The Delhi High Court subsequently stayed the FSSAI order until August 24. On Friday, Justice Amit Mahajan observed that the regulator should not have passed the prohibitory order without first giving Dabur an opportunity to be heard.
+
+Appearing for FSSAI, counsel Ashish Dixit told the court that the issue relating to Dabur&#x27;s &quot;100%&quot; claims was already pending before the Delhi High Court in a separate petition concerning its Real fruit juice products, in which interim protection had been granted.
+
+Dabur told the court that the FSSAI order had an immediate impact on its retail supply chain and put inventory worth around ₹150 crore at risk of destruction.</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Competitors By Domain And Vertical</h2>
+                    <div class="results-grid">
+
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://tracxn.com/d/companies/dabur/__Ea_8M9OV9ZtuH02Usw__M7RgEx8XQxgyEtl9E3Rvm6s" target="_blank">Dabur - 2026 Company Profile, Team, Funding, Competitors &amp; Financials - Tracxn</a></h3>
+                    <div class="result-url">https://tracxn.com/d/companies/dabur/__Ea_8M9OV9ZtuH02Usw__M7RgEx8XQxgyEtl9E3Rvm6s</div>
+                    <div class="result-content">\-
+
+\-
+
+70/100
+
+7th
+
+Logo for Khetika
+
+Internet first brand of dry fruits and ready to cook products
+
+$25M
+
+68/100
+
+8th
+
+Logo for Cavinkare
+
+Internet first brand of multicatrgory convenience food products
+
+$59.2M
+
+68/100
+
+9th
+
+Yu Foodlabs
+
+2020, Gurugram (India), Series B
+
+Online retailer of instant meal bowls, noodles, pasta, and juices
+
+$14.9M
+
+67/100
+
+10th
+
+Logo for The AyurvedaThe Ayurveda
+
+2021, Gurugram (India), Series A
+
+Provider of Ayurvedic‑based beauty and wellness products sold directly to consumers
+
+$18.4M
+
+66/100
+
+25th
+
+Manufacturer of ayurvedic medicine and natural consumer products
+
+$42.2M
+
+58/100
+
+Sign up today!
+
+Looking for more details on Dabur&#x27;s competitors? Click
+
+hereto see the top ones
+
+ Financials of DaburFY 26 Available [...] $26.5M
+
+78/100
+
+2nd
+
+Logo for Wingreens WorldWingreens World
+
+2011, Gurugram (India), Series D
+
+Online retailer of better-for-you food and beverage products
+
+$79M
+
+75/100
+
+3rd
+
+Two Brothers Organic Farms
+
+2016, Pune (India), Series B
+
+Manufacturer of organic food products including cultured ghee, stone ground flour, cold pressed oils, and natural sweeteners
+
+$25.3M
+
+74/100
+
+4th
+
+Logo for Nat Habit
+
+Online platform offering beauty and skincare products
+
+$18.5M
+
+71/100
+
+5th
+
+Country Delight
+
+2015, Gurugram (India), Series E
+
+Retailer of fresh dairy, grocery, and food products delivered directly to homes
+
+$225M
+
+70/100
+
+6th
+
+Provider of diversified products across FMCG, paperboards, packaging, agri-business, and IT
+
+\-
+
+\-
+
+70/100
+
+7th
+
+Logo for Khetika [...]  Dabur - About the company
+
+Dabur is a public company based in Ghaziabad (India), founded in 1884by
+
+S K Burman. It operates as a Manufacturer of ayurvedic medicine and natural consumer products. Dabur has raised $42.2M in funding. The company has 3347 active competitors, including 132 funded and 189 that have exited. Its top competitors include companies likeAnveshan,Wingreens WorldandTwo Brothers Organic Farms.
+
+ Company Details
+
+Manufacturer of ayurvedic medicine and natural consumer products. It offers a wide range of products across various categories, including skincare, haircare, healthcare, and oral care. Its products include hair oil, toothpaste, churna, chyawanprash, honey, rose water, tea, cough syrup, health juices, skin care, baby care, and more.
+
+Website
+
+www.dabur.com/</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.cbinsights.com/company/dabur/alternatives-competitors" target="_blank">Top Dabur Alternatives, Competitors</a></h3>
+                    <div class="result-url">https://www.cbinsights.com/company/dabur/alternatives-competitors</div>
+                    <div class="result-content">Dabur
+
+dabur.com
+
+ Dabur&#x27;s alternatives and competitors
+
+See how Daburcompares to similar products. Dabur&#x27;s top competitors include Auric, Organic India, and Shri Chyawan Ayurved.
+
+Auric Logo
+
+Auric operates in the health and wellness industry and offers a range of products including health supplements, wellness foods, and herbal teas. It was founded in 2017 …
+
+Dabur vs. Auric
+
+View more in-depth data on:
+
+- Competitors
+- Products
+- Customer References and more
+
+&lt;!--THE END--&gt; [...] - Hindustan Unilever Logo
+  
+  Hindustan Unilever focused on fast-moving consumer goods (FMCG) within the personal care, home care, and nutrition sectors. It offers a range of products designed to me…
+  
+  Dabur vs. Hindustan Unilever
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more
+- Tata Consumer Products Logo
+  
+  Tata Consumer Products focuses in the consumer goods sector. It offers food and beverage products including packaged tea, coffee, mineral water, salt, spices, herbal su…
+  
+  Dabur vs. Tata Consumer Products
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more
+- Cholayil Logo [...] - Customer References and more
+- Cholayil Logo
+  
+  Cholayil Pvt Ltd operates in the FMCG industry and offers a range of Ayurvedic personal care solutions through its flagship brand Medimix and other brands including Cut…
+  
+  Dabur vs. Cholayil
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more
+- Lotus Herbals Logo
+  
+  Lotus Herbals is a natural cosmetics company with a focus on skincare, haircare, suncare, and makeup products. The company offers a range of over 500 products that are …
+  
+  Dabur vs. Lotus Herbals
+  
+  View more in-depth data on:
+  
+  - Competitors
+  - Products
+  - Customer References and more
+- Cura Pharmaceuticals Logo</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://craft.co/dabur/competitors" target="_blank">Top Dabur Competitors and Alternatives | Craft.co</a></h3>
+                    <div class="result-url">https://craft.co/dabur/competitors</div>
+                    <div class="result-content">Dabur
+
+The official twitter handle of Dabur International. Catering to the various needs of every consumer in more than 100 countries, naturally.
+
+Colgate-Palmolive
+
+Colgate-Palmolive is a consumer products company specializing in the development, production, and distribution of household, health, personal care, and veterinary products.
+
+ITC
+
+ITC is a diversified company that engages in the fast-moving consumer goods (FMCG), hotels, paperboards and specialty papers, packaging, agriculture, and information technology businesses.
+
+Marico
+
+Marico is a company that produces consumer products in the beauty and wellness segment.
+
+TallGrass
+
+TallGrass is a Vancouver-based manufacturer and distributor of whole food supplements and natural beauty products.
+
+Founding Date
+
+Founding Date
+
+1884 [...] Employees
+
+33,82716% decrease
+
+Employees
+
+1,8494% increase
+
+Employees
+
+65
+
+ Financial
+
+Revenue (est.)
+
+Revenue (est.)
+
+₹130.4b (FY, 2026)
+
+Revenue (est.)
+
+$20.4b (FY, 2025)
+
+Revenue (est.)
+
+₹782.1b (FY, 2026)
+
+Revenue (est.)
+
+₹135.5b (FY, 2026)
+
+Revenue (est.)
+
+N/A
+
+Cost of goods
+
+Cost of goods
+
+₹68.8b (FY, 2026)
+
+Cost of goods
+
+$8.1b (FY, 2025)
+
+Cost of goods
+
+₹330b (FY, 2026)
+
+Cost of goods
+
+₹75.8b (FY, 2026)
+
+Cost of goods
+
+N/A
+
+Gross profit
+
+Gross profit
+
+₹63.1b (FY, 2026)
+
+Gross profit
+
+$12.3b (FY, 2025)
+
+Gross profit
+
+₹458.7b (FY, 2026)
+
+Gross profit
+
+₹60.3b (FY, 2026)
+
+Gross profit
+
+N/A
+
+Net income
+
+Net income
+
+₹18.7b (FY, 2026)
+
+Net income
+
+$2.3b (FY, 2025)
+
+Net income
+
+₹210.2b (FY, 2026)
+
+Net income
+
+₹18.1b (FY, 2026)
+
+Net income
+
+N/A
+
+ Operating ⚠
+
+Countries
+
+Countries
+
+N/A [...] Founding Date
+
+Founding Date
+
+1884
+
+Founding Date
+
+1806
+
+Founding Date
+
+1910
+
+Founding Date
+
+1988
+
+Founding Date
+
+1997
+
+Type
+
+Type
+
+Public
+
+Type
+
+Public
+
+Type
+
+Public
+
+Type
+
+Public
+
+Type
+
+Private
+
+Tags
+
+Locations
+
+Locations
+
+Dubai, AE HQ
+
+10th Of Ramadan City, EG
+
+Lagos, NG
+
+Wembley, GB
+
+Princeton, US
+
+Locations
+
+New York, US HQ
+
+Llavallol, AR
+
+Sydney, AU
+
+Brussels, BE
+
+Sao Paulo, BR
+
+Toronto, CA
+
+Santiago, CL
+
+see more
+
+Locations
+
+Kolkata, IN HQ
+
+Ahmedabad, IN
+
+Baddi, IN
+
+Bangalore, IN
+
+Bangalore, IN
+
+Bargur, IN
+
+Bengaluru, IN
+
+see more
+
+Locations
+
+Mumbai, IN HQ
+
+Guwahati, IN
+
+Jalgaon, IN
+
+Kanjikode, IN
+
+Kolkata, IN
+
+Mumbai, IN
+
+New Delhi, IN
+
+see more
+
+Locations
+
+Vancouver, CA HQ
+
+Employees
+
+Employees
+
+5,367
+
+Employees
+
+34,000
+
+Employees
+
+33,82716% decrease
+
+Employees
+
+1,8494% increase</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://www.ocean.io/companies/dabur.com" target="_blank">Dabur competitors and similar companies | Ocean</a></h3>
+                    <div class="result-url">https://www.ocean.io/companies/dabur.com</div>
+                    <div class="result-content">Khadi Natural
+
+   khadinatural.com
+
+   Buy Khadi Natural’s Ayurvedic skin, hair &amp; body care products made with pure herbs &amp; essentials. Shop natural, organic &amp; chemical-free beauty today!
+
+   India · 208 employees on LinkedIn
+
+    Both in Manufacturing
+    Both based in India
+8. 
+
+    Pukka Herbs
+
+   pukkaherbs.com
+
+   Producer of organic herbal teas and supplements intended for leading a healthier life. The company produces organic herbal teas and health supplements, thereby enabling its customers to be provided with quality herbal products to lead a healthier life.
+
+   United Kingdom · 34 employees on LinkedIn
+
+    Both in Organic
+    Both use Vue.js
+9. 
+
+    Emami
+
+   emamiltd.in
+
+   Emami Limited is an Indian producer of fast moving consumer goods [...]  Kapiva
+
+   kapiva.in
+
+   Kapiva offers the best quality modern ayurvedic nutrition products with natural ingredients and supplements online to improve your lifestyle. Buy Ayurvedic products online at the best prices.
+
+   India · 457 employees on LinkedIn
+
+    Both based in India
+6. 
+
+    Sabinsa Corporation
+
+   sabinsa.com
+
+   Sabinsa is a global leader in manufacturing and supplying science-based nutraceutical, cosmeceutical, Standardized botanical extracts and contract manufacturing solutions for health, wellness and beauty worldwide.
+
+   United States · 93 employees on LinkedIn
+
+    Both in Manufacturing
+7. 
+
+    Khadi Natural
+
+   khadinatural.com [...]  Questions about Dabur
+
+How many employees does Dabur have?
+:   Dabur has 10,751 employees on LinkedIn.
+
+Where is Dabur headquartered?
+:   Dabur is headquartered in Ghaziabad, India.
+
+Who are Dabur&#x27;s competitors?
+:   Companies similar to Dabur include Forest Essentials, Baidyanath, Baidyanath, Charak and Kapiva.
+
+What technologies does Dabur use?
+:   Dabur&#x27;s website uses CookieYes, SiteLock, Microsoft Clarity, Unpkg and BootstrapCDN and 28 more.
+
+When was Dabur founded?
+:   Dabur was founded in 1884.
+
+Recommendations
+
+Segments
+
+Models
+
+ Recommendations 1,304 companies
+
+Tier 1 · 68 Tier 2 · 241 Tier 3 · 512 Tier 4 · 483</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3 class="result-title"><a href="https://markets.apistemic.com/companies/dabur-india-limited-j22w" target="_blank">Top Dabur India Limited Competitors &amp; Lookalikes</a></h3>
+                    <div class="result-url">https://markets.apistemic.com/companies/dabur-india-limited-j22w</div>
+                    <div class="result-content">Godrej Consumer Products is a leading emerging markets company. As part of the over 125-year young Godrej Group, we are fortunate to have a proud legacy built on the strong values of trust, integrity, and respect for others. At the same time, we are growing fast and have exciting, ambitious aspirations. Today, our Group enjoys the patronage of 1.2 billion consumers globally, across different businesses. We rank among the largest Household Insecticide and Hair Care players in emerging markets. In Household Insecticides, we are the leader in India, the second largest player in Indonesia and are expanding our footprint in Africa. We are the leader in serving the Hair Care needs of women of African descent, the number one player in Hair Colour in India and Sub-Saharan Africa, and among the [...] Founded in 1974 by two childhood friends - RS Agarwal and RS Goenka, Emami Ltd. has positioned itself as one of the leading and fastest growing personal care and healthcare businesses in India. With a prodigious portfolio of household brand names such as BoroPlus, Navratna, Kesh King, Fair and Handsome, Zandu Balm, Mentho Plus Balm and Fast Relief, Emami employs around 25,000 employees across geographies. Well known for its aggressive marketing powered by celebrity endorsements, Emami products are available in over 4.9 million retail outlets across India through its network of ~3200 distributors with a global footprint spanning over 70 countries including SAARC, MENAP, SEA, Africa, Eastern Europe and the CIS countries. Emami Ltd is the flagship Company of the diversified Emami Group. To [...]  Dabur India Limited Competitors &amp; Market Analysis
+
+Discover Dabur India Limited&#x27;s top competitors: Marico Limited, Emami Ltd, Godrej Consumer Products Limited and others. Get real-time market intelligence powered by our Market Graph.
+
+Powered by AI · 1M+ companies analyzed daily · Updated hourly
+
+ Top Competitors
+
+Compare key metrics across Dabur India Limited&#x27;s top competitors in the market
+
+Loading more competitors...
+
+ Dabur India Limited</div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <footer>
+            Generated by Tavily2 Deep Search Agent • Deep Dive Corporate Intelligence
+        </footer>
+    </div>
+</body>
+</html>

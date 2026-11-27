@@ -6,6 +6,7 @@ import styles from './page.module.css';
 import BrandKitForm, { type BrandKit } from '../../components/BrandKitForm';
 import ReferenceUpload, { type ReferenceDoc } from '../../components/ReferenceUpload';
 import AlertModal from '../../components/AlertModal';
+import { BRAND_CATEGORIES } from '../../data/brandOptions';
 
 // ── Target Market: structured region + city selection ───────────────────────
 // Mirrors backend.schemas.brand.TargetMarket exactly. Region options and city
@@ -875,29 +876,9 @@ function StrategySetupInner() {
                 onChange={e => { setCategory(e.target.value); setErrors(p => ({ ...p, category: '' })); }}
               >
                 <option value="">Select category...</option>
-                <option value="Real Estate">Real Estate</option>
-                <option value="Technology & Software">Technology & Software</option>
-                <option value="Consumer Electronics">Consumer Electronics</option>
-                <option value="SaaS (Software as a Service)">SaaS (Software as a Service)</option>
-                <option value="Healthcare & Life Sciences">Healthcare & Life Sciences</option>
-                <option value="E-commerce">E-commerce</option>
-                <option value="D2C (Direct-to-Consumer)">D2C (Direct-to-Consumer)</option>
-                <option value="Financial Services & Fintech">Financial Services & Fintech</option>
-                <option value="Education & EdTech">Education & EdTech</option>
-                <option value="Retail">Retail</option>
-                <option value="Manufacturing & Industrial">Manufacturing & Industrial</option>
-                <option value="FMCG & Consumer Goods">FMCG & Consumer Goods</option>
-                <option value="Hospitality & Events">Hospitality & Events</option>
-                <option value="Travel & Tourism">Travel & Tourism</option>
-                <option value="Media & Entertainment">Media & Entertainment</option>
-                <option value="Automotive & Mobility">Automotive & Mobility</option>
-                <option value="Professional Services (B2B)">Professional Services (B2B)</option>
-                <option value="Marketing & Advertising">Marketing & Advertising</option>
-                <option value="Wellness, Health & Fitness">Wellness, Health & Fitness</option>
-                <option value="Food & Beverage">Food & Beverage</option>
-                <option value="Fashion & Beauty">Fashion & Beauty</option>
-                <option value="Non-Profit / NGO">Non-Profit / NGO</option>
-                <option value="Other">Other</option>
+                {BRAND_CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
               </select>
               {errors.category && <span className={styles.errorMsg}>{errors.category}</span>}
             </div>

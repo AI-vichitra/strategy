@@ -30,6 +30,7 @@ const SOURCE_LABELS: Record<BriefSource, string> = {
   brand: 'from brand',
   you: 'you added',
   assumed: 'assumed',
+  form: 'from your setup',
 };
 
 const styles: Record<string, CSSProperties> = {
