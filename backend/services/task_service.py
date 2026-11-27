@@ -142,3 +142,21 @@ def list_all_tasks() -> List[str]:
     for group in data.get("groups", []):
         tasks.extend(group.get("tasks", []))
     return tasks
+
+
+def get_research_headings() -> List[Dict[str, Any]]:
+    """Returns the Step-3 research headings catalog (research_headings), each
+    {id, label, sub_headers: [{id, label}, ...]}, in config order. [] if the
+    key is absent (e.g. the empty-fallback shape)."""
+    return _get_cache().get("research_headings", [])
+
+
+def get_step3_preselected(group_id: str) -> List[str]:
+    """Returns the heading ids (from get_research_headings(), in catalog
+    order) pre-ticked for group_id — resolved by matching group_id's
+    step3_modules labels against the catalog's own labels. A step3_modules
+    label with no matching heading is skipped rather than raising, since the
+    label list and the catalog are maintained by hand in the same file."""
+    group = get_group(group_id)
+    labels = set(group.get("step3_modules", [])) if group else set()
+    return [h["id"] for h in get_research_headings() if h.get("label") in labels]

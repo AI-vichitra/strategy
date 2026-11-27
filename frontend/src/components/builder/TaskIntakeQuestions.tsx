@@ -1,6 +1,7 @@
 'use client';
 import { useState, type CSSProperties } from 'react';
 import sharedStyles from './MainContent.module.css';
+import type { ResearchHeading } from './ResearchDirection';
 
 export interface TaskIntakeCheckpoint {
   id: string;
@@ -30,6 +31,9 @@ export interface TaskIntakeData {
   checkpoints: TaskIntakeCheckpoint[];
   questions: TaskIntakeQuestion[];
   missing_required: string[];
+  research_headings: ResearchHeading[];
+  step3_preselected: string[];
+  research_market_prefill: { global: boolean; national: string | null; local: string[] };
 }
 
 export type TaskIntakeAnswer = { value: string | string[] | null; skipped: boolean };

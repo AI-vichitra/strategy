@@ -3,7 +3,7 @@
     {
       "order": 0,
       "key": "executive_summary",
-      "title": "Executive Summary",
+      "title": "Task Brief & Key Insights",
       "description": "High-level overview of the analysis scope, key findings, and strategic recommendations",
       "required": true,
       "content_guidance": "2-3 paragraph summary covering: what was analyzed, top 3-5 key findings, and primary strategic recommendation"

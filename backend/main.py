@@ -128,6 +128,7 @@ _NEW_COLUMNS = [
     ("users", "reset_token", "VARCHAR(255)", "TEXT"),
     ("users", "reset_token_created_at", "TIMESTAMP", "TIMESTAMP"),
     ("reports", "truncation_info", "TEXT", "TEXT"),
+    ("projects", "research_json", "TEXT", "TEXT"),
     ("users", "role", "VARCHAR(20) DEFAULT 'admin'", "TEXT DEFAULT 'admin'"),
     ("users", "parent_user_id", "VARCHAR(36)", "TEXT"),
     ("users", "team_name", "VARCHAR(255)", "TEXT"),

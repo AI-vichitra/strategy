@@ -16,7 +16,7 @@ sections = get_blueprint_for_agent("brand-positioning")
 print(f"✓ brand-positioning: {len(sections)} sections")
 for s in sections:
     print(f"  {s['order']}. {s['title']}")
-assert sections[0]['title'] == "Executive Summary"
+assert sections[0]['title'] == "Task Brief & Key Insights"
 assert sections[-1]['title'] == "Measurement & Roadmap"
 
 # Test 3: title format lookup (what build_system_prompt passes)
@@ -38,9 +38,9 @@ print(f"✓ default fallback: {len(default_sections)} sections ({common_count} c
 
 # Test 6: prompt output
 prompt = build_section_prompt("brand-positioning")
-assert "Executive Summary" in prompt
+assert "Task Brief & Key Insights" in prompt
 assert "Positioning Map" in prompt
-assert "### Executive Summary" in prompt
+assert "### Task Brief & Key Insights" in prompt
 assert "CRITICAL FORMATTING RULES" in prompt
 print(f"✓ prompt length: {len(prompt)} chars")
 print(f"\n--- First 500 chars of prompt ---\n{prompt[:500]}")

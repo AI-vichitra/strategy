@@ -2065,6 +2065,39 @@
   animation: fadeInOverlay 0.18s ease-out;
 }
 
+/* Collapse/expand toggle row (GenerationProgress) — a plain button reset to
+   the same visual row as .genProgressRow, with the icon+label grouped on the
+   left (.genProgressRowMain) and the chevron pushed to the far right. */
+.genProgressRowToggle {
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.genProgressRowMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.genProgressChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.genProgressChevronOpen {
+  transform: rotate(180deg);
+}
+
 @keyframes fadeInOverlay {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -2118,21 +2151,23 @@
   gap: 5px;
 }
 
-.switchingTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1A1A1A;
-  letter-spacing: -0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 280px;
+.genProgressActiveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: genProgressPulse 1.2s ease-in-out infinite;
+  display: inline-block;
 }
 
-.switchingSubtitle {
-  font-size: 12px;
-  color: #6B6560;
-  font-weight: 400;
+@keyframes genProgressPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
 }
 
 .topbarInlineSpinner {

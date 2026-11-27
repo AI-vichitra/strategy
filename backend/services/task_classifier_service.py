@@ -102,7 +102,7 @@ def _classifier_llm_completion(system_prompt: str, user_prompt: str) -> str:
     _resolve_classifier_provider_and_model's own env pair instead."""
     from backend.services.ai_service import _get_llm_provider
     from backend.services.slide_planner import (
-        _PROVIDER_BASE_URLS, _UNEXPECTED_KWARG_RE,
+        _PROVIDER_BASE_URLS, _UNEXPECTED_KWARG_RE, openai_completion_kwargs,
         llm_fallback_available, llm_fallback_completion,
     )
 
@@ -144,16 +144,15 @@ def _classifier_llm_completion(system_prompt: str, user_prompt: str) -> str:
 
         from openai import OpenAI
         client = OpenAI(api_key=api_key, base_url=_PROVIDER_BASE_URLS.get(provider))
-        resp = client.chat.completions.create(
-            model=model,
-            temperature=_TEMPERATURE,
-            stream=False,
-            max_tokens=_MAX_TOKENS,
-            messages=[
+        # Closed-set extraction needs no deep reasoning — "low" effort when the
+        # model is a gpt-5/6 reasoning model and the installed SDK supports it;
+        # a no-op for every other model (see openai_completion_kwargs).
+        resp = client.chat.completions.create(**openai_completion_kwargs(
+            model, [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
-            ],
-        )
+            ], _MAX_TOKENS, _TEMPERATURE, reasoning_effort="low",
+        ))
         text = resp.choices[0].message.content or ""
         logger.info(f"[TaskClassifier] provider={provider} completion received, length={len(text)} chars")
         return text

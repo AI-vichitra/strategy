@@ -36,7 +36,9 @@ CHUNK_SIZE = 500          # words per chunk
 CHUNK_OVERLAP = 100       # words of overlap between adjacent chunks
 TOP_K = 6                 # chunks retrieved per query
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
-# Fallback priority order for LLM providers (openai first, then groq, then anthropic)
+
+# Fallback priority order for LLM providers (groq follows openai as its
+# immediate fallback)
 LLM_PROVIDER_PRIORITY = ["openai", "groq", "anthropic"]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -981,9 +983,7 @@ def _get_llm_provider(requested: Optional[str] = None) -> Tuple[str, str]:
 # would actually run. Anthropic is mode-dependent (ANTHROPIC_MODEL vs
 # ANTHROPIC_MODEL_ADVANCED) and is resolved from _report_mode_params below.
 _PROVIDER_DISPLAY_NAME = {
-    "openai": "OpenAI",
-    "groq": "Groq",
-    "anthropic": "Claude",
+    "openai": "OpenAI", "groq": "Groq", "anthropic": "Claude",
 }
 _PROVIDER_MODEL_ENV = {
     "openai": ("OPENAI_MODEL", "gpt-4o"),
@@ -1362,6 +1362,7 @@ def _get_or_build_index(
     brand_category: str = "",
     max_chars_per_source: int = 200000,
     target_market: Optional[Dict[str, Any]] = None,
+    research_json: Optional[str] = None,
 ) -> Optional[Dict]:
     """
     Returns cached index if the KB content hasn't changed, otherwise rebuilds.
@@ -1375,14 +1376,23 @@ def _get_or_build_index(
     the right chunk boundaries instead of serving the other mode's cached
     chunks; it does NOT trigger a rebuild when an explicit MAX_KB_CHARS_PER_SOURCE
     override makes the effective cap identical across modes.
+    `research_json` (Project.research_json, task-scoped — see
+    step3_research_service) is the raw stored string, folded into the hash
+    the SAME way so two projects on the same brand_slug with different (or
+    no) research never share a stale/wrong index. When absent/empty the hash
+    input is byte-identical to before this param existed — fully inert.
     """
     if not brand_slug:
         return None
 
+    # Appends nothing when research_json is falsy, so the no-research hash
+    # input is byte-for-byte identical to what this produced before research
+    # existed at all — see the docstring above.
+    research_suffix = f"|research={research_json}" if research_json else ""
     if kb_json:
-        current_hash = hashlib.md5(f"{kb_json}|cap={max_chars_per_source}".encode("utf-8")).hexdigest()
+        current_hash = hashlib.md5(f"{kb_json}|cap={max_chars_per_source}{research_suffix}".encode("utf-8")).hexdigest()
     else:
-        current_hash = hashlib.md5(f"{_folder_mtime_hash(brand_slug)}|cap={max_chars_per_source}".encode("utf-8")).hexdigest()
+        current_hash = hashlib.md5(f"{_folder_mtime_hash(brand_slug)}|cap={max_chars_per_source}{research_suffix}".encode("utf-8")).hexdigest()
 
     cached = _index_cache.get(brand_slug)
     if cached and cached.get("mtime_hash") == current_hash:
@@ -1391,6 +1401,33 @@ def _get_or_build_index(
 
     logger.info(f"[RAG] Building index for '{brand_slug}' (hash changed or first run, cap={max_chars_per_source})...")
     docs = _load_json_docs(brand_slug, kb_json, category=brand_category, target_market=target_market)
+
+    # Step 3 research docs are already final, pre-shaped docs (see
+    # step3_research_service._assemble_doc) — appended AFTER kb_json docs,
+    # never run through process_entity. Their sources get the SAME denylist +
+    # OPR-floor filtering as any other source, but entity_name="" skips the
+    # entity-relevance check (_source_matches_entity) — these are market/topic
+    # sources with no single "entity" to match against, and that check would
+    # otherwise strip a legitimate source just for never mentioning the brand
+    # by name. kb_json docs are untouched — this lighter path applies only to
+    # source_type=="step3_research".
+    if research_json:
+        try:
+            research_docs = (json.loads(research_json) or {}).get("docs") or []
+        except Exception as e:
+            logger.warning(f"[RAG] Failed to parse research_json for '{brand_slug}': {e}")
+            research_docs = []
+        for rdoc in research_docs:
+            if not isinstance(rdoc, dict):
+                continue
+            rdoc = dict(rdoc)
+            if rdoc.get("source_type") == "step3_research":
+                rdoc["sources"] = _filter_sources(
+                    rdoc.get("sources") or [], set(), entity_name="", entity_url="",
+                    category=brand_category, target_market=target_market,
+                )
+            docs.append(rdoc)
+
     if not docs:
         logger.info(f"[RAG] No JSON docs found for '{brand_slug}' — no index built")
         return None
@@ -1760,6 +1797,122 @@ def _format_competitor_details(competitor_details: Optional[str]) -> str:
         "IMPORTANT: These user-provided competitors MUST be included in the Competitive Landscape section. "
         "You may identify additional competitors beyond these, but these are mandatory."
     )
+    return "\n".join(lines)
+
+
+_ANALYSIS_LENS_ANGLES = (
+    "Strategic", "Audience", "Visual & creative", "Communication",
+    "Sales & commercial", "Channel", "Cultural", "Risk",
+)
+
+
+def _build_research_direction_block(research_direction: dict) -> str:
+    """Formats a Project's questionnaire_answers.research_direction (written by
+    the Step 3 screen — see ResearchDirection.tsx / MainContent.tsx on the
+    frontend) into a prompt block instructing the model what to research and
+    how to structure the report. Heading/sub-header ids are resolved to their
+    display labels via task_service.get_research_headings() — the SAME config
+    Step 3 itself reads from — so a label is never duplicated/hardcoded here;
+    an id with no match in that catalog is skipped defensively (config and a
+    previously-persisted selection can drift). Returns "" when there is
+    nothing to research (no headings AND no custom topics) so callers can
+    unconditionally append the result.
+
+    PROMPT TEXT ONLY: this does not run any research itself (live research is
+    a later pass) — it only shapes the instruction the model already gets."""
+    if not isinstance(research_direction, dict):
+        return ""
+
+    heading_ids = research_direction.get("headings") or []
+    custom_topics = [t for t in (research_direction.get("custom_topics") or []) if isinstance(t, str) and t.strip()]
+    if not heading_ids and not custom_topics:
+        return ""
+
+    from backend.services import task_service
+
+    catalog = {h["id"]: h for h in task_service.get_research_headings() if isinstance(h, dict) and h.get("id")}
+    sub_header_selection = research_direction.get("sub_headers")
+    if not isinstance(sub_header_selection, dict):
+        sub_header_selection = {}
+
+    lines = []
+
+    if heading_ids:
+        lines.append("Research the following, in this order:")
+        for hid in heading_ids:
+            heading = catalog.get(hid)
+            if not heading:
+                continue
+            label = heading.get("label", hid)
+            sub_catalog = {
+                s["id"]: s.get("label", s["id"])
+                for s in (heading.get("sub_headers") or [])
+                if isinstance(s, dict) and s.get("id")
+            }
+            included_ids = sub_header_selection.get(hid)
+            if included_ids is not None:
+                sub_labels = [sub_catalog[sid] for sid in included_ids if sid in sub_catalog]
+                if sub_labels:
+                    lines.append(f"- {label} — focus on: {'; '.join(sub_labels)}")
+                else:
+                    lines.append(f"- {label} — focus on what matters for this task (no specific sub-headers selected)")
+            else:
+                lines.append(f"- {label} — all sub-headers (focus on what matters for this task)")
+        lines.append("")
+
+    if custom_topics:
+        lines.append("Also research these custom topics, each as its own section:")
+        for topic in custom_topics:
+            lines.append(f"- {topic.strip()}")
+        lines.append("")
+
+    market = research_direction.get("market")
+    if not isinstance(market, dict):
+        market = {}
+    market_lines = []
+    if market.get("global"):
+        market_lines.append("Global")
+    national = market.get("national")
+    if national:
+        market_lines.append(f"National: {national}")
+    local = [c for c in (market.get("local") or []) if c]
+    if local:
+        market_lines.append(f"Local: {', '.join(local)}")
+    if market_lines:
+        lines.append("Research market: " + " | ".join(market_lines))
+        multi_city_mode = market.get("multi_city_mode")
+        if multi_city_mode == "combined":
+            lines.append("Treat as: one combined market.")
+        elif multi_city_mode == "compare":
+            lines.append("Treat as: compare city by city — call out differences between the local markets explicitly.")
+    else:
+        lines.append("Market: brand's home market (assumption).")
+    lines.append("")
+
+    # Fixed instruction text — constant, not user-facing data.
+    lines.append(
+        "ANALYSIS LENS: Apply whichever of these 8 angles actually matter for this task — do not "
+        "force all 8 onto every section: " + ", ".join(_ANALYSIS_LENS_ANGLES) + "."
+    )
+    lines.append(
+        "SECTION STRUCTURE: For each research heading/topic above, structure its findings in these "
+        "5 parts, in this order: (1) Key findings (with sources), (2) Patterns, (3) Insights, "
+        "(4) So what for this task, (5) Opportunities."
+    )
+    lines.append(
+        "REPORT OPENING: Open the report with the task brief, the research market, the headings "
+        "covered, any assumptions made, and a 5-7 point key-insights summary."
+    )
+    lines.append(
+        "MARKET-LEVEL LABELLING: Label every insight with the market level it applies to — Global, "
+        "National, or Local."
+    )
+    lines.append(
+        "SOURCING AND HONESTY: Cite a source wherever the knowledge base supports a claim. Where the "
+        "knowledge base's data is thin or absent for a heading, sub-header, or market level, state "
+        "that plainly (e.g. \"data not available\") rather than inventing a figure, source, or claim."
+    )
+
     return "\n".join(lines)
 
 
@@ -3650,6 +3803,7 @@ Role/Mode: **{agent_type}**
     # user confirmation; see Project.questionnaire_answers) — additive to
     # BRAND BRIEF above, never a replacement for it. Same authoritative,
     # no-citation framing, scoped to THIS task rather than the whole brand.
+    parsed_task_brief = None
     if task_brief and task_brief.strip():
         try:
             parsed_task_brief = json.loads(task_brief)
@@ -3678,6 +3832,20 @@ Role/Mode: **{agent_type}**
             "in this prompt apply only to claims drawn from the retrieved research context below.\n"
             + task_brief_body + "\n"
         )
+
+    # Research Direction: reuses the SAME parsed questionnaire_answers object
+    # above (no second json.loads/DB read) — a sibling key to items/
+    # assumptions, written by the Step 3 screen. Absent on every pre-Step-3
+    # project, so this is strictly additive and backward compatible.
+    if isinstance(parsed_task_brief, dict):
+        research_direction = parsed_task_brief.get("research_direction")
+        if isinstance(research_direction, dict):
+            research_block = _build_research_direction_block(research_direction)
+            if research_block:
+                base += (
+                    "\n### RESEARCH DIRECTION (what to research and how to structure THIS report) ###\n"
+                    + research_block + "\n"
+                )
 
     if additional_notes and additional_notes.strip():
         base += f"\nUser-Provided Constraints / Guardrails: {additional_notes.strip()}\nYou MUST respect these constraints in all analysis and recommendations. Do not contradict or ignore them.\n"
@@ -3838,6 +4006,60 @@ async def stream_chat(
     except Exception as e:
         logger.warning(f"[RAG] Could not load project/brand: {e}")
 
+    # ── Step 3 research: run once per distinct research_direction selection ──
+    # (B3a — orchestration only; feeding these docs into retrieval/the prompt
+    # is a separate pass, B3b — project.research_json is written but unused
+    # below). Must never block or fail the report: any error here is logged
+    # and swallowed, and generation proceeds exactly as if research_direction
+    # were absent.
+    if project and brand and task_brief:
+        try:
+            parsed_qa = json.loads(task_brief)
+        except Exception:
+            parsed_qa = None
+        if isinstance(parsed_qa, dict):
+            research_direction = parsed_qa.get("research_direction")
+            if isinstance(research_direction, dict) and (
+                research_direction.get("headings") or research_direction.get("custom_topics")
+            ):
+                input_hash = hashlib.md5(
+                    json.dumps(research_direction, sort_keys=True, ensure_ascii=False).encode("utf-8")
+                ).hexdigest()
+                existing_hash = None
+                if project.research_json:
+                    try:
+                        existing_hash = (json.loads(project.research_json) or {}).get("input_hash")
+                    except Exception:
+                        existing_hash = None
+                if existing_hash != input_hash:
+                    yield f"data: {json.dumps({'type': 'stage', 'stage': 'researching'})}\n\n"
+                    try:
+                        from datetime import datetime, timezone
+                        from backend.services.step3_research_service import run_step3_research
+                        research_docs = await run_step3_research(
+                            brand_name, brand.website_url or "", brand.category or "", research_direction
+                        )
+                        project.research_json = json.dumps({
+                            "input_hash": input_hash,
+                            "generated_at": datetime.now(timezone.utc).isoformat(),
+                            "docs": research_docs,
+                        }, ensure_ascii=False)
+                        await db.commit()
+                        logger.info(
+                            f"[Step3Research] stored {len(research_docs)} doc(s) for project {project_id} "
+                            f"(hash={input_hash[:8]})"
+                        )
+                    except Exception as e:
+                        # Never block/crash the report over a research failure — research_json
+                        # stays whatever it was (unwritten or stale), so the next turn's
+                        # hash check sees a mismatch and retries automatically.
+                        logger.warning(f"[Step3Research] run failed for project {project_id}, will retry next turn: {e}")
+                else:
+                    logger.info(
+                        f"[Step3Research] selection unchanged for project {project_id} "
+                        f"(hash={input_hash[:8]}) — skipping re-run"
+                    )
+
     # Which brand description the prompt will actually use — mirrors
     # build_system_prompt's own "brief present?" check exactly, so this never
     # drifts from what the prompt really contains. Logged in [REPORT_GATE]
@@ -3946,7 +4168,8 @@ async def stream_chat(
             brand_target_market = normalize_target_market(brand.target_market)
         yield f"data: {json.dumps({'type': 'stage', 'stage': 'retrieving'})}\n\n"
         index = await asyncio.to_thread(
-            _get_or_build_index, brand_slug, brand_kb_json, brand_category, effective_max_chars_per_source, brand_target_market
+            _get_or_build_index, brand_slug, brand_kb_json, brand_category, effective_max_chars_per_source, brand_target_market,
+            project.research_json if project else None,
         )
         if index:
             logger.info(f"[REPORT_GATE] Index for '{brand_slug}': {len(index.get('chunks', []))} total chunks available.")
@@ -4076,8 +4299,8 @@ async def stream_chat(
         # letting key-presence selection hand every run to OpenAI (whose key
         # must stay set for embeddings). ADVANCED_PROVIDER is the more specific
         # instruction, so the pin wins even over a caller-provided `provider`
-        # (the chat payload always sends one — a model-selector default like
-        # "mistral"/"qwen" or a genuine user pick); an override of a real,
+        # (the chat payload always sends one — a model-selector default or a
+        # genuine user pick); an override of a real,
         # different caller choice is logged at INFO. A missing key for the
         # pinned provider logs ERROR and falls back to key-presence selection —
         # never silently. Standard mode is unchanged: mode_params["provider"]
@@ -4109,45 +4332,7 @@ async def stream_chat(
         # Helper runner function to stream from a given provider
         async def _run_stream(prov: str, key: str):
             nonlocal full_response, used_provider, used_model, truncation_info
-            if prov == "qwen":
-                logger.info(f"[RAG] Streaming response using Qwen API...")
-                from openai import OpenAI
-                client = OpenAI(
-                    api_key=key,
-                    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-                )
-                model_name = os.environ.get("QWEN_MODEL", "qwen-turbo")
-                used_provider, used_model = prov, model_name
-                qwen_messages = [{"role": "system", "content": system_prompt}] + chat_history
-                response = client.chat.completions.create(
-                    model=model_name,
-                    messages=qwen_messages,
-                    stream=True,
-                    temperature=0.15,
-                    max_tokens=mode_params["max_tokens"],
-                )
-                branch_chars = 0
-                finish_reason = None
-                for chunk in response:
-                    if chunk.choices and len(chunk.choices) > 0:
-                        choice = chunk.choices[0]
-                        if choice.finish_reason:
-                            finish_reason = choice.finish_reason
-                        delta = choice.delta
-                        if delta and delta.content:
-                            text_chunk = delta.content
-                            full_response += text_chunk
-                            branch_chars += len(text_chunk)
-                            yield text_chunk
-                # OpenAI-compatible finish_reason: "length" == hit max_tokens,
-                # distinct from a normal "stop".
-                truncation_info = {
-                    "truncated": finish_reason == "length", "stop_reason": finish_reason,
-                    "provider": prov, "model": model_name,
-                    "max_tokens": mode_params["max_tokens"], "output_chars": branch_chars,
-                }
-
-            elif prov == "openai":
+            if prov == "openai":
                 logger.info(f"[RAG] Streaming response using OpenAI API...")
                 from openai import OpenAI
                 client = OpenAI(api_key=key)
@@ -4193,42 +4378,6 @@ async def stream_chat(
                 response = client.chat.completions.create(
                     model=model_name,
                     messages=groq_messages,
-                    stream=True,
-                    temperature=0.15,
-                    max_tokens=mode_params["max_tokens"],
-                )
-                branch_chars = 0
-                finish_reason = None
-                for chunk in response:
-                    if chunk.choices and len(chunk.choices) > 0:
-                        choice = chunk.choices[0]
-                        if choice.finish_reason:
-                            finish_reason = choice.finish_reason
-                        delta = choice.delta
-                        if delta and delta.content:
-                            text_chunk = delta.content
-                            full_response += text_chunk
-                            branch_chars += len(text_chunk)
-                            yield text_chunk
-                truncation_info = {
-                    "truncated": finish_reason == "length", "stop_reason": finish_reason,
-                    "provider": prov, "model": model_name,
-                    "max_tokens": mode_params["max_tokens"], "output_chars": branch_chars,
-                }
-
-            elif prov == "mistral":
-                logger.info(f"[RAG] Streaming response using Mistral API...")
-                from openai import OpenAI
-                client = OpenAI(
-                    api_key=key,
-                    base_url="https://api.mistral.ai/v1",
-                )
-                model_name = os.environ.get("MISTRAL_MODEL", "open-mistral-7b")
-                used_provider, used_model = prov, model_name
-                mistral_messages = [{"role": "system", "content": system_prompt}] + chat_history
-                response = client.chat.completions.create(
-                    model=model_name,
-                    messages=mistral_messages,
                     stream=True,
                     temperature=0.15,
                     max_tokens=mode_params["max_tokens"],

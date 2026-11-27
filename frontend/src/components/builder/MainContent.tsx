@@ -25,6 +25,7 @@ import ReportRenderer from '../ReportRenderer';
 import SectionEditor from '../SectionEditor';
 import TaskIntakeQuestions, { type TaskIntakeData, type TaskIntakeAnswer } from './TaskIntakeQuestions';
 import TaskBriefSummary from './TaskBriefSummary';
+import ResearchDirection, { type ResearchSelection } from './ResearchDirection';
 import { buildTaskBrief, type TaskBrief } from './taskBrief';
 
 type Message = { role: 'user' | 'thinking' | 'assistant' | 'error'; content: string; message_metadata?: string; id?: string };
@@ -657,11 +658,12 @@ function buildSelectionSummaryLine(brief: TaskBrief): string {
 // Ordered stage ids for the staged generation-progress stepper. 'kb_wait' is
 // conditional — most generations skip the research-pipeline wait entirely,
 // so it's only shown once the backend's 'status' event actually fires.
-const GEN_STAGE_ORDER = ['preparing', 'kb_wait', 'retrieving', 'composing', 'generating'] as const;
+const GEN_STAGE_ORDER = ['preparing', 'researching', 'kb_wait', 'retrieving', 'composing', 'generating'] as const;
 type GenStageId = typeof GEN_STAGE_ORDER[number];
 
 const GEN_STAGE_LABELS: Record<GenStageId, string> = {
   preparing: 'Preparing your report',
+  researching: 'Researching your market',
   kb_wait: 'Building brand knowledge base',
   retrieving: 'Retrieving brand research',
   composing: 'Composing your report',
@@ -675,21 +677,52 @@ type StepRowData = { key: string; status: StepStatus; label: string };
 // this file (GenerationProgress and SetupStepper below) — one place for the
 // done(check)/active(bold)/pending(dimmed) look so the two can never drift
 // apart visually.
-function StepRow({ status, label }: { status: StepStatus; label: string }) {
+// `onToggle` is only ever passed by GenerationProgress's own collapsed/expanded
+// toggle row (see below) — every other caller (SetupStepper, and
+// GenerationProgress's own non-toggle rows) renders a plain, non-interactive
+// row exactly as before.
+function StepRow({
+  status, label, chevronOpen, onToggle,
+}: {
+  status: StepStatus; label: string; chevronOpen?: boolean; onToggle?: () => void;
+}) {
   const statusClass = status === 'done' ? styles.genProgressRow_done : status === 'active' ? styles.genProgressRow_active : styles.genProgressRow_pending;
+  const icon = (
+    <span className={styles.genProgressIcon}>
+      {status === 'done' ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : status === 'active' ? (
+        <span className={styles.genProgressActiveDot} />
+      ) : (
+        <span className={styles.genProgressDot} />
+      )}
+    </span>
+  );
+
+  if (onToggle) {
+    return (
+      <button
+        type="button"
+        className={`${styles.genProgressRow} ${styles.genProgressRowToggle} ${statusClass}`}
+        onClick={onToggle}
+        aria-expanded={!!chevronOpen}
+      >
+        <span className={styles.genProgressRowMain}>
+          {icon}
+          <span>{label}</span>
+        </span>
+        <span className={`${styles.genProgressChevron} ${chevronOpen ? styles.genProgressChevronOpen : ''}`}>
+          ▼
+        </span>
+      </button>
+    );
+  }
+
   return (
     <div className={`${styles.genProgressRow} ${statusClass}`}>
-      <span className={styles.genProgressIcon}>
-        {status === 'done' ? (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : status === 'active' ? (
-          <span className={styles.genProgressActiveDot} />
-        ) : (
-          <span className={styles.genProgressDot} />
-        )}
-      </span>
+      {icon}
       <span>{label}</span>
     </div>
   );
@@ -706,6 +739,15 @@ function StepList({ rows }: { rows: StepRowData[] }) {
 // Vertical stepper driven by real backend 'stage'/'status' SSE events plus
 // the client-side "first token received" milestone (see the token branch in
 // handleSubmit's SSE loop) — never a fake timed animation.
+//
+// Collapsed by default (presentation only — `expanded` is local state, never
+// touches `stage`/SSE handling): shows ONLY the current running step (or the
+// last step, "done", once nothing is active) with a chevron on the right of
+// that same row; clicking it reveals the full list below, that row now
+// carrying the rotated chevron as its "collapse" control. As SSE advances
+// `stage` while collapsed, the single shown row re-derives from `stage` on
+// every render exactly as the full list already did, so it updates live with
+// no extra state to keep in sync.
 function GenerationProgress({
   stage,
   kbWaitText,
@@ -715,6 +757,8 @@ function GenerationProgress({
   kbWaitText: string | null;
   kbWaitSeen: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   const visibleStages = GEN_STAGE_ORDER.filter(s => s !== 'kb_wait' || kbWaitSeen);
   const currentIndex = stage ? visibleStages.indexOf(stage as GenStageId) : -1;
 
@@ -727,7 +771,32 @@ function GenerationProgress({
     return { key: s, status, label };
   });
 
-  return <StepList rows={rows} />;
+  if (rows.length === 0) return null;
+
+  // The one row the collapsed view shows, and the one row the expanded view
+  // gives the chevron to: whichever is currently running, or — once nothing
+  // is — the final row, re-labelled "Done" so a finished-but-still-mounted
+  // stepper never looks stuck on a stale stage name.
+  const activeRow = rows.find(r => r.status === 'active');
+  const allDone = rows.every(r => r.status === 'done');
+  const toggleRow = activeRow ?? (allDone ? { ...rows[rows.length - 1], label: 'Done' } : rows[rows.length - 1]);
+
+  const toggle = () => setExpanded(e => !e);
+
+  if (!expanded) {
+    return (
+      <StepRow key={toggleRow.key} status={toggleRow.status} label={toggleRow.label} chevronOpen={false} onToggle={toggle} />
+    );
+  }
+
+  return (
+    <div className={styles.genProgress}>
+      {rows.map(r => r.key === toggleRow.key
+        ? <StepRow key={r.key} status={r.status} label={r.label} chevronOpen={true} onToggle={toggle} />
+        : <StepRow key={r.key} status={r.status} label={r.label} />
+      )}
+    </div>
+  );
 }
 
 // Shared timer-driven checklist: for any staged loader with no real backend
@@ -911,7 +980,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   // Step-2 task-intake state (driven by POST /api/tasks/intake) — additive,
   // alongside the legacy AgentQuestionnaire state above, which stays in
   // place but is no longer rendered (see the .onboardingForms block below).
-  const [intakePhase, setIntakePhase] = useState<'idle' | 'questions' | 'brief' | 'confirmed'>('idle');
+  const [intakePhase, setIntakePhase] = useState<'idle' | 'questions' | 'brief' | 'research' | 'confirmed'>('idle');
   const [isIntakeLoading, setIsIntakeLoading] = useState(false);
   // True only for the one-time create -> PUT -> send gap right after
   // Continue is clicked, until handleSubmit's forced re-invoke actually
@@ -924,6 +993,11 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   const [intakePayload, setIntakePayload] = useState<TaskIntakeData | null>(null);
   const [intakeAnswers, setIntakeAnswers] = useState<Record<string, TaskIntakeAnswer> | null>(null);
   const [confirmedBrief, setConfirmedBrief] = useState<TaskBrief | null>(null);
+  // Lifted out of ResearchDirection (which unmounts/remounts every time
+  // intakePhase leaves/re-enters 'research') so Back and a failed project
+  // save both restore the user's headings/sub-headers/custom topics/market
+  // instead of resetting the screen.
+  const [researchSelection, setResearchSelection] = useState<ResearchSelection | null>(null);
   const [classifiedAgent, setClassifiedAgent] = useState<string | null>(null);
   // Set right before a forced re-invoke of handleSubmit() after a Task Brief
   // is confirmed, so that one call skips the intake intercept and the
@@ -1485,6 +1559,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
     setIntakePayload(null);
     setIntakeAnswers(null);
     setConfirmedBrief(null);
+    setResearchSelection(null);
     intakeInFlightRef.current = false;
     forcedProjectIdRef.current = null;
     onNewChat?.();
@@ -1502,7 +1577,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
 
   const handleQuestionnaireDismiss = () => setShowQuestionnaire(false);
 
-  const handleBriefConfirm = async (brief: TaskBrief) => {
+  const handleBriefConfirm = async (brief: TaskBrief, researchSelection: ResearchSelection) => {
     // Clicking Continue both removes the card (isCardOpen goes false the
     // instant intakePhase leaves 'questions'/'brief') and posts the user's
     // own one-line summary of what they picked, right-aligned, in its place
@@ -1553,11 +1628,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       const newP = await createRes.json();
 
       // POST /api/projects/'s "reuse an existing empty project" branch drops
-      // questionnaire_answers, so persist the confirmed brief explicitly.
+      // questionnaire_answers, so persist the confirmed brief explicitly —
+      // the brief object stays exactly as it was; research_direction is a
+      // sibling key added alongside it, never folded into/replacing it.
       await fetch(`${apiBase}/api/projects/${newP.id}`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ questionnaire_answers: JSON.stringify(brief) }),
+        body: JSON.stringify({ questionnaire_answers: JSON.stringify({ ...brief, research_direction: researchSelection }) }),
       });
 
       setActiveProject({ id: newP.id, title: newP.title, brand_config_id: newP.brand_config_id ?? activeBrandId });
@@ -1586,9 +1663,13 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
       // (sent===false, whether from a thrown error above or handleSubmit's
       // own early-return guard), intakePhase would otherwise be stuck on
       // 'confirmed' with no card and no generation in progress; falling back
-      // to the brief card here, in a finally, clears it even then.
+      // to the research card here, in a finally, clears it even then. Falls
+      // back to 'research' (not 'brief') so the user doesn't have to redo
+      // their heading/sub-header/custom-topic/market picks — researchSelection
+      // is lifted into this component's own state precisely so it survives
+      // this remount, restored via ResearchDirection's initialSelection prop.
       if (!sent) {
-        setIntakePhase('brief'); // keep the brief card visible so the user can retry
+        setIntakePhase('research');
       }
     }
   };
@@ -2054,7 +2135,7 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
   };
 
   const isChatting = messages.length > 0;
-  const isCardOpen = intakePhase === 'questions' || intakePhase === 'brief';
+  const isCardOpen = intakePhase === 'questions' || intakePhase === 'brief' || intakePhase === 'research';
   // Must also exclude selectedAgent — the bottom ChatInput's gate below uses
   // this standalone (not nested after a selectedAgent check the way the
   // welcome-heading/grid ternary is), so without !selectedAgent here the
@@ -2497,7 +2578,26 @@ export default function MainContent({ onNewChat }: { onNewChat?: () => void }) {
                     {intakePhase === 'brief' && confirmedBrief && (
                       <TaskBriefSummary
                         brief={confirmedBrief}
-                        onConfirm={handleBriefConfirm}
+                        onConfirm={(brief) => {
+                          // Brief is confirmed (possibly edited via TaskBriefSummary's
+                          // own Edit flow) — persist that edit, then collect research
+                          // direction before generating.
+                          setConfirmedBrief(brief);
+                          setIntakePhase('research');
+                        }}
+                      />
+                    )}
+                    {intakePhase === 'research' && intakePayload && confirmedBrief && (
+                      <ResearchDirection
+                        headings={intakePayload.research_headings}
+                        preselected={intakePayload.step3_preselected}
+                        marketPrefill={intakePayload.research_market_prefill}
+                        initialSelection={researchSelection}
+                        onBack={() => setIntakePhase('brief')}
+                        onComplete={(selection) => {
+                          setResearchSelection(selection);
+                          handleBriefConfirm(confirmedBrief, selection);
+                        }}
                       />
                     )}
                   </div>

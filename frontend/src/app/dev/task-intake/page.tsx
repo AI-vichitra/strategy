@@ -26,6 +26,46 @@ const mock: TaskIntakeData = {
     { id: 'G3.1', name: 'Platforms / channels', scope: 'group', must: true, state: 'missing', value: null, source: null },
   ],
   missing_required: ['C2', 'C3', 'C5', 'G3.1'],
+  research_headings: [
+    { id: 'market_industry', label: 'Market and Industry', sub_headers: [
+      { id: 'market_overview', label: 'Market overview (size, growth, structure, key players)' },
+      { id: 'industry_trends', label: 'Industry trends (innovation, technology, business models)' },
+      { id: 'regulations_compliance', label: 'Regulations and compliance' },
+      { id: 'investment_funding', label: 'Investment and funding activity' },
+    ] },
+    { id: 'audience', label: 'Audience', sub_headers: [
+      { id: 'profile_segments', label: 'Profile and segments' },
+      { id: 'behaviour_journey', label: 'Behaviour and journey (discover, compare, decide, buy)' },
+      { id: 'needs_pain_points', label: 'Needs, pain points and motivations' },
+      { id: 'social_listening', label: 'Social listening and sentiment' },
+      { id: 'search_demand', label: 'Search and keyword demand' },
+    ] },
+    { id: 'competition', label: 'Competition', sub_headers: [
+      { id: 'competitor_landscape', label: 'Competitor landscape (positioning, offerings, pricing, strengths, weaknesses)' },
+      { id: 'competitor_communication', label: 'Competitor communication (messaging, campaigns, ads)' },
+      { id: 'social_content_audit', label: 'Social and content audit' },
+      { id: 'global_benchmarks', label: 'Global benchmarks and best practices' },
+    ] },
+    { id: 'brand', label: 'Brand', sub_headers: [
+      { id: 'brand_audit_perception', label: 'Brand audit and perception (website, social, reviews, search, consistency)' },
+      { id: 'swot', label: 'SWOT' },
+      { id: 'prospect_partner', label: 'Prospect / partner brand research' },
+    ] },
+    { id: 'culture_trends', label: 'Culture and Trends', sub_headers: [
+      { id: 'cultural_moments', label: 'Cultural moments, festivals and key dates' },
+      { id: 'platform_trends', label: 'Platform and content trends' },
+      { id: 'visual_trends', label: 'Visual and creative trends' },
+    ] },
+    { id: 'channels_sales', label: 'Channels and Sales', sub_headers: [
+      { id: 'channel_media_landscape', label: 'Channel and media landscape (where the audience is, costs, benchmarks)' },
+      { id: 'pricing_sales_landscape', label: 'Pricing and sales landscape (distribution, offers, sales drivers)' },
+      { id: 'influencer_landscape', label: 'Influencer and creator landscape' },
+      { id: 'news_pr_coverage', label: 'News and PR coverage' },
+      { id: 'location_onground', label: 'Location and on-ground insights' },
+    ] },
+  ],
+  step3_preselected: ['audience', 'competition', 'culture_trends'],
+  research_market_prefill: { global: false, national: 'India', local: ['Mumbai', 'Delhi NCR'] },
   questions: [
     { checkpoint_id: 'C2', text: 'What should it achieve?', options: ['Awareness', 'Leads', 'Sales', 'Launch', 'Funding', 'Retention / loyalty'], multi_select: false, allow_other: true, skippable: true },
     { checkpoint_id: 'C3', text: 'Whole brand, or a specific product/project/offering?', options: ['Whole brand', 'Specific product / project / offering'], multi_select: false, allow_other: true, skippable: true },
